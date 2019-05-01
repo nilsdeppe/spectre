@@ -4,6 +4,7 @@
 set(LIBRARY RelativisticEulerSolutions)
 
 set(LIBRARY_SOURCES
+  AbramowiczEtAlDisk.cpp
   FishboneMoncriefDisk.cpp
   TovStar.cpp
   )
