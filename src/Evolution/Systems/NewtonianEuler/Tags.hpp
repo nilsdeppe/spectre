@@ -87,5 +87,16 @@ struct SoundSpeedSquared : db::SimpleTag {
   using type = Scalar<DataType>;
   static std::string name() noexcept { return "SoundSpeedSquared"; }
 };
+
+/// Base tag for the source term
+struct SourceTermBase {};
+
+/// The source term in the evolution equations
+template <typename SourceTermType>
+struct SourceTerm : SourceTermBase, db::SimpleTag {
+  using type = SourceTermType;
+  static std::string name() noexcept { return "SourceTerm"; }
+};
+
 }  // namespace Tags
 }  // namespace NewtonianEuler
