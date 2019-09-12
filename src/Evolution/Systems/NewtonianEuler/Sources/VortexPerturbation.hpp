@@ -4,33 +4,55 @@
 #pragma once
 
 #include <cstddef>
-#include <string>
+#include <limits>
 
 #include "DataStructures/Tensor/TypeAliases.hpp"
+#include "Domain/Tags.hpp"
+#include "Evolution/Systems/NewtonianEuler/TagsDeclarations.hpp"
+#include "Time/Tags.hpp"
+#include "Utilities/MakeArray.hpp"
 #include "Utilities/TMPL.hpp"
 
 // IWYU pragma: no_forward_declare Tensor
 
 /// \cond
+class DataVector;
+
 namespace gsl {
 template <typename T>
 class not_null;
 }  // namespace gsl
 
-namespace NewtonianEuler {
-namespace Tags {
-template <typename DataType>
-struct MassDensity;
-template <typename DataType, size_t Dim, typename VolumeFrame>
-struct MomentumDensity;
-template <typename DataType>
-struct EnergyDensity;
-template <typename DataType>
-struct Pressure;
-}  // namespace Tags
-}  // namespace NewtonianEuler
+namespace detail {
+template <size_t Dim>
+struct get_sourced_variables;
 
-class DataVector;
+template <>
+struct get_sourced_variables<2> {
+  using type = tmpl::list<>;
+};
+
+template <>
+struct get_sourced_variables<3> {
+  using type = tmpl::list<NewtonianEuler::Tags::MassDensityCons<DataVector>,
+                          NewtonianEuler::Tags::MomentumDensity<DataVector, 3>,
+                          NewtonianEuler::Tags::EnergyDensity<DataVector>>;
+};
+
+template <size_t Dim>
+struct get_argument_tags;
+
+template <>
+struct get_argument_tags<2> {
+  using type = tmpl::list<>;
+};
+
+template <>
+struct get_argument_tags<3> {
+  using type =
+      tmpl::list<::Tags::Coordinates<3, Frame::Inertial>, ::Tags::Time>;
+};
+}  // namespace detail
 /// \endcond
 
 namespace NewtonianEuler {
@@ -60,39 +82,62 @@ namespace Sources {
  * S(e) &= \left(e + p + v_z S_z\right)\dfrac{dv_z}{dz},
  * \f}
  *
- * where \f$v_z = v_z(z)\f$ is the \f$z-\f$component of the flow velocity,
- * and \f$p\f$ is the pressure.
+ * where \f$\rho\f$ is the mass density of the vortex, \f$S_i\f$ is
+ * its momentum density, \f$e\f$ is its energy density,
+ * \f$v_z = v_z(z)\f$ is the \f$z-\f$component of its velocity,
+ * and \f$p\f$ is its pressure. These quantities are readily obtained
+ * from the primitive variables, whose expressions are those in
+ * Solutions::IsentropicVortex
  */
+template <size_t Dim>
 struct VortexPerturbation {
-  /// The \f$z-\f$component of the vortex flow velocity.
-  struct VelocityAlongZ {
-    using type = Scalar<DataVector>;
-    static std::string name() noexcept { return "VelocityAlongZ"; }
-  };
+  VortexPerturbation() noexcept = default;
+  VortexPerturbation(const VortexPerturbation& /*rhs*/) = default;
+  VortexPerturbation& operator=(const VortexPerturbation& /*rhs*/) = default;
+  VortexPerturbation(VortexPerturbation&& /*rhs*/) noexcept = default;
+  VortexPerturbation& operator=(VortexPerturbation&& /*rhs*/) noexcept =
+      default;
+  ~VortexPerturbation() = default;
 
-  /// The derivative w.r.t. \f$z\f$ of the \f$z-\f$component of the velocity.
-  struct DzVelocityAlongZ {
-    using type = Scalar<DataVector>;
-    static std::string name() noexcept { return "DzVelocityAlongZ"; }
-  };
+  VortexPerturbation(double adiabatic_index, double perturbation_amplitude,
+                     const std::array<double, Dim>& vortex_center,
+                     const std::array<double, Dim>& vortex_mean_velocity,
+                     double vortex_strength) noexcept;
 
-  using argument_tags =
-      tmpl::list<Tags::MassDensity<DataVector>,
-                 Tags::MomentumDensity<DataVector, 3, Frame::Inertial>,
-                 Tags::EnergyDensity<DataVector>, Tags::Pressure<DataVector>,
-                 VelocityAlongZ, DzVelocityAlongZ>;
+  // clang-tidy: google-runtime-references
+  void pup(PUP::er& /*p*/) noexcept;  // NOLINT
 
-  static void apply(
-      gsl::not_null<Scalar<DataVector>*> mass_density_source,
-      gsl::not_null<tnsr::I<DataVector, 3>*> momentum_density_source,
-      gsl::not_null<Scalar<DataVector>*> energy_density_source,
-      const Scalar<DataVector>& vortex_mass_density,
-      const tnsr::I<DataVector, 3>& vortex_momentum_density,
-      const Scalar<DataVector>& vortex_energy_density,
-      const Scalar<DataVector>& vortex_pressure,
-      const Scalar<DataVector>& vortex_velocity_z,
-      const Scalar<DataVector>& dz_vortex_velocity_z) noexcept;
+  using sourced_variables = typename detail::get_sourced_variables<Dim>::type;
+
+  using argument_tags = typename detail::get_argument_tags<Dim>::type;
+
+  // Overload required for 2-D simulations, where no variable is sourced.
+  void apply() const noexcept;
+
+  // Function to be used in 3-D.
+  void apply(gsl::not_null<Scalar<DataVector>*> source_mass_density_cons,
+             gsl::not_null<tnsr::I<DataVector, Dim>*> source_momentum_density,
+             gsl::not_null<Scalar<DataVector>*> source_energy_density,
+             const tnsr::I<DataVector, Dim>& x, double time) const noexcept;
+
+ private:
+  template <size_t SpatialDim>
+  friend bool
+  operator==(  // NOLINT (clang-tidy: readability-redundant-declaration)
+      const VortexPerturbation<SpatialDim>& lhs,
+      const VortexPerturbation<SpatialDim>& rhs) noexcept;
+
+  double adiabatic_index_ = std::numeric_limits<double>::signaling_NaN();
+  double perturbation_amplitude_ = std::numeric_limits<double>::signaling_NaN();
+  std::array<double, Dim> vortex_center_ =
+      make_array<Dim>(std::numeric_limits<double>::signaling_NaN());
+  std::array<double, Dim> vortex_mean_velocity_ =
+      make_array<Dim>(std::numeric_limits<double>::signaling_NaN());
+  double vortex_strength_ = std::numeric_limits<double>::signaling_NaN();
 };
 
+template <size_t Dim>
+bool operator!=(const VortexPerturbation<Dim>& lhs,
+                const VortexPerturbation<Dim>& rhs) noexcept;
 }  // namespace Sources
 }  // namespace NewtonianEuler
