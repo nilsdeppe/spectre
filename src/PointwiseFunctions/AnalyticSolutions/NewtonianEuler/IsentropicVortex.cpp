@@ -10,6 +10,7 @@
 #include "DataStructures/DataVector.hpp"                   // IWYU pragma: keep
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "ErrorHandling/Assert.hpp"
+#include "Evolution/Systems/NewtonianEuler/Sources/VortexPerturbation.hpp"
 #include "PointwiseFunctions/Hydro/EquationsOfState/EquationOfState.hpp"  // IWYU pragma: keep
 #include "PointwiseFunctions/Hydro/EquationsOfState/PolytropicFluid.hpp"  // IWYU pragma: keep
 #include "Utilities/ConstantExpressions.hpp"
@@ -34,7 +35,9 @@ IsentropicVortex<Dim>::IsentropicVortex(
       perturbation_amplitude_(perturbation_amplitude),
       strength_(strength),
       // Polytropic constant is set equal to 1.0
-      equation_of_state_(1.0, adiabatic_index) {
+      equation_of_state_(1.0, adiabatic_index),
+      source_term_(adiabatic_index, perturbation_amplitude, center,
+                   mean_velocity, strength) {
   ASSERT(strength_ >= 0.0,
          "The strength must be non-negative. The value given "
          "was "
@@ -49,6 +52,7 @@ void IsentropicVortex<Dim>::pup(PUP::er& p) noexcept {
   p | perturbation_amplitude_;
   p | strength_;
   p | equation_of_state_;
+  p | source_term_;
 }
 
 // Can be any smooth function of z. For testing purposes, we choose sin(z).
@@ -137,8 +141,8 @@ tuples::TaggedTuple<Tags::Pressure<DataType>> IsentropicVortex<Dim>::variables(
 template <size_t Dim>
 bool operator==(const IsentropicVortex<Dim>& lhs,
                 const IsentropicVortex<Dim>& rhs) noexcept {
-  // No comparison for equation_of_state_. Comparing adiabatic_index_ should
-  // suffice.
+  // No comparison for equation_of_state_ or source_term_. Comparing individual
+  // members should suffice.
   return lhs.adiabatic_index_ == rhs.adiabatic_index_ and
          lhs.center_ == rhs.center_ and
          lhs.mean_velocity_ == rhs.mean_velocity_ and
