@@ -4,6 +4,7 @@
 set(LIBRARY NewtonianEulerSources)
 
 set(LIBRARY_SOURCES
+  KeplerianPotential.cpp
   UniformAcceleration.cpp
   VortexPerturbation.cpp
   )
