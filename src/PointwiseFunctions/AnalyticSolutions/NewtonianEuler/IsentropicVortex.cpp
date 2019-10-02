@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <pup.h>  // IWYU pragma: keep
 
 #include "DataStructures/DataVector.hpp"                   // IWYU pragma: keep
@@ -38,6 +39,14 @@ IsentropicVortex<Dim>::IsentropicVortex(
       equation_of_state_(1.0, adiabatic_index),
       source_term_(adiabatic_index, perturbation_amplitude, center,
                    mean_velocity, strength) {
+  if (Dim == 2) {
+    ASSERT(
+        abs(perturbation_amplitude_) < std::numeric_limits<double>::epsilon(),
+        "A nonzero perturbation amplitude only makes sense in 3 dimensions. "
+        "The value given was "
+            << perturbation_amplitude);
+  }
+
   ASSERT(strength_ >= 0.0,
          "The strength must be non-negative. The value given "
          "was "

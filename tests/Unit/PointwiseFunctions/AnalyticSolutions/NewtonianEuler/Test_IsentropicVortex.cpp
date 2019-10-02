@@ -54,15 +54,20 @@ void test_solution(const DataType& used_for_size,
                    const std::array<double, Dim>& center,
                    const std::string& center_option,
                    const std::array<double, Dim>& mean_velocity,
-                   const std::string& mean_velocity_option) noexcept {
-  IsentropicVortexProxy<Dim> vortex(1.43, center, mean_velocity, 0.5, 3.76);
+                   const std::string& mean_velocity_option,
+                   const double perturbation_amplitude,
+                   const std::string& perturbation_amplitude_option) noexcept {
+  IsentropicVortexProxy<Dim> vortex(1.43, center, mean_velocity,
+                                    perturbation_amplitude, 3.76);
   pypp::check_with_random_values<
       1,
       typename IsentropicVortexProxy<Dim>::template variables_tags<DataType>>(
       &IsentropicVortexProxy<Dim>::template primitive_variables<DataType>,
       vortex, "IsentropicVortex",
       {"mass_density", "velocity", "specific_internal_energy", "pressure"},
-      {{{-1., 1.}}}, std::make_tuple(1.43, center, mean_velocity, 0.5, 3.76),
+      {{{-1., 1.}}},
+      std::make_tuple(1.43, center, mean_velocity, perturbation_amplitude,
+                      3.76),
       used_for_size);
 
   const auto vortex_from_options =
@@ -74,12 +79,14 @@ void test_solution(const DataType& used_for_size,
           "  MeanVelocity: " +
           mean_velocity_option +
           "\n"
-          "  PerturbAmplitude: 0.5\n"
+          "  PerturbAmplitude: " +
+          perturbation_amplitude_option +
+          "\n"
           "  Strength: 3.76");
   CHECK(vortex_from_options == vortex);
 
-  IsentropicVortexProxy<Dim> vortex_to_move(1.43, center, mean_velocity, 0.5,
-                                            3.76);
+  IsentropicVortexProxy<Dim> vortex_to_move(1.43, center, mean_velocity,
+                                            perturbation_amplitude, 3.76);
   test_move_semantics(std::move(vortex_to_move), vortex);  //  NOLINT
 
   test_serialization(vortex);
@@ -94,18 +101,22 @@ SPECTRE_TEST_CASE("Unit.PointwiseFunctions.AnalyticSolutions.NewtEuler.Vortex",
 
   const std::array<double, 2> center_2d = {{0.12, -0.04}};
   const std::array<double, 2> mean_velocity_2d = {{0.54, -0.02}};
+  double perturbation_amplitude = 0.0;
   test_solution<2>(std::numeric_limits<double>::signaling_NaN(), center_2d,
-                   "[0.12, -0.04]", mean_velocity_2d, "[0.54, -0.02]");
+                   "[0.12, -0.04]", mean_velocity_2d, "[0.54, -0.02]",
+                   perturbation_amplitude, "0.0");
   test_solution<2>(DataVector(5), center_2d, "[0.12, -0.04]", mean_velocity_2d,
-                   "[0.54, -0.02]");
+                   "[0.54, -0.02]", perturbation_amplitude, "0.0");
 
   const std::array<double, 3> center_3d = {{-0.53, -0.1, 1.4}};
   const std::array<double, 3> mean_velocity_3d = {{-0.04, 0.14, 0.3}};
+  perturbation_amplitude = 0.5;
   test_solution<3>(std::numeric_limits<double>::signaling_NaN(), center_3d,
-                   "[-0.53, -0.1, 1.4]", mean_velocity_3d,
-                   "[-0.04, 0.14, 0.3]");
+                   "[-0.53, -0.1, 1.4]", mean_velocity_3d, "[-0.04, 0.14, 0.3]",
+                   perturbation_amplitude, "0.5");
   test_solution<3>(DataVector(5), center_3d, "[-0.53, -0.1, 1.4]",
-                   mean_velocity_3d, "[-0.04, 0.14, 0.3]");
+                   mean_velocity_3d, "[-0.04, 0.14, 0.3]",
+                   perturbation_amplitude, "0.5");
 }
 
 SPECTRE_TEST_CASE(
@@ -125,14 +136,29 @@ SPECTRE_TEST_CASE(
   CHECK(vortex.dz_function_of_z(random_z_dv) == cos(random_z_dv));
 }
 
-// [[OutputRegex, The strength must be non-negative.]]
+// [[OutputRegex, A nonzero perturbation amplitude only makes sense in 3
+// dimensions.]]
 [[noreturn]] SPECTRE_TEST_CASE(
-    "Unit.PointwiseFunctions.AnalyticSolutions.NewtEuler.VortexStrength2d",
+    "Unit.PointwiseFunctions.AnalyticSolutions.NewtEuler.VortexPertAmpIn2d",
     "[Unit][PointwiseFunctions]") {
   ASSERTION_TEST();
 #ifdef SPECTRE_DEBUG
   NewtonianEuler::Solutions::IsentropicVortex<2> test_vortex(
-      1.3, {{3.21, -1.4}}, {{0.12, -0.53}}, -0.15, -1.7);
+      1.3, {{3.21, -1.4}}, {{0.12, -0.53}}, 1.e-12, 1.7);
+  ERROR("Failed to trigger ASSERT in an assertion test");
+#endif
+}
+
+    // clang-format off
+// [[OutputRegex, The strength must be non-negative.]]
+[[noreturn]] SPECTRE_TEST_CASE(
+    "Unit.PointwiseFunctions.AnalyticSolutions.NewtEuler.VortexStrength2d",
+    "[Unit][PointwiseFunctions]") {
+  // clang-format on
+  ASSERTION_TEST();
+#ifdef SPECTRE_DEBUG
+  NewtonianEuler::Solutions::IsentropicVortex<2> test_vortex(
+      1.3, {{3.21, -1.4}}, {{0.12, -0.53}}, 0.0, -1.7);
   ERROR("Failed to trigger ASSERT in an assertion test");
 #endif
 }
@@ -157,6 +183,23 @@ struct Vortex {
   static constexpr OptionString help = {"A Newtonian isentropic vortex."};
 };
 
+// [[OutputRegex, A nonzero perturbation amplitude only makes sense in 3
+// dimensions.]]
+SPECTRE_TEST_CASE(
+    "Unit.PointwiseFunctions.AnalyticSolutions.NewtEuler.VortexPertAmpIn2dOpt",
+    "[PointwiseFunctions][Unit]") {
+  ERROR_TEST();
+  Options<tmpl::list<Vortex<2>>> test_options("");
+  test_options.parse(
+      "Vortex:\n"
+      "  AdiabaticIndex: 1.4\n"
+      "  Center: [-3.9, 1.1]\n"
+      "  MeanVelocity: [0.1, -0.032]\n"
+      "  PerturbAmplitude: -1.e-13\n"
+      "  Strength: 0.2");
+  test_options.get<Vortex<2>>();
+}
+
 // [[OutputRegex, In string:.*At line 6 column 13:.Value -0.2 is below the lower
 // bound of 0]]
 SPECTRE_TEST_CASE(
@@ -169,7 +212,7 @@ SPECTRE_TEST_CASE(
       "  AdiabaticIndex: 1.4\n"
       "  Center: [-3.9, 1.1]\n"
       "  MeanVelocity: [0.1, -0.032]\n"
-      "  PerturbAmplitude: 0.13\n"
+      "  PerturbAmplitude: 0.0\n"
       "  Strength: -0.2");
   test_options.get<Vortex<2>>();
 }
