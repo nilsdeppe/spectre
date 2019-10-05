@@ -21,7 +21,9 @@
 #include "Evolution/Initialization/DiscontinuousGalerkin.hpp"
 #include "Evolution/Initialization/Evolution.hpp"
 #include "Evolution/Initialization/Limiter.hpp"
+#include "Evolution/Systems/NewtonianEuler/InitializeSourceTerm.hpp"
 #include "Evolution/Systems/NewtonianEuler/SoundSpeedSquared.hpp"
+#include "Evolution/Systems/NewtonianEuler/Sources/NoSource.hpp"
 #include "Evolution/Systems/NewtonianEuler/System.hpp"
 #include "Evolution/Systems/NewtonianEuler/Tags.hpp"
 #include "IO/Observer/Actions.hpp"
@@ -78,6 +80,34 @@ namespace Parallel {
 template <typename Metavariables>
 class CProxy_ConstGlobalCache;
 }  // namespace Parallel
+
+namespace detail {
+template <typename Metavariables,
+          bool = not tmpl::list_contains_v<
+              tmpl::list<typename Metavariables::source_term_type>,
+              NewtonianEuler::Sources::NoSource>>
+struct compute_volume_sources_if_present {
+  using type = tmpl::list<Actions::ComputeVolumeSources>;
+};
+
+template <typename Metavariables>
+struct compute_volume_sources_if_present<Metavariables, false> {
+  using type = tmpl::list<>;
+};
+
+template <typename Metavariables,
+          bool = not tmpl::list_contains_v<
+              tmpl::list<typename Metavariables::source_term_type>,
+              NewtonianEuler::Sources::NoSource>>
+struct initialize_source_term_if_present {
+  using type = tmpl::list<NewtonianEuler::Actions::InitializeSourceTerm>;
+};
+
+template <typename Metavariables>
+struct initialize_source_term_if_present<Metavariables, false> {
+  using type = tmpl::list<>;
+};
+}  // namespace detail
 /// \endcond
 
 template <size_t Dim>
@@ -87,18 +117,24 @@ struct EvolutionMetavars {
 
   using equation_of_state_type = typename initial_data::equation_of_state_type;
 
-  using system = NewtonianEuler::System<Dim, equation_of_state_type>;
+  using source_term_type = typename initial_data::source_term_type;
+
+  using system =
+      NewtonianEuler::System<Dim, equation_of_state_type, source_term_type>;
 
   using temporal_id = Tags::TimeStepId;
   static constexpr bool local_time_stepping = false;
 
   using initial_data_tag = Tags::AnalyticSolution<initial_data>;
+
   using boundary_condition_tag = initial_data_tag;
   using analytic_variables_tags =
       typename system::primitive_variables_tag::tags_list;
 
   using equation_of_state_tag =
       hydro::Tags::EquationOfState<equation_of_state_type>;
+
+  using source_term_tag = NewtonianEuler::Tags::SourceTerm<source_term_type>;
 
   using normal_dot_numerical_flux =
       Tags::NumericalFlux<dg::NumericalFluxes::Hll<system>>;
@@ -134,6 +170,8 @@ struct EvolutionMetavars {
   using compute_rhs = tmpl::flatten<tmpl::list<
       Actions::ComputeVolumeFluxes,
       dg::Actions::SendDataForFluxes<EvolutionMetavars>,
+      typename detail::compute_volume_sources_if_present<
+          EvolutionMetavars>::type,
       Actions::ComputeTimeDerivative,
       dg::Actions::ImposeDirichletBoundaryConditions<EvolutionMetavars>,
       dg::Actions::ReceiveDataForFluxes<EvolutionMetavars>,
@@ -159,9 +197,11 @@ struct EvolutionMetavars {
     Exit
   };
 
-  using initialization_actions = tmpl::list<
+  using initialization_actions = tmpl::flatten<tmpl::list<
       dg::Actions::InitializeDomain<Dim>,
       Initialization::Actions::ConservativeSystem,
+      typename detail::initialize_source_term_if_present<
+          EvolutionMetavars>::type,
       Initialization::Actions::AddComputeTags<
           tmpl::list<NewtonianEuler::Tags::SoundSpeedSquaredCompute<DataVector>,
                      NewtonianEuler::Tags::SoundSpeedCompute<DataVector>>>,
@@ -179,7 +219,7 @@ struct EvolutionMetavars {
       dg::Actions::InitializeMortars<EvolutionMetavars>,
       Initialization::Actions::DiscontinuousGalerkin<EvolutionMetavars>,
       Initialization::Actions::Minmod<Dim>,
-      Initialization::Actions::RemoveOptionsAndTerminatePhase>;
+      Initialization::Actions::RemoveOptionsAndTerminatePhase>>;
 
   using component_list = tmpl::list<
       observers::Observer<EvolutionMetavars>,
