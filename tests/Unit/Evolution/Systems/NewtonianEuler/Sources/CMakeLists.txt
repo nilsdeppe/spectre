@@ -5,6 +5,7 @@ set(LIBRARY "Test_NewtonianEulerSources")
 
 set(LIBRARY_SOURCES
   Test_LaneEmdenGravitationalField.cpp
+  Test_OuAnisotropicForcing.cpp
   Test_UniformAcceleration.cpp
   Test_VortexPerturbation.cpp
   )

@@ -5,6 +5,7 @@ set(LIBRARY NewtonianEulerSources)
 
 set(LIBRARY_SOURCES
   LaneEmdenGravitationalField.cpp
+  OuAnisotropicForcing.cpp
   UniformAcceleration.cpp
   VortexPerturbation.cpp
   )
