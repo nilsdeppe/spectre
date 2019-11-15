@@ -75,3 +75,13 @@ endfunction(add_kh_instability_executable)
 
 add_kh_instability_executable(2)
 add_kh_instability_executable(3)
+
+function(add_ou_turbulence_executable DIM)
+  add_newtonian_euler_executable(
+    OuTurbulence
+    ${DIM}
+    NewtonianEuler::AnalyticData::OuTurbulence<${DIM}>
+    )
+endfunction(add_ou_turbulence_executable)
+
+add_ou_turbulence_executable(3)

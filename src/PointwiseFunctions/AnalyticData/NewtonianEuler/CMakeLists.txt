@@ -5,6 +5,7 @@ set(LIBRARY NewtonianEulerAnalyticData)
 
 set(LIBRARY_SOURCES
   KhInstability.cpp
+  OuTurbulence.cpp
   )
 
 add_spectre_library(${LIBRARY} ${LIBRARY_SOURCES})

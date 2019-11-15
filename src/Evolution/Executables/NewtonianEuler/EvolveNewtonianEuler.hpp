@@ -63,6 +63,7 @@
 #include "ParallelAlgorithms/Initialization/Actions/AddComputeTags.hpp"
 #include "ParallelAlgorithms/Initialization/Actions/RemoveOptionsAndTerminatePhase.hpp"
 #include "PointwiseFunctions/AnalyticData/NewtonianEuler/KhInstability.hpp"
+#include "PointwiseFunctions/AnalyticData/NewtonianEuler/OuTurbulence.hpp"
 #include "PointwiseFunctions/AnalyticSolutions/NewtonianEuler/IsentropicVortex.hpp"
 #include "PointwiseFunctions/AnalyticSolutions/NewtonianEuler/LaneEmdenStar.hpp"
 #include "PointwiseFunctions/AnalyticSolutions/NewtonianEuler/RiemannProblem.hpp"

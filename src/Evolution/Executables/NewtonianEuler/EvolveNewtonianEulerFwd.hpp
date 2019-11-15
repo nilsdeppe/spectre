@@ -9,6 +9,8 @@ namespace NewtonianEuler {
 namespace AnalyticData {
 template <size_t Dim>
 class KhInstability;
+template <size_t Dim>
+class OuTurbulence;
 }  // namespace AnalyticData
 
 namespace Solutions {
