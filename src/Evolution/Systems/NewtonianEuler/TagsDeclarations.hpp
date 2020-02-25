@@ -28,6 +28,16 @@ template <typename DataType>
 struct SoundSpeed;
 template <typename DataType>
 struct SoundSpeedSquared;
+template <typename DataType>
+struct Mach;
+template <typename DataType>
+struct SpecificKineticEnergy;
+template <typename DataType>
+struct KineticEnergyDensity;
+template <typename DataType>
+struct InternalEnergyDensity;
+template <typename DataType, size_t Dim, typename Fr = Frame::Inertial>
+struct RamPressure;
 
 struct SourceTermBase;
 template <typename InitialDataType>

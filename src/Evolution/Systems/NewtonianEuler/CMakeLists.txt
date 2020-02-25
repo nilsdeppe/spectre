@@ -9,6 +9,7 @@ set(LIBRARY_SOURCES
   Fluxes.cpp
   PrimitiveFromConservative.cpp
   SoundSpeedSquared.cpp
+  TurbulenceComputeItems.cpp
   )
 
 add_spectre_library(${LIBRARY} ${LIBRARY_SOURCES})

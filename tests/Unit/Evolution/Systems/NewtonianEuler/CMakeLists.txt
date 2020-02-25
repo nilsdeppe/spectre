@@ -11,6 +11,7 @@ set(LIBRARY_SOURCES
   Test_SoundSpeedSquared.cpp
   Test_Sources.cpp
   Test_Tags.cpp
+  Test_TurbulenceComputeItems.cpp
   )
 
 add_subdirectory(NumericalFluxes)
