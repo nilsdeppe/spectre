@@ -33,6 +33,7 @@
 #include "Evolution/Systems/NewtonianEuler/Sources/NoSource.hpp"
 #include "Evolution/Systems/NewtonianEuler/System.hpp"
 #include "Evolution/Systems/NewtonianEuler/Tags.hpp"
+#include "Evolution/Systems/NewtonianEuler/TurbulenceComputeItems.hpp"
 #include "IO/Observer/Actions.hpp"
 #include "IO/Observer/Helpers.hpp"
 #include "IO/Observer/ObserverComponent.hpp"
@@ -56,6 +57,7 @@
 #include "ParallelAlgorithms/DiscontinuousGalerkin/InitializeMortars.hpp"
 #include "ParallelAlgorithms/Events/ObserveErrorNorms.hpp"
 #include "ParallelAlgorithms/Events/ObserveFields.hpp"
+#include "ParallelAlgorithms/Events/ObserveVolumeIntegrals.hpp"
 #include "ParallelAlgorithms/EventsAndTriggers/Actions/RunEventsAndTriggers.hpp"
 #include "ParallelAlgorithms/EventsAndTriggers/Event.hpp"
 #include "ParallelAlgorithms/EventsAndTriggers/EventsAndTriggers.hpp"
@@ -179,6 +181,21 @@ struct EvolutionMetavars {
                           dg::Events::Registrars::ObserveErrorNorms<
                               Tags::Time, analytic_variables_tags>,
                           tmpl::list<>>,
+      tmpl::conditional_t<
+          std::is_same_v<initial_data,
+                         NewtonianEuler::AnalyticData::OuTurbulence<Dim>>,
+          dg::Events::Registrars::ObserveVolumeIntegrals<
+              Dim, Tags::Time,
+              tmpl::list<
+                  NewtonianEuler::Tags::MassDensity<DataVector>,
+                  NewtonianEuler::Tags::SpecificInternalEnergy<DataVector>,
+                  NewtonianEuler::Tags::InternalEnergyDensity<DataVector>,
+                  NewtonianEuler::Tags::SpecificKineticEnergy<DataVector>,
+                  NewtonianEuler::Tags::KineticEnergyDensity<DataVector>,
+                  NewtonianEuler::Tags::EnergyDensity,
+                  NewtonianEuler::Tags::Mach<DataVector>,
+                  NewtonianEuler::Tags::RamPressure<DataVector, Dim>>>,
+          tmpl::list<>>,
       dg::Events::Registrars::ObserveFields<
           Dim, Tags::Time,
           tmpl::append<
@@ -240,9 +257,14 @@ struct EvolutionMetavars {
       evolution::Initialization::Actions::SetVariables<
           domain::Tags::Coordinates<Dim, Frame::Logical>>,
       Initialization::Actions::TimeStepperHistory<EvolutionMetavars>,
-      Initialization::Actions::AddComputeTags<
-          tmpl::list<NewtonianEuler::Tags::SoundSpeedSquaredCompute<DataVector>,
-                     NewtonianEuler::Tags::SoundSpeedCompute<DataVector>>>,
+      Initialization::Actions::AddComputeTags<tmpl::list<
+          NewtonianEuler::Tags::SoundSpeedSquaredCompute<DataVector>,
+          NewtonianEuler::Tags::SoundSpeedCompute<DataVector>,
+          NewtonianEuler::Tags::MachCompute<DataVector, Dim>,
+          NewtonianEuler::Tags::SpecificKineticEnergyCompute<DataVector, Dim>,
+          NewtonianEuler::Tags::KineticEnergyDensityCompute<DataVector, Dim>,
+          NewtonianEuler::Tags::InternalEnergyDensityCompute<DataVector>,
+          NewtonianEuler::Tags::RamPressureCompute<DataVector, Dim>>>,
       Actions::UpdateConservatives,
       dg::Actions::InitializeInterfaces<
           system,
