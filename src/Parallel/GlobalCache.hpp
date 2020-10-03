@@ -260,10 +260,9 @@ auto get(const GlobalCache<Metavariables>& cache) noexcept -> const
                         GlobalCacheTag, Metavariables>>::value == 1,
                 "Found more than one tag matching the GlobalCacheTag "
                 "requesting to be retrieved.");
-  return make_overloader(
+  return Overloader{
       [](std::true_type /*is_unique_ptr*/, auto&& local_cache)
-          -> decltype(
-              *(tuples::get<tag>(local_cache.global_cache_).get())) {
+          -> decltype(*(tuples::get<tag>(local_cache.global_cache_).get())) {
         return *(
             tuples::get<tag>(local_cache.global_cache_)
                 .get());
@@ -272,7 +271,7 @@ auto get(const GlobalCache<Metavariables>& cache) noexcept -> const
           -> decltype(tuples::get<tag>(local_cache.global_cache_)) {
         return tuples::get<tag>(
             local_cache.global_cache_);
-      })(typename tt::is_a<std::unique_ptr, typename tag::type>::type{}, cache);
+      }}(typename tt::is_a<std::unique_ptr, typename tag::type>::type{}, cache);
 }
 
 namespace Tags {

@@ -1143,7 +1143,7 @@ void MockDistributedObject<Component>::next_action_impl(
     //                     std::as_const(array_index_), actions_list{},
     //                     std::add_pointer_t<ParallelComponent>{}))>::type{}
     // ```
-    const auto invoke_this_action = make_overloader(
+    const auto invoke_this_action = Overloader{
         [this](auto& my_box,
                std::integral_constant<size_t, 1> /*meta*/) noexcept {
           std::tie(box_) =
@@ -1164,7 +1164,7 @@ void MockDistributedObject<Component>::next_action_impl(
               this_action::apply(my_box, *inboxes_, *global_cache_,
                                  std::as_const(array_index_), actions_list{},
                                  std::add_pointer_t<Component>{});
-        });
+        }};
 
     // `check_if_ready` calls the `is_ready` static method on the action
     // `action` if it has one, otherwise returns true. The first argument is the
@@ -1173,7 +1173,7 @@ void MockDistributedObject<Component>::next_action_impl(
     //         tuples::tagged_tuple_from_typelist<inbox_tags_list>,
     //         Parallel::GlobalCache<metavariables>, array_index>{}
     // ```
-    const auto check_if_ready = make_overloader(
+    const auto check_if_ready = Overloader{
         [this](std::true_type /*has_is_ready*/, auto action,
                const auto& check_local_box) noexcept {
           return decltype(action)::is_ready(
@@ -1181,7 +1181,7 @@ void MockDistributedObject<Component>::next_action_impl(
               std::as_const(array_index_));
         },
         [](std::false_type /*has_is_ready*/, auto /*action*/,
-           const auto& /*box*/) noexcept { return true; });
+           const auto& /*box*/) noexcept { return true; }};
 
     constexpr size_t phase_index =
         tmpl::index_of<phase_dependent_action_lists, PhaseDepActions>::value;
@@ -1205,117 +1205,110 @@ void MockDistributedObject<Component>::next_action_impl(
     // the output of the last action in the *previous* phase. This is handled by
     // checking which DataBox is currently in the `boost::variant` (using the
     // call `box_.which()`).
-    make_overloader(
+    Overloader{
         // clang-format off
         [ this, &check_if_ready, &invoke_this_action, &
           display_databox_error ](auto current_iter) noexcept
             -> Requires<std::is_same<std::integral_constant<size_t, 0>,
                                      decltype(current_iter)>::value> {
-              // clang-format on
-              // When `algorithm_step_ == 0` we could be the first DataBox or
-              // the last Databox.
-              using first_databox = tmpl::at_c<databox_types_this_phase, 0>;
-              using last_databox =
-                  tmpl::at_c<databox_types_this_phase,
-                             tmpl::size<databox_types_this_phase>::value - 1>;
-              using local_this_action =
-                  tmpl::at_c<actions_list, decltype(current_iter)::value>;
-              if (box_.which() ==
-                  static_cast<int>(
-                      tmpl::index_of<variant_boxes, first_databox>::value)) {
-                using this_databox = first_databox;
-                auto& box = boost::get<this_databox>(box_);
-                if (not check_if_ready(
-                        Parallel::Algorithm_detail::is_is_ready_callable_t<
-                            local_this_action, this_databox,
-                            tuples::tagged_tuple_from_typelist<inbox_tags_list>,
-                            Parallel::GlobalCache<metavariables>,
-                            array_index>{},
-                        local_this_action{}, box)) {
-                  ERROR("Tried to invoke the action '"
-                        << pretty_type::get_name<local_this_action>()
-                        << "' but have not received all the "
-                           "necessary data.");
-                }
-                performing_action_ = true;
-                algorithm_step_++;
-                invoke_this_action(
-                    box,
-                    typename std::tuple_size<decltype(local_this_action::apply(
-                        box, *inboxes_, *global_cache_,
-                        std::as_const(array_index_), actions_list{},
-                        std::add_pointer_t<Component>{}))>::type{});
-              } else if (box_.which() ==
-                         static_cast<int>(
-                             tmpl::index_of<variant_boxes,
-                                            last_databox>::value)) {
-                using this_databox = last_databox;
-                auto& box = boost::get<this_databox>(box_);
-                if (not check_if_ready(
-                        Parallel::Algorithm_detail::is_is_ready_callable_t<
-                            local_this_action, this_databox,
-                            tuples::tagged_tuple_from_typelist<inbox_tags_list>,
-                            Parallel::GlobalCache<metavariables>,
-                            array_index>{},
-                        local_this_action{}, box)) {
-                  ERROR("Tried to invoke the action '"
-                        << pretty_type::get_name<local_this_action>()
-                        << "' but have not received all the "
-                           "necessary data.");
-                }
-                performing_action_ = true;
-                algorithm_step_++;
-                invoke_this_action(
-                    box,
-                    typename std::tuple_size<decltype(local_this_action::apply(
-                        box, *inboxes_, *global_cache_,
-                        std::as_const(array_index_), actions_list{},
-                        std::add_pointer_t<Component>{}))>::type{});
-              } else {
-                display_databox_error();
-              }
-              return nullptr;
-            },
+          // clang-format on
+          // When `algorithm_step_ == 0` we could be the first DataBox or
+          // the last Databox.
+          using first_databox = tmpl::at_c<databox_types_this_phase, 0>;
+          using last_databox =
+              tmpl::at_c<databox_types_this_phase,
+                         tmpl::size<databox_types_this_phase>::value - 1>;
+          using local_this_action =
+              tmpl::at_c<actions_list, decltype(current_iter)::value>;
+          if (box_.which() ==
+              static_cast<int>(
+                  tmpl::index_of<variant_boxes, first_databox>::value)) {
+            using this_databox = first_databox;
+            auto& box = boost::get<this_databox>(box_);
+            if (not check_if_ready(
+                    Parallel::Algorithm_detail::is_is_ready_callable_t<
+                        local_this_action, this_databox,
+                        tuples::tagged_tuple_from_typelist<inbox_tags_list>,
+                        Parallel::GlobalCache<metavariables>, array_index>{},
+                    local_this_action{}, box)) {
+              ERROR("Tried to invoke the action '"
+                    << pretty_type::get_name<local_this_action>()
+                    << "' but have not received all the "
+                       "necessary data.");
+            }
+            performing_action_ = true;
+            algorithm_step_++;
+            invoke_this_action(
+                box,
+                typename std::tuple_size<decltype(local_this_action::apply(
+                    box, *inboxes_, *global_cache_, std::as_const(array_index_),
+                    actions_list{}, std::add_pointer_t<Component>{}))>::type{});
+          } else if (box_.which() ==
+                     static_cast<int>(
+                         tmpl::index_of<variant_boxes, last_databox>::value)) {
+            using this_databox = last_databox;
+            auto& box = boost::get<this_databox>(box_);
+            if (not check_if_ready(
+                    Parallel::Algorithm_detail::is_is_ready_callable_t<
+                        local_this_action, this_databox,
+                        tuples::tagged_tuple_from_typelist<inbox_tags_list>,
+                        Parallel::GlobalCache<metavariables>, array_index>{},
+                    local_this_action{}, box)) {
+              ERROR("Tried to invoke the action '"
+                    << pretty_type::get_name<local_this_action>()
+                    << "' but have not received all the "
+                       "necessary data.");
+            }
+            performing_action_ = true;
+            algorithm_step_++;
+            invoke_this_action(
+                box,
+                typename std::tuple_size<decltype(local_this_action::apply(
+                    box, *inboxes_, *global_cache_, std::as_const(array_index_),
+                    actions_list{}, std::add_pointer_t<Component>{}))>::type{});
+          } else {
+            display_databox_error();
+          }
+          return nullptr;
+        },
         // clang-format off
         [ this, &check_if_ready, &invoke_this_action, &
           display_databox_error ](auto current_iter) noexcept
             -> Requires<not std::is_same<std::integral_constant<size_t, 0>,
                                          decltype(current_iter)>::value> {
-              // clang-format on
-              // When `algorithm_step_ != 0` we must be the DataBox of before us
-              using this_databox = tmpl::at_c<databox_types_this_phase,
-                                              decltype(current_iter)::value>;
-              using local_this_action =
-                  tmpl::at_c<actions_list, decltype(current_iter)::value>;
-              if (box_.which() ==
-                  static_cast<int>(
-                      tmpl::index_of<variant_boxes, this_databox>::value)) {
-                auto& box = boost::get<this_databox>(box_);
-                if (not check_if_ready(
-                        Parallel::Algorithm_detail::is_is_ready_callable_t<
-                            local_this_action, this_databox,
-                            tuples::tagged_tuple_from_typelist<inbox_tags_list>,
-                            Parallel::GlobalCache<metavariables>,
-                            array_index>{},
-                        local_this_action{}, box)) {
-                  ERROR("Tried to invoke the action '"
-                        << pretty_type::get_name<local_this_action>()
-                        << "' but have not received all the "
-                           "necessary data.");
-                }
-                performing_action_ = true;
-                algorithm_step_++;
-                invoke_this_action(
-                    box,
-                    typename std::tuple_size<decltype(local_this_action::apply(
-                        box, *inboxes_, *global_cache_,
-                        std::as_const(array_index_), actions_list{},
-                        std::add_pointer_t<Component>{}))>::type{});
-              } else {
-                display_databox_error();
-              }
-              return nullptr;
-            })(std::integral_constant<size_t, iter>{});
+          // clang-format on
+          // When `algorithm_step_ != 0` we must be the DataBox of before us
+          using this_databox = tmpl::at_c<databox_types_this_phase,
+                                          decltype(current_iter)::value>;
+          using local_this_action =
+              tmpl::at_c<actions_list, decltype(current_iter)::value>;
+          if (box_.which() ==
+              static_cast<int>(
+                  tmpl::index_of<variant_boxes, this_databox>::value)) {
+            auto& box = boost::get<this_databox>(box_);
+            if (not check_if_ready(
+                    Parallel::Algorithm_detail::is_is_ready_callable_t<
+                        local_this_action, this_databox,
+                        tuples::tagged_tuple_from_typelist<inbox_tags_list>,
+                        Parallel::GlobalCache<metavariables>, array_index>{},
+                    local_this_action{}, box)) {
+              ERROR("Tried to invoke the action '"
+                    << pretty_type::get_name<local_this_action>()
+                    << "' but have not received all the "
+                       "necessary data.");
+            }
+            performing_action_ = true;
+            algorithm_step_++;
+            invoke_this_action(
+                box,
+                typename std::tuple_size<decltype(local_this_action::apply(
+                    box, *inboxes_, *global_cache_, std::as_const(array_index_),
+                    actions_list{}, std::add_pointer_t<Component>{}))>::type{});
+          } else {
+            display_databox_error();
+          }
+          return nullptr;
+        }}(std::integral_constant<size_t, iter>{});
 
     performing_action_ = false;
     already_did_an_action = true;
@@ -1401,14 +1394,14 @@ bool MockDistributedObject<Component>::is_ready_impl(
     //         tuples::tagged_tuple_from_typelist<inbox_tags_list>,
     //         Parallel::GlobalCache<metavariables>, array_index>{}
     // ```
-    const auto check_if_ready = make_overloader(
+    const auto check_if_ready = Overloader{
         [&box, &array_index, &global_cache, &inboxes](
             std::true_type /*has_is_ready*/, auto t) {
           return decltype(t)::is_ready(
               std::as_const(box), std::as_const(inboxes), *global_cache,
               std::as_const(array_index));
         },
-        [](std::false_type /*has_is_ready*/, auto /*meta*/) { return true; });
+        [](std::false_type /*has_is_ready*/, auto /*meta*/) { return true; }};
 
     next_action_is_ready =
         check_if_ready(Parallel::Algorithm_detail::is_is_ready_callable_t<

@@ -960,19 +960,19 @@ template <typename ParentTag, typename... Subtags>
 SPECTRE_ALWAYS_INLINE constexpr void
 db::DataBox<tmpl::list<Tags...>>::mutate_subitem_tags_in_box(
     tmpl::list<Subtags...> /*meta*/) noexcept {
-  const auto helper = make_overloader(
-    [this](auto tag_v, std::true_type /*is_compute_tag*/) noexcept {
-      (void)this;  // Compiler bug warns about unused this capture
-      using tag = decltype(tag_v);
-      get_deferred<tag>().reset();
-    },
-    [this](auto tag_v, std::false_type /*is_compute_tag*/) noexcept {
-      (void)this;  // Compiler bug warns about unused this capture
-      using tag = decltype(tag_v);
-      Subitems<ParentTag>::template create_item<tag>(
-          make_not_null(&get_deferred<ParentTag>().mutate()),
-          make_not_null(&get_deferred<tag>().mutate()));
-    });
+  const auto helper = Overloader{
+      [this](auto tag_v, std::true_type /*is_compute_tag*/) noexcept {
+        (void)this;  // Compiler bug warns about unused this capture
+        using tag = decltype(tag_v);
+        get_deferred<tag>().reset();
+      },
+      [this](auto tag_v, std::false_type /*is_compute_tag*/) noexcept {
+        (void)this;  // Compiler bug warns about unused this capture
+        using tag = decltype(tag_v);
+        Subitems<ParentTag>::template create_item<tag>(
+            make_not_null(&get_deferred<ParentTag>().mutate()),
+            make_not_null(&get_deferred<tag>().mutate()));
+      }};
 
   EXPAND_PACK_LEFT_TO_RIGHT(helper(Subtags{}, is_compute_tag<ParentTag>{}));
 }

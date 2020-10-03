@@ -327,13 +327,13 @@ void test_repeated_key() {
   CHECK(std::as_const(map).find(1) != map.end());
   CHECK(std::as_const(map).find(2) == map.end());
 
-  make_overloader(
+  Overloader{
       [](const gsl::not_null<CopyableKeyMapType*> local_map) noexcept {
         (*local_map)[2] = 12;
       },
       [](const gsl::not_null<NonCopyableKeyMapType*> local_map) noexcept {
         local_map->insert({2, 12});
-      })(make_not_null(&map));
+      }}(make_not_null(&map));
   CHECK(map.size() == 2);
   CHECK_FALSE(map.empty());
   CHECK(map.at(2) == 12);
@@ -355,13 +355,12 @@ void test_repeated_key() {
   CHECK_FALSE(map.empty());
   CHECK(map.at(3) == 13);
   CHECK(std::as_const(map).at(3) == 13);
-  make_overloader(
+  Overloader{
       [](const gsl::not_null<CopyableKeyMapType*> local_map) noexcept {
         CHECK((*local_map)[3] == 13);
       },
-      [
-      ](const gsl::not_null<NonCopyableKeyMapType*> /*local_map*/) noexcept {})(
-      make_not_null(&map));
+      [](const gsl::not_null<NonCopyableKeyMapType*> /*local_map*/) noexcept {
+      }}(make_not_null(&map));
   CHECK(map.count(1) == 1);
   CHECK(map.count(2) == 1);
   CHECK(map.count(3) == 1);
@@ -407,21 +406,20 @@ void test_repeated_key() {
   CHECK(map.find(4) != map.end());
   CHECK(map.at(4) == 14);
   CHECK(std::as_const(map).at(4) == 14);
-  make_overloader(
+  Overloader{
       [](const gsl::not_null<CopyableKeyMapType*> local_map) noexcept {
         CHECK((*local_map)[4] == 14);
       },
-      [
-      ](const gsl::not_null<NonCopyableKeyMapType*> /*local_map*/) noexcept {})(
-      make_not_null(&map));
+      [](const gsl::not_null<NonCopyableKeyMapType*> /*local_map*/) noexcept {
+      }}(make_not_null(&map));
 
-  make_overloader(
+  Overloader{
       [](const gsl::not_null<CopyableKeyMapType*> local_map) noexcept {
         (*local_map)[5] = 15;
       },
       [](const gsl::not_null<NonCopyableKeyMapType*> local_map) noexcept {
         local_map->insert_or_assign(5, 15);
-      })(make_not_null(&map));
+      }}(make_not_null(&map));
   CHECK(map.size() == 4);
   CHECK_FALSE(map.empty());
   CHECK(map.count(1) == 1);
@@ -438,13 +436,12 @@ void test_repeated_key() {
   CHECK(map.find(4) != map.find(5));
   CHECK(map.at(5) == 15);
   CHECK(std::as_const(map).at(5) == 15);
-  make_overloader(
+  Overloader{
       [](const gsl::not_null<CopyableKeyMapType*> local_map) noexcept {
         CHECK((*local_map)[5] == 15);
       },
-      [
-      ](const gsl::not_null<NonCopyableKeyMapType*> /*local_map*/) noexcept {})(
-      make_not_null(&map));
+      [](const gsl::not_null<NonCopyableKeyMapType*> /*local_map*/) noexcept {
+      }}(make_not_null(&map));
 
   map.erase(4);
   CHECK(map.size() == 3);
@@ -462,13 +459,12 @@ void test_repeated_key() {
   CHECK(map.find(4) != map.find(5));
   CHECK(map.at(5) == 15);
   CHECK(std::as_const(map).at(5) == 15);
-  make_overloader(
+  Overloader{
       [](const gsl::not_null<CopyableKeyMapType*> local_map) noexcept {
         CHECK((*local_map)[5] == 15);
       },
-      [
-      ](const gsl::not_null<NonCopyableKeyMapType*> /*local_map*/) noexcept {})(
-      make_not_null(&map));
+      [](const gsl::not_null<NonCopyableKeyMapType*> /*local_map*/) noexcept {
+      }}(make_not_null(&map));
 
   const auto check_4 = [](
       const auto& l_it_bool_to_4, const size_t expected, const bool inserted,
@@ -492,17 +488,16 @@ void test_repeated_key() {
     CHECK(check_4_local_map->find(4) == l_it_bool_to_4.first);
     CHECK(check_4_local_map->at(4) == expected);
     CHECK(std::as_const(*check_4_local_map).at(4) == expected);
-    make_overloader(
+    Overloader{
         [expected](
             const gsl::not_null<CopyableKeyMapType*> more_local_map) noexcept {
           CHECK((*more_local_map)[4] == expected);
         },
-        [](const gsl::not_null<
-            NonCopyableKeyMapType*> /*local_map*/) noexcept {})(
-        check_4_local_map);
+        [](const gsl::not_null<NonCopyableKeyMapType*> /*local_map*/) noexcept {
+        }}(check_4_local_map);
   };
 
-  make_overloader(
+  Overloader{
       [&check_4](const gsl::not_null<CopyableKeyMapType*> local_map) noexcept {
         // Test serialization and that FixedHashMap works correctly after.
         test_serialization(*local_map);
@@ -542,18 +537,17 @@ void test_repeated_key() {
         const size_t key_4 = 4;
         check_4(local_map->insert_or_assign(key_4, 34), 34, true, local_map);
         check_4(local_map->insert_or_assign(key_4, 44), 44, false, local_map);
-      })(make_not_null(&map));
+      }}(make_not_null(&map));
 
   test_iterators(map);
-  make_overloader(
+  Overloader{
       [](const gsl::not_null<CopyableKeyMapType*> local_map) noexcept {
         test_copy_semantics(*local_map);
         const auto map2 = *local_map;
         test_move_semantics(std::move(*local_map), map2);
       },
-      [
-      ](const gsl::not_null<NonCopyableKeyMapType*> /*local_map*/) noexcept {})(
-      make_not_null(&map));
+      [](const gsl::not_null<NonCopyableKeyMapType*> /*local_map*/) noexcept {
+      }}(make_not_null(&map));
 }
 
 void test_equality() {

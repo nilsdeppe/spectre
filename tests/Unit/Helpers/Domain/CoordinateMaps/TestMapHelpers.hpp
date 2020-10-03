@@ -363,7 +363,7 @@ void test_coordinate_map_argument_types(
     return nullptr;
   };
 
-  const auto jac_overloader = make_overloader(
+  const auto jac_overloader = Overloader{
       // The first two functions are passed through the jacobian
       // overloader and the check_jac function due to gcc failing to deduce auto
       [&check_jac](const auto& make_array_data_vec, const auto& add_ref_wrapper,
@@ -382,7 +382,7 @@ void test_coordinate_map_argument_types(
         check_jac(make_array_data_vec, add_ref_wrapper, this_map, this_point,
                   the_args...);
         return nullptr;
-      });
+      }};
 
   jac_overloader(make_array_data_vector, add_reference_wrapper, map, test_point,
                  domain::is_jacobian_time_dependent_t<decltype(map), double>{},

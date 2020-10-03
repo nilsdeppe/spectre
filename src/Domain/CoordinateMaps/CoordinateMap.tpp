@@ -86,7 +86,7 @@ CoordinateMap<SourceFrame, TargetFrame, Maps...>::call_impl(
     std::index_sequence<Is...> /*meta*/) const noexcept {
   std::array<T, dim> mapped_point = make_array<T, dim>(std::move(source_point));
 
-  EXPAND_PACK_LEFT_TO_RIGHT(make_overloader(
+  EXPAND_PACK_LEFT_TO_RIGHT(Overloader{
       [](const auto& the_map, std::array<T, dim>& point, const double /*t*/,
          const std::unordered_map<
              std::string,
@@ -104,7 +104,7 @@ CoordinateMap<SourceFrame, TargetFrame, Maps...>::call_impl(
              funcs_of_time,
          const std::true_type /*is_time_dependent*/) noexcept {
         point = the_map(point, t, funcs_of_time);
-      })(std::get<Is>(maps_), mapped_point, time, functions_of_time,
+      }}(std::get<Is>(maps_), mapped_point, time, functions_of_time,
          domain::is_map_time_dependent_t<Maps>{}));
 
   return tnsr::I<T, dim, TargetFrame>(std::move(mapped_point));
@@ -123,7 +123,7 @@ CoordinateMap<SourceFrame, TargetFrame, Maps...>::inverse_impl(
   boost::optional<std::array<T, dim>> mapped_point(
       make_array<T, dim>(std::move(target_point)));
 
-  EXPAND_PACK_LEFT_TO_RIGHT(make_overloader(
+  EXPAND_PACK_LEFT_TO_RIGHT(Overloader{
       [](const auto& the_map, boost::optional<std::array<T, dim>>& point,
          const double /*t*/,
          const std::unordered_map<
@@ -149,7 +149,7 @@ CoordinateMap<SourceFrame, TargetFrame, Maps...>::inverse_impl(
         }
         // this is the inverse function, so the iterator sequence below is
         // reversed
-      })(std::get<sizeof...(Maps) - 1 - Is>(maps_), mapped_point, time,
+      }}(std::get<sizeof...(Maps) - 1 - Is>(maps_), mapped_point, time,
          functions_of_time,
          domain::is_map_time_dependent_t<decltype(
              std::get<sizeof...(Maps) - 1 - Is>(maps_))>{}));

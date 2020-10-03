@@ -212,16 +212,16 @@ void check_with_random_values_impl(
           make_not_null(&std::get<ArgumentIs>(args)), make_not_null(&generator),
           make_not_null(&(distributions[ArgumentIs]))),
       '0')...};
-  const auto result = make_overloader(
-      [&](std::true_type /*is_class*/, auto&& local_f) {
-        return (klass.*local_f)(std::get<ArgumentIs>(args)...);
-      },
-      [&](std::false_type /*is_class*/, auto&& local_f) {
-        return local_f(std::get<ArgumentIs>(args)...);
-      })(
-      std::integral_constant<
-          bool, not std::is_same_v<NoSuchType, std::decay_t<Klass>>>{},
-      std::forward<F>(f));
+  const auto result =
+      Overloader{[&](std::true_type /*is_class*/, auto&& local_f) {
+                   return (klass.*local_f)(std::get<ArgumentIs>(args)...);
+                 },
+                 [&](std::false_type /*is_class*/, auto&& local_f) {
+                   return local_f(std::get<ArgumentIs>(args)...);
+                 }}(
+          std::integral_constant<
+              bool, not std::is_same_v<NoSuchType, std::decay_t<Klass>>>{},
+          std::forward<F>(f));
   INFO("function: " << function_name);
   try {
     CHECK_ITERABLE_CUSTOM_APPROX(
@@ -273,7 +273,7 @@ void check_with_random_values_impl(
                                     make_not_null(&generator),
                                     make_not_null(&(distributions[0]))),
       '0')...};
-  make_overloader(
+  Overloader{
       [&](std::true_type /*is_class*/, auto&& local_f) {
         (klass.*local_f)(make_not_null(&std::get<ResultIs>(results))...,
                          std::get<ArgumentIs>(args)...);
@@ -281,7 +281,7 @@ void check_with_random_values_impl(
       [&](std::false_type /*is_class*/, auto&& local_f) {
         local_f(make_not_null(&std::get<ResultIs>(results))...,
                 std::get<ArgumentIs>(args)...);
-      })(
+      }}(
       std::integral_constant<
           bool, not std::is_same_v<NoSuchType, std::decay_t<Klass>>>{},
       std::forward<F>(f));

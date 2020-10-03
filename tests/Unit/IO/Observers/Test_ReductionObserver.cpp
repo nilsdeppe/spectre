@@ -90,7 +90,7 @@ SPECTRE_TEST_CASE("Unit.IO.Observers.ReductionObserver", "[Unit][Observers]") {
   ActionTesting::set_phase(make_not_null(&runner),
                            metavariables::Phase::Testing);
 
-  const auto make_fake_reduction_data = make_overloader(
+  const auto make_fake_reduction_data = Overloader{
       [](const observers::ArrayComponentId& id, const double time,
          const helpers::reduction_data_from_doubles& /*meta*/) noexcept {
         const auto hashed_id =
@@ -125,7 +125,7 @@ SPECTRE_TEST_CASE("Unit.IO.Observers.ReductionObserver", "[Unit][Observers]") {
                                           1.0e-13 * hashed_id + 6.0 * time};
         return helpers::reduction_data_from_ds_and_vs{
             time, number_of_grid_points, error0, vector1, vector2, error1};
-      });
+      }};
 
   tmpl::for_each<tmpl::list<helpers::reduction_data_from_doubles,
                             helpers::reduction_data_from_vector,
@@ -135,7 +135,7 @@ SPECTRE_TEST_CASE("Unit.IO.Observers.ReductionObserver", "[Unit][Observers]") {
     using reduction_data = tmpl::type_from<decltype(reduction_data_v)>;
 
     const double time = 3.0;
-    const auto legend = make_overloader(
+    const auto legend = Overloader{
         [](const helpers::reduction_data_from_doubles& /*meta*/) noexcept {
           return std::vector<std::string>{"Time", "NumberOfPoints", "Error0",
                                           "Error1"};
@@ -148,7 +148,7 @@ SPECTRE_TEST_CASE("Unit.IO.Observers.ReductionObserver", "[Unit][Observers]") {
           return std::vector<std::string>{"Time",  "NumberOfPoints", "Error0",
                                           "Vec10", "Vec11",          "Vec20",
                                           "Vec21", "Error1"};
-        })(reduction_data{});
+        }}(reduction_data{});
     const std::string h5_file_name = output_file_prefix + ".h5";
     if (file_system::check_if_file_exists(h5_file_name)) {
       file_system::rm(h5_file_name, true);
@@ -184,7 +184,7 @@ SPECTRE_TEST_CASE("Unit.IO.Observers.ReductionObserver", "[Unit][Observers]") {
       const Matrix written_data = dat_file.get_data();
       const auto& written_legend = dat_file.get_legend();
       CHECK(written_legend == legend);
-      const auto data = make_overloader(
+      const auto data = Overloader{
           [&time](
               const helpers::reduction_data_from_doubles& /*meta*/) noexcept {
             return helpers::reduction_data_from_doubles(time, 0, 0., 0.);
@@ -199,7 +199,7 @@ SPECTRE_TEST_CASE("Unit.IO.Observers.ReductionObserver", "[Unit][Observers]") {
             return helpers::reduction_data_from_ds_and_vs(
                 time, 0, 0., std::vector<double>{0., 0.},
                 std::vector<double>{0., 0.}, 0.);
-          })(reduction_data{});
+          }}(reduction_data{});
       const auto expected =
           alg::accumulate(
               element_ids, data,
@@ -213,7 +213,7 @@ SPECTRE_TEST_CASE("Unit.IO.Observers.ReductionObserver", "[Unit][Observers]") {
               })
               .finalize()
               .data();
-      make_overloader(
+      Overloader{
           [](const auto l_expected, const auto l_written_data,
              const helpers::reduction_data_from_doubles& /*meta*/) noexcept {
             CHECK(std::get<0>(l_expected) == l_written_data(0, 0));
@@ -243,7 +243,7 @@ SPECTRE_TEST_CASE("Unit.IO.Observers.ReductionObserver", "[Unit][Observers]") {
               CHECK(std::get<4>(l_expected)[i] == l_written_data(0, i + 5));
             }
             CHECK(std::get<5>(l_expected) == l_written_data(0, 7));
-          })(expected, written_data, reduction_data{});
+          }}(expected, written_data, reduction_data{});
     }
     if (file_system::check_if_file_exists(h5_file_name)) {
       file_system::rm(h5_file_name, true);

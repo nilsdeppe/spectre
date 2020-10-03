@@ -126,7 +126,7 @@ Main<Metavariables>::Main(CkArgMsg* msg) noexcept
 
     constexpr bool has_options = tmpl::size<option_list>::value > 0;
     // Add input-file option if it makes sense
-    make_overloader(
+    Overloader{
         [&command_line_options](std::true_type /*meta*/, auto mv,
                                 int /*gcc_bug*/)
             -> std::void_t<decltype(
@@ -157,19 +157,19 @@ Main<Metavariables>::Main(CkArgMsg* msg) noexcept
         },
         [](std::false_type /*meta*/, auto... /*unused*/) {
           // Metavariables has no options and no default input file name
-        })(std::bool_constant<has_options>{}, tmpl::type_<Metavariables>{}, 0);
+        }}(std::bool_constant<has_options>{}, tmpl::type_<Metavariables>{}, 0);
 
     bpo::command_line_parser command_line_parser(msg->argc, msg->argv);
     command_line_parser.options(command_line_options);
 
-    const bool ignore_unrecognized_command_line_options = make_overloader(
+    const bool ignore_unrecognized_command_line_options = Overloader{
         [](auto mv, int /*gcc_bug*/)
             -> decltype(tmpl::type_from<decltype(
                             mv)>::ignore_unrecognized_command_line_options) {
           return tmpl::type_from<decltype(
               mv)>::ignore_unrecognized_command_line_options;
         },
-        [](auto /*mv*/, auto... /*meta*/) { return false; })(
+        [](auto /*mv*/, auto... /*meta*/) { return false; }}(
         tmpl::type_<Metavariables>{}, 0);
     if (ignore_unrecognized_command_line_options) {
       // Allow unknown --options

@@ -748,7 +748,7 @@ std::ostream& operator<<(std::ostream& os,
                          const TaggedTuple<Tags...>& t) noexcept {
   os << "(";
   size_t current_value = 0;
-  auto helper = make_overloader(
+  auto helper = Overloader{
       [&current_value, &os](const auto& element,
                             const std::integral_constant<bool, true> /*meta*/) {
         using ::operator<<;
@@ -766,7 +766,7 @@ std::ostream& operator<<(std::ostream& os,
         if (current_value < sizeof...(Tags)) {
           os << ", ";
         }
-      });
+      }};
   // With empty TaggedTuple's helper is unused
   static_cast<void>(helper);
   static_cast<void>(std::initializer_list<char>{(
