@@ -42,6 +42,10 @@ std::ostream& operator<<(std::ostream& os,
       return os << "Gauss";
     case Quadrature::GaussLobatto:
       return os << "GaussLobatto";
+    case Quadrature::GaussRadauLowerPoint:
+      return os << "GaussRadauLowerPoint";
+    case Quadrature::GaussRadauUpperPoint:
+      return os << "GaussRadauUpperPoint";
     case Quadrature::CellCentered:
       return os << "CellCentered";
     case Quadrature::FaceCentered:

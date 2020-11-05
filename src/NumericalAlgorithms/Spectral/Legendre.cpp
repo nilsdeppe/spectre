@@ -161,14 +161,14 @@ compute_collocation_points_and_weights<Basis::Legendre, Quadrature::Gauss>(
 
 namespace {
 struct EvaluateQandL {
-  EvaluateQandL(size_t poly_degree, double x) noexcept;
+  EvaluateQandL(size_t poly_degree, double x, Quadrature quadrature) noexcept;
   double q;
   double q_prime;
   double L;
 };
 
-EvaluateQandL::EvaluateQandL(const size_t poly_degree,
-                             const double x) noexcept {
+EvaluateQandL::EvaluateQandL(const size_t poly_degree, const double x,
+                             const Quadrature quadrature) noexcept {
   // Algorithm 24 in Kopriva, p. 65
   // Note: Book has errors in last 4 lines, corrected in errata on website
   // https://www.math.fsu.edu/~kopriva/publications/errata.pdf
@@ -177,20 +177,34 @@ EvaluateQandL::EvaluateQandL(const size_t poly_degree,
   double L_n_minus_1 = x;
   double L_prime_n_minus_2 = 0.;
   double L_prime_n_minus_1 = 1.;
+  double L_prime_n = std::numeric_limits<double>::signaling_NaN();
   double L_n = std::numeric_limits<double>::signaling_NaN();
   for (size_t k = 2; k <= poly_degree; k++) {
     L_n = ((2 * k - 1) * x * L_n_minus_1 - (k - 1) * L_n_minus_2) / k;
-    const double L_prime_n = L_prime_n_minus_2 + (2 * k - 1) * L_n_minus_1;
+    L_prime_n = L_prime_n_minus_2 + (2 * k - 1) * L_n_minus_1;
     L_n_minus_2 = L_n_minus_1;
     L_n_minus_1 = L_n;
     L_prime_n_minus_2 = L_prime_n_minus_1;
     L_prime_n_minus_1 = L_prime_n;
   }
+  L_n_minus_1 = L_n_minus_2;
+  L_prime_n_minus_1 = L_prime_n_minus_2;
+
   const size_t k = poly_degree + 1;
-  const double L_n_plus_1 = ((2 * k - 1) * x * L_n - (k - 1) * L_n_minus_2) / k;
-  const double L_prime_n_plus_1 = L_prime_n_minus_2 + (2 * k - 1) * L_n_minus_1;
-  q = L_n_plus_1 - L_n_minus_2;
-  q_prime = L_prime_n_plus_1 - L_prime_n_minus_2;
+  const double L_n_plus_1 = ((2 * k - 1) * x * L_n - (k - 1) * L_n_minus_1) / k;
+  const double L_prime_n_plus_1 = L_prime_n_minus_1 + (2 * k - 1) * L_n;
+  if (quadrature == Quadrature::GaussLobatto) {
+    q = L_n_plus_1 - L_n_minus_1;
+    q_prime = L_prime_n_plus_1 - L_prime_n_minus_1;
+  } else if (quadrature == Quadrature::GaussRadauLowerPoint) {
+    q = (L_n_plus_1 + L_n) / (1. + x);
+    q_prime = (L_prime_n_plus_1 + L_prime_n) / (1. + x) -
+              (L_n_plus_1 + L_n) / square(1. + x);
+  } else {
+    ERROR(
+        "quadrature must be either GaussLobatto or GaussRadauLowerPoint but is "
+        << quadrature);
+  }
   L = L_n;
 }
 
@@ -219,7 +233,8 @@ std::pair<DataVector, DataVector> compute_collocation_points_and_weights<
       x[poly_degree] = 1.;
       w[0] = w[poly_degree] = 2. / (poly_degree * (poly_degree + 1));
       auto newton_raphson_step = [poly_degree](double logical_coord) noexcept {
-        const EvaluateQandL q_and_L(poly_degree, logical_coord);
+        const EvaluateQandL q_and_L(poly_degree, logical_coord,
+                                    Quadrature::GaussLobatto);
         return std::make_pair(q_and_L.q, q_and_L.q_prime);
       };
       for (size_t j = 1; j < (poly_degree + 1) / 2; j++) {
@@ -230,17 +245,72 @@ std::pair<DataVector, DataVector> compute_collocation_points_and_weights<
                  0.375 / (poly_degree * M_PI * (j + 0.25))),
             // Lower and upper bound, and number of desired base-10 digits
             -1., 1., 14);
-        const EvaluateQandL q_and_L(poly_degree, logical_coord);
+        const EvaluateQandL q_and_L(poly_degree, logical_coord,
+                                    Quadrature::GaussLobatto);
         x[j] = logical_coord;
         x[poly_degree - j] = -logical_coord;
         w[j] = w[poly_degree - j] =
             2. / (poly_degree * (poly_degree + 1) * square(q_and_L.L));
       }
       if (poly_degree % 2 == 0) {
-        const EvaluateQandL q_and_L(poly_degree, 0.);
+        const EvaluateQandL q_and_L(poly_degree, 0., Quadrature::GaussLobatto);
         x[poly_degree / 2] = 0.;
         w[poly_degree / 2] =
             2. / (poly_degree * (poly_degree + 1) * square(q_and_L.L));
+      }
+      break;
+  }
+  return std::make_pair(std::move(x), std::move(w));
+}
+
+template <>
+std::pair<DataVector, DataVector> compute_collocation_points_and_weights<
+    Basis::Legendre, Quadrature::GaussRadauLowerPoint>(
+    const size_t num_points) noexcept {
+  // Algorithm 25 in Kopriva, p. 66 modified for Gauss-Radau quadrature
+  ASSERT(num_points >= 2,
+         "Legendre-Gauss-Radau quadrature requires at least two collocation "
+         "points.");
+  const size_t poly_degree = num_points - 1;
+  DataVector x(num_points);
+  DataVector w(num_points);
+  switch (poly_degree) {
+    case 1:
+      x[0] = -1.;
+      x[1] = 1. / 3.;
+      w[0] = 0.5;
+      w[1] = 1.5;
+      break;
+    case 2: {
+      const double sqrt_six = sqrt(6.);
+      x[0] = -1.;
+      x[1] = 0.2 * (1. - sqrt_six);
+      x[2] = 0.2 * (1. + sqrt_six);
+      w[0] = 2. / 9.;
+      w[1] = (16. + sqrt_six) / 18.;
+      w[2] = (16. - sqrt_six) / 18.;
+      break;
+    }
+    default:
+      x[0] = -1.;
+      w[0] = 2. / (num_points * num_points);
+      auto newton_raphson_step = [poly_degree](double logical_coord) noexcept {
+        const EvaluateQandL q_and_L(poly_degree, logical_coord,
+                                    Quadrature::GaussRadauLowerPoint);
+        return std::make_pair(q_and_L.q, q_and_L.q_prime);
+      };
+      for (size_t j = 1; j < poly_degree + 1; j++) {
+        const double logical_coord = RootFinder::newton_raphson(
+            newton_raphson_step,
+            // Initial guess
+            -cos((j + 0.25) * M_PI / (poly_degree + 1) -
+                 0.375 / ((poly_degree + 1) * M_PI * (j + 0.25))),
+            // Lower and upper bound, and number of desired base-10 digits
+            -1., 1., 14);
+        const EvaluateQandL q_and_L(poly_degree, logical_coord,
+                                    Quadrature::GaussRadauLowerPoint);
+        x[j] = logical_coord;
+        w[j] = (1. - x[j]) / (square(poly_degree + 1) * square(q_and_L.L));
       }
       break;
   }
