@@ -3,11 +3,10 @@
 
 #pragma once
 
-#include <boost/variant/get.hpp>
-#include <boost/variant/variant.hpp>
 #include <exception>
 #include <string>
 #include <utility>
+#include <variant>
 
 #include "DataStructures/DataBox/DataBox.hpp"  // IWYU pragma: keep
 #include "ErrorHandling/Error.hpp"
@@ -49,11 +48,11 @@ template <typename Invokable, typename ParallelComponent, typename ThisVariant,
           Requires<is_apply_callable_v<Invokable, ParallelComponent,
                                        std::add_lvalue_reference_t<ThisVariant>,
                                        Args&&...>> = nullptr>
-void simple_action_visitor_helper(boost::variant<Variants...>& box,
-                                  const gsl::not_null<int*> iter,
+void simple_action_visitor_helper(std::variant<Variants...>& box,
+                                  const gsl::not_null<size_t*> iter,
                                   const gsl::not_null<bool*> already_visited,
                                   Args&&... args) {
-  if (box.which() == *iter and not*already_visited) {
+  if (box.index() == *iter and not *already_visited) {
     try {
       static_assert(
           std::is_same<void,
@@ -61,7 +60,7 @@ void simple_action_visitor_helper(boost::variant<Variants...>& box,
                            std::declval<ThisVariant&>(),
                            std::declval<Args>()...))>::value,
           "A simple action must return void.");
-      Invokable::template apply<ParallelComponent>(boost::get<ThisVariant>(box),
+      Invokable::template apply<ParallelComponent>(std::get<ThisVariant>(box),
                                                    std::forward<Args>(args)...);
     } catch (std::exception& e) {
       ERROR("Fatal error: Failed to call simple Action '"
@@ -79,11 +78,11 @@ template <typename Invokable, typename ParallelComponent, typename ThisVariant,
           Requires<not is_apply_callable_v<
               Invokable, ParallelComponent,
               std::add_lvalue_reference_t<ThisVariant>, Args&&...>> = nullptr>
-void simple_action_visitor_helper(boost::variant<Variants...>& box,
-                                  const gsl::not_null<int*> iter,
+void simple_action_visitor_helper(std::variant<Variants...>& box,
+                                  const gsl::not_null<size_t*> iter,
                                   const gsl::not_null<bool*> already_visited,
                                   Args&&... /*args*/) {
-  if (box.which() == *iter and not*already_visited) {
+  if (box.index() == *iter and not *already_visited) {
     std::string args_list{};
     const auto helper = [&args_list](auto arg_v) {
       args_list +=
@@ -109,7 +108,7 @@ void simple_action_visitor_helper(boost::variant<Variants...>& box,
 
 /*!
  * \brief Calls an `Invokable`'s `apply` static member function with the current
- * type in the `boost::variant`.
+ * type in the `std::variant`.
  *
  * The simple action can only be invoked if it accesses members of the DataBox
  * that are guaranteed to be present at the time of invocation. This can lead to
@@ -122,9 +121,9 @@ void simple_action_visitor_helper(boost::variant<Variants...>& box,
  */
 template <typename Invokable, typename ParallelComponent, typename... Variants,
           typename... Args>
-void simple_action_visitor(boost::variant<Variants...>& box, Args&&... args) {
+void simple_action_visitor(std::variant<Variants...>& box, Args&&... args) {
   // iter is the current element of the variant in the "for loop"
-  int iter = 0;
+  size_t iter = 0;
   // already_visited ensures that only one visitor is invoked
   bool already_visited = false;
   EXPAND_PACK_LEFT_TO_RIGHT(

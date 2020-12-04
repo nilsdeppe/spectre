@@ -13,6 +13,7 @@
 #include <tuple>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 
 #include "DataStructures/DataBox/DataBox.hpp"  // IWYU pragma: keep
 #include "DataStructures/DataBox/PrefixHelpers.hpp"
@@ -24,6 +25,7 @@
 #include "Parallel/NodeLock.hpp"
 #include "Parallel/ParallelComponentHelpers.hpp"
 #include "Parallel/PhaseDependentActionList.hpp"
+#include "Parallel/PupStlCpp17.hpp"
 #include "Parallel/SimpleActionVisitation.hpp"
 #include "Parallel/TypeTraits.hpp"
 #include "Utilities/BoostHelpers.hpp"
@@ -359,7 +361,7 @@ class AlgorithmImpl<ParallelComponent, tmpl::list<PhaseDepActionListsPack...>> {
       Tags::GlobalCacheImpl<metavariables>,
       typename ParallelComponent::initialization_tags,
       db::wrap_tags_in<Tags::FromGlobalCache, all_cache_tags>>>>;
-  // The types held by the boost::variant, box_
+  // The types held by the std::variant, box_
   using databox_phase_types = typename Algorithm_detail::build_databox_types<
       tmpl::list<>, phase_dependent_action_lists, initial_databox,
       inbox_tags_list, metavariables, array_index, ParallelComponent>::type;
@@ -371,10 +373,10 @@ class AlgorithmImpl<ParallelComponent, tmpl::list<PhaseDepActionListsPack...>> {
 
   using databox_types = tmpl::flatten<
       tmpl::transform<databox_phase_types, get_databox_types<tmpl::_1>>>;
-  // Create a boost::variant that can hold any of the DataBox's
+  // Create a std::variant that can hold any of the DataBox's
   using variant_boxes = tmpl::remove_duplicates<
       tmpl::push_front<databox_types, db::DataBox<tmpl::list<>>>>;
-  make_boost_variant_over<variant_boxes> box_;
+  tmpl::make_std_variant_over<variant_boxes> box_;
   tuples::tagged_tuple_from_typelist<inbox_tags_list> inboxes_{};
   array_index array_index_;
 };
@@ -653,7 +655,7 @@ AlgorithmImpl<ParallelComponent, tmpl::list<PhaseDepActionListsPack...>>::
           << algorithm_step_ << " in phase " << phase_index
           << " corresponding to action " << pretty_type::get_name<this_action>()
           << " on line " << line_number
-          << " is not the correct type but is of variant index " << box_.which()
+          << " is not the correct type but is of variant index " << box_.index()
           << ". If you are using Goto and Label actions then you are using "
              "them incorrectly.");
     };
@@ -662,8 +664,8 @@ AlgorithmImpl<ParallelComponent, tmpl::list<PhaseDepActionListsPack...>>::
     // remaining actions. The reason for this is that the first action can have
     // as its input DataBox either the output of the last action in the phase or
     // the output of the last action in the *previous* phase. This is handled by
-    // checking which DataBox is currently in the `boost::variant` (using the
-    // call `box_.which()`).
+    // checking which DataBox is currently in the `std::variant` (using the
+    // call `box_.index()`).
     make_overloader(
         // clang-format off
         [this, &take_next_action, &check_if_ready, &invoke_this_action,
@@ -679,11 +681,11 @@ AlgorithmImpl<ParallelComponent, tmpl::list<PhaseDepActionListsPack...>>::
                              tmpl::size<databox_types_this_phase>::value - 1>;
               using local_this_action =
                   tmpl::at_c<actions_list, decltype(current_iter)::value>;
-              if (box_.which() ==
+              if (box_.index() ==
                   static_cast<int>(
                       tmpl::index_of<variant_boxes, first_databox>::value)) {
                 using this_databox = first_databox;
-                auto& box = boost::get<this_databox>(box_);
+                auto& box = std::get<this_databox>(box_);
                 if (not check_if_ready(
                         Algorithm_detail::is_is_ready_callable_t<
                             local_this_action, this_databox,
@@ -702,12 +704,12 @@ AlgorithmImpl<ParallelComponent, tmpl::list<PhaseDepActionListsPack...>>::
                         box, inboxes_, *global_cache_,
                         std::as_const(array_index_), actions_list{},
                         std::add_pointer_t<ParallelComponent>{}))>::type{});
-              } else if (box_.which() ==
+              } else if (box_.index() ==
                          static_cast<int>(
                              tmpl::index_of<variant_boxes,
                                             last_databox>::value)) {
                 using this_databox = last_databox;
-                auto& box = boost::get<this_databox>(box_);
+                auto& box = std::get<this_databox>(box_);
                 if (not check_if_ready(
                         Algorithm_detail::is_is_ready_callable_t<
                             local_this_action, this_databox,
@@ -745,10 +747,10 @@ AlgorithmImpl<ParallelComponent, tmpl::list<PhaseDepActionListsPack...>>::
                                               decltype(current_iter)::value>;
               using local_this_action =
                   tmpl::at_c<actions_list, decltype(current_iter)::value>;
-              if (box_.which() ==
+              if (box_.index() ==
                   static_cast<int>(
                       tmpl::index_of<variant_boxes, this_databox>::value)) {
-                auto& box = boost::get<this_databox>(box_);
+                auto& box = std::get<this_databox>(box_);
                 if (not check_if_ready(
                         Algorithm_detail::is_is_ready_callable_t<
                             local_this_action, this_databox,
