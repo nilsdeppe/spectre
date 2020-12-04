@@ -20,6 +20,7 @@
 #include <cstddef>
 #include <initializer_list>  // IWYU pragma: keep
 #include <type_traits>
+#include <variant>
 
 #include "Utilities/TmplDigraph.hpp"  // IWYU pragma: export
 
@@ -585,4 +586,28 @@ constexpr const bool list_contains_v = list_contains<Sequence, Item>::value;
 template <typename Sequence1, typename Sequence2>
 using list_difference =
     fold<Sequence2, Sequence1, lazy::remove<_state, _element>>;
+
+namespace detail {
+template <typename Sequence>
+struct make_std_variant_over_impl;
+
+template <template <typename...> class Sequence, typename... Ts>
+struct make_std_variant_over_impl<Sequence<Ts...>> {
+  static_assert(not std::disjunction<std::is_same<
+                    std::decay_t<std::remove_pointer_t<Ts>>, void>...>::value,
+                "Cannot create a std::variant with a 'void' type.");
+  using type = std::variant<Ts...>;
+};
+}  // namespace detail
+
+/*!
+ * \ingroup UtilitiesGroup
+ * \brief Create a std::variant with all all the types inside the typelist
+ * Sequence
+ *
+ * \metareturns std::variant of all types inside `Sequence`
+ */
+template <typename Sequence>
+using make_std_variant_over = typename detail::make_std_variant_over_impl<
+    tmpl::remove_duplicates<Sequence>>::type;
 }  // namespace brigand
