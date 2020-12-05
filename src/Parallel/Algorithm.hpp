@@ -364,7 +364,9 @@ class AlgorithmImpl<ParallelComponent, tmpl::list<PhaseDepActionListsPack...>> {
       Tags::GlobalCacheImpl<metavariables>,
       typename ParallelComponent::initialization_tags,
       db::wrap_tags_in<Tags::FromGlobalCache, all_cache_tags>>>>;
-  // The types held by the std::variant, box_
+  // The types held by the std::variant, box_.
+  // This is a _very_ expensive computation, ~1/3 of the build time in
+  // executables goes here.
   using databox_phase_types = typename Algorithm_detail::build_databox_types<
       tmpl::list<>, phase_dependent_action_lists, initial_databox,
       inbox_tags_list, metavariables, array_index, ParallelComponent>::type;
