@@ -53,11 +53,15 @@ struct build_action_return_types_impl<true, tmpl::list<AdditionalArgs...>> {
  * - `AdditionalArgsList` the types of the arguments after the first
  * argument, which must all be the same for all Actions in the ActionsPack
  */
-template <typename T>
-struct build_action_return_types;
+template <typename T, bool ActionsChangeDataBox>
+struct build_action_return_types {
+  template <typename FirstInputParameterType, typename AdditionalArgsList>
+  using f =
+      tmpl::filled_list<FirstInputParameterType, tmpl::size<T>::value + 1>;
+};
 
 template <typename... AllActions>
-struct build_action_return_types<tmpl::list<AllActions...>> {
+struct build_action_return_types<tmpl::list<AllActions...>, true> {
   template <typename FirstInputParameterType, typename AdditionalArgsList>
   using f = typename Algorithm_detail::build_action_return_types_impl<
       sizeof...(AllActions) != 0, AdditionalArgsList>::
@@ -85,6 +89,17 @@ struct build_databox_types<CumulativeDataboxTypes, tmpl::list<>, InputDataBox,
   using type = CumulativeDataboxTypes;
 };
 
+template <typename T>
+struct get_first {
+  using type = T;
+};
+
+template <typename T, typename... Ts>
+struct get_first<tmpl::list<T, Ts...>> {
+  using type = tmpl::list<T>;
+};
+
+
 // Loop over all the phase dependent action list structs and for each one
 // compute the list of DataBox types. The loop is initiated by taking the last
 // DataBox of the previous phase. The results for each phase are stored in the
@@ -107,6 +122,7 @@ struct build_databox_types<
     InputDataBox,
 
     InboxTagsList, Metavariables, ArrayIndex, ParallelComponent> {
+
   using additional_args_list =
       tmpl::list<tuples::tagged_tuple_from_typelist<InboxTagsList>,
                  Parallel::GlobalCache<Metavariables>, ArrayIndex,
@@ -114,20 +130,25 @@ struct build_databox_types<
                  std::add_pointer_t<ParallelComponent>>;
   using action_list_of_this_phase =
       typename CurrentPhaseDepActionList::action_list;
-  using databox_types_for_this_phase =
-      typename build_action_return_types<action_list_of_this_phase>::template f<
-          InputDataBox, additional_args_list>;
-  using current_phase_dep_databox_types =
-      PhaseDependentDataBoxTypes<typename CurrentPhaseDepActionList::phase_type,
-                                 CurrentPhaseDepActionList::phase,
-                                 databox_types_for_this_phase>;
-  using cumulative_databox_types =
-      tmpl::push_back<CumulativeDataboxTypes, current_phase_dep_databox_types>;
+  using databox_types_for_this_phase = typename build_action_return_types<
+      typename get_first<action_list_of_this_phase>::type,
+      CurrentPhaseDepActionList::phase !=
+          CurrentPhaseDepActionList::phase_type::Evolve>::
+      template f<InputDataBox, additional_args_list>;
+  // using current_phase_dep_databox_types =
+  //     PhaseDependentDataBoxTypes<typename
+  //     CurrentPhaseDepActionList::phase_type,
+  //                                CurrentPhaseDepActionList::phase,
+  //                                databox_types_for_this_phase>;
+  // using cumulative_databox_types =
+  //     tmpl::push_back<CumulativeDataboxTypes,
+  //     current_phase_dep_databox_types>;
 
-  using type = typename build_databox_types<
-      cumulative_databox_types, tmpl::list<Rest...>,
-      tmpl::back<databox_types_for_this_phase>, InboxTagsList, Metavariables,
-      ArrayIndex, ParallelComponent>::type;
+  using type = void;
+// typename build_databox_types<
+//       cumulative_databox_types, tmpl::list<Rest...>,
+//       tmpl::back<databox_types_for_this_phase>, InboxTagsList, Metavariables,
+//       ArrayIndex, ParallelComponent>::type;
 };
 
 CREATE_IS_CALLABLE(is_ready)

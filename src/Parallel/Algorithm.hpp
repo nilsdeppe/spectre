@@ -228,10 +228,10 @@ class AlgorithmImpl<ParallelComponent, tmpl::list<PhaseDepActionListsPack...>> {
     // NOLINTNEXTLINE(modernize-redundant-void-arg)
     (void)Parallel::charmxx::RegisterThreadedAction<ParallelComponent,
                                                     Action>::registrar;
-    Algorithm_detail::simple_action_visitor<Action, ParallelComponent>(
-        box_, *global_cache_,
-        static_cast<const array_index&>(array_index_),
-        make_not_null(&node_lock_));
+    // Algorithm_detail::simple_action_visitor<Action, ParallelComponent>(
+    //     box_, *global_cache_,
+    //     static_cast<const array_index&>(array_index_),
+    //     make_not_null(&node_lock_));
   }
   // @}
 
@@ -312,10 +312,10 @@ class AlgorithmImpl<ParallelComponent, tmpl::list<PhaseDepActionListsPack...>> {
   template <typename Action, typename... Args, size_t... Is>
   void forward_tuple_to_action(std::tuple<Args...>&& args,
                                std::index_sequence<Is...> /*meta*/) noexcept {
-    Algorithm_detail::simple_action_visitor<Action, ParallelComponent>(
-        box_, *global_cache_,
-        static_cast<const array_index&>(array_index_),
-        std::forward<Args>(std::get<Is>(args))...);
+    // Algorithm_detail::simple_action_visitor<Action, ParallelComponent>(
+    //     box_, *global_cache_,
+    //     static_cast<const array_index&>(array_index_),
+    //     std::forward<Args>(std::get<Is>(args))...);
   }
 
   template <typename Action, typename... Args, size_t... Is>
@@ -323,10 +323,10 @@ class AlgorithmImpl<ParallelComponent, tmpl::list<PhaseDepActionListsPack...>> {
       std::tuple<Args...>&& args,
       std::index_sequence<Is...> /*meta*/) noexcept {
     const gsl::not_null<Parallel::NodeLock*> node_lock{&node_lock_};
-    Algorithm_detail::simple_action_visitor<Action, ParallelComponent>(
-        box_, *global_cache_,
-        static_cast<const array_index&>(array_index_), node_lock,
-        std::forward<Args>(std::get<Is>(args))...);
+    // Algorithm_detail::simple_action_visitor<Action, ParallelComponent>(
+    //     box_, *global_cache_,
+    //     static_cast<const array_index&>(array_index_), node_lock,
+    //     std::forward<Args>(std::get<Is>(args))...);
   }
 
   size_t number_of_actions_in_phase(const PhaseType phase) const noexcept {
@@ -371,17 +371,17 @@ class AlgorithmImpl<ParallelComponent, tmpl::list<PhaseDepActionListsPack...>> {
       tmpl::list<>, phase_dependent_action_lists, initial_databox,
       inbox_tags_list, metavariables, array_index, ParallelComponent>::type;
 
-  template <typename T>
-  struct get_databox_types {
-    using type = typename T::databox_types;
-  };
+  // template <typename T>
+  // struct get_databox_types {
+  //   using type = typename T::databox_types;
+  // };
 
-  using databox_types = tmpl::flatten<
-      tmpl::transform<databox_phase_types, get_databox_types<tmpl::_1>>>;
-  // Create a std::variant that can hold any of the DataBox's
-  using variant_boxes = tmpl::remove_duplicates<
-      tmpl::push_front<databox_types, db::DataBox<tmpl::list<>>>>;
-  tmpl::make_std_variant_over<variant_boxes> box_;
+  // using databox_types = tmpl::flatten<
+  //     tmpl::transform<databox_phase_types, get_databox_types<tmpl::_1>>>;
+  // // Create a std::variant that can hold any of the DataBox's
+  // using variant_boxes = tmpl::remove_duplicates<
+  //     tmpl::push_front<databox_types, db::DataBox<tmpl::list<>>>>;
+  // tmpl::make_std_variant_over<variant_boxes> box_;
   tuples::tagged_tuple_from_typelist<inbox_tags_list> inboxes_{};
   array_index array_index_;
 };
@@ -407,15 +407,15 @@ AlgorithmImpl<ParallelComponent, tmpl::list<PhaseDepActionListsPack...>>::
     : AlgorithmImpl() {
   (void)initialization_items;  // avoid potential compiler warnings if unused
   global_cache_ = global_cache_proxy.ckLocalBranch();
-  box_ = db::create<
-      db::AddSimpleTags<tmpl::flatten<
-          tmpl::list<Tags::GlobalCacheImpl<metavariables>,
-                     typename ParallelComponent::initialization_tags>>>,
-      db::AddComputeTags<
-          db::wrap_tags_in<Tags::FromGlobalCache, all_cache_tags>>>(
-      static_cast<const Parallel::GlobalCache<metavariables>*>(
-          global_cache_),
-      std::move(get<InitializationTags>(initialization_items))...);
+  // box_ = db::create<
+  //     db::AddSimpleTags<tmpl::flatten<
+  //         tmpl::list<Tags::GlobalCacheImpl<metavariables>,
+  //                    typename ParallelComponent::initialization_tags>>>,
+  //     db::AddComputeTags<
+  //         db::wrap_tags_in<Tags::FromGlobalCache, all_cache_tags>>>(
+  //     static_cast<const Parallel::GlobalCache<metavariables>*>(
+  //         global_cache_),
+  //     std::move(get<InitializationTags>(initialization_items))...);
 }
 
 template <typename ParallelComponent, typename... PhaseDepActionListsPack>
@@ -504,9 +504,9 @@ void AlgorithmImpl<ParallelComponent, tmpl::list<PhaseDepActionListsPack...>>::
         "we do not allow.");
   }
   performing_action_ = true;
-  Algorithm_detail::simple_action_visitor<Action, ParallelComponent>(
-      box_, *global_cache_,
-      static_cast<const array_index&>(array_index_));
+  // Algorithm_detail::simple_action_visitor<Action, ParallelComponent>(
+  //     box_, *global_cache_,
+  //     static_cast<const array_index&>(array_index_));
   performing_action_ = false;
   if constexpr (std::is_same_v<Parallel::NodeLock, decltype(node_lock_)>) {
     node_lock_.unlock();
@@ -583,106 +583,106 @@ constexpr void AlgorithmImpl<
 template <typename ParallelComponent, typename... PhaseDepActionListsPack>
 template <typename PhaseDepActions, size_t ActionIndexInPhaseActionList>
 void AlgorithmImpl<ParallelComponent, tmpl::list<PhaseDepActionListsPack...>>::
-    invoke_action(const gsl::not_null<bool*> execute_this_action) noexcept {
-  if (not(*execute_this_action and not terminate_ and
-          algorithm_step_ == ActionIndexInPhaseActionList)) {
-    return;
-  }
-  using actions_list = typename PhaseDepActions::action_list;
+    invoke_action(const gsl::not_null<bool*> /*execute_this_action*/) noexcept {
+  // if (not(*execute_this_action and not terminate_ and
+  //         algorithm_step_ == ActionIndexInPhaseActionList)) {
+  //   return;
+  // }
+  // using actions_list = typename PhaseDepActions::action_list;
 
-  constexpr size_t phase_index =
-      tmpl::index_of<phase_dependent_action_lists, PhaseDepActions>::value;
-  using databox_phase_type = tmpl::at_c<databox_phase_types, phase_index>;
-  using databox_types_this_phase = typename databox_phase_type::databox_types;
+  // constexpr size_t phase_index =
+  //     tmpl::index_of<phase_dependent_action_lists, PhaseDepActions>::value;
+  // using databox_phase_type = tmpl::at_c<databox_phase_types, phase_index>;
+  // using databox_types_this_phase = typename databox_phase_type::databox_types;
 
-  // We pass the action as a template parameter of the lambda to work around a
-  // compiler bug (we found it in clang-11, could be in other compilers). The
-  // issue is that clang evaluates the body of an if-constexpr in an early
-  // parse phase without checking that the argument of the if-constexpr is true.
-  // Making the if-constexpr and this_action::is_ready depend on a (local)
-  // template parameter prevents the compiler from doing such shenanigans.
-  const auto invoke_action_with_box = [this, &execute_this_action](
-                                          auto databox_type_v,
-                                          auto local_this_action_v) noexcept {
-    using this_action = tmpl::type_from<decltype(local_this_action_v)>;
-    using this_databox = tmpl::type_from<decltype(databox_type_v)>;
-    auto& box = std::get<this_databox>(box_);
+  // // We pass the action as a template parameter of the lambda to work around a
+  // // compiler bug (we found it in clang-11, could be in other compilers). The
+  // // issue is that clang evaluates the body of an if-constexpr in an early
+  // // parse phase without checking that the argument of the if-constexpr is true.
+  // // Making the if-constexpr and this_action::is_ready depend on a (local)
+  // // template parameter prevents the compiler from doing such shenanigans.
+  // const auto invoke_action_with_box = [this, &execute_this_action](
+  //                                         auto databox_type_v,
+  //                                         auto local_this_action_v) noexcept {
+  //   using this_action = tmpl::type_from<decltype(local_this_action_v)>;
+  //   using this_databox = tmpl::type_from<decltype(databox_type_v)>;
+  //   auto& box = std::get<this_databox>(box_);
 
-    constexpr bool can_call_is_ready = Algorithm_detail::is_is_ready_callable_t<
-        this_action, this_databox,
-        const tuples::tagged_tuple_from_typelist<inbox_tags_list>&,
-        Parallel::GlobalCache<metavariables>&, const array_index&>::value;
-    if constexpr (can_call_is_ready) {
-      *execute_this_action =
-          this_action::is_ready(box, std::as_const(inboxes_), *global_cache_,
-                                std::as_const(array_index_));
+  //   constexpr bool can_call_is_ready = Algorithm_detail::is_is_ready_callable_t<
+  //       this_action, this_databox,
+  //       const tuples::tagged_tuple_from_typelist<inbox_tags_list>&,
+  //       Parallel::GlobalCache<metavariables>&, const array_index&>::value;
+  //   if constexpr (can_call_is_ready) {
+  //     *execute_this_action =
+  //         this_action::is_ready(box, std::as_const(inboxes_), *global_cache_,
+  //                               std::as_const(array_index_));
 
-      if (not *execute_this_action) {
-        return;
-      }
-    }
+  //     if (not *execute_this_action) {
+  //       return;
+  //     }
+  //   }
 
-    // Invoke the action's static `apply` method. The if-else's are for
-    // handling the cases where the `apply` method returns:
-    // 1. only a DataBox
-    // 2. a DataBox and a bool determining whether or not to terminate
-    // 3. a DataBox, a bool, and an integer corresponding to which action in
-    //    the current phase's algorithm to execute next.
-    constexpr size_t num_returned_objects =
-        std::tuple_size_v<decltype(this_action::apply(
-            box, inboxes_, *global_cache_, std::as_const(array_index_),
-            actions_list{}, std::add_pointer_t<ParallelComponent>{}))>;
+  //   // Invoke the action's static `apply` method. The if-else's are for
+  //   // handling the cases where the `apply` method returns:
+  //   // 1. only a DataBox
+  //   // 2. a DataBox and a bool determining whether or not to terminate
+  //   // 3. a DataBox, a bool, and an integer corresponding to which action in
+  //   //    the current phase's algorithm to execute next.
+  //   constexpr size_t num_returned_objects =
+  //       std::tuple_size_v<decltype(this_action::apply(
+  //           box, inboxes_, *global_cache_, std::as_const(array_index_),
+  //           actions_list{}, std::add_pointer_t<ParallelComponent>{}))>;
 
-    performing_action_ = true;
-    algorithm_step_++;
-    if constexpr (num_returned_objects == 1) {
-      std::tie(box_) = this_action::apply(
-          box, inboxes_, *global_cache_, std::as_const(array_index_),
-          actions_list{}, std::add_pointer_t<ParallelComponent>{});
-    } else if constexpr (num_returned_objects == 2) {
-      std::tie(box_, terminate_) = this_action::apply(
-          box, inboxes_, *global_cache_, std::as_const(array_index_),
-          actions_list{}, std::add_pointer_t<ParallelComponent>{});
-    } else if constexpr (num_returned_objects == 3) {
-      std::tie(box_, terminate_, algorithm_step_) = this_action::apply(
-          box, inboxes_, *global_cache_, std::as_const(array_index_),
-          actions_list{}, std::add_pointer_t<ParallelComponent>{});
-    } else {
-      static_assert(num_returned_objects < 4 and num_returned_objects != 0,
-                    "Must only return 1, 2, or 3 objects from an action.");
-    }
-    performing_action_ = false;
-  };
+  //   performing_action_ = true;
+  //   algorithm_step_++;
+  //   if constexpr (num_returned_objects == 1) {
+  //     std::tie(box_) = this_action::apply(
+  //         box, inboxes_, *global_cache_, std::as_const(array_index_),
+  //         actions_list{}, std::add_pointer_t<ParallelComponent>{});
+  //   } else if constexpr (num_returned_objects == 2) {
+  //     std::tie(box_, terminate_) = this_action::apply(
+  //         box, inboxes_, *global_cache_, std::as_const(array_index_),
+  //         actions_list{}, std::add_pointer_t<ParallelComponent>{});
+  //   } else if constexpr (num_returned_objects == 3) {
+  //     std::tie(box_, terminate_, algorithm_step_) = this_action::apply(
+  //         box, inboxes_, *global_cache_, std::as_const(array_index_),
+  //         actions_list{}, std::add_pointer_t<ParallelComponent>{});
+  //   } else {
+  //     static_assert(num_returned_objects < 4 and num_returned_objects != 0,
+  //                   "Must only return 1, 2, or 3 objects from an action.");
+  //   }
+  //   performing_action_ = false;
+  // };
 
-  using this_databox =
-      tmpl::at_c<databox_types_this_phase, ActionIndexInPhaseActionList>;
-  using last_databox = tmpl::back<databox_types_this_phase>;
+  // using this_databox =
+  //     tmpl::at_c<databox_types_this_phase, ActionIndexInPhaseActionList>;
+  // using last_databox = tmpl::back<databox_types_this_phase>;
 
-  using this_action = tmpl::at_c<actions_list, ActionIndexInPhaseActionList>;
-  if (box_.index() == tmpl::index_of<variant_boxes, this_databox>::value) {
-    invoke_action_with_box(tmpl::type_<this_databox>{},
-                           tmpl::type_<this_action>{});
-  } else if (ActionIndexInPhaseActionList == 0 and
-             box_.index() ==
-                 tmpl::index_of<variant_boxes, last_databox>::value) {
-    if constexpr (ActionIndexInPhaseActionList == 0) {
-      invoke_action_with_box(tmpl::type_<last_databox>{},
-                             tmpl::type_<this_action>{});
-    }
-  } else {
-    ERROR("The DataBox type being retrieved at algorithm step: "
-          << algorithm_step_ << " in phase " << phase_index
-          << " corresponding to action " << pretty_type::get_name<this_action>()
-          << " on line " << __LINE__
-          << " is not the correct type but is of variant index " << box_.index()
-          << ". If you are using Goto and Label actions then you are using "
-             "them incorrectly.");
-  }
+  // using this_action = tmpl::at_c<actions_list, ActionIndexInPhaseActionList>;
+  // if (box_.index() == tmpl::index_of<variant_boxes, this_databox>::value) {
+  //   invoke_action_with_box(tmpl::type_<this_databox>{},
+  //                          tmpl::type_<this_action>{});
+  // } else if (ActionIndexInPhaseActionList == 0 and
+  //            box_.index() ==
+  //                tmpl::index_of<variant_boxes, last_databox>::value) {
+  //   if constexpr (ActionIndexInPhaseActionList == 0) {
+  //     invoke_action_with_box(tmpl::type_<last_databox>{},
+  //                            tmpl::type_<this_action>{});
+  //   }
+  // } else {
+  //   ERROR("The DataBox type being retrieved at algorithm step: "
+  //         << algorithm_step_ << " in phase " << phase_index
+  //         << " corresponding to action " << pretty_type::get_name<this_action>()
+  //         << " on line " << __LINE__
+  //         << " is not the correct type but is of variant index " << box_.index()
+  //         << ". If you are using Goto and Label actions then you are using "
+  //            "them incorrectly.");
+  // }
 
-  // Wrap counter if necessary
-  if (algorithm_step_ >= tmpl::size<actions_list>::value) {
-    algorithm_step_ = 0;
-  }
+  // // Wrap counter if necessary
+  // if (algorithm_step_ >= tmpl::size<actions_list>::value) {
+  //   algorithm_step_ = 0;
+  // }
 }
 
 template <typename ParallelComponent, typename... PhaseDepActionListsPack>

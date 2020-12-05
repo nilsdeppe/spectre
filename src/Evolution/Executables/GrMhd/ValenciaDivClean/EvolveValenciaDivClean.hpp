@@ -304,29 +304,30 @@ struct EvolutionMetavars {
       EvolutionMetavars,
       tmpl::list<
           Parallel::PhaseActions<Phase, Phase::Initialization,
-                                 initialization_actions>,
+                                 initialization_actions>// ,
 
-          Parallel::PhaseActions<Phase, Phase::InitializeTimeStepperHistory,
-                                 SelfStart::self_start_procedure<step_actions>>,
+          // Parallel::PhaseActions<Phase, Phase::InitializeTimeStepperHistory,
+          //                        SelfStart::self_start_procedure<step_actions>>,
 
-          Parallel::PhaseActions<
-              Phase, Phase::Register,
-              tmpl::list<intrp::Actions::RegisterElementWithInterpolator,
-                         observers::Actions::RegisterEventsWithObservers,
-                         Parallel::Actions::TerminatePhase>>,
+          // Parallel::PhaseActions<
+          //     Phase, Phase::Register,
+          //     tmpl::list<intrp::Actions::RegisterElementWithInterpolator,
+          //                observers::Actions::RegisterEventsWithObservers,
+          //                Parallel::Actions::TerminatePhase>>,
 
-          Parallel::PhaseActions<
-              Phase, Phase::Evolve,
-              tmpl::list<
-                  VariableFixing::Actions::FixVariables<
-                      VariableFixing::FixToAtmosphere<volume_dim,
-                                                      thermodynamic_dim>>,
-                  Actions::UpdateConservatives, Actions::RunEventsAndTriggers,
-                  Actions::ChangeSlabSize,
-                  tmpl::conditional_t<local_time_stepping,
-                                      Actions::ChangeStepSize<step_choosers>,
-                                      tmpl::list<>>,
-                  step_actions, Actions::AdvanceTime>>>>;
+          // Parallel::PhaseActions<
+          //     Phase, Phase::Evolve,
+          //     tmpl::list<
+          //         VariableFixing::Actions::FixVariables<
+          //             VariableFixing::FixToAtmosphere<volume_dim,
+          //                                             thermodynamic_dim>>,
+          //         Actions::UpdateConservatives, Actions::RunEventsAndTriggers,
+          //         Actions::ChangeSlabSize,
+          //         tmpl::conditional_t<local_time_stepping,
+          //                             Actions::ChangeStepSize<step_choosers>,
+          //                             tmpl::list<>>,
+          //         step_actions, Actions::AdvanceTime>>
+        >>;
   using component_list = tmpl::list<
       observers::Observer<EvolutionMetavars>,
       observers::ObserverWriter<EvolutionMetavars>,
