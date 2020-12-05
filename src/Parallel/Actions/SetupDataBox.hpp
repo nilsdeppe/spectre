@@ -94,13 +94,21 @@ struct SetupDataBox {
         typename detail::get_action_list_compute_tags<ActionList>;
     // grab the simple_tags, compute_tags, mutate the databox, creating
     // default-constructed objects.
-    return std::make_tuple(detail::merge_into_databox_helper(
+    detail::merge_into_databox_helper(
         std::move(box),
         tmpl::list_difference<action_list_simple_tags,
                               typename db::DataBox<DbTags>::simple_item_tags>{},
         tmpl::list_difference<
             action_list_compute_tags,
-            typename db::DataBox<DbTags>::compute_item_tags>{}));
+            typename db::DataBox<DbTags>::compute_item_tags>{});
+    return std::forward_as_tuple(std::move(box));
+    // return std::make_tuple(detail::merge_into_databox_helper(
+    //     std::move(box),
+    //     tmpl::list_difference<action_list_simple_tags,
+    //                           typename db::DataBox<DbTags>::simple_item_tags>{},
+    //     tmpl::list_difference<
+    //         action_list_compute_tags,
+    //         typename db::DataBox<DbTags>::compute_item_tags>{}));
   }
 };
 }  // namespace Actions
