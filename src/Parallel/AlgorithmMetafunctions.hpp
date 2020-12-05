@@ -19,11 +19,8 @@ class GlobalCache;
 /// \endcond
 
 namespace Algorithm_detail {
-template <bool, typename AdditionalArgsList>
-struct build_action_return_types_impl;
-
-template <typename... AdditionalArgs>
-struct build_action_return_types_impl<false, tmpl::list<AdditionalArgs...>> {
+template <bool NoActionsLeftInPhase, typename AdditionalArgsList>
+struct build_action_return_types_impl {
   template <typename LastReturnType, typename ReturnTypeList>
   using f = tmpl::push_back<ReturnTypeList, LastReturnType>;
 };
