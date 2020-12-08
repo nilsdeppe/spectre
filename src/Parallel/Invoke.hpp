@@ -17,7 +17,11 @@ namespace detail {
 inline bool max_inline_entry_methods_reached() noexcept {
   thread_local size_t approx_stack_depth = 0;
   approx_stack_depth++;
+#ifdef SPECTRE_PROFILING
+  if (approx_stack_depth < 0) {
+#else
   if (approx_stack_depth < 64) {
+#endif
     return false;
   }
   approx_stack_depth = 0;
