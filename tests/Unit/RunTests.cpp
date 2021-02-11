@@ -17,13 +17,14 @@
 #include "Framework/SetupLocalPythonEnvironment.hpp"
 #include "Informer/InfoFromBuild.hpp"
 #include "Parallel/Printf.hpp"
+#include "Utilities/ErrorHandling/Error.hpp"
 #include "Utilities/ErrorHandling/FloatingPointExceptions.hpp"
 #include "Utilities/System/Abort.hpp"
 #include "Utilities/System/Exit.hpp"
 #include "tests/Unit/RunTestsRegister.hpp"
 
 RunTests::RunTests(CkArgMsg* msg) {
-  std::set_terminate([]() { sys::abort("Called terminate. Aborting..."); });
+  std::set_terminate([]() { ERROR("Called terminate. Aborting..."); });
   register_run_tests_libs();
   Parallel::printf("%s", info_from_build().c_str());
   enable_floating_point_exceptions();
