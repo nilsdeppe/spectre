@@ -14,6 +14,7 @@ spectre_target_headers(
   ComputeBoundaryTerms.hpp
   CorrectPackagedData.hpp
   DgSubcell.hpp
+  FaceLogicalCoordinates.hpp
   Matrices.hpp
   Mesh.hpp
   NeighborData.hpp
@@ -33,6 +34,7 @@ spectre_target_sources(
   ${LIBRARY}
   PRIVATE
   ActiveGrid.cpp
+  FaceLogicalCoordinates.cpp
   Matrices.cpp
   Mesh.cpp
   NeighborData.cpp
