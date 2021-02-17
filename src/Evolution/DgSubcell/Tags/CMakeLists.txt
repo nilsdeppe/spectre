@@ -16,6 +16,7 @@ spectre_target_headers(
   NeighborData.hpp
   OnSubcellFaces.hpp
   OnSubcells.hpp
+  Reconstructed.hpp
   SubcellOptions.hpp
   SubcellSolver.hpp
   Tags.hpp

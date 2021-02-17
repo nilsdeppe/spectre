@@ -18,6 +18,7 @@
 #include "Evolution/DgSubcell/Tags/NeighborData.hpp"
 #include "Evolution/DgSubcell/Tags/OnSubcellFaces.hpp"
 #include "Evolution/DgSubcell/Tags/OnSubcells.hpp"
+#include "Evolution/DgSubcell/Tags/Reconstructed.hpp"
 #include "Evolution/DgSubcell/Tags/SubcellOptions.hpp"
 #include "Evolution/DgSubcell/Tags/TciGridHistory.hpp"
 #include "Evolution/DgSubcell/Tags/TciStatus.hpp"
@@ -79,8 +80,7 @@ void test() {
 }
 }  // namespace
 
-SPECTRE_TEST_CASE("Unit.Evolution.Subcell.Tags",
-                  "[Evolution][Unit]") {
+SPECTRE_TEST_CASE("Unit.Evolution.Subcell.Tags", "[Evolution][Unit]") {
   TestHelpers::db::test_simple_tag<evolution::dg::subcell::Tags::ActiveGrid>(
       "ActiveGrid");
   TestHelpers::db::test_simple_tag<
@@ -100,6 +100,11 @@ SPECTRE_TEST_CASE("Unit.Evolution.Subcell.Tags",
       "OnSubcells(Variables(Var1,Var2))");
   TestHelpers::db::test_simple_tag<
       evolution::dg::subcell::Tags::SubcellOptions>("SubcellOptions");
+  TestHelpers::db::test_simple_tag<
+      evolution::dg::subcell::Tags::Reconstructed<Var1>>("Reconstructed(Var1)");
+  TestHelpers::db::test_simple_tag<evolution::dg::subcell::Tags::Reconstructed<
+      ::Tags::Variables<tmpl::list<Var1, Var2>>>>(
+      "Reconstructed(Variables(Var1,Var2))");
   TestHelpers::db::test_simple_tag<
       evolution::dg::subcell::Tags::TciGridHistory>("TciGridHistory");
   TestHelpers::db::test_simple_tag<evolution::dg::subcell::Tags::TciStatus>(
