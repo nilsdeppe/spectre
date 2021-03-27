@@ -11,6 +11,7 @@ spectre_target_headers(
   HEADERS
   ActiveGrid.hpp
   CartesianFluxDivergence.hpp
+  CombineVolumeAndGhostData.hpp
   ComputeBoundaryTerms.hpp
   CorrectPackagedData.hpp
   DgSubcell.hpp
@@ -34,6 +35,7 @@ spectre_target_sources(
   ${LIBRARY}
   PRIVATE
   ActiveGrid.cpp
+  CombineVolumeAndGhostData.cpp
   FaceLogicalCoordinates.cpp
   Matrices.cpp
   Mesh.cpp
