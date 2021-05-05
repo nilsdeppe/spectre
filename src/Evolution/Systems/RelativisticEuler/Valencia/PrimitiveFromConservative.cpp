@@ -74,9 +74,8 @@ class FunctionOfZ {
 };
 }  // namespace
 
-template <size_t Dim>
-template <size_t ThermodynamicDim>
-void PrimitiveFromConservative<Dim>::apply(
+template <size_t Dim, size_t ThermodynamicDim>
+std::optional<std::string> primitive_from_conservative(
     const gsl::not_null<Scalar<DataVector>*> rest_mass_density,
     const gsl::not_null<Scalar<DataVector>*> specific_internal_energy,
     const gsl::not_null<Scalar<DataVector>*> lorentz_factor,
@@ -110,11 +109,12 @@ void PrimitiveFromConservative<Dim>::apply(
                             10.0 * std::numeric_limits<double>::epsilon(),
                             10.0 * std::numeric_limits<double>::epsilon(), 100);
   } catch (std::exception& exception) {
-    ERROR(
-        "Failed to find the intermediate variable z with TOMS748 root finder "
-        "while computing the primitive variables from the conserved variables. "
-        "Got exception message:\n"
-        << exception.what());
+    return MakeString{} << "Failed to find the intermediate variable z with "
+                           "TOMS748 root finder "
+                           "while computing the primitive variables from the "
+                           "conserved variables. "
+                           "Got exception message:\n"
+                        << exception.what();
   }
   get(*lorentz_factor) = sqrt(1.0 + square(z));
   get(*rest_mass_density) =
@@ -139,6 +139,32 @@ void PrimitiveFromConservative<Dim>::apply(
   denominator = get(tilde_d) * get(*lorentz_factor) * get(*specific_enthalpy);
   for (size_t d = 0; d < Dim; ++d) {
     spatial_velocity->get(d) = tilde_s_M.get(d) / denominator;
+  }
+  return std::nullopt;
+}
+
+template <size_t Dim>
+template <size_t ThermodynamicDim>
+void PrimitiveFromConservative<Dim>::apply(
+    const gsl::not_null<Scalar<DataVector>*> rest_mass_density,
+    const gsl::not_null<Scalar<DataVector>*> specific_internal_energy,
+    const gsl::not_null<Scalar<DataVector>*> lorentz_factor,
+    const gsl::not_null<Scalar<DataVector>*> specific_enthalpy,
+    const gsl::not_null<Scalar<DataVector>*> pressure,
+    const gsl::not_null<tnsr::I<DataVector, Dim, Frame::Inertial>*>
+        spatial_velocity,
+    const Scalar<DataVector>& tilde_d, const Scalar<DataVector>& tilde_tau,
+    const tnsr::i<DataVector, Dim, Frame::Inertial>& tilde_s,
+    const tnsr::II<DataVector, Dim, Frame::Inertial>& inv_spatial_metric,
+    const Scalar<DataVector>& sqrt_det_spatial_metric,
+    const EquationsOfState::EquationOfState<true, ThermodynamicDim>&
+        equation_of_state) noexcept {
+  const std::optional<std::string> error_message = primitive_from_conservative(
+      rest_mass_density, specific_internal_energy, lorentz_factor,
+      specific_enthalpy, pressure, spatial_velocity, tilde_d, tilde_tau,
+      tilde_s, inv_spatial_metric, sqrt_det_spatial_metric, equation_of_state);
+  if (error_message.has_value()) {
+    ERROR(*error_message);
   }
 }
 

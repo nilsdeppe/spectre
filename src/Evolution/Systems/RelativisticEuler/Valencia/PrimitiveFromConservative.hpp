@@ -25,6 +25,21 @@ class not_null;
 
 namespace RelativisticEuler {
 namespace Valencia {
+template <size_t Dim, size_t ThermodynamicDim>
+std::optional<std::string> primitive_from_conservative(
+    const gsl::not_null<Scalar<DataVector>*> rest_mass_density,
+    const gsl::not_null<Scalar<DataVector>*> specific_internal_energy,
+    const gsl::not_null<Scalar<DataVector>*> lorentz_factor,
+    const gsl::not_null<Scalar<DataVector>*> specific_enthalpy,
+    const gsl::not_null<Scalar<DataVector>*> pressure,
+    const gsl::not_null<tnsr::I<DataVector, Dim, Frame::Inertial>*>
+        spatial_velocity,
+    const Scalar<DataVector>& tilde_d, const Scalar<DataVector>& tilde_tau,
+    const tnsr::i<DataVector, Dim, Frame::Inertial>& tilde_s,
+    const tnsr::II<DataVector, Dim, Frame::Inertial>& inv_spatial_metric,
+    const Scalar<DataVector>& sqrt_det_spatial_metric,
+    const EquationsOfState::EquationOfState<true, ThermodynamicDim>&
+        equation_of_state) noexcept;
 
 /*!
  * \brief Compute the primitive variables from the conservative variables
