@@ -1,3 +1,5 @@
+#include <iostream>
+
 // Distributed under the MIT License.
 // See LICENSE.txt for details.
 
@@ -96,6 +98,34 @@
 #include "Utilities/ProtocolHelpers.hpp"
 #include "Utilities/TMPL.hpp"
 
+#include "Evolution/DgSubcell/Actions/Initialize.hpp"
+#include "Evolution/DgSubcell/Actions/Labels.hpp"
+#include "Evolution/DgSubcell/Actions/ReconstructionCommunication.hpp"
+#include "Evolution/DgSubcell/Actions/SelectNumericalMethod.hpp"
+#include "Evolution/DgSubcell/Actions/TakeTimeStep.hpp"
+#include "Evolution/DgSubcell/Actions/TciAndRollback.hpp"
+#include "Evolution/DgSubcell/Actions/TciAndSwitchToDg.hpp"
+#include "Evolution/DgSubcell/CartesianFluxDivergence.hpp"
+#include "Evolution/DgSubcell/ComputeBoundaryTerms.hpp"
+#include "Evolution/DgSubcell/CorrectPackagedData.hpp"
+#include "Evolution/DgSubcell/Events/ObserveFields.hpp"
+#include "Evolution/DgSubcell/FaceLogicalCoordinates.hpp"
+#include "Evolution/DgSubcell/NeighborReconstructedFaceSolution.hpp"
+#include "Evolution/DgSubcell/PerssonTci.hpp"
+#include "Evolution/DgSubcell/PrepareNeighborData.hpp"
+#include "Evolution/DgSubcell/Tags/Inactive.hpp"
+#include "Evolution/DgSubcell/TwoMeshRdmpTci.hpp"
+#include "Evolution/Systems/NewtonianEuler/FiniteDifference/Factory.hpp"
+#include "Evolution/Systems/NewtonianEuler/FiniteDifference/RegisterDerivedWithCharm.hpp"
+#include "Evolution/Systems/NewtonianEuler/FiniteDifference/Tag.hpp"
+#include "Evolution/Systems/NewtonianEuler/Subcell/InitialDataTci.hpp"
+#include "Evolution/Systems/NewtonianEuler/Subcell/PrimitiveGhostData.hpp"
+#include "Evolution/Systems/NewtonianEuler/Subcell/PrimsAfterRollback.hpp"
+#include "Evolution/Systems/NewtonianEuler/Subcell/ResizeAndComputePrimitives.hpp"
+#include "Evolution/Systems/NewtonianEuler/Subcell/TciOnDgGrid.hpp"
+#include "Evolution/Systems/NewtonianEuler/Subcell/TciOnFdGrid.hpp"
+#include "NumericalAlgorithms/FiniteDifference/Minmod.hpp"
+
 /// \cond
 namespace Frame {
 struct Inertial;
@@ -161,11 +191,12 @@ struct EvolutionMetavars {
             Event,
             tmpl::flatten<tmpl::list<
                 Events::Completion,
-                dg::Events::field_observations<
-                    volume_dim, Tags::Time,
+                evolution::dg::subcell::Events::ObserveFields<
+                    Dim, ::Tags::Time,
                     tmpl::append<
                         typename system::variables_tag::tags_list,
-                        typename system::primitive_variables_tag::tags_list>,
+                        typename system::primitive_variables_tag::tags_list,
+                        tmpl::list<evolution::dg::subcell::Tags::TciStatus>>,
                     tmpl::conditional_t<
                         evolution::is_analytic_solution_v<initial_data>,
                         typename system::primitive_variables_tag::tags_list,
@@ -173,9 +204,9 @@ struct EvolutionMetavars {
                 Events::time_events<system>>>>,
         tmpl::pair<StepChooser<StepChooserUse::LtsStep>,
                    StepChoosers::standard_step_choosers<system>>,
-        tmpl::pair<StepChooser<StepChooserUse::Slab>,
-                   StepChoosers::standard_slab_choosers<system,
-                                                        local_time_stepping>>,
+        tmpl::pair<
+            StepChooser<StepChooserUse::Slab>,
+            StepChoosers::standard_slab_choosers<system, local_time_stepping>>,
         tmpl::pair<StepController, StepControllers::standard_step_controllers>,
         tmpl::pair<TimeSequence<double>,
                    TimeSequences::all_time_sequences<double>>,
@@ -189,20 +220,485 @@ struct EvolutionMetavars {
       observers::collect_reduction_data_tags<tmpl::flatten<tmpl::list<
           tmpl::at<typename factory_creation::factory_classes, Event>>>>;
 
+  struct SubcellOptions {
+    // Conservative vars tags
+    using MassDensityCons = NewtonianEuler::Tags::MassDensityCons;
+    using EnergyDensity = NewtonianEuler::Tags::EnergyDensity;
+    using MomentumDensity = NewtonianEuler::Tags::MomentumDensity<volume_dim>;
+
+    // Primitive vars tags
+    using MassDensity = NewtonianEuler::Tags::MassDensity<DataVector>;
+    using Velocity = NewtonianEuler::Tags::Velocity<DataVector, volume_dim>;
+    using SpecificInternalEnergy =
+        NewtonianEuler::Tags::SpecificInternalEnergy<DataVector>;
+    using Pressure = NewtonianEuler::Tags::Pressure<DataVector>;
+
+    using evolved_vars_tags =
+        tmpl::list<MassDensityCons, MomentumDensity, EnergyDensity>;
+    using prim_tags =
+        tmpl::list<MassDensity, Velocity, SpecificInternalEnergy, Pressure>;
+    using prims_to_reconstruct_tags =
+        tmpl::list<MassDensity, Velocity, Pressure>;
+    using fluxes_tags = db::wrap_tags_in<::Tags::Flux, evolved_vars_tags,
+                                         tmpl::size_t<Dim>, Frame::Inertial>;
+
+    static constexpr bool subcell_enabled = true;
+    // We send `ghost_zone_size` cell-centered grid points for variable
+    // reconstruction, of which we need `ghost_zone_size-1` for reconstruction
+    // to the internal side of the element face, and `ghost_zone_size` for
+    // reconstruction to the external side of the element face.
+    template <typename DbTagsList>
+    static constexpr size_t ghost_zone_size(
+        const db::DataBox<DbTagsList>& box) noexcept {
+      return db::get<NewtonianEuler::fd::Tags::Reconstructor<Dim>>(box)
+          .ghost_zone_size();
+    }
+
+    struct TimeDerivative {
+      // Things that need updating for 2d:
+      // - normal vectors and their magnitude on the face
+      // - det jacobian on the face and in the cell center
+      // - the number of points of `vars_on_?_face` and `?_packaged_data`
+      // - accounting for the DG correction sent from our neighbor and that we
+      //   sent to our neighbor. This needs projection.
+      // - the finite difference derivatives when computing the time derivative
+      //   need to work correctly in the eta (and zeta) directions.
+      // - we need to zero the time derivative before computing the
+      //   xi-direction so we can always use +=
+
+      template <typename DbTagsList>
+      static void apply(
+          const gsl::not_null<db::DataBox<DbTagsList>*> box,
+          const InverseJacobian<DataVector, Dim, Frame::Logical, Frame::Grid>&
+              cell_centered_logical_to_grid_inv_jacobian,
+          const Scalar<
+              DataVector>& /*cell_centered_det_inv_jacobian*/) noexcept {
+        // static_assert(volume_dim == 1,
+        //               "Currently subcell solver only implemented in 1d");
+
+        const Mesh<volume_dim>& subcell_mesh =
+            db::get<evolution::dg::subcell::Tags::Mesh<volume_dim>>(*box);
+        const size_t num_pts = subcell_mesh.number_of_grid_points();
+        const size_t reconstructed_num_pts =
+            (subcell_mesh.extents(0) + 1) *
+            subcell_mesh.extents().slice_away(0).product();
+
+        const auto& cell_centered_logical_coords =
+            db::get<evolution::dg::subcell::Tags::Coordinates<volume_dim,
+                                                              Frame::Logical>>(
+                *box);
+        // Note: assumes
+        std::array<double, volume_dim> one_over_delta_xi{};
+        for (size_t i = 0; i < volume_dim; ++i) {
+          // Note: assumes isotropic extents
+          gsl::at(one_over_delta_xi, i) =
+              1.0 / (cell_centered_logical_coords.get(0)[1] -
+                     cell_centered_logical_coords.get(0)[0]);
+        }
+
+        const auto& recons =
+            db::get<NewtonianEuler::fd::Tags::Reconstructor<Dim>>(*box);
+
+        using flux_tags =
+            typename NewtonianEuler::ComputeFluxes<Dim>::return_tags;
+
+        const auto& element = db::get<domain::Tags::Element<volume_dim>>(*box);
+        ASSERT(
+            element.external_boundaries().size() == 0,
+            "Can't have external boundaries right now with subcell. ElementID "
+                << element.id());
+
+        // Now package the data and compute the correction
+        const auto& boundary_correction =
+            db::get<evolution::Tags::BoundaryCorrection<system>>(*box);
+        using derived_boundary_corrections = typename std::decay_t<decltype(
+            boundary_correction)>::creatable_classes;
+        std::array<Variables<evolved_vars_tags>, volume_dim>
+            boundary_corrections{};
+        tmpl::for_each<derived_boundary_corrections>(
+            [&](auto derived_correction_v) noexcept {
+              using DerivedCorrection =
+                  tmpl::type_from<decltype(derived_correction_v)>;
+              if (typeid(boundary_correction) == typeid(DerivedCorrection)) {
+                using dg_package_data_temporary_tags =
+                    typename DerivedCorrection::dg_package_data_temporary_tags;
+                static_assert(
+                    std::is_same_v<dg_package_data_temporary_tags,
+                                   tmpl::list<>>,
+                    "Cannot yet support temporary tags with DG packaged data.");
+                using dg_package_data_argument_tags =
+                    tmpl::append<evolved_vars_tags, prim_tags, fluxes_tags,
+                                 dg_package_data_temporary_tags>;
+                // Computed prims and cons on face via reconstruction
+                auto vars_on_lower_face = make_array<volume_dim>(
+                    Variables<dg_package_data_argument_tags>(
+                        reconstructed_num_pts));
+                auto vars_on_upper_face = make_array<volume_dim>(
+                    Variables<dg_package_data_argument_tags>(
+                        reconstructed_num_pts));
+
+                // Compute fluxes on faces
+                call_with_dynamic_type<
+                    void, typename NewtonianEuler::fd::Reconstructor<
+                              Dim>::creatable_classes>(
+                    &recons, [&box, &vars_on_lower_face, &vars_on_upper_face](
+                                 const auto& reconstructor) noexcept {
+                      db::apply<typename std::decay_t<decltype(
+                          *reconstructor)>::reconstruction_argument_tags>(
+                          [&vars_on_lower_face, &vars_on_upper_face,
+                           &reconstructor](const auto&... args) noexcept {
+                            reconstructor->reconstruct(
+                                make_not_null(&vars_on_lower_face),
+                                make_not_null(&vars_on_upper_face), args...);
+                          },
+                          *box);
+                    });
+
+                using dg_package_field_tags =
+                    typename DerivedCorrection::dg_package_field_tags;
+                // Allocated outside for loop to reduce allocations
+                Variables<dg_package_field_tags> upper_packaged_data{
+                    reconstructed_num_pts};
+                Variables<dg_package_field_tags> lower_packaged_data{
+                    reconstructed_num_pts};
+
+                for (size_t i = 0; i < Dim; ++i) {
+                  auto& vars_upper_face = gsl::at(vars_on_upper_face, i);
+                  auto& vars_lower_face = gsl::at(vars_on_lower_face, i);
+                  NewtonianEuler::ComputeFluxes<Dim>::apply(
+                      make_not_null(
+                          &get<tmpl::at_c<flux_tags, 0>>(vars_upper_face)),
+                      make_not_null(
+                          &get<tmpl::at_c<flux_tags, 1>>(vars_upper_face)),
+                      make_not_null(
+                          &get<tmpl::at_c<flux_tags, 2>>(vars_upper_face)),
+                      get<MomentumDensity>(vars_upper_face),
+                      get<EnergyDensity>(vars_upper_face),
+                      get<Velocity>(vars_upper_face),
+                      get<Pressure>(vars_upper_face));
+                  NewtonianEuler::ComputeFluxes<Dim>::apply(
+                      make_not_null(
+                          &get<tmpl::at_c<flux_tags, 0>>(vars_lower_face)),
+                      make_not_null(
+                          &get<tmpl::at_c<flux_tags, 1>>(vars_lower_face)),
+                      make_not_null(
+                          &get<tmpl::at_c<flux_tags, 2>>(vars_lower_face)),
+                      get<MomentumDensity>(vars_lower_face),
+                      get<EnergyDensity>(vars_lower_face),
+                      get<Velocity>(vars_lower_face),
+                      get<Pressure>(vars_lower_face));
+
+                  // Normal vectors are easy, flat space. Note that we use the
+                  // sign convention on the normal vectors to be compatible with
+                  // DG.
+                  tnsr::i<DataVector, volume_dim, Frame::Inertial>
+                      upper_outward_conormal{reconstructed_num_pts, 0.0};
+                  upper_outward_conormal.get(i) = -1.0;
+                  tnsr::i<DataVector, volume_dim, Frame::Inertial>
+                      lower_outward_conormal{reconstructed_num_pts, 0.0};
+                  lower_outward_conormal.get(i) = 1.0;
+
+                  // Compute the packaged data
+                  using dg_package_data_projected_tags =
+                      tmpl::append<evolved_vars_tags, fluxes_tags,
+                                   dg_package_data_temporary_tags,
+                                   typename DerivedCorrection::
+                                       dg_package_data_primitive_tags>;
+                  evolution::dg::Actions::detail::dg_package_data<system>(
+                      make_not_null(&upper_packaged_data),
+                      dynamic_cast<const DerivedCorrection&>(
+                          boundary_correction),
+                      vars_upper_face, upper_outward_conormal, {std::nullopt},
+                      *box,
+                      typename DerivedCorrection::dg_package_data_volume_tags{},
+                      dg_package_data_projected_tags{});
+
+                  evolution::dg::Actions::detail::dg_package_data<system>(
+                      make_not_null(&lower_packaged_data),
+                      dynamic_cast<const DerivedCorrection&>(
+                          boundary_correction),
+                      vars_lower_face, lower_outward_conormal, {std::nullopt},
+                      *box,
+                      typename DerivedCorrection::dg_package_data_volume_tags{},
+                      dg_package_data_projected_tags{});
+
+                  // Now need to check if any of our neighbors are doing DG,
+                  // because if so then we need to use whatever boundary data
+                  // they sent instead of what we computed locally. Note: We
+                  // could check this beforehand to avoid the extra work
+                  //       of reconstruction and flux computations at the
+                  //       boundaries.
+                  evolution::dg::subcell::correct_package_data<true>(
+                      make_not_null(&lower_packaged_data),
+                      make_not_null(&upper_packaged_data), i, element,
+                      subcell_mesh,
+                      db::get<evolution::dg::Tags::MortarData<volume_dim>>(
+                          *box));
+
+                  // Compute the corrections on the faces. We only need to
+                  // compute this once because we can just flip the normal
+                  // vectors then
+                  gsl::at(boundary_corrections, i)
+                      .initialize(reconstructed_num_pts);
+                  evolution::dg::subcell::compute_boundary_terms(
+                      make_not_null(&gsl::at(boundary_corrections, i)),
+                      dynamic_cast<const DerivedCorrection&>(
+                          boundary_correction),
+                      upper_packaged_data, lower_packaged_data);
+                }
+              }
+            });
+
+        // Now compute the actual time derivatives.
+        using variables_tag = typename system::variables_tag;
+        using dt_variables_tag = db::add_tag_prefix<::Tags::dt, variables_tag>;
+        db::mutate<dt_variables_tag>(
+            box, [&cell_centered_logical_to_grid_inv_jacobian, &num_pts,
+                  &boundary_corrections, &subcell_mesh,
+                  &one_over_delta_xi](const auto dt_vars_ptr) noexcept {
+              dt_vars_ptr->initialize(num_pts, 0.0);
+              auto& dt_mass = get<Tags::dt<MassDensityCons>>(*dt_vars_ptr);
+              auto& dt_momentum = get<Tags::dt<MomentumDensity>>(*dt_vars_ptr);
+              auto& dt_energy = get<Tags::dt<EnergyDensity>>(*dt_vars_ptr);
+
+              for (size_t dim = 0; dim < Dim; ++dim) {
+                Scalar<DataVector>& mass_density_correction =
+                    get<MassDensityCons>(gsl::at(boundary_corrections, dim));
+                tnsr::I<DataVector, volume_dim, Frame::Inertial>&
+                    momentum_density_correction = get<MomentumDensity>(
+                        gsl::at(boundary_corrections, dim));
+                Scalar<DataVector>& energy_density_correction =
+                    get<EnergyDensity>(gsl::at(boundary_corrections, dim));
+
+                evolution::dg::subcell::add_cartesian_flux_divergence(
+                    make_not_null(&get(dt_mass)),
+                    gsl::at(one_over_delta_xi, dim),
+                    cell_centered_logical_to_grid_inv_jacobian.get(dim, dim),
+                    get(mass_density_correction), subcell_mesh.extents(), dim);
+                evolution::dg::subcell::add_cartesian_flux_divergence(
+                    make_not_null(&get(dt_energy)),
+                    gsl::at(one_over_delta_xi, dim),
+                    cell_centered_logical_to_grid_inv_jacobian.get(dim, dim),
+                    get(energy_density_correction), subcell_mesh.extents(),
+                    dim);
+                for (size_t d = 0; d < volume_dim; ++d) {
+                  evolution::dg::subcell::add_cartesian_flux_divergence(
+                      make_not_null(&dt_momentum.get(d)),
+                      gsl::at(one_over_delta_xi, dim),
+                      cell_centered_logical_to_grid_inv_jacobian.get(dim, dim),
+                      momentum_density_correction.get(d),
+                      subcell_mesh.extents(), dim);
+                }
+              }
+            });
+      }
+    };
+
+    struct DgComputeSubcellNeighborPackagedData {
+      template <typename DbTagsList>
+      static FixedHashMap<
+          maximum_number_of_neighbors(volume_dim),
+          std::pair<Direction<volume_dim>, ElementId<volume_dim>>,
+          std::vector<double>,
+          boost::hash<std::pair<Direction<volume_dim>, ElementId<volume_dim>>>>
+      apply(const db::DataBox<DbTagsList>& box,
+            const std::vector<
+                std::pair<Direction<volume_dim>, ElementId<volume_dim>>>&
+                mortars_to_reconstruct_to) noexcept {
+        ASSERT(not db::get<domain::Tags::MeshVelocity<volume_dim>>(box)
+                       .has_value(),
+               "Haven't yet added support for moving mesh to DG-subcell. This "
+               "should be easy to generalize, but we will want to consider "
+               "storing the mesh velocity on the faces instead of "
+               "re-slicing/projecting.");
+
+        FixedHashMap<maximum_number_of_neighbors(volume_dim),
+                     std::pair<Direction<volume_dim>, ElementId<volume_dim>>,
+                     std::vector<double>,
+                     boost::hash<std::pair<Direction<volume_dim>,
+                                           ElementId<volume_dim>>>>
+            nhbr_package_data{};
+
+        const auto& nhbr_subcell_data =
+            db::get<evolution::dg::subcell::Tags::
+                        NeighborDataForReconstructionAndRdmpTci<volume_dim>>(
+                box);
+        const Mesh<volume_dim>& subcell_mesh =
+            db::get<evolution::dg::subcell::Tags::Mesh<volume_dim>>(box);
+        const Mesh<volume_dim>& dg_mesh =
+            db::get<domain::Tags::Mesh<volume_dim>>(box);
+        // Since the active grid is DG, we need to use the inactive grid for
+        // reconstruction.
+        //
+        // Note: since for NewtonianEuler prim recovery is basically free, so we
+        // could do either the prim recovery on the subcells or project the
+        // prims. Since for relativistic hydro the prims are expensive to
+        // recovery, we do the projection.
+        const auto volume_prims = evolution::dg::subcell::fd::project(
+            db::get<typename system::primitive_variables_tag>(box), dg_mesh,
+            subcell_mesh.extents());
+
+        const auto& recons =
+            db::get<NewtonianEuler::fd::Tags::Reconstructor<Dim>>(box);
+        const auto& boundary_correction =
+            db::get<evolution::Tags::BoundaryCorrection<system>>(box);
+        using derived_boundary_corrections = typename std::decay_t<decltype(
+            boundary_correction)>::creatable_classes;
+        tmpl::for_each<derived_boundary_corrections>(
+            [&box, &boundary_correction, &dg_mesh, &mortars_to_reconstruct_to,
+             &nhbr_package_data, &nhbr_subcell_data, &recons, &subcell_mesh,
+             &volume_prims](auto derived_correction_v) noexcept {
+              using DerivedCorrection =
+                  tmpl::type_from<decltype(derived_correction_v)>;
+              if (typeid(boundary_correction) == typeid(DerivedCorrection)) {
+                using dg_package_data_temporary_tags =
+                    typename DerivedCorrection::dg_package_data_temporary_tags;
+                static_assert(
+                    std::is_same_v<dg_package_data_temporary_tags,
+                                   tmpl::list<>>,
+                    "Cannot yet support temporary tags with DG packaged data.");
+                using dg_package_data_argument_tags =
+                    tmpl::append<evolved_vars_tags, prim_tags, fluxes_tags,
+                                 dg_package_data_temporary_tags>;
+
+                const auto& element =
+                    db::get<domain::Tags::Element<volume_dim>>(box);
+                const auto& eos = get<hydro::Tags::EquationOfStateBase>(box);
+
+                for (const auto& mortar_id : mortars_to_reconstruct_to) {
+                  // Computed prims and cons on face via reconstruction
+                  // ASSERT(volume_dim == 1, "The size assumes 1d");
+                  const size_t num_face_pts =
+                      subcell_mesh.extents()
+                          .slice_away(mortar_id.first.dimension())
+                          .product();
+                  Variables<dg_package_data_argument_tags> vars_on_face{
+                      num_face_pts, 0.0};
+
+                  call_with_dynamic_type<
+                      void, typename NewtonianEuler::fd::Reconstructor<
+                                Dim>::creatable_classes>(
+                      &recons, [&element, &eos, &mortar_id, &nhbr_subcell_data,
+                                &subcell_mesh, &vars_on_face, &volume_prims](
+                                   const auto& reconstructor) noexcept {
+                        reconstructor->reconstruct_fd_neighbor(
+                            make_not_null(&vars_on_face), volume_prims, eos,
+                            element, nhbr_subcell_data, subcell_mesh,
+                            mortar_id.first);
+                      });
+
+                  using flux_tags = typename NewtonianEuler::ComputeFluxes<
+                      volume_dim>::return_tags;
+                  NewtonianEuler::ComputeFluxes<volume_dim>::apply(
+                      make_not_null(
+                          &get<tmpl::at_c<flux_tags, 0>>(vars_on_face)),
+                      make_not_null(
+                          &get<tmpl::at_c<flux_tags, 1>>(vars_on_face)),
+                      make_not_null(
+                          &get<tmpl::at_c<flux_tags, 2>>(vars_on_face)),
+                      get<MomentumDensity>(vars_on_face),
+                      get<EnergyDensity>(vars_on_face),
+                      get<Velocity>(vars_on_face), get<Pressure>(vars_on_face));
+
+                  tnsr::i<DataVector, volume_dim, Frame::Inertial>
+                      normal_covector = get<
+                          evolution::dg::Tags::NormalCovector<volume_dim>>(
+                          *db::get<evolution::dg::Tags::
+                                       NormalCovectorAndMagnitude<volume_dim>>(
+                               box)
+                               .at(mortar_id.first));
+                  for (auto& t : normal_covector) {
+                    t *= -1.0;
+                  }
+                  if constexpr (Dim > 1) {
+                    const auto dg_normal_covector = normal_covector;
+                    for (size_t i = 0; i < Dim; ++i) {
+                      normal_covector.get(i) =
+                          evolution::dg::subcell::fd::project(
+                              dg_normal_covector.get(i),
+                              dg_mesh.slice_away(mortar_id.first.dimension()),
+                              subcell_mesh.extents().slice_away(
+                                  mortar_id.first.dimension()));
+                    }
+                  }
+
+                  // Compute the packaged data
+                  using dg_package_field_tags =
+                      typename DerivedCorrection::dg_package_field_tags;
+                  Variables<dg_package_field_tags> packaged_data{num_face_pts};
+                  using dg_package_data_projected_tags =
+                      tmpl::append<evolved_vars_tags, fluxes_tags,
+                                   dg_package_data_temporary_tags,
+                                   typename DerivedCorrection::
+                                       dg_package_data_primitive_tags>;
+                  evolution::dg::Actions::detail::dg_package_data<system>(
+                      make_not_null(&packaged_data),
+                      dynamic_cast<const DerivedCorrection&>(
+                          boundary_correction),
+                      vars_on_face, normal_covector, {std::nullopt}, box,
+                      typename DerivedCorrection::dg_package_data_volume_tags{},
+                      dg_package_data_projected_tags{});
+                  if constexpr (volume_dim == 1) {
+                    (void)dg_mesh;
+                    nhbr_package_data[mortar_id] = std::vector<double>{
+                        packaged_data.data(),
+                        packaged_data.data() + packaged_data.size()};
+                  } else {
+                    // Reconstruct the DG solution.
+                    // Really we should be solving the boundary correction and
+                    // then reconstructing, but away from a shock this doesn't
+                    // matter.
+                    auto dg_packaged_data =
+                        evolution::dg::subcell::fd::reconstruct(
+                            packaged_data,
+                            dg_mesh.slice_away(mortar_id.first.dimension()),
+                            subcell_mesh.extents().slice_away(
+                                mortar_id.first.dimension()));
+                    nhbr_package_data[mortar_id] = std::vector<double>{
+                        dg_packaged_data.data(),
+                        dg_packaged_data.data() + dg_packaged_data.size()};
+                  }
+                }
+              }
+            });
+        return nhbr_package_data;
+      }
+    };
+
+    using GhostDataToSlice =
+        NewtonianEuler::subcell::PrimitiveGhostDataToSlice<Dim>;
+  };
+
   using step_actions = tmpl::flatten<tmpl::list<
+      evolution::dg::subcell::Actions::SelectNumericalMethod,
+
+      Actions::Label<evolution::dg::subcell::Actions::Labels::BeginDg>,
       evolution::dg::Actions::ComputeTimeDerivative<EvolutionMetavars>,
       evolution::dg::Actions::ApplyBoundaryCorrections<EvolutionMetavars>,
       tmpl::conditional_t<
           local_time_stepping, tmpl::list<>,
-          tmpl::list<Actions::RecordTimeStepperData<>,
-                     evolution::Actions::RunEventsAndDenseTriggers<
-                         typename system::primitive_from_conservative>,
-                     Actions::UpdateU<>>>,
-      Limiters::Actions::SendData<EvolutionMetavars>,
-      Limiters::Actions::Limit<EvolutionMetavars>,
-      // Conservative `UpdatePrimitives` expects system to possess
-      // list of recovery schemes so we use `MutateApply` instead.
-      Actions::MutateApply<typename system::primitive_from_conservative>>>;
+          tmpl::list<Actions::RecordTimeStepperData<>, Actions::UpdateU<>>>,
+      // Note: The primitive variables are computed as part of the TCI.
+      evolution::dg::subcell::Actions::TciAndRollback<
+          NewtonianEuler::subcell::TciOnDgGrid<Dim>>,
+      Actions::Goto<evolution::dg::subcell::Actions::Labels::EndOfSolvers>,
+
+      Actions::Label<evolution::dg::subcell::Actions::Labels::BeginSubcell>,
+      evolution::dg::subcell::Actions::SendDataForReconstruction<
+          volume_dim,
+          NewtonianEuler::subcell::PrimitiveGhostDataOnSubcells<Dim>>,
+      evolution::dg::subcell::Actions::ReceiveDataForReconstruction<volume_dim>,
+      Actions::Label<
+          evolution::dg::subcell::Actions::Labels::BeginSubcellAfterDgRollback>,
+      Actions::MutateApply<NewtonianEuler::subcell::PrimsAfterRollback<Dim>>,
+      evolution::dg::subcell::fd::Actions::TakeTimeStep<
+          typename SubcellOptions::TimeDerivative>,
+      Actions::RecordTimeStepperData<>, Actions::UpdateU<>,
+      evolution::dg::subcell::Actions::TciAndSwitchToDg<
+          NewtonianEuler::subcell::TciOnFdGrid<Dim>>,
+      Actions::MutateApply<NewtonianEuler::subcell::ResizeAndComputePrims<Dim>>,
+
+      Actions::Label<evolution::dg::subcell::Actions::Labels::EndOfSolvers>>>;
 
   enum class Phase {
     Initialization,
@@ -247,11 +743,14 @@ struct EvolutionMetavars {
                                                   equation_of_state_tag>,
       evolution::Initialization::Actions::SetVariables<
           domain::Tags::Coordinates<Dim, Frame::Logical>>,
+      Actions::UpdateConservatives,
+      evolution::dg::subcell::Actions::Initialize<
+          Dim, system, NewtonianEuler::subcell::DgInitialDataTci<Dim>>,
+      Actions::UpdateConservatives,
       Initialization::Actions::TimeStepperHistory<EvolutionMetavars>,
       Initialization::Actions::AddComputeTags<
           tmpl::list<NewtonianEuler::Tags::SoundSpeedSquaredCompute<DataVector>,
                      NewtonianEuler::Tags::SoundSpeedCompute<DataVector>>>,
-      Actions::UpdateConservatives,
       tmpl::conditional_t<
           evolution::is_analytic_solution_v<initial_data>,
           Initialization::Actions::AddComputeTags<
@@ -261,8 +760,7 @@ struct EvolutionMetavars {
       Initialization::Actions::AddComputeTags<
           StepChoosers::step_chooser_compute_tags<EvolutionMetavars>>,
       ::evolution::dg::Initialization::Mortars<volume_dim, system>,
-      Initialization::Actions::Minmod<Dim>,
-      evolution::Actions::InitializeRunEventsAndDenseTriggers,
+      // Initialization::Actions::Minmod<Dim>,
       Initialization::Actions::RemoveOptionsAndTerminatePhase>;
 
   using dg_element_array = DgElementArray<
@@ -281,8 +779,7 @@ struct EvolutionMetavars {
 
           Parallel::PhaseActions<
               Phase, Phase::Evolve,
-              tmpl::list<Actions::UpdateConservatives,
-                         Actions::RunEventsAndTriggers, Actions::ChangeSlabSize,
+              tmpl::list<Actions::RunEventsAndTriggers, Actions::ChangeSlabSize,
                          step_actions, Actions::AdvanceTime,
                          PhaseControl::Actions::ExecutePhaseChange<
                              phase_changes>>>>>;
@@ -300,7 +797,7 @@ struct EvolutionMetavars {
                  dg_element_array>;
 
   using const_global_cache_tags = tmpl::list<
-      initial_data_tag,
+      NewtonianEuler::fd::Tags::Reconstructor<Dim>, initial_data_tag,
       tmpl::conditional_t<has_source_terms, source_term_tag, tmpl::list<>>,
       Tags::EventsAndTriggers,
       PhaseControl::Tags::PhaseChangeAndTriggers<phase_changes>>;
@@ -354,6 +851,7 @@ static const std::vector<void (*)()> charm_init_node_funcs{
     &domain::FunctionsOfTime::register_derived_with_charm,
     &NewtonianEuler::BoundaryConditions::register_derived_with_charm,
     &NewtonianEuler::BoundaryCorrections::register_derived_with_charm,
+    &NewtonianEuler::fd::register_derived_with_charm,
     &Parallel::register_derived_classes_with_charm<TimeStepper>,
     &Parallel::register_derived_classes_with_charm<
         PhaseChange<metavariables::phase_changes>>,

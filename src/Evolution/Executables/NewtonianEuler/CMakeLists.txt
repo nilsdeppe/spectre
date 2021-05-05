@@ -34,11 +34,13 @@ target_link_libraries(
 
 set(LIBS_TO_LINK
   CoordinateMaps
+  DgSubcell
   DiscontinuousGalerkin
   DomainCreators
   EventsAndDenseTriggers
   EventsAndTriggers
   Evolution
+  FiniteDifference
   Hydro
   IO
   Informer
