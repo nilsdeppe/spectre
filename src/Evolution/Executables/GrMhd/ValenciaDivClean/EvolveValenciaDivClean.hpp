@@ -1,3 +1,5 @@
+#include <iostream>
+
 // Distributed under the MIT License.
 // See LICENSE.txt for details.
 
@@ -39,6 +41,7 @@
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/BoundaryCorrections/Factory.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/BoundaryCorrections/RegisterDerived.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/FixConservatives.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/KastaunEtAl.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/NewmanHamlin.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/PalenzuelaEtAl.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/System.hpp"
@@ -89,6 +92,7 @@
 #include "ParallelAlgorithms/EventsAndTriggers/Tags.hpp"
 #include "ParallelAlgorithms/EventsAndTriggers/Trigger.hpp"
 #include "ParallelAlgorithms/Initialization/Actions/AddComputeTags.hpp"
+#include "ParallelAlgorithms/Initialization/Actions/AddSimpleTags.hpp"
 #include "ParallelAlgorithms/Initialization/Actions/RemoveOptionsAndTerminatePhase.hpp"
 #include "PointwiseFunctions/AnalyticData/GrMhd/BlastWave.hpp"
 #include "PointwiseFunctions/AnalyticData/GrMhd/BondiHoyleAccretion.hpp"
@@ -129,6 +133,40 @@
 #include "Utilities/MemoryHelpers.hpp"
 #include "Utilities/ProtocolHelpers.hpp"
 #include "Utilities/TMPL.hpp"
+
+#include "Evolution/DgSubcell/Actions/Initialize.hpp"
+#include "Evolution/DgSubcell/Actions/Labels.hpp"
+#include "Evolution/DgSubcell/Actions/ReconstructionCommunication.hpp"
+#include "Evolution/DgSubcell/Actions/SelectNumericalMethod.hpp"
+#include "Evolution/DgSubcell/Actions/TakeTimeStep.hpp"
+#include "Evolution/DgSubcell/Actions/TciAndRollback.hpp"
+#include "Evolution/DgSubcell/Actions/TciAndSwitchToDg.hpp"
+#include "Evolution/DgSubcell/CartesianFluxDivergence.hpp"
+#include "Evolution/DgSubcell/ComputeBoundaryTerms.hpp"
+#include "Evolution/DgSubcell/CorrectPackagedData.hpp"
+#include "Evolution/DgSubcell/Events/ObserveFields.hpp"
+#include "Evolution/DgSubcell/FaceLogicalCoordinates.hpp"
+#include "Evolution/DgSubcell/NeighborReconstructedFaceSolution.hpp"
+#include "Evolution/DgSubcell/PerssonTci.hpp"
+#include "Evolution/DgSubcell/PrepareNeighborData.hpp"
+#include "Evolution/DgSubcell/Tags/Inactive.hpp"
+#include "Evolution/DgSubcell/TwoMeshRdmpTci.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/FiniteDifference/Factory.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/FiniteDifference/RegisterDerivedWithCharm.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/FiniteDifference/Tag.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/SetVariablesNeededFixingToFalse.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/Subcell/FixConservativesAndComputePrims.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/Subcell/GrTagsForHydro.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/Subcell/InitialDataTci.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/Subcell/NeighborPackagedData.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/Subcell/PrimitiveGhostData.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/Subcell/PrimsAfterRollback.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/Subcell/ResizeAndComputePrimitives.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/Subcell/SwapGrTags.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/Subcell/TciOnDgGrid.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/Subcell/TciOnFdGrid.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/Subcell/TimeDerivative.hpp"
+#include "NumericalAlgorithms/FiniteDifference/Minmod.hpp"
 
 /// \cond
 namespace Frame {
@@ -183,6 +221,7 @@ struct EvolutionMetavars {
       tmpl::conditional_t<local_time_stepping, LtsTimeStepper, TimeStepper>>;
 
   using ordered_list_of_primitive_recovery_schemes = tmpl::list<
+      grmhd::ValenciaDivClean::PrimitiveRecoverySchemes::KastaunEtAl,
       grmhd::ValenciaDivClean::PrimitiveRecoverySchemes::NewmanHamlin,
       grmhd::ValenciaDivClean::PrimitiveRecoverySchemes::PalenzuelaEtAl>;
 
@@ -197,11 +236,16 @@ struct EvolutionMetavars {
             Event,
             tmpl::flatten<tmpl::list<
                 Events::Completion,
-                dg::Events::field_observations<
-                    volume_dim, Tags::Time,
+                evolution::dg::subcell::Events::ObserveFields<
+                    3, Tags::Time,
                     tmpl::append<
                         typename system::variables_tag::tags_list,
-                        typename system::primitive_variables_tag::tags_list>,
+                        typename system::primitive_variables_tag::tags_list,
+                        typename system::spacetime_variables_tag::tags_list,
+                        db::wrap_tags_in<
+                            ::Tags::dt,
+                            typename system::variables_tag::tags_list>,
+                        tmpl::list<evolution::dg::subcell::Tags::TciStatus>>,
                     tmpl::conditional_t<
                         evolution::is_analytic_solution_v<initial_data>,
                         analytic_variables_tags, tmpl::list<>>>,
@@ -210,9 +254,9 @@ struct EvolutionMetavars {
                                            interpolator_source_vars>...>>>,
         tmpl::pair<StepChooser<StepChooserUse::LtsStep>,
                    StepChoosers::standard_step_choosers<system>>,
-        tmpl::pair<StepChooser<StepChooserUse::Slab>,
-                   StepChoosers::standard_slab_choosers<system,
-                                                        local_time_stepping>>,
+        tmpl::pair<
+            StepChooser<StepChooserUse::Slab>,
+            StepChoosers::standard_slab_choosers<system, local_time_stepping>>,
         tmpl::pair<StepController, StepControllers::standard_step_controllers>,
         tmpl::pair<TimeSequence<double>,
                    TimeSequences::all_time_sequences<double>>,
@@ -227,21 +271,83 @@ struct EvolutionMetavars {
           tmpl::at<typename factory_creation::factory_classes, Event>,
           typename InterpolationTargetTags::post_interpolation_callback...>>;
 
+  struct SubcellOptions {
+    using evolved_vars_tags = typename system::variables_tag::tags_list;
+    using prim_tags = typename system::primitive_variables_tag::tags_list;
+    using recons_prim_tags = tmpl::push_back<
+        prim_tags,
+        hydro::Tags::LorentzFactorTimesSpatialVelocity<DataVector, 3>>;
+    using fluxes_tags =
+        db::wrap_tags_in<Tags::Flux, evolved_vars_tags,
+                         tmpl::size_t<volume_dim>, Frame::Inertial>;
+
+    static constexpr bool subcell_enabled = true;
+    // We send `ghost_zone_size` cell-centered grid points for variable
+    // reconstruction, of which we need `ghost_zone_size-1` for reconstruction
+    // to the internal side of the element face, and `ghost_zone_size` for
+    // reconstruction to the external side of the element face.
+    template <typename DbTagsList>
+    static constexpr size_t ghost_zone_size(
+        const db::DataBox<DbTagsList>& box) noexcept {
+      return db::get<grmhd::ValenciaDivClean::fd::Tags::Reconstructor>(box)
+          .ghost_zone_size();
+    }
+
+    using DgComputeSubcellNeighborPackagedData =
+        grmhd::ValenciaDivClean::subcell::NeighborPackagedData;
+
+    using GhostDataToSlice =
+        grmhd::ValenciaDivClean::subcell::PrimitiveGhostDataToSlice;
+  };
+
   using step_actions = tmpl::flatten<tmpl::list<
+      evolution::dg::subcell::Actions::SelectNumericalMethod,
+
+      Actions::Label<evolution::dg::subcell::Actions::Labels::BeginDg>,
       evolution::dg::Actions::ComputeTimeDerivative<EvolutionMetavars>,
       evolution::dg::Actions::ApplyBoundaryCorrections<EvolutionMetavars>,
       tmpl::conditional_t<
           local_time_stepping, tmpl::list<>,
-          tmpl::list<Actions::RecordTimeStepperData<>,
-                     evolution::Actions::RunEventsAndDenseTriggers<
-                         system::primitive_from_conservative<
-                             ordered_list_of_primitive_recovery_schemes>>,
-                     Actions::UpdateU<>>>,
-      Limiters::Actions::SendData<EvolutionMetavars>,
-      Limiters::Actions::Limit<EvolutionMetavars>,
+          tmpl::list<Actions::RecordTimeStepperData<>, Actions::UpdateU<>>>,
+      // Note: The primitive variables are computed as part of the TCI.
+      evolution::dg::subcell::Actions::TciAndRollback<
+          grmhd::ValenciaDivClean::subcell::TciOnDgGrid<
+              tmpl::front<ordered_list_of_primitive_recovery_schemes>>>,
+      // VariableFixing::Actions::FixVariables<
+      //     grmhd::ValenciaDivClean::FixConservatives>,
+      // Actions::UpdatePrimitives,
       VariableFixing::Actions::FixVariables<
-          grmhd::ValenciaDivClean::FixConservatives>,
-      Actions::UpdatePrimitives>>;
+          VariableFixing::FixToAtmosphere<volume_dim>>,
+      Actions::UpdateConservatives,
+      Actions::Goto<evolution::dg::subcell::Actions::Labels::EndOfSolvers>,
+
+      Actions::Label<evolution::dg::subcell::Actions::Labels::BeginSubcell>,
+      evolution::dg::subcell::Actions::SendDataForReconstruction<
+          volume_dim,
+          grmhd::ValenciaDivClean::subcell::PrimitiveGhostDataOnSubcells>,
+      evolution::dg::subcell::Actions::ReceiveDataForReconstruction<volume_dim>,
+      Actions::Label<
+          evolution::dg::subcell::Actions::Labels::BeginSubcellAfterDgRollback>,
+      Actions::MutateApply<grmhd::ValenciaDivClean::subcell::SwapGrTags>,
+      Actions::MutateApply<grmhd::ValenciaDivClean::subcell::PrimsAfterRollback<
+          ordered_list_of_primitive_recovery_schemes>>,
+      evolution::dg::subcell::fd::Actions::TakeTimeStep<
+          grmhd::ValenciaDivClean::subcell::TimeDerivative>,
+      Actions::RecordTimeStepperData<>, Actions::UpdateU<>,
+      Actions::MutateApply<
+          grmhd::ValenciaDivClean::subcell::FixConservativesAndComputePrims<
+              ordered_list_of_primitive_recovery_schemes>>,
+      evolution::dg::subcell::Actions::TciAndSwitchToDg<
+          grmhd::ValenciaDivClean::subcell::TciOnFdGrid>,
+      Actions::MutateApply<grmhd::ValenciaDivClean::subcell::SwapGrTags>,
+      Actions::MutateApply<
+          grmhd::ValenciaDivClean::subcell::ResizeAndComputePrims<
+              ordered_list_of_primitive_recovery_schemes>>,
+      VariableFixing::Actions::FixVariables<
+          VariableFixing::FixToAtmosphere<volume_dim>>,
+      Actions::UpdateConservatives,
+
+      Actions::Label<evolution::dg::subcell::Actions::Labels::EndOfSolvers>>>;
 
   enum class Phase {
     Initialization,
@@ -292,6 +398,17 @@ struct EvolutionMetavars {
       VariableFixing::Actions::FixVariables<
           VariableFixing::FixToAtmosphere<volume_dim>>,
       Actions::UpdateConservatives,
+      evolution::dg::subcell::Actions::Initialize<
+          volume_dim, system,
+          grmhd::ValenciaDivClean::subcell::DgInitialDataTci>,
+      Initialization::Actions::AddSimpleTags<
+          Initialization::subcell::GrTagsForHydro<system, volume_dim>,
+          grmhd::ValenciaDivClean::SetVariablesNeededFixingToFalse>,
+      VariableFixing::Actions::FixVariables<
+          VariableFixing::FixToAtmosphere<volume_dim>>,
+      Actions::MutateApply<grmhd::ValenciaDivClean::subcell::SwapGrTags>,
+      Actions::UpdateConservatives,
+
       tmpl::conditional_t<
           evolution::is_analytic_solution_v<initial_data>,
           Initialization::Actions::AddComputeTags<
@@ -325,13 +442,10 @@ struct EvolutionMetavars {
 
           Parallel::PhaseActions<
               Phase, Phase::Evolve,
-              tmpl::list<VariableFixing::Actions::FixVariables<
-                             VariableFixing::FixToAtmosphere<volume_dim>>,
-                         Actions::UpdateConservatives,
-                         Actions::RunEventsAndTriggers, Actions::ChangeSlabSize,
-                         step_actions, Actions::AdvanceTime,
-                         PhaseControl::Actions::ExecutePhaseChange<
-                             phase_changes>>>>>;
+              tmpl::list<
+                  Actions::RunEventsAndTriggers, Actions::ChangeSlabSize,
+                  step_actions, Actions::AdvanceTime,
+                  PhaseControl::Actions::ExecutePhaseChange<phase_changes>>>>>;
 
   template <typename ParallelComponent>
   struct registration_list {
@@ -347,11 +461,13 @@ struct EvolutionMetavars {
       intrp::InterpolationTarget<EvolutionMetavars, InterpolationTargetTags>...,
       dg_element_array_component>;
 
-  using const_global_cache_tags =
-      tmpl::list<initial_data_tag,
-                 grmhd::ValenciaDivClean::Tags::ConstraintDampingParameter,
-                 Tags::EventsAndTriggers,
-                 PhaseControl::Tags::PhaseChangeAndTriggers<phase_changes>>;
+  using const_global_cache_tags = tmpl::list<
+      grmhd::ValenciaDivClean::fd::Tags::Reconstructor,
+      ::Tags::VariableFixer<grmhd::ValenciaDivClean::FixConservatives>,
+      grmhd::ValenciaDivClean::subcell::Tags::TciOptions, initial_data_tag,
+      grmhd::ValenciaDivClean::Tags::ConstraintDampingParameter,
+      Tags::EventsAndTriggers,
+      PhaseControl::Tags::PhaseChangeAndTriggers<phase_changes>>;
 
   static constexpr Options::String help{
       "Evolve the Valencia formulation of the GRMHD system with divergence "
@@ -427,6 +543,7 @@ static const std::vector<void (*)()> charm_init_node_funcs{
     &domain::FunctionsOfTime::register_derived_with_charm,
     &grmhd::ValenciaDivClean::BoundaryConditions::register_derived_with_charm,
     &grmhd::ValenciaDivClean::BoundaryCorrections::register_derived_with_charm,
+    &grmhd::ValenciaDivClean::fd::register_derived_with_charm,
     &Parallel::register_derived_classes_with_charm<TimeStepper>,
     &Parallel::register_derived_classes_with_charm<
         PhaseChange<metavariables::phase_changes>>,

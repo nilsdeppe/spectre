@@ -88,6 +88,8 @@ Brick::Brick(
     is_periodic_in_xyz_[2] = true;
     boundary_condition_ = nullptr;
   }
+  is_periodic_in_xyz_[1] = true;
+  is_periodic_in_xyz_[2] = true;
 }
 
 Domain<3> Brick::create_domain() const noexcept {
@@ -112,7 +114,9 @@ Domain<3> Brick::create_domain() const noexcept {
                  std::unique_ptr<domain::BoundaryConditions::BoundaryCondition>>
         boundary_conditions{};
     for (const auto& direction : Direction<3>::all_directions()) {
-      boundary_conditions[direction] = boundary_condition_->get_clone();
+      if (not is_periodic_in_xyz_[direction.dimension()]) {
+        boundary_conditions[direction] = boundary_condition_->get_clone();
+      }
     }
     boundary_conditions_all_blocks.push_back(std::move(boundary_conditions));
   }
