@@ -60,9 +60,21 @@ namespace VariableFixing {
  * \cite Muhlberger2014pja Note that we require
  * \f$\rho_{\textrm{transition}}\in(\rho_{\textrm{cutoff}},
  *  10\rho_{\textrm{atm}}]\f$
+ *
+ * In regions where \f$B^2/\rho\f$ is large (generally above 100), the component
+ * of the velocity perpendicular to the magnetic field can contain important and
+ * physical information about the electric field. In these regions we treat the
+ * component of the velocity parallel to the magnetic field as described above
+ * for the velocity, while we require that the magnitude of the perpendicular
+ * component of the velocity be less than \f$v_{\max}\f$ \cite Muhlberger2014pja
  */
-template <size_t Dim>
+template <size_t Dim, bool UseMagneticField>
 class FixToAtmosphere {
+ private:
+  using no_mag_field_args_tags =
+      tmpl::list<gr::Tags::SpatialMetric<Dim, Frame::Inertial, DataVector>,
+                 hydro::Tags::EquationOfStateBase>;
+
  public:
   /// \brief Rest mass density of the atmosphere
   struct DensityOfAtmosphere {
@@ -102,9 +114,25 @@ class FixToAtmosphere {
         "The maximum sqrt(v^i v^j gamma_{ij}) allowed when the density is "
         "below TransitionDensityCutoff."};
   };
+  /// \brief Threshold value of \f$B^2/\rho\f$ below which the parallel and
+  /// perpendicular parts of the velocity are no longer controlled separately.
+  ///
+  /// Only needs to be specified if magnetic fields are enabled.
+  struct MagneticFieldThreshold {
+    using type = double;
+    static type lower_bound() noexcept { return 0.0; }
+    static constexpr Options::String help = {
+        "Threshold value of B^2/rho below which the velocity is limited as if "
+        "no magnetic field is present."};
+  };
 
-  using options = tmpl::list<DensityOfAtmosphere, DensityCutoff,
-                             TransitionDensityCutoff, MaxVelocityMagnitude>;
+  using no_magnetic_field_options =
+      tmpl::list<DensityOfAtmosphere, DensityCutoff, TransitionDensityCutoff,
+                 MaxVelocityMagnitude>;
+  using options = tmpl::conditional_t<
+      UseMagneticField,
+      tmpl::push_back<no_magnetic_field_options, MagneticFieldThreshold>,
+      no_magnetic_field_options>;
   static constexpr Options::String help = {
       "If the rest mass density is below DensityCutoff, it is set\n"
       "to DensityOfAtmosphere, and the pressure, specific internal energy\n"
@@ -117,6 +145,11 @@ class FixToAtmosphere {
   FixToAtmosphere(double density_of_atmosphere, double density_cutoff,
                   double transition_density_cutoff,
                   double max_velocity_magnitude,
+                  const Options::Context& context = {});
+  FixToAtmosphere(double density_of_atmosphere, double density_cutoff,
+                  double transition_density_cutoff,
+                  double max_velocity_magnitude,
+                  double magnetic_field_threshold,
                   const Options::Context& context = {});
 
   FixToAtmosphere() = default;
@@ -136,12 +169,17 @@ class FixToAtmosphere {
                  hydro::Tags::LorentzFactor<DataVector>,
                  hydro::Tags::Pressure<DataVector>,
                  hydro::Tags::SpecificEnthalpy<DataVector>>;
-  using argument_tags =
-      tmpl::list<gr::Tags::SpatialMetric<Dim, Frame::Inertial, DataVector>,
-                 hydro::Tags::EquationOfStateBase>;
+  using argument_tags = tmpl::conditional_t<
+      UseMagneticField,
+      tmpl::push_back<no_mag_field_args_tags,
+                      hydro::Tags::MagneticField<DataVector, 3>>,
+      no_mag_field_args_tags>;
 
   // for use in `db::mutate_apply`
-  template <size_t ThermodynamicDim>
+  template <size_t ThermodynamicDim,
+            bool LocalUseMagneticField = UseMagneticField,
+            Requires<not UseMagneticField and
+                     LocalUseMagneticField == UseMagneticField> = nullptr>
   void operator()(
       gsl::not_null<Scalar<DataVector>*> rest_mass_density,
       gsl::not_null<Scalar<DataVector>*> specific_internal_energy,
@@ -152,7 +190,24 @@ class FixToAtmosphere {
       gsl::not_null<Scalar<DataVector>*> specific_enthalpy,
       const tnsr::ii<DataVector, Dim, Frame::Inertial>& spatial_metric,
       const EquationsOfState::EquationOfState<true, ThermodynamicDim>&
-      equation_of_state) const noexcept;
+          equation_of_state) const noexcept;
+
+  template <
+      size_t ThermodynamicDim, bool LocalUseMagneticField = UseMagneticField,
+      Requires<UseMagneticField and LocalUseMagneticField == UseMagneticField> =
+          nullptr>
+  void operator()(
+      gsl::not_null<Scalar<DataVector>*> rest_mass_density,
+      gsl::not_null<Scalar<DataVector>*> specific_internal_energy,
+      gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> spatial_velocity,
+      gsl::not_null<Scalar<DataVector>*> lorentz_factor,
+      gsl::not_null<Scalar<DataVector>*> pressure,
+      gsl::not_null<Scalar<DataVector>*> specific_enthalpy,
+      const tnsr::ii<DataVector, 3, Frame::Inertial>& spatial_metric,
+      const EquationsOfState::EquationOfState<true, ThermodynamicDim>&
+          equation_of_state,
+      const tnsr::I<DataVector, 3, Frame::Inertial>& magnetic_field)
+      const noexcept;
 
  private:
   template <size_t ThermodynamicDim>
@@ -173,20 +228,23 @@ class FixToAtmosphere {
       const tnsr::ii<DataVector, Dim, Frame::Inertial>& spatial_metric,
       size_t grid_index) const noexcept;
 
-  template <size_t SpatialDim>
+  template <size_t SpatialDim, bool LocalUseMagneticField>
   // NOLINTNEXTLINE(readability-redundant-declaration)
-  friend bool operator==(const FixToAtmosphere<SpatialDim>& lhs,
-                         const FixToAtmosphere<SpatialDim>& rhs) noexcept;
+  friend bool operator==(
+      const FixToAtmosphere<SpatialDim, LocalUseMagneticField>& lhs,
+      const FixToAtmosphere<SpatialDim, LocalUseMagneticField>& rhs) noexcept;
 
   double density_of_atmosphere_{std::numeric_limits<double>::signaling_NaN()};
   double density_cutoff_{std::numeric_limits<double>::signaling_NaN()};
   double transition_density_cutoff_{
       std::numeric_limits<double>::signaling_NaN()};
   double max_velocity_magnitude_{std::numeric_limits<double>::signaling_NaN()};
+  double magnetic_field_threshold_{
+      std::numeric_limits<double>::signaling_NaN()};
 };
 
-template <size_t Dim>
-bool operator!=(const FixToAtmosphere<Dim>& lhs,
-                const FixToAtmosphere<Dim>& rhs) noexcept;
+template <size_t Dim, bool UseMagneticField>
+bool operator!=(const FixToAtmosphere<Dim, UseMagneticField>& lhs,
+                const FixToAtmosphere<Dim, UseMagneticField>& rhs) noexcept;
 
 }  // namespace VariableFixing

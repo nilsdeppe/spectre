@@ -248,7 +248,7 @@ struct EvolutionMetavars {
           domain::Tags::Coordinates<Dim, Frame::Logical>>,
       Initialization::Actions::TimeStepperHistory<EvolutionMetavars>,
       VariableFixing::Actions::FixVariables<
-          VariableFixing::FixToAtmosphere<volume_dim>>,
+          VariableFixing::FixToAtmosphere<volume_dim, false>>,
       Initialization::Actions::AddComputeTags<
           tmpl::list<hydro::Tags::SoundSpeedSquaredCompute<DataVector>>>,
       Actions::UpdateConservatives,
@@ -281,13 +281,12 @@ struct EvolutionMetavars {
 
           Parallel::PhaseActions<
               Phase, Phase::Evolve,
-              tmpl::list<VariableFixing::Actions::FixVariables<
-                             VariableFixing::FixToAtmosphere<volume_dim>>,
-                         Actions::UpdateConservatives,
-                         Actions::RunEventsAndTriggers, Actions::ChangeSlabSize,
-                         step_actions, Actions::AdvanceTime,
-                         PhaseControl::Actions::ExecutePhaseChange<
-                             phase_changes>>>>>;
+              tmpl::list<
+                  VariableFixing::Actions::FixVariables<
+                      VariableFixing::FixToAtmosphere<volume_dim, false>>,
+                  Actions::UpdateConservatives, Actions::RunEventsAndTriggers,
+                  Actions::ChangeSlabSize, step_actions, Actions::AdvanceTime,
+                  PhaseControl::Actions::ExecutePhaseChange<phase_changes>>>>>;
 
   template <typename ParallelComponent>
   struct registration_list {

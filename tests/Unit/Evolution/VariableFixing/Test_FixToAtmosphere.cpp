@@ -19,11 +19,11 @@
 
 namespace {
 
-template <size_t Dim>
-void test_variable_fixer(
-    const VariableFixing::FixToAtmosphere<Dim>& variable_fixer,
-    const EquationsOfState::EquationOfState<true, 1>&
-        equation_of_state) noexcept {
+template <size_t Dim, bool UseMagneticField>
+void test_variable_fixer(const VariableFixing::FixToAtmosphere<
+                             Dim, UseMagneticField>& variable_fixer,
+                         const EquationsOfState::EquationOfState<true, 1>&
+                             equation_of_state) noexcept {
   // 2.e-12 -> below cutoff, velocity goes to zero
   // 2.e-11 -> above cutoff, no changes
   // 4.e-12 -> density unchanged, velocity restricted
@@ -76,9 +76,10 @@ void test_variable_fixer(
   CHECK_ITERABLE_APPROX(spatial_velocity, expected_spatial_velocity);
 }
 
-template <size_t Dim>
+template <size_t Dim, bool UseMagneticField>
 void test_variable_fixer(
-    const VariableFixing::FixToAtmosphere<Dim>& variable_fixer,
+    const VariableFixing::FixToAtmosphere<Dim, UseMagneticField>&
+        variable_fixer,
     const EquationsOfState::EquationOfState<true, 2>& equation_of_state) {
   Scalar<DataVector> density{DataVector{2.e-12, 2.e-11, 4.e-12}};
   Scalar<DataVector> specific_internal_energy{DataVector{2.0, 3.0, 3.0}};
@@ -131,21 +132,21 @@ void test_variable_fixer(
   CHECK_ITERABLE_APPROX(spatial_velocity, expected_spatial_velocity);
 }
 
-template <size_t Dim>
+template <size_t Dim, bool UseMagneticField>
 void test_variable_fixer() noexcept {
   // Test for representative 1-d equation of state
-  VariableFixing::FixToAtmosphere<Dim> variable_fixer{1.e-12, 3.e-12, 1.e-11,
-                                                      1.e-4};
+  VariableFixing::FixToAtmosphere<Dim, UseMagneticField> variable_fixer{
+      1.e-12, 3.e-12, 1.e-11, 1.e-4};
   EquationsOfState::PolytropicFluid<true> polytrope{1.0, 2.0};
   test_variable_fixer<Dim>(variable_fixer, polytrope);
   test_serialization(variable_fixer);
 
-  const auto fixer_from_options =
-      TestHelpers::test_creation<VariableFixing::FixToAtmosphere<Dim>>(
-          "DensityOfAtmosphere: 1.0e-12\n"
-          "DensityCutoff: 3.0e-12\n"
-          "TransitionDensityCutoff: 1.0e-11\n"
-          "MaxVelocityMagnitude: 1.0e-4\n");
+  const auto fixer_from_options = TestHelpers::test_creation<
+      VariableFixing::FixToAtmosphere<Dim, UseMagneticField>>(
+      "DensityOfAtmosphere: 1.0e-12\n"
+      "DensityCutoff: 3.0e-12\n"
+      "TransitionDensityCutoff: 1.0e-11\n"
+      "MaxVelocityMagnitude: 1.0e-4\n");
   test_variable_fixer(fixer_from_options, polytrope);
 
   // Test for representative 2-d equation of state
@@ -159,7 +160,7 @@ void test_variable_fixer() noexcept {
 
 SPECTRE_TEST_CASE("Unit.Evolution.VariableFixing.FixToAtmosphere",
                   "[VariableFixing][Unit]") {
-  test_variable_fixer<1>();
-  test_variable_fixer<2>();
-  test_variable_fixer<3>();
+  test_variable_fixer<1, false>();
+  test_variable_fixer<2, false>();
+  test_variable_fixer<3, false>();
 }
