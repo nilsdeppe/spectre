@@ -167,6 +167,7 @@
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/Subcell/TciOnFdGrid.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/Subcell/TimeDerivative.hpp"
 #include "NumericalAlgorithms/FiniteDifference/Minmod.hpp"
+#include "ParallelAlgorithms/Events/ObserveNorms.hpp"
 
 /// \cond
 namespace Frame {
@@ -236,6 +237,8 @@ struct EvolutionMetavars {
             Event,
             tmpl::flatten<tmpl::list<
                 Events::Completion,
+                Events::ObserveNorms<
+                    tmpl::list<hydro::Tags::RestMassDensity<DataVector>>>,
                 evolution::dg::subcell::Events::ObserveFields<
                     3, Tags::Time,
                     tmpl::append<
@@ -317,7 +320,7 @@ struct EvolutionMetavars {
       //     grmhd::ValenciaDivClean::FixConservatives>,
       // Actions::UpdatePrimitives,
       VariableFixing::Actions::FixVariables<
-          VariableFixing::FixToAtmosphere<volume_dim>>,
+          VariableFixing::FixToAtmosphere<volume_dim, false>>,
       Actions::UpdateConservatives,
       Actions::Goto<evolution::dg::subcell::Actions::Labels::EndOfSolvers>,
 
@@ -344,7 +347,7 @@ struct EvolutionMetavars {
           grmhd::ValenciaDivClean::subcell::ResizeAndComputePrims<
               ordered_list_of_primitive_recovery_schemes>>,
       VariableFixing::Actions::FixVariables<
-          VariableFixing::FixToAtmosphere<volume_dim>>,
+          VariableFixing::FixToAtmosphere<volume_dim, false>>,
       Actions::UpdateConservatives,
 
       Actions::Label<evolution::dg::subcell::Actions::Labels::EndOfSolvers>>>;
@@ -396,7 +399,7 @@ struct EvolutionMetavars {
           domain::Tags::Coordinates<3, Frame::Logical>>,
       Initialization::Actions::TimeStepperHistory<EvolutionMetavars>,
       VariableFixing::Actions::FixVariables<
-          VariableFixing::FixToAtmosphere<volume_dim>>,
+          VariableFixing::FixToAtmosphere<volume_dim, false>>,
       Actions::UpdateConservatives,
       evolution::dg::subcell::Actions::Initialize<
           volume_dim, system,
@@ -405,7 +408,7 @@ struct EvolutionMetavars {
           Initialization::subcell::GrTagsForHydro<system, volume_dim>,
           grmhd::ValenciaDivClean::SetVariablesNeededFixingToFalse>,
       VariableFixing::Actions::FixVariables<
-          VariableFixing::FixToAtmosphere<volume_dim>>,
+          VariableFixing::FixToAtmosphere<volume_dim, false>>,
       Actions::MutateApply<grmhd::ValenciaDivClean::subcell::SwapGrTags>,
       Actions::UpdateConservatives,
 
