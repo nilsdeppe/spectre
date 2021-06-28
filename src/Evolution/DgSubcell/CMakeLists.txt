@@ -35,6 +35,7 @@ spectre_target_sources(
   ${LIBRARY}
   PRIVATE
   ActiveGrid.cpp
+  CartesianFluxDivergence.cpp
   CombineVolumeAndGhostData.cpp
   FaceLogicalCoordinates.cpp
   Matrices.cpp
