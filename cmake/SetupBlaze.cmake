@@ -1,6 +1,8 @@
 # Distributed under the MIT License.
 # See LICENSE.txt for details.
 
+find_package(Sleef REQUIRED)
+
 # Every time we've upgraded blaze compatibility in the past, we've had to change
 # vector code, so we should expect to need changes again on each subsequent
 # release, so we specify an exact version requirement.
@@ -18,7 +20,7 @@ add_library(Blaze INTERFACE IMPORTED)
 set_property(TARGET Blaze PROPERTY
   INTERFACE_INCLUDE_DIRECTORIES ${BLAZE_INCLUDE_DIR})
 set_property(TARGET Blaze PROPERTY
-  INTERFACE_LINK_LIBRARIES Lapack)
+  INTERFACE_LINK_LIBRARIES Lapack Sleef)
 
 target_compile_definitions(Blaze
   INTERFACE
@@ -37,6 +39,8 @@ target_compile_definitions(Blaze
   BLAZE_USE_OPTIMIZED_KERNELS=1
   # Skip initializing default-constructed structures for fundamental types
   BLAZE_USE_DEFAULT_INITIALIZATON=0
+  # Use Sleef for vectorization of more math functions
+  BLAZE_USE_SLEEF=1
   )
 
 add_interface_lib_headers(
@@ -53,4 +57,5 @@ add_interface_lib_headers(
 set_property(
   GLOBAL APPEND PROPERTY SPECTRE_THIRD_PARTY_LIBS
   Blaze
+  Sleef
   )
