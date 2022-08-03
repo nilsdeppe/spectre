@@ -23,5 +23,10 @@ if("${GoogleBenchmark_FOUND}" AND NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     Informer
     GoogleBenchmark
     Spectral
+
+    GeneralRelativityHelpers
+    GrMhdAnalyticData
+    HydroHelpers
+    ValenciaDivClean
     )
 endif()

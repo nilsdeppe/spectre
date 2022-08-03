@@ -24,6 +24,8 @@
 #include "NumericalAlgorithms/Spectral/Spectral.hpp"
 #include "PointwiseFunctions/MathFunctions/PowX.hpp"
 
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/FixConservatives.hpp"
+
 // Charm looks for this function but since we build without a main function or
 // main module we just have it be empty
 extern "C" void CkRegisterMainModule(void) {}
@@ -104,7 +106,51 @@ void bench_all_gradient(benchmark::State& state) {  // NOLINT
     benchmark::DoNotOptimize(partial_derivatives<VarTags>(vars, mesh, inv_jac));
   }
 }
-BENCHMARK(bench_all_gradient);  // NOLINT
+// BENCHMARK(bench_all_gradient);  // NOLINT
+
+void benchmark_fix_cons(benchmark::State& state) {
+  const size_t num_points = 1331;
+  Scalar<DataVector> tilde_d{DataVector(num_points)};
+  Scalar<DataVector> tilde_tau{DataVector(num_points)};
+  auto tilde_s =
+      make_with_value<tnsr::i<DataVector, 3, Frame::Inertial>>(tilde_d, 0.0);
+  auto tilde_b =
+      make_with_value<tnsr::I<DataVector, 3, Frame::Inertial>>(tilde_d, 0.0);
+  for (size_t i = 0; i < num_points; ++i) {
+    if (i % 2 == 0) {
+      get(tilde_d)[i] = 2.e-12;
+      get(tilde_tau)[i] = 4.5;
+      tilde_s.get(0)[i] = 3.0;
+      tilde_b.get(0)[i] = 2.0;
+    } else {
+      get(tilde_d)[i] = 1.0;
+      get(tilde_tau)[i] = 1.5;
+      tilde_s.get(0)[i] = 0.0;
+      tilde_b.get(0)[i] = 2.0;
+    }
+  }
+
+  auto spatial_metric =
+      make_with_value<tnsr::ii<DataVector, 3, Frame::Inertial>>(tilde_d, 0.0);
+  auto inv_spatial_metric =
+      make_with_value<tnsr::II<DataVector, 3, Frame::Inertial>>(tilde_d, 0.0);
+  auto sqrt_det_spatial_metric =
+      make_with_value<Scalar<DataVector>>(tilde_d, 1.0);
+  for (size_t d = 0; d < 3; ++d) {
+    spatial_metric.get(d, d) = get(sqrt_det_spatial_metric);
+    inv_spatial_metric.get(d, d) = get(sqrt_det_spatial_metric);
+  }
+
+  const grmhd::ValenciaDivClean::FixConservatives variable_fixer{
+      1.e-12, 1.0e-11, 0.0, 0.0};
+
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(
+        variable_fixer(&tilde_d, &tilde_tau, &tilde_s, tilde_b, spatial_metric,
+                       inv_spatial_metric, sqrt_det_spatial_metric));
+  }
+}
+BENCHMARK(benchmark_fix_cons);
 }  // namespace
 
 // Ignore the warning about an extra ';' because some versions of benchmark
