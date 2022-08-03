@@ -10,6 +10,7 @@ spectre_target_sources(
   PRIVATE
   GslMultiRoot.cpp
   QuadraticEquation.cpp
+  TOMS748.cpp
   )
 
 spectre_target_headers(
@@ -30,4 +31,5 @@ target_link_libraries(
   ErrorHandling
   GSL::gsl
   Logging
+  Simd
   )
