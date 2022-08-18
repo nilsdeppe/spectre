@@ -274,7 +274,8 @@ struct EvolutionMetavars {
       Initialization::Actions::RemoveOptionsAndTerminatePhase>>;
 
   using dg_step_actions = tmpl::flatten<tmpl::list<
-      evolution::dg::Actions::ComputeTimeDerivative<volume_dim, system>,
+      evolution::dg::Actions::ComputeTimeDerivative<volume_dim, system,
+                                                    AllStepChoosers>,
       tmpl::conditional_t<
           local_time_stepping,
           tmpl::list<evolution::Actions::RunEventsAndDenseTriggers<tmpl::list<
@@ -322,7 +323,8 @@ struct EvolutionMetavars {
       evolution::dg::subcell::Actions::SelectNumericalMethod,
 
       Actions::Label<evolution::dg::subcell::Actions::Labels::BeginDg>,
-      evolution::dg::Actions::ComputeTimeDerivative<volume_dim, system>,
+      evolution::dg::Actions::ComputeTimeDerivative<volume_dim, system,
+                                                    AllStepChoosers>,
       evolution::dg::Actions::ApplyBoundaryCorrectionsToTimeDerivative<
           EvolutionMetavars>,
       tmpl::conditional_t<
