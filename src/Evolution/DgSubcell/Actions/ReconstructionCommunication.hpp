@@ -360,7 +360,7 @@ struct ReceiveDataForReconstruction {
                      "actual subcell data for reconstruction.");
               // Collect the max/min of u(t^n) for the RDMP as we receive data.
               // This reduces the memory footprint.
-              std::vector<double>& received_neighbor_subcell_data =
+              std::vector<double> received_neighbor_subcell_data =
                   *std::get<2>(received_data[directional_element_id]);
               ASSERT(not received_neighbor_subcell_data.empty(),
                      "The received subcell data must not be empty.");
