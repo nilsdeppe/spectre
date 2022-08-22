@@ -48,11 +48,6 @@ template <size_t VolumeDim, typename TagsList>
 Variables<TagsList> orient_variables(
     const Variables<TagsList>& variables, const Index<VolumeDim>& extents,
     const OrientationMap<VolumeDim>& orientation_of_neighbor) {
-  // Skip work (aside from a copy) if neighbor is aligned
-  if (orientation_of_neighbor.is_aligned()) {
-    return variables;
-  }
-
   const size_t number_of_grid_points = extents.product();
   ASSERT(variables.number_of_grid_points() == number_of_grid_points,
          "Inconsistent `variables` and `extents`:\n"
@@ -75,11 +70,6 @@ Variables<TagsList> orient_variables_on_slice(
     const Variables<TagsList>& variables_on_slice,
     const Index<VolumeDim - 1>& slice_extents, const size_t sliced_dim,
     const OrientationMap<VolumeDim>& orientation_of_neighbor) {
-  // Skip work (aside from a copy) if neighbor slice is aligned
-  if (orientation_of_neighbor.is_aligned()) {
-    return variables_on_slice;
-  }
-
   const size_t number_of_grid_points = slice_extents.product();
   ASSERT(variables_on_slice.number_of_grid_points() == number_of_grid_points,
          "Inconsistent `variables_on_slice` and `slice_extents`:\n"
