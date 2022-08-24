@@ -327,8 +327,8 @@ struct EvolutionMetavars {
     using DgComputeSubcellNeighborPackagedData =
         grmhd::ValenciaDivClean::subcell::NeighborPackagedData;
 
-    using GhostDataToSlice =
-        grmhd::ValenciaDivClean::subcell::PrimitiveGhostDataToSlice;
+    using GhostVariables =
+        grmhd::ValenciaDivClean::subcell::PrimitiveGhostVariables;
   };
 
   using dg_step_actions = tmpl::flatten<tmpl::list<
@@ -387,7 +387,7 @@ struct EvolutionMetavars {
       Actions::Label<evolution::dg::subcell::Actions::Labels::BeginSubcell>,
       evolution::dg::subcell::Actions::SendDataForReconstruction<
           volume_dim,
-          grmhd::ValenciaDivClean::subcell::PrimitiveGhostDataOnSubcells>,
+          grmhd::ValenciaDivClean::subcell::PrimitiveGhostVariables>,
       evolution::dg::subcell::Actions::ReceiveDataForReconstruction<volume_dim>,
       Actions::Label<
           evolution::dg::subcell::Actions::Labels::BeginSubcellAfterDgRollback>,
