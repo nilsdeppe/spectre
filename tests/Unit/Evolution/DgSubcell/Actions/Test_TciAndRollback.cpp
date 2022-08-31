@@ -37,6 +37,7 @@
 #include "Evolution/DgSubcell/Tags/NeighborData.hpp"
 #include "Evolution/DgSubcell/Tags/SubcellOptions.hpp"
 #include "Evolution/DgSubcell/Tags/TciGridHistory.hpp"
+#include "Evolution/DiscontinuousGalerkin/Tags/NeighborMesh.hpp"
 #include "Framework/ActionTesting.hpp"
 #include "NumericalAlgorithms/Spectral/Mesh.hpp"
 #include "Parallel/Phase.hpp"
@@ -86,6 +87,7 @@ struct component {
           evolution::dg::subcell::Tags::DidRollback,
           evolution::dg::subcell::Tags::NeighborDataForReconstruction<Dim>,
           evolution::dg::subcell::Tags::DataForRdmpTci,
+          evolution::dg::Tags::NeighborMesh<Dim>,
           Tags::Variables<tmpl::list<Var1>>,
           Tags::HistoryEvolvedVariables<Tags::Variables<tmpl::list<Var1>>>,
           SelfStart::Tags::InitialValue<Tags::Variables<tmpl::list<Var1>>>>,
@@ -126,6 +128,14 @@ struct Metavariables {
 
   struct SubcellOptions {
     static constexpr bool subcell_enabled_at_external_boundary = false;
+
+    template <typename DbTagsList>
+    static size_t ghost_zone_size(const db::DataBox<DbTagsList>& box) {
+      CHECK(db::get<domain::Tags::Mesh<Dim>>(box) ==
+            Mesh<Dim>(5, Spectral::Basis::Legendre,
+                      Spectral::Quadrature::GaussLobatto));
+      return 2;
+    }
   };
 
   struct TciOnDgGrid {
@@ -225,6 +235,30 @@ void test_impl(const bool rdmp_fails, const bool tci_fails,
                std::pair<Direction<Dim>, ElementId<Dim>>, std::vector<double>,
                boost::hash<std::pair<Direction<Dim>, ElementId<Dim>>>>
       neighbor_data{};
+  FixedHashMap<maximum_number_of_neighbors(Dim),
+               std::pair<Direction<Dim>, ElementId<Dim>>, Mesh<Dim>,
+               boost::hash<std::pair<Direction<Dim>, ElementId<Dim>>>>
+      neighbor_meshes{};
+  for (const auto& [direction, neighbors] : element.neighbors()) {
+    REQUIRE(not neighbors.ids().empty());
+    const std::pair directional_element_id{direction, *neighbors.ids().begin()};
+    if ((direction.side() == Side::Upper and direction.dimension() % 2 == 0) or
+        (direction.side() == Side::Lower and direction.dimension() % 2 != 0)) {
+      neighbor_meshes[directional_element_id] = dg_mesh;
+      neighbor_data[directional_element_id] =
+          std::vector<double>(dg_mesh.number_of_grid_points());
+      alg::iota(neighbor_data[directional_element_id],
+                subcell_mesh.number_of_grid_points() *
+                    (2.0 * direction.dimension() + 1.0));
+    } else {
+      neighbor_meshes[directional_element_id] = subcell_mesh;
+      neighbor_data[directional_element_id] =
+          std::vector<double>(dg_mesh.number_of_grid_points());
+      alg::iota(neighbor_data[directional_element_id],
+                subcell_mesh.number_of_grid_points() *
+                    (2.0 * direction.dimension() + 1.0));
+    }
+  }
   evolution::dg::subcell::RdmpTciData rdmp_tci_data{};
   // max and min of +-2 at last time level means reconstructed vars will be in
   // limit
@@ -273,20 +307,20 @@ void test_impl(const bool rdmp_fails, const bool tci_fails,
     ActionTesting::emplace_array_component_and_initialize<comp>(
         &runner, ActionTesting::NodeId{0}, ActionTesting::LocalCoreId{0}, 0,
         {time_step_id, dg_mesh, subcell_mesh, element, active_grid,
-         did_rollback, neighbor_data, rdmp_tci_data, evolved_vars,
-         time_stepper_history, initial_value_evolved_vars, prim_vars,
-         initial_value_prim_vars});
+         did_rollback, neighbor_data, rdmp_tci_data, neighbor_meshes,
+         evolved_vars, time_stepper_history, initial_value_evolved_vars,
+         prim_vars, initial_value_prim_vars});
   } else {
     (void)prim_vars;
     (void)initial_value_prim_vars;
     ActionTesting::emplace_array_component_and_initialize<comp>(
         &runner, ActionTesting::NodeId{0}, ActionTesting::LocalCoreId{0}, 0,
         {time_step_id, dg_mesh, subcell_mesh, element, active_grid,
-         did_rollback, neighbor_data, rdmp_tci_data, evolved_vars,
-         time_stepper_history, initial_value_evolved_vars});
+         did_rollback, neighbor_data, rdmp_tci_data, neighbor_meshes,
+         evolved_vars, time_stepper_history, initial_value_evolved_vars});
   }
 
-  // Invoke the TciAndSwitchToDg action on the runner
+  // Invoke the TciAndRollback action on the runner
   ActionTesting::next_action<comp>(make_not_null(&runner), 0);
 
   const auto active_grid_from_box =
@@ -368,6 +402,23 @@ void test_impl(const bool rdmp_fails, const bool tci_fails,
                   initial_value_prim_vars, dg_mesh, subcell_mesh.extents()));
       }
     }
+
+    auto expected_neighbor_data = neighbor_data;
+    for (const auto& [directional_element_id, neighbor_mesh] :
+         neighbor_meshes) {
+      evolution::dg::subcell::insert_or_update_neighbor_volume_data<false>(
+          make_not_null(&expected_neighbor_data),
+          expected_neighbor_data.at(directional_element_id), 0,
+          directional_element_id, neighbor_mesh, element, subcell_mesh, 2);
+    }
+    const auto& neighbor_data_for_reconstruction =
+        ActionTesting::get_databox_tag<
+            comp,
+            evolution::dg::subcell::Tags::NeighborDataForReconstruction<Dim>>(
+            runner, 0);
+    CHECK_ITERABLE_APPROX(neighbor_data_for_reconstruction,
+                          expected_neighbor_data);
+
   } else {
     CHECK(ActionTesting::get_next_action_index<comp>(runner, 0) == 2);
     CHECK(active_grid_from_box == evolution::dg::subcell::ActiveGrid::Dg);
@@ -411,6 +462,13 @@ void test_impl(const bool rdmp_fails, const bool tci_fails,
         CHECK(initial_value_prim_vars_from_box == initial_value_prim_vars);
       }
     }
+
+    const auto& neighbor_data_for_reconstruction =
+        ActionTesting::get_databox_tag<
+            comp,
+            evolution::dg::subcell::Tags::NeighborDataForReconstruction<Dim>>(
+            runner, 0);
+    CHECK(neighbor_data_for_reconstruction.empty());
   }
 }
 
