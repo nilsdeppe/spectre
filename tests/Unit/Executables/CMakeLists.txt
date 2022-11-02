@@ -4,6 +4,7 @@
 # These tests should get moved out of Unit eventually.
 
 set(_COMPOSE_OUTPUT ${CMAKE_BINARY_DIR}/Test_ConvertComposeTableOutput.h5)
+set(_CONNECTIVITY_OUTPUT ${CMAKE_BINARY_DIR}/Test_ExtendConnectivityOutput)
 
 add_test(
   NAME "Unit.Executables.ConvertComposeTable"
@@ -30,3 +31,36 @@ add_dependencies(
   test-executables
   ConvertComposeTable
   )
+
+add_test(
+  NAME "Unit.Executables.ExtendConnectivity"
+  COMMAND
+  ${SHELL_EXECUTABLE}
+  -c
+  "rm -f ${_CONNECTIVITY_OUTPUT} && \
+   cp ${CMAKE_SOURCE_DIR}/tests/Unit/IO/Test_ExtendConnectivity_Data0.h5 \
+   ${CMAKE_BINARY_DIR}/tmp && \
+   ${CMAKE_BINARY_DIR}/bin/ExtendConnectivity \
+   --file_name ${CMAKE_BINARY_DIR}/tmp/Test_ExtendConnectivity_Data0.h5 \
+   --subfile_name VolumeData && \
+   ${CMAKE_BINARY_DIR}/bin/GenerateXdmf \
+   --file-prefix ${CMAKE_BINARY_DIR}/tmp/Test_ExtendConnectivity_Data \
+   --subfile-name VolumeData \
+   --output ${_CONNECTIVITY_OUTPUT} \
+   && rm ${CMAKE_BINARY_DIR}/tmp/Test_ExtendConnectivity_Data0.h5 \
+   && rm ${_CONNECTIVITY_OUTPUT}.xmf"
+  )
+set_standalone_test_properties("Unit.Executables.ExtendConnectivity")
+set_tests_properties(
+    "Unit.Executables.ExtendConnectivity"
+    PROPERTIES
+    LABELS "standalone;unit")
+add_dependencies(
+  unit-tests
+  ExtendConnectivity
+  )
+add_dependencies(
+  test-executables
+  ExtendConnectivity
+  )
+

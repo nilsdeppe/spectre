@@ -25,6 +25,7 @@ target_link_libraries(
   PUBLIC
   Boost::boost
   DataStructures
+  Domain
   ErrorHandling
   EventsAndTriggers
   hdf5::hdf5
