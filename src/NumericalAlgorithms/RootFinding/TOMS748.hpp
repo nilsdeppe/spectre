@@ -18,40 +18,45 @@
 namespace RootFinder {
 #ifdef SPECTRE_USE_SIMD
 namespace toms748_detail {
-template <typename T>
-simd::batch<T> secant_interpolate(const simd::batch<T>& a,
-                                  const simd::batch<T>& b,
-                                  const simd::batch<T>& fa,
-                                  const simd::batch<T>& fb);
-template <typename T>
-simd::batch<T> quadratic_interpolate(
-    const simd::batch<T>& a, const simd::batch<T>& b, const simd::batch<T>& d,
-    const simd::batch<T>& fa, const simd::batch<T>& fb,
-    const simd::batch<T>& fd, const unsigned count);
-template <typename T>
-simd::batch<T> cubic_interpolate(
-    const simd::batch<T>& a, const simd::batch<T>& b, const simd::batch<T>& d,
-    const simd::batch<T>& e, const simd::batch<T>& fa, const simd::batch<T>& fb,
-    const simd::batch<T>& fd, const simd::batch<T>& fe);
+template <typename T, typename Arch>
+simd::batch<T, Arch> secant_interpolate(const simd::batch<T, Arch>& a,
+                                        const simd::batch<T, Arch>& b,
+                                        const simd::batch<T, Arch>& fa,
+                                        const simd::batch<T, Arch>& fb);
+template <typename T, typename Arch>
+simd::batch<T, Arch> quadratic_interpolate(const simd::batch<T, Arch>& a,
+                                           const simd::batch<T, Arch>& b,
+                                           const simd::batch<T, Arch>& d,
+                                           const simd::batch<T, Arch>& fa,
+                                           const simd::batch<T, Arch>& fb,
+                                           const simd::batch<T, Arch>& fd,
+                                           const unsigned count);
+template <typename T, typename Arch>
+simd::batch<T, Arch> cubic_interpolate(
+    const simd::batch<T, Arch>& a, const simd::batch<T, Arch>& b,
+    const simd::batch<T, Arch>& d, const simd::batch<T, Arch>& e,
+    const simd::batch<T, Arch>& fa, const simd::batch<T, Arch>& fb,
+    const simd::batch<T, Arch>& fd, const simd::batch<T, Arch>& fe);
 
-template <typename T>
-simd::batch<T> safe_div(const simd::batch<T>& num, const simd::batch<T>& denom,
-                        const simd::batch<T>& r) {
+template <typename T, typename Arch>
+simd::batch<T, Arch> safe_div(const simd::batch<T, Arch>& num,
+                              const simd::batch<T, Arch>& denom,
+                              const simd::batch<T, Arch>& r) {
   // return num / denom without overflow, return r if overflow would occur.
-  const auto mask = fabs(denom) < (static_cast<T>(1));
-  if (UNLIKELY(simd::any(mask))) {
-    return simd::select(
-        mask and fabs(denom * std::numeric_limits<T>::max()) <= fabs(num), r,
-        num / denom);
-  }
-  return num / denom;
+  //
+  // This also prevents division by zero.
+  const auto mask = (fabs(denom) < (static_cast<T>(1))) and
+                    (fabs(denom * std::numeric_limits<T>::max()) <= fabs(num));
+  return simd::select(
+      mask, r,
+      num / simd::select(mask, simd::batch<T, Arch>(static_cast<T>(1)), denom));
 }
 
-template <typename T>
-simd::batch<T> secant_interpolate(const simd::batch<T>& a,
-                                  const simd::batch<T>& b,
-                                  const simd::batch<T>& fa,
-                                  const simd::batch<T>& fb)  {
+template <typename T, typename Arch>
+simd::batch<T, Arch> secant_interpolate(const simd::batch<T, Arch>& a,
+                                        const simd::batch<T, Arch>& b,
+                                        const simd::batch<T, Arch>& fa,
+                                        const simd::batch<T, Arch>& fb) {
   //
   // Performs standard secant interpolation of [a,b] given
   // function evaluations f(a) and f(b).  Performs a bisection
@@ -61,18 +66,23 @@ simd::batch<T> secant_interpolate(const simd::batch<T>& a,
   // that the function is unlikely to be smooth with a root very
   // close to a or b.
   //
-
-  const T tol = std::numeric_limits<T>::epsilon() * static_cast<T>(5);
-  const simd::batch<T> c = a - (fa / (fb - fa)) * (b - a);
-  return simd::select((c <= a + fabs(a) * tol) or (c >= b - fabs(b) * tol),
+  const simd::batch<T, Arch> tol_batch =
+      simd::batch<T, Arch>(std::numeric_limits<T>::epsilon()) *
+      simd::batch<T, Arch>(static_cast<T>(5));
+  const simd::batch<T, Arch> c = simd::fnma((fa / (fb - fa)), (b - a), a);
+  return simd::select((c <= simd::fma(fabs(a), tol_batch, a)) or
+                          (c >= simd::fnma(fabs(b), tol_batch, b)),
                       static_cast<T>(0.5) * (a + b), c);
 }
 
-template <typename T>
-simd::batch<T> quadratic_interpolate(
-    const simd::batch<T>& a, const simd::batch<T>& b, const simd::batch<T>& d,
-    const simd::batch<T>& fa, const simd::batch<T>& fb,
-    const simd::batch<T>& fd, const unsigned count) {
+template <typename T, typename Arch>
+simd::batch<T, Arch> quadratic_interpolate(const simd::batch<T, Arch>& a,
+                                           const simd::batch<T, Arch>& b,
+                                           const simd::batch<T, Arch>& d,
+                                           const simd::batch<T, Arch>& fa,
+                                           const simd::batch<T, Arch>& fb,
+                                           const simd::batch<T, Arch>& fd,
+                                           const unsigned count) {
   // Performs quadratic interpolation to determine the next point,
   // takes count Newton steps to find the location of the
   // quadratic polynomial.
@@ -85,14 +95,14 @@ simd::batch<T> quadratic_interpolate(
   // the result be out of range.
   //
   // Start by obtaining the coefficients of the quadratic polynomial:
-  const simd::batch<T> B =
-      safe_div(fb - fa, b - a, simd::batch<T>(std::numeric_limits<T>::max()));
-  simd::batch<T> A =
-      safe_div(fd - fb, d - b, simd::batch<T>(std::numeric_limits<T>::max()));
-  A = safe_div(A - B, d - a, simd::batch<T>(0));
+  const simd::batch<T, Arch> B = safe_div(
+      fb - fa, b - a, simd::batch<T, Arch>(std::numeric_limits<T>::max()));
+  simd::batch<T, Arch> A = safe_div(
+      fd - fb, d - b, simd::batch<T, Arch>(std::numeric_limits<T>::max()));
+  A = safe_div(A - B, d - a, simd::batch<T, Arch>(static_cast<T>(0)));
 
   const auto secant_failure_mask = A == static_cast<T>(0);
-  simd::batch<T> result_secant{};
+  simd::batch<T, Arch> result_secant{};
   if (UNLIKELY(simd::any(secant_failure_mask))) {
     // failure to determine coefficients, try a secant step:
     result_secant = secant_interpolate(a, b, fa, fb);
@@ -102,16 +112,19 @@ simd::batch<T> quadratic_interpolate(
   }
 
   // Determine the starting point of the Newton steps:
-  simd::batch<T> c =
+  simd::batch<T, Arch> c =
       simd::select(simd::sign(A) * simd::sign(fa) > static_cast<T>(0) and
                        A != static_cast<T>(0) and fa != static_cast<T>(0),
                    a, b);
 
   // Take the Newton steps:
   for (unsigned i = 1; i <= count; ++i) {
-    c -= safe_div(fa + (B + A * (c - b)) * (c - a),
-                  B + A * (static_cast<T>(2) * c - a - b),
-                  static_cast<T>(1) + c - a);
+    const simd::batch<T, Arch> c_minus_a = c - a;
+    c -= safe_div(
+        simd::fma(simd::fma(A, (c - b), B), c_minus_a, fa),
+        simd::fma(
+            A, simd::fms(simd::batch<T, Arch>(static_cast<T>(2)), c, a + b), B),
+        static_cast<T>(1) + c_minus_a);
   }
   if (const auto mask = (c <= a) or (c >= b); simd::any(mask)) {
     // Oops, failure, try a secant step:
@@ -120,11 +133,12 @@ simd::batch<T> quadratic_interpolate(
   return simd::select(secant_failure_mask, result_secant, c);
 }
 
-template <typename T>
-simd::batch<T> cubic_interpolate(
-    const simd::batch<T>& a, const simd::batch<T>& b, const simd::batch<T>& d,
-    const simd::batch<T>& e, const simd::batch<T>& fa, const simd::batch<T>& fb,
-    const simd::batch<T>& fd, const simd::batch<T>& fe) {
+template <typename T, typename Arch>
+simd::batch<T, Arch> cubic_interpolate(
+    const simd::batch<T, Arch>& a, const simd::batch<T, Arch>& b,
+    const simd::batch<T, Arch>& d, const simd::batch<T, Arch>& e,
+    const simd::batch<T, Arch>& fa, const simd::batch<T, Arch>& fb,
+    const simd::batch<T, Arch>& fd, const simd::batch<T, Arch>& fe) {
   // Uses inverse cubic interpolation of f(x) at points
   // [a,b,d,e] to obtain an approximate root of f(x).
   // Points d and e lie outside the interval [a,b]
@@ -134,34 +148,48 @@ simd::batch<T> cubic_interpolate(
   // Note: this does not guarantee to find a root
   // inside [a, b], so we fall back to quadratic
   // interpolation in case of an erroneous result.
-  const simd::batch<T> q11 = (d - e) * fd / (fe - fd);
-  const simd::batch<T> q21 = (b - d) * fb / (fd - fb);
-  const simd::batch<T> q31 = (a - b) * fa / (fb - fa);
-  const simd::batch<T> d21 = (b - d) * fd / (fd - fb);
-  const simd::batch<T> d31 = (a - b) * fb / (fb - fa);
+  //
+  // This commented chunk is the original Boost implementation translated into
+  // simd. The actual code below is a heavily optimized version.
+  //
+  // const simd::batch<T, Arch> q11 = (d - e) * fd / (fe - fd);
+  // const simd::batch<T, Arch> q21 = (b - d) * fb / (fd - fb);
+  // const simd::batch<T, Arch> q31 = (a - b) * fa / (fb - fa);
+  // const simd::batch<T, Arch> d21 = (b - d) * fd / (fd - fb);
+  // const simd::batch<T, Arch> d31 = (a - b) * fb / (fb - fa);
+  //
+  // const simd::batch<T, Arch> q22 = (d21 - q11) * fb / (fe - fb);
+  // const simd::batch<T, Arch> q32 = (d31 - q21) * fa / (fd - fa);
+  // const simd::batch<T, Arch> d32 = (d31 - q21) * fd / (fd - fa);
+  // const simd::batch<T, Arch> q33 = (d32 - q22) * fa / (fe - fa);
+  //
+  // simd::batch<T, Arch> c = q31 + q32 + q33 + a;
 
-  const simd::batch<T> q22 = (d21 - q11) * fb / (fe - fb);
-  const simd::batch<T> q32 = (d31 - q21) * fa / (fd - fa);
-  const simd::batch<T> d32 = (d31 - q21) * fd / (fd - fa);
-  const simd::batch<T> q33 = (d32 - q22) * fa / (fe - fa);
+  // The optimized implementation here is L1-cache bound. That is, we aren't
+  // able to completely saturate the FP units because we are waiting on the L1
+  // cache. While not ideal, that's okay and just part of the algorithm.
+  const simd::batch<T, Arch> denom_fb_fa = fb - fa;
+  const simd::batch<T, Arch> denom_fd_fb = fd - fb;
+  const simd::batch<T, Arch> denom_fd_fa = fd - fa;
+  const simd::batch<T, Arch> denom_fe_fd = fe - fd;
+  const simd::batch<T, Arch> denom_fe_fb = fe - fb;
+  const simd::batch<T, Arch> denom =
+      denom_fe_fb * denom_fe_fd * denom_fd_fa * denom_fd_fb * (fe - fa);
 
-  // simd::batch<T> d31 = (a - b) / (fb - fa);
-  // const simd::batch<T> q31 = d31 * fa;
-  // d31 *= fb;
+  const simd::batch<T, Arch> fa_by_denom = fa / (denom_fb_fa * denom);
 
-  // simd::batch<T> q21 = (b - d) / (fd - fb);
-  // const simd::batch<T> d21 = q21 * fd;
-  // q21 *= fb;
+  const simd::batch<T, Arch> d31 = (a - b);
+  const simd::batch<T, Arch> q21 = (b - d);
+  const simd::batch<T, Arch> q32 =
+      simd::fms(denom_fd_fb, d31, denom_fb_fa * q21) * denom_fe_fb *
+      denom_fe_fd;
+  const simd::batch<T, Arch> q22 =
+      simd::fms(denom_fe_fd, q21, (d - e) * denom_fd_fb) * fd * denom_fb_fa *
+      denom_fd_fa;
 
-  // simd::batch<T> q32 = (d31 - q21) / (fd - fa);
-  // const simd::batch<T> d32 = q32 * fd;
-  // q32 *= fa;
-
-  // const simd::batch<T> q11 = (d - e) * fd / (fe - fd);
-  // const simd::batch<T> q22 = (d21 - q11) * fb / (fe - fb);
-  // const simd::batch<T> q33 = (d32 - q22) * fa / (fe - fa);
-
-  simd::batch<T> c = q31 + q32 + q33 + a;
+  simd::batch<T, Arch> c = simd::fma(
+      fa_by_denom,
+      simd::fma(fb, simd::fms(q32, (fe + denom_fd_fa), q22), d31 * denom), a);
 
   if (const auto mask = (c <= a) or (c >= b); simd::any(mask)) {
     // Out of bounds step, fall back to quadratic interpolation:
@@ -171,21 +199,25 @@ simd::batch<T> cubic_interpolate(
   return c;
 }
 
-template <typename F, typename T>
-void bracket(F f, simd::batch<T>& a, simd::batch<T>& b, simd::batch<T> c,
-             simd::batch<T>& fa, simd::batch<T>& fb, simd::batch<T>& d,
-             simd::batch<T>& fd) {
+template <typename F, typename T, typename Arch>
+void bracket(F f, simd::batch<T, Arch>& a, simd::batch<T, Arch>& b,
+             simd::batch<T, Arch> c, simd::batch<T, Arch>& fa,
+             simd::batch<T, Arch>& fb, simd::batch<T, Arch>& d,
+             simd::batch<T, Arch>& fd) {
   // Given a point c inside the existing enclosing interval
   // [a, b] sets a = c if f(c) == 0, otherwise finds the new
   // enclosing interval: either [a, c] or [c, b] and sets
   // d and fd to the point that has just been removed from
   // the interval.  In other words d is the third best guess
   // to the root.
-  const T tol = std::numeric_limits<T>::epsilon() * static_cast<T>(2);
+  const simd::batch<T, Arch> tol_batch =
+      simd::batch<T, Arch>(std::numeric_limits<T>::epsilon()) *
+      simd::batch<T, Arch>(static_cast<T>(2));
 
   // If the interval [a,b] is very small, or if c is too close
   // to one end of the interval then we need to adjust the
   // location of c accordingly. This is:
+  //
   //   if ((b - a) < 2 * tol * a) {
   //     c = a + (b - a) / 2;
   //   } else if (c <= a + fabs(a) * tol) {
@@ -193,20 +225,25 @@ void bracket(F f, simd::batch<T>& a, simd::batch<T>& b, simd::batch<T> c,
   //   } else if (c >= b - fabs(b) * tol) {
   //     c = b - fabs(b) * tol;
   //   }
+  const simd::batch<T, Arch> a_filt = simd::fma(fabs(a), tol_batch, a);
+  const simd::batch<T, Arch> b_filt = simd::fnma(fabs(b), tol_batch, b);
+  const simd::batch<T, Arch> b_minus_a = b - a;
   c = simd::select(
-      (b - a) < static_cast<T>(2) * tol * a, a + (b - a) * static_cast<T>(0.5),
-      simd::select(c <= a + fabs(a) * tol, a + fabs(a) * tol,
-                   simd::select(c >= b - fabs(b) * tol, b - fabs(b) * tol, c)));
+      (b_minus_a < tol_batch * a),
+      simd::fma(b_minus_a, simd::batch<T, Arch>(static_cast<T>(0.5)), a),
+      simd::select(c <= a_filt, a_filt, simd::select(c >= b_filt, b_filt, c)));
 
   // Invoke f(c):
-  simd::batch<T> fc = f(c);
+  simd::batch<T, Arch> fc = f(c);
 
   // if we have a zero then we have an exact solution to the root:
   const auto fc_is_zero_mask = fc == static_cast<T>(0);
   a = simd::select(fc_is_zero_mask, c, a);
-  fa = simd::select(fc_is_zero_mask, simd::batch<T>(static_cast<T>(0)), fa);
-  d = simd::select(fc_is_zero_mask, simd::batch<T>(static_cast<T>(0)), d);
-  fd = simd::select(fc_is_zero_mask, simd::batch<T>(static_cast<T>(0)), fd);
+  fa = simd::select(fc_is_zero_mask, simd::batch<T, Arch>(static_cast<T>(0)),
+                    fa);
+  d = simd::select(fc_is_zero_mask, simd::batch<T, Arch>(static_cast<T>(0)), d);
+  fd = simd::select(fc_is_zero_mask, simd::batch<T, Arch>(static_cast<T>(0)),
+                    fd);
   if (UNLIKELY(simd::all(fc_is_zero_mask))) {
     return;
   }
@@ -230,10 +267,10 @@ void bracket(F f, simd::batch<T>& a, simd::batch<T>& b, simd::batch<T> c,
   fa = simd::select(mask_else, fc, fa);
 }
 
-template <class F, class T, class Tol>
-std::pair<simd::batch<T>, simd::batch<T>> toms748_solve(
-    F f, const simd::batch<T>& ax, const simd::batch<T>& bx,
-    const simd::batch<T>& fax, const simd::batch<T>& fbx, Tol tol,
+template <class F, class T, class Arch, class Tol>
+std::pair<simd::batch<T, Arch>, simd::batch<T, Arch>> toms748_solve(
+    F f, const simd::batch<T, Arch>& ax, const simd::batch<T, Arch>& bx,
+    const simd::batch<T, Arch>& fax, const simd::batch<T, Arch>& fbx, Tol tol,
     size_t& max_iter) {
   static_assert(std::is_floating_point_v<T>);
   // Main entry point and logic for Toms Algorithm 748
@@ -248,13 +285,13 @@ std::pair<simd::batch<T>, simd::batch<T>> toms748_solve(
   static const T mu = 0.5f;
 
   // initialise a, b and fa, fb:
-  simd::batch<T> a = ax;
-  simd::batch<T> b = bx;
+  simd::batch<T, Arch> a = ax;
+  simd::batch<T, Arch> b = bx;
   if (UNLIKELY(simd::any(a >= b))) {
     throw std::domain_error("Lower bound is larger than upper bound");
   }
-  simd::batch<T> fa = fax;
-  simd::batch<T> fb = fbx;
+  simd::batch<T, Arch> fa = fax;
+  simd::batch<T, Arch> fb = fbx;
 
   const auto fa_is_zero_mask = (fa == static_cast<T>(0));
   const auto fb_is_zero_mask = (fb == static_cast<T>(0));
@@ -271,14 +308,13 @@ std::pair<simd::batch<T>, simd::batch<T>> toms748_solve(
         "Parameters lower and upper bounds do not bracket a root");
   }
   // dummy value for fd, e and fe:
-  simd::batch<T> fe(static_cast<T>(1e5F)), e(static_cast<T>(1e5F)),
+  simd::batch<T, Arch> fe(static_cast<T>(1e5F)), e(static_cast<T>(1e5F)),
       fd(static_cast<T>(1e5F));
 
-  simd::batch<T> c(std::numeric_limits<T>::signaling_NaN()),
+  simd::batch<T, Arch> c(std::numeric_limits<T>::signaling_NaN()),
       d(std::numeric_limits<T>::signaling_NaN());
 
-  const simd::batch<double> simd_nan(
-      std::numeric_limits<double>::signaling_NaN());
+  const simd::batch<T, Arch> simd_nan(std::numeric_limits<T>::signaling_NaN());
   auto completed_a = simd::select(completion_mask, a, simd_nan);
   auto completed_b = simd::select(completion_mask, b, simd_nan);
   const auto update_completed = [&fa, &completion_mask, &completed_a,
@@ -308,7 +344,7 @@ std::pair<simd::batch<T>, simd::batch<T>> toms748_solve(
     }
   }
 
-  simd::batch<T> u(std::numeric_limits<T>::signaling_NaN()),
+  simd::batch<T, Arch> u(std::numeric_limits<T>::signaling_NaN()),
       fu(std::numeric_limits<T>::signaling_NaN()),
       a0(std::numeric_limits<T>::signaling_NaN()),
       b0(std::numeric_limits<T>::signaling_NaN());
@@ -362,9 +398,12 @@ std::pair<simd::batch<T>, simd::batch<T>> toms748_solve(
     const auto fabs_fa_less_fabs_fb_mask = fabs(fa) < fabs(fb);
     u = simd::select(fabs_fa_less_fabs_fb_mask, a, b);
     fu = simd::select(fabs_fa_less_fabs_fb_mask, fa, fb);
-    c = u - static_cast<T>(2) * (fu / (fb - fa)) * (b - a);
-    c = simd::select(static_cast<T>(2) * fabs(c - u) > (b - a),
-                     a + static_cast<T>(0.5) * (b - a), c);
+    const simd::batch<T, Arch> b_minus_a = b - a;
+    c = simd::fnma(static_cast<T>(2) * (fu / (fb - fa)), b_minus_a, u);
+    // c = u - static_cast<T>(2) * (fu / (fb - fa)) * b_minus_a;
+    c = simd::select(
+        static_cast<T>(2) * fabs(c - u) > b_minus_a,
+        simd::fma(simd::batch<T, Arch>(static_cast<T>(0.5)), b_minus_a, a), c);
 
     // Bracket again, and check termination condition:
     e = d;
@@ -392,8 +431,10 @@ std::pair<simd::batch<T>, simd::batch<T>> toms748_solve(
     const auto fd_prebisection = fd;
     e = d;
     fe = fd;
-    toms748_detail::bracket(f, a, b, a + (b - a) * static_cast<T>(0.5), fa, fb,
-                            d, fd);
+    toms748_detail::bracket(
+        f, a, b,
+        simd::fma((b - a), simd::batch<T, Arch>(static_cast<T>(0.5)), a), fa,
+        fb, d, fd);
     a = simd::select(bisection_mask, a, a_prebisection);
     fa = simd::select(bisection_mask, fa, fa_prebisection);
     b = simd::select(bisection_mask, b, b_prebisection);
@@ -417,29 +458,30 @@ std::pair<simd::batch<T>, simd::batch<T>> toms748_solve(
 }
 }  // namespace toms748_detail
 
-template <typename Function>
-simd::batch<double> toms748(const Function& f,
-                            const simd::batch<double> lower_bound,
-                            const simd::batch<double> upper_bound,
-                            const simd::batch<double> f_at_lower_bound,
-                            const simd::batch<double> f_at_upper_bound,
-                            const double absolute_tolerance,
-                            const double relative_tolerance,
-                            const size_t max_iterations = 100) {
-  ASSERT(relative_tolerance > std::numeric_limits<double>::epsilon(),
+template <typename Function, typename T, typename Arch>
+simd::batch<T, Arch> toms748(const Function& f,
+                             const simd::batch<T, Arch> lower_bound,
+                             const simd::batch<T, Arch> upper_bound,
+                             const simd::batch<T, Arch> f_at_lower_bound,
+                             const simd::batch<T, Arch> f_at_upper_bound,
+                             const T absolute_tolerance,
+                             const T relative_tolerance,
+                             const size_t max_iterations = 100) {
+  ASSERT(relative_tolerance > std::numeric_limits<T>::epsilon(),
          "The relative tolerance is too small.");
 
-  boost::uintmax_t max_iters = max_iterations;
+  std::size_t max_iters = max_iterations;
 
   // This solver requires tol to be passed as a termination condition. This
   // termination condition is equivalent to the convergence criteria used by the
   // GSL
-  auto tol = [absolute_tolerance, relative_tolerance](
-                 const simd::batch<double>& lhs,
-                 const simd::batch<double>& rhs) {
+  const auto tol = [absolute_tolerance, relative_tolerance](
+                       const simd::batch<T, Arch>& lhs,
+                       const simd::batch<T, Arch>& rhs) {
     return simd::abs(lhs - rhs) <=
-           absolute_tolerance +
-               relative_tolerance * simd::min(simd::abs(lhs), simd::abs(rhs));
+           simd::fma(simd::batch<T, Arch>(relative_tolerance),
+                     simd::min(simd::abs(lhs), simd::abs(rhs)),
+                     simd::batch<T, Arch>(absolute_tolerance));
   };
   auto result = toms748_detail::toms748_solve(f, lower_bound, upper_bound,
                                               f_at_lower_bound,
@@ -448,16 +490,17 @@ simd::batch<double> toms748(const Function& f,
     throw convergence_error(
         "toms748 reached max iterations without converging");
   }
-  return result.first + 0.5 * (result.second - result.first);
+  return simd::fma(simd::batch<T, Arch>(static_cast<T>(0.5)),
+                   (result.second - result.first), result.first);
 }
 
-template <typename Function>
-simd::batch<double> toms748(const Function& f,
-                            const simd::batch<double> lower_bound,
-                            const simd::batch<double> upper_bound,
-                            const double absolute_tolerance,
-                            const double relative_tolerance,
-                            const size_t max_iterations = 100) {
+template <typename Function, typename T, typename Arch>
+simd::batch<T, Arch> toms748(const Function& f,
+                             const simd::batch<T, Arch> lower_bound,
+                             const simd::batch<T, Arch> upper_bound,
+                             const T absolute_tolerance,
+                             const T relative_tolerance,
+                             const size_t max_iterations = 100) {
   return toms748(f, lower_bound, upper_bound, f(lower_bound), f(upper_bound),
                  absolute_tolerance, relative_tolerance, max_iterations);
 }
