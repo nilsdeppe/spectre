@@ -113,8 +113,8 @@ simd::batch<T, Arch> quadratic_interpolate(const simd::batch<T, Arch>& a,
 
   // Determine the starting point of the Newton steps:
   simd::batch<T, Arch> c =
-      simd::select(simd::sign(A) * simd::sign(fa) > static_cast<T>(0) and
-                       A != static_cast<T>(0) and fa != static_cast<T>(0),
+      simd::select(A * fa > static_cast<T>(0) and A != static_cast<T>(0) and
+                       fa != static_cast<T>(0),
                    a, b);
 
   // Take the Newton steps:
@@ -253,7 +253,7 @@ void bracket(F f, simd::batch<T, Arch>& a, simd::batch<T, Arch>& b,
   // zero at zero. Boost code is:
   // if (boost::math::sign(fa) * boost::math::sign(fc) < 0) {...} else {...}
   const auto sign_mask =
-      (sign(fa) * sign(fc) < static_cast<T>(0)) and (fa != static_cast<T>(0));
+      (fa * fc < static_cast<T>(0)) and (fa != static_cast<T>(0));
   const auto mask_if = sign_mask and (not fc_is_zero_mask);
   d = simd::select(mask_if, b, d);
   fd = simd::select(mask_if, fb, fd);
@@ -302,7 +302,7 @@ std::pair<simd::batch<T, Arch>, simd::batch<T, Arch>> toms748_solve(
                      simd::select(fa_is_zero_mask, a, b)};
   }
 
-  if (UNLIKELY(simd::any(simd::sign(fa) * simd::sign(fb) > static_cast<T>(0) and
+  if (UNLIKELY(simd::any(a * fb > static_cast<T>(0) and
                          (not fa_is_zero_mask) and (not fb_is_zero_mask)))) {
     throw std::domain_error(
         "Parameters lower and upper bounds do not bracket a root");
