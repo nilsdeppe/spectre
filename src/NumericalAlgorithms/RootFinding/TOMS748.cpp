@@ -1,6 +1,8 @@
 // Distributed under the MIT License.
 // See LICENSE.txt for details.
 
+/*
+
 #include "NumericalAlgorithms/RootFinding/TOMS748.hpp"
 
 #include <limits>
@@ -156,3 +158,4 @@ GENERATE_INSTANTIATIONS(INSTANTIATION, (float, double))
 }  // namespace toms748_detail
 #endif  // SPECTRE_USE_SIMD
 }  // namespace RootFinder
+*/
