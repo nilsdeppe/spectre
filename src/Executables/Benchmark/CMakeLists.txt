@@ -18,15 +18,12 @@ if("${GoogleBenchmark_FOUND}" AND NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   target_link_libraries(
     ${executable}
     PRIVATE
-    CoordinateMaps
-    Domain
+    # CoordinateMaps
+    # Domain
     Informer
     GoogleBenchmark
-    Spectral
+    # Spectral
 
-    GeneralRelativityHelpers
-    GrMhdAnalyticData
-    HydroHelpers
-    ValenciaDivClean
+    RootFinding
     )
 endif()

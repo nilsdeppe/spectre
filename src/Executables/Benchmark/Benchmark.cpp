@@ -8,23 +8,23 @@
 #include <string>
 #include <vector>
 
-#include "DataStructures/DataBox/Tag.hpp"
-#include "DataStructures/DataVector.hpp"
-#include "DataStructures/Tensor/Tensor.hpp"
-#include "DataStructures/Variables.hpp"
-#include "Domain/CoordinateMaps/Affine.hpp"
-#include "Domain/CoordinateMaps/CoordinateMap.hpp"
-#include "Domain/CoordinateMaps/CoordinateMap.tpp"
-#include "Domain/CoordinateMaps/ProductMaps.hpp"
-#include "Domain/CoordinateMaps/ProductMaps.tpp"
-#include "Domain/Structure/Element.hpp"
-#include "NumericalAlgorithms/LinearOperators/PartialDerivatives.tpp"
-#include "NumericalAlgorithms/Spectral/LogicalCoordinates.hpp"
-#include "NumericalAlgorithms/Spectral/Mesh.hpp"
-#include "NumericalAlgorithms/Spectral/Spectral.hpp"
-#include "PointwiseFunctions/MathFunctions/PowX.hpp"
+// #include "DataStructures/DataBox/Tag.hpp"
+// #include "DataStructures/DataVector.hpp"
+// #include "DataStructures/Tensor/Tensor.hpp"
+// #include "DataStructures/Variables.hpp"
+// #include "Domain/CoordinateMaps/Affine.hpp"
+// #include "Domain/CoordinateMaps/CoordinateMap.hpp"
+// #include "Domain/CoordinateMaps/CoordinateMap.tpp"
+// #include "Domain/CoordinateMaps/ProductMaps.hpp"
+// #include "Domain/CoordinateMaps/ProductMaps.tpp"
+// #include "Domain/Structure/Element.hpp"
+// #include "NumericalAlgorithms/LinearOperators/PartialDerivatives.tpp"
+// #include "NumericalAlgorithms/Spectral/LogicalCoordinates.hpp"
+// #include "NumericalAlgorithms/Spectral/Mesh.hpp"
+// #include "NumericalAlgorithms/Spectral/Spectral.hpp"
+// #include "PointwiseFunctions/MathFunctions/PowX.hpp"
 
-#include "Evolution/Systems/GrMhd/ValenciaDivClean/FixConservatives.hpp"
+#include "NumericalAlgorithms/RootFinding/TOMS748.hpp"
 
 // Charm looks for this function but since we build without a main function or
 // main module we just have it be empty
@@ -73,84 +73,129 @@ namespace {
 // In this anonymous namespace is an example of microbenchmarking the
 // all_gradient routine for the GH system
 
-template <size_t Dim>
-struct Kappa : db::SimpleTag {
-  using type = tnsr::abb<DataVector, Dim, Frame::Grid>;
-};
-template <size_t Dim>
-struct Psi : db::SimpleTag {
-  using type = tnsr::aa<DataVector, Dim, Frame::Grid>;
-};
+// template <size_t Dim>
+// struct Kappa : db::SimpleTag {
+//   using type = tnsr::abb<DataVector, Dim, Frame::Grid>;
+// };
+// template <size_t Dim>
+// struct Psi : db::SimpleTag {
+//   using type = tnsr::aa<DataVector, Dim, Frame::Grid>;
+// };
 
-// clang-tidy: don't pass be non-const reference
-void bench_all_gradient(benchmark::State& state) {  // NOLINT
-  constexpr const size_t pts_1d = 4;
-  constexpr const size_t Dim = 3;
-  const Mesh<Dim> mesh{pts_1d, Spectral::Basis::Legendre,
-                       Spectral::Quadrature::GaussLobatto};
-  domain::CoordinateMaps::Affine map1d(-1.0, 1.0, -1.0, 1.0);
-  using Map3d =
-      domain::CoordinateMaps::ProductOf3Maps<domain::CoordinateMaps::Affine,
-                                             domain::CoordinateMaps::Affine,
-                                             domain::CoordinateMaps::Affine>;
-  domain::CoordinateMap<Frame::ElementLogical, Frame::Grid, Map3d> map(
-      Map3d{map1d, map1d, map1d});
+// // clang-tidy: don't pass be non-const reference
+// void bench_all_gradient(benchmark::State& state) {  // NOLINT
+//   constexpr const size_t pts_1d = 4;
+//   constexpr const size_t Dim = 3;
+//   const Mesh<Dim> mesh{pts_1d, Spectral::Basis::Legendre,
+//                        Spectral::Quadrature::GaussLobatto};
+//   domain::CoordinateMaps::Affine map1d(-1.0, 1.0, -1.0, 1.0);
+//   using Map3d =
+//       domain::CoordinateMaps::ProductOf3Maps<domain::CoordinateMaps::Affine,
+//                                              domain::CoordinateMaps::Affine,
+//                                              domain::CoordinateMaps::Affine>;
+//   domain::CoordinateMap<Frame::ElementLogical, Frame::Grid, Map3d> map(
+//       Map3d{map1d, map1d, map1d});
 
-  using VarTags = tmpl::list<Kappa<Dim>, Psi<Dim>>;
-  const InverseJacobian<DataVector, Dim, Frame::ElementLogical, Frame::Grid>
-      inv_jac = map.inv_jacobian(logical_coordinates(mesh));
-  const auto grid_coords = map(logical_coordinates(mesh));
-  Variables<VarTags> vars(mesh.number_of_grid_points(), 0.0);
+//   using VarTags = tmpl::list<Kappa<Dim>, Psi<Dim>>;
+//   const InverseJacobian<DataVector, Dim, Frame::ElementLogical, Frame::Grid>
+//       inv_jac = map.inv_jacobian(logical_coordinates(mesh));
+//   const auto grid_coords = map(logical_coordinates(mesh));
+//   Variables<VarTags> vars(mesh.number_of_grid_points(), 0.0);
 
-  while (state.KeepRunning()) {
-    benchmark::DoNotOptimize(partial_derivatives<VarTags>(vars, mesh, inv_jac));
-  }
-}
+//   while (state.KeepRunning()) {
+//     benchmark::DoNotOptimize(partial_derivatives<VarTags>(vars, mesh,
+//     inv_jac));
+//   }
+// }
 // BENCHMARK(bench_all_gradient);  // NOLINT
 
-void benchmark_fix_cons(benchmark::State& state) {
-  const size_t num_points = 1331;
-  Scalar<DataVector> tilde_d{DataVector(num_points)};
-  Scalar<DataVector> tilde_tau{DataVector(num_points)};
-  auto tilde_s =
-      make_with_value<tnsr::i<DataVector, 3, Frame::Inertial>>(tilde_d, 0.0);
-  auto tilde_b =
-      make_with_value<tnsr::I<DataVector, 3, Frame::Inertial>>(tilde_d, 0.0);
-  for (size_t i = 0; i < num_points; ++i) {
-    if (i % 2 == 0) {
-      get(tilde_d)[i] = 2.e-12;
-      get(tilde_tau)[i] = 4.5;
-      tilde_s.get(0)[i] = 3.0;
-      tilde_b.get(0)[i] = 2.0;
-    } else {
-      get(tilde_d)[i] = 1.0;
-      get(tilde_tau)[i] = 1.5;
-      tilde_s.get(0)[i] = 0.0;
-      tilde_b.get(0)[i] = 2.0;
+// void benchmark_fix_cons(benchmark::State& state) {
+//   const size_t num_points = 1331;
+//   Scalar<DataVector> tilde_d{DataVector(num_points)};
+//   Scalar<DataVector> tilde_tau{DataVector(num_points)};
+//   auto tilde_s =
+//       make_with_value<tnsr::i<DataVector, 3, Frame::Inertial>>(tilde_d, 0.0);
+//   auto tilde_b =
+//       make_with_value<tnsr::I<DataVector, 3, Frame::Inertial>>(tilde_d, 0.0);
+//   for (size_t i = 0; i < num_points; ++i) {
+//     if (i % 2 == 0) {
+//       get(tilde_d)[i] = 2.e-12;
+//       get(tilde_tau)[i] = 4.5;
+//       tilde_s.get(0)[i] = 3.0;
+//       tilde_b.get(0)[i] = 2.0;
+//     } else {
+//       get(tilde_d)[i] = 1.0;
+//       get(tilde_tau)[i] = 1.5;
+//       tilde_s.get(0)[i] = 0.0;
+//       tilde_b.get(0)[i] = 2.0;
+//     }
+//   }
+
+//   auto spatial_metric =
+// make_with_value<tnsr::ii<DataVector, 3, Frame::Inertial>>(tilde_d, 0.0);
+//   auto inv_spatial_metric =
+// make_with_value<tnsr::II<DataVector, 3, Frame::Inertial>>(tilde_d, 0.0);
+//   auto sqrt_det_spatial_metric =
+//       make_with_value<Scalar<DataVector>>(tilde_d, 1.0);
+//   for (size_t d = 0; d < 3; ++d) {
+//     spatial_metric.get(d, d) = get(sqrt_det_spatial_metric);
+//     inv_spatial_metric.get(d, d) = get(sqrt_det_spatial_metric);
+//   }
+
+//   const grmhd::ValenciaDivClean::FixConservatives variable_fixer{
+//       1.e-12, 1.0e-11, 0.0, 0.0};
+
+//   for (auto _ : state) {
+//     benchmark::DoNotOptimize(
+// variable_fixer(&tilde_d, &tilde_tau, &tilde_s, tilde_b, spatial_metric,
+//                        inv_spatial_metric, sqrt_det_spatial_metric));
+//   }
+// }
+// BENCHMARK(benchmark_fix_cons);
+
+void benchmark_cubic_roots_simd(benchmark::State& state) {
+  // x3 - 6x2 + 11x - 6
+  using SimdType = typename xsimd::make_sized_batch<double, 8>::type;
+  const auto f = [](const auto& x) {
+    return xsimd::fms(x, xsimd::fma(x, (x - 6.0), SimdType(11.0)),
+                      SimdType(6.0));
+  };
+  const SimdType lower_bound(1.5);
+  const SimdType upper_bound(2.1 + 1.0e-10);
+  const auto f_at_lower_bound = f(lower_bound);
+  const auto f_at_upper_bound = f(upper_bound);
+  // std::cout << RootFinder::toms748(f, lower_bound, upper_bound,
+  //                                  f_at_lower_bound,
+  //                                  f_at_upper_bound, 1.0e-14, 1.0e-12)
+  //           << "\n\n";
+  for (auto _ : state) {
+    for (size_t i = 0; i < (xsimd::batch<double>::size / SimdType::size); ++i) {
+      benchmark::DoNotOptimize(
+          RootFinder::toms748(f, lower_bound, upper_bound, f_at_lower_bound,
+                              f_at_upper_bound, 1.0e-14, 1.0e-12));
     }
   }
+}
+BENCHMARK(benchmark_cubic_roots_simd)->Iterations(2515925);
 
-  auto spatial_metric =
-      make_with_value<tnsr::ii<DataVector, 3, Frame::Inertial>>(tilde_d, 0.0);
-  auto inv_spatial_metric =
-      make_with_value<tnsr::II<DataVector, 3, Frame::Inertial>>(tilde_d, 0.0);
-  auto sqrt_det_spatial_metric =
-      make_with_value<Scalar<DataVector>>(tilde_d, 1.0);
-  for (size_t d = 0; d < 3; ++d) {
-    spatial_metric.get(d, d) = get(sqrt_det_spatial_metric);
-    inv_spatial_metric.get(d, d) = get(sqrt_det_spatial_metric);
-  }
-
-  const grmhd::ValenciaDivClean::FixConservatives variable_fixer{
-      1.e-12, 1.0e-11, 0.0, 0.0};
-
+void benchmark_cubic_roots_scalar(benchmark::State& state) {
+  // x3 - 6x2 + 11x - 6
+  const auto f = [](const double& x) {
+    return x * (x * (x - 6.0) + 11.0) - 6.0;
+  };
+  const double lower_bound(1.5);
+  const double upper_bound(2.1 + 1.0e-10);
+  const auto f_at_lower_bound = f(lower_bound);
+  const auto f_at_upper_bound = f(upper_bound);
   for (auto _ : state) {
-    benchmark::DoNotOptimize(
-        variable_fixer(&tilde_d, &tilde_tau, &tilde_s, tilde_b, spatial_metric,
-                       inv_spatial_metric, sqrt_det_spatial_metric));
+    for (size_t i = 0; i < xsimd::batch<double>::size; ++i) {
+      benchmark::DoNotOptimize(
+          RootFinder::toms748(f, lower_bound, upper_bound, f_at_lower_bound,
+                              f_at_upper_bound, 1.0e-14, 1.0e-12));
+    }
   }
 }
-BENCHMARK(benchmark_fix_cons);
+// BENCHMARK(benchmark_cubic_roots_scalar);
 }  // namespace
 
 // Ignore the warning about an extra ';' because some versions of benchmark
