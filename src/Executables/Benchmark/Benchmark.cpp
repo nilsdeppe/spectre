@@ -154,6 +154,21 @@ namespace {
 // BENCHMARK(benchmark_fix_cons);
 
 void benchmark_cubic_roots_simd(benchmark::State& state) {
+  // TODO: Make sure that for completed locations we don't drop down to
+  //       low-order interp all the time. That is, we need to make sure that
+  //       when we mask out completed slots, those slots cannot adversely
+  //       affect the performance of the algorithm.
+  //
+  // TODO: cleanup remaining TODOs in hpp. Make sure code really does match
+  //       Boost.
+  //
+  // TODO: make unified with double type. This needs a type trait to either
+  //       grab value_type or return T, I think.
+  //
+  // TODO: check if return by reference speeds things up at all.
+  //
+  // TODO: Remove simd wrapper lib?
+  //
   // x3 - 6x2 + 11x - 6
   using SimdType = typename xsimd::make_sized_batch<double, 8>::type;
   const auto f = [](const auto& x) {
