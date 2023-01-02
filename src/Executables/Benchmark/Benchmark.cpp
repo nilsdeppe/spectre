@@ -156,13 +156,6 @@ namespace {
 
 void benchmark_cubic_roots_simd(benchmark::State& state) {
   enable_floating_point_exceptions();
-  // TODO: Make sure that for completed locations we don't drop down to
-  //       low-order interp all the time. That is, we need to make sure that
-  //       when we mask out completed slots, those slots cannot adversely
-  //       affect the performance of the algorithm. Tests reveal that
-  //       performance is currently degraded after one of the slots has their
-  //       root found.
-  //
   // TODO: Make sure code really does match Boost.
   //
   // TODO: make unified with double type. This needs a type trait to either
