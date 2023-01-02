@@ -115,13 +115,13 @@ simd::batch<T, Arch> quadratic_interpolate(const simd::batch<T, Arch>& a,
   simd::batch<T, Arch> c = simd::select(A * fa > static_cast<T>(0), a, b);
 
   // Take the Newton steps:
+  const simd::batch<T, Arch> two_A = static_cast<T>(2) * A;
+  const simd::batch<T, Arch> half_a_plus_b = 0.5 * (a + b);
+  const simd::batch<T, Arch> one_minus_a = static_cast<T>(1) - a;
+  const simd::batch<T, Arch> B_minus_A_times_b = B - A * b;
   for (unsigned i = 1; i <= count; ++i) {
-    const simd::batch<T, Arch> c_minus_a = c - a;
-    c -= safe_div(
-        simd::fma(simd::fma(A, (c - b), B), c_minus_a, fa),
-        simd::fma(
-            A, simd::fms(simd::batch<T, Arch>(static_cast<T>(2)), c, a + b), B),
-        static_cast<T>(1) + c_minus_a);
+    c -= safe_div(simd::fma(simd::fma(A, c, B_minus_A_times_b), c - a, fa),
+                  simd::fma(two_A, c - half_a_plus_b, B), one_minus_a + c);
   }
   if (const auto mask = (c <= a) or (c >= b); simd::any(mask)) {
     // Oops, failure, try a secant step:
