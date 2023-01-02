@@ -112,10 +112,7 @@ simd::batch<T, Arch> quadratic_interpolate(const simd::batch<T, Arch>& a,
   }
 
   // Determine the starting point of the Newton steps:
-  simd::batch<T, Arch> c =
-      simd::select(A * fa > static_cast<T>(0) and A != static_cast<T>(0) and
-                       fa != static_cast<T>(0),
-                   a, b);
+  simd::batch<T, Arch> c = simd::select(A * fa > static_cast<T>(0), a, b);
 
   // Take the Newton steps:
   for (unsigned i = 1; i <= count; ++i) {
