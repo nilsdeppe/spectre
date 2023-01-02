@@ -157,10 +157,11 @@ void benchmark_cubic_roots_simd(benchmark::State& state) {
   // TODO: Make sure that for completed locations we don't drop down to
   //       low-order interp all the time. That is, we need to make sure that
   //       when we mask out completed slots, those slots cannot adversely
-  //       affect the performance of the algorithm.
+  //       affect the performance of the algorithm. Tests reveal that
+  //       performance is currently degraded after one of the slots has their
+  //       root found.
   //
-  // TODO: cleanup remaining TODOs in hpp. Make sure code really does match
-  //       Boost.
+  // TODO: Make sure code really does match Boost.
   //
   // TODO: make unified with double type. This needs a type trait to either
   //       grab value_type or return T, I think.
@@ -176,7 +177,10 @@ void benchmark_cubic_roots_simd(benchmark::State& state) {
                       SimdType(6.0));
   };
   const SimdType lower_bound(1.5);
-  const SimdType upper_bound(2.1 + 1.0e-10);
+  const SimdType upper_bound(2.5);
+  // const SimdType upper_bound(2.1 + 1.0e-10);
+  // const SimdType upper_bound(2.1 + 1.0e-10, 2.1 + 1.0e-10, 2.1 + 1.0e-10,
+  //                            2.1 + 1.0e-10, 2.5, 2.5, 2.5, 2.5);
   const auto f_at_lower_bound = f(lower_bound);
   const auto f_at_upper_bound = f(upper_bound);
   // std::cout << RootFinder::toms748(f, lower_bound, upper_bound,

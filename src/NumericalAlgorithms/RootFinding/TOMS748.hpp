@@ -235,14 +235,19 @@ void bracket(F f, simd::batch<T, Arch>& a, simd::batch<T, Arch>& b,
 
   // if we have a zero then we have an exact solution to the root:
   const auto fc_is_zero_mask = fc == static_cast<T>(0);
-  a = simd::select(fc_is_zero_mask, c, a);
-  fa = simd::select(fc_is_zero_mask, simd::batch<T, Arch>(static_cast<T>(0)),
-                    fa);
-  d = simd::select(fc_is_zero_mask, simd::batch<T, Arch>(static_cast<T>(0)), d);
-  fd = simd::select(fc_is_zero_mask, simd::batch<T, Arch>(static_cast<T>(0)),
-                    fd);
-  if (UNLIKELY(simd::all(fc_is_zero_mask))) {
-    return;
+  if (UNLIKELY(simd::any(fc_is_zero_mask))) {
+    a = simd::select(fc_is_zero_mask, c, a);
+    fa = simd::select(fc_is_zero_mask, simd::batch<T, Arch>(static_cast<T>(0)),
+                      fa);
+    d = simd::select(fc_is_zero_mask, simd::batch<T, Arch>(static_cast<T>(0)),
+                     d);
+    fd = simd::select(fc_is_zero_mask, simd::batch<T, Arch>(static_cast<T>(0)),
+                      fd);
+    if (UNLIKELY(simd::all(fc_is_zero_mask))) {
+      // TODO: add goto restore_completion_mask, or do if (not all()) {...}
+      // and have restore completion mask if-else
+      return;
+    }
   }
 
   // Non-zero fc, update the interval:
@@ -272,6 +277,9 @@ std::pair<simd::batch<T, Arch>, simd::batch<T, Arch>> toms748_solve(
   static_assert(std::is_floating_point_v<T>);
   // Main entry point and logic for Toms Algorithm 748
   // root finder.
+  if (UNLIKELY(simd::any(ax >= bx))) {
+    throw std::domain_error("Lower bound is larger than upper bound");
+  }
 
   // Sanity check - are we allowed to iterate at all?
   if (UNLIKELY(max_iter == 0)) {
@@ -279,21 +287,18 @@ std::pair<simd::batch<T, Arch>, simd::batch<T, Arch>> toms748_solve(
   }
 
   size_t count = max_iter;
+  // mu is a parameter in the algorithm that must be between (0, 1).
   static const T mu = 0.5f;
 
   // initialise a, b and fa, fb:
   simd::batch<T, Arch> a = ax;
   simd::batch<T, Arch> b = bx;
-  if (UNLIKELY(simd::any(a >= b))) {
-    throw std::domain_error("Lower bound is larger than upper bound");
-  }
   simd::batch<T, Arch> fa = fax;
   simd::batch<T, Arch> fb = fbx;
 
   const auto fa_is_zero_mask = (fa == static_cast<T>(0));
   const auto fb_is_zero_mask = (fb == static_cast<T>(0));
   auto completion_mask = tol(a, b) or fa_is_zero_mask or fb_is_zero_mask;
-  // TODO: incomplete
   if (UNLIKELY(simd::all(completion_mask))) {
     return std::pair{simd::select(fb_is_zero_mask, b, a),
                      simd::select(fa_is_zero_mask, a, b)};
@@ -314,6 +319,8 @@ std::pair<simd::batch<T, Arch>, simd::batch<T, Arch>> toms748_solve(
   const simd::batch<T, Arch> simd_nan(std::numeric_limits<T>::signaling_NaN());
   auto completed_a = simd::select(completion_mask, a, simd_nan);
   auto completed_b = simd::select(completion_mask, b, simd_nan);
+  // TODO: we can eliminate the functions calls on completed_a/b at the end if
+  // we also store the completed_fa/fb.
   const auto update_completed = [&fa, &completion_mask, &completed_a,
                                  &completed_b, &a, &b, &tol]() {
     const auto new_completed =
@@ -346,6 +353,7 @@ std::pair<simd::batch<T, Arch>, simd::batch<T, Arch>> toms748_solve(
       a0(std::numeric_limits<T>::signaling_NaN()),
       b0(std::numeric_limits<T>::signaling_NaN());
 
+  // Note: The Boost fa!=0 check is handled with the completion_mask.
   while (count and not simd::all(completion_mask)) {
     // save our brackets:
     a0 = a;
@@ -362,6 +370,13 @@ std::pair<simd::batch<T, Arch>, simd::batch<T, Arch>> toms748_solve(
                    (fabs(fa - fe) < min_diff) or (fabs(fb - fd) < min_diff) or
                    (fabs(fb - fe) < min_diff) or (fabs(fd - fe) < min_diff)) and
                   not completion_mask);
+    // TODO: Maybe we should do a cubic _and_ quadratic if we need to? This
+    // currently degrades the one find to a quadratic, though realistically I
+    // doubt that's a problem.
+    //
+    // TODO: we need to pass the completion mask down to prevent degrading to
+    // lower order computations or adding lower order work when it's not
+    // necessary.
     if (prof) {
       c = toms748_detail::quadratic_interpolate(a, b, d, fa, fb, fd, 2);
     } else {
@@ -396,6 +411,7 @@ std::pair<simd::batch<T, Arch>, simd::batch<T, Arch>> toms748_solve(
     u = simd::select(fabs_fa_less_fabs_fb_mask, a, b);
     fu = simd::select(fabs_fa_less_fabs_fb_mask, fa, fb);
     const simd::batch<T, Arch> b_minus_a = b - a;
+    // need to mask out fb==fa case
     c = simd::fnma(static_cast<T>(2) * (fu / (fb - fa)), b_minus_a, u);
     // c = u - static_cast<T>(2) * (fu / (fb - fa)) * b_minus_a;
     c = simd::select(
@@ -447,6 +463,7 @@ std::pair<simd::batch<T, Arch>, simd::batch<T, Arch>> toms748_solve(
   }  // while loop
 
   max_iter -= count;
+  // TODO: why recompute fa and fb? Does that have to do with completion mask
   fa = f(completed_a);
   fb = f(completed_b);
   completed_b = simd::select(fa == static_cast<T>(0), completed_a, completed_b);
