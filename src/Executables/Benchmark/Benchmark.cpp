@@ -24,6 +24,7 @@
 // #include "NumericalAlgorithms/Spectral/Spectral.hpp"
 // #include "PointwiseFunctions/MathFunctions/PowX.hpp"
 
+#include "Utilities/ErrorHandling/FloatingPointExceptions.hpp"
 #include "NumericalAlgorithms/RootFinding/TOMS748.hpp"
 
 // Charm looks for this function but since we build without a main function or
@@ -154,6 +155,7 @@ namespace {
 // BENCHMARK(benchmark_fix_cons);
 
 void benchmark_cubic_roots_simd(benchmark::State& state) {
+  enable_floating_point_exceptions();
   // TODO: Make sure that for completed locations we don't drop down to
   //       low-order interp all the time. That is, we need to make sure that
   //       when we mask out completed slots, those slots cannot adversely
@@ -177,16 +179,26 @@ void benchmark_cubic_roots_simd(benchmark::State& state) {
                       SimdType(6.0));
   };
   const SimdType lower_bound(1.5);
-  const SimdType upper_bound(2.5);
-  // const SimdType upper_bound(2.1 + 1.0e-10);
-  // const SimdType upper_bound(2.1 + 1.0e-10, 2.1 + 1.0e-10, 2.1 + 1.0e-10,
-  //                            2.1 + 1.0e-10, 2.5, 2.5, 2.5, 2.5);
+  SimdType upper_bound{};
+  // const SimdType upper_bound(2.5);
+  if (state.range(0) == 0) {
+    upper_bound = SimdType(2.5 + 1.0e-100) + 1.0e-8;
+  } else if (state.range(0) == 1) {
+    upper_bound = SimdType(2.1 + 1.0e-10, 2.1 + 1.0e-10, 2.1 + 1.0e-10,
+                           2.1 + 1.0e-10, 2.5, 2.5, 2.5, 2.5) +
+                  1.0e-8;
+  } else if (state.range(0) == 2) {
+    upper_bound = SimdType(2.1 + 1.0e-10, 2.2 + 1.0e-10, 2.3 + 1.0e-10,
+                           2.4 + 1.0e-10, 2.5, 2.6, 2.7, 2.8) +
+                  1.0e-8;
+  } else if (state.range(0) == 3) {
+    const double base = 2.8 + 1.0e-8;
+    upper_bound = SimdType(base + 1.0e-10, base + 2.0e-10, base + 3.0e-10,
+                           base + 4.0e-10, base + 5.0e-10, base + 6.0e-10,
+                           base + 7.0e-10, base + 8.0e-10);
+  }
   const auto f_at_lower_bound = f(lower_bound);
   const auto f_at_upper_bound = f(upper_bound);
-  // std::cout << RootFinder::toms748(f, lower_bound, upper_bound,
-  //                                  f_at_lower_bound,
-  //                                  f_at_upper_bound, 1.0e-14, 1.0e-12)
-  //           << "\n\n";
   for (auto _ : state) {
     for (size_t i = 0; i < (xsimd::batch<double>::size / SimdType::size); ++i) {
       benchmark::DoNotOptimize(
@@ -195,26 +207,56 @@ void benchmark_cubic_roots_simd(benchmark::State& state) {
     }
   }
 }
-BENCHMARK(benchmark_cubic_roots_simd)->Iterations(2515925);
+BENCHMARK(benchmark_cubic_roots_simd)  //
+    ->DenseRange(0, 3, 1);             //
+
+// ->Iterations(2515925);
 
 void benchmark_cubic_roots_scalar(benchmark::State& state) {
+  enable_floating_point_exceptions();
   // x3 - 6x2 + 11x - 6
-  const auto f = [](const double& x) {
-    return x * (x * (x - 6.0) + 11.0) - 6.0;
+  const auto f = [](const auto& x) {
+    using std::fma;
+    using xsimd::fma;
+    using Type = std::decay_t<decltype(x)>;
+    return fma(x, fma(x, (x - 6.0), Type(11.0)), Type(-6.0));
   };
-  const double lower_bound(1.5);
-  const double upper_bound(2.1 + 1.0e-10);
+  // const double lower_bound(1.5);
+  // const double upper_bound(2.1 + 1.0e-10);
+  // const auto f_at_lower_bound = f(lower_bound);
+  // const auto f_at_upper_bound = f(upper_bound);
+  using SimdType = typename xsimd::make_sized_batch<double, 8>::type;
+  const SimdType lower_bound(1.5);
+  SimdType upper_bound{};
+  // const SimdType upper_bound(2.5);
+  if (state.range(0) == 0) {
+    upper_bound = SimdType(2.5 + 1.0e-100) + 1.0e-8;
+  } else if (state.range(0) == 1) {
+    upper_bound = SimdType(2.1 + 1.0e-10, 2.1 + 1.0e-10, 2.1 + 1.0e-10,
+                           2.1 + 1.0e-10, 2.5, 2.5, 2.5, 2.5) +
+                  1.0e-8;
+  } else if (state.range(0) == 2) {
+    upper_bound = SimdType(2.1 + 1.0e-10, 2.2 + 1.0e-10, 2.3 + 1.0e-10,
+                           2.4 + 1.0e-10, 2.5, 2.6, 2.7, 2.8) +
+                  1.0e-8;
+  } else if (state.range(0) == 3) {
+    const double base = 2.8 + 1.0e-8;
+    upper_bound = SimdType(base + 1.0e-10, base + 2.0e-10, base + 3.0e-10,
+                           base + 4.0e-10, base + 5.0e-10, base + 6.0e-10,
+                           base + 7.0e-10, base + 8.0e-10);
+  }
   const auto f_at_lower_bound = f(lower_bound);
   const auto f_at_upper_bound = f(upper_bound);
   for (auto _ : state) {
-    for (size_t i = 0; i < xsimd::batch<double>::size; ++i) {
-      benchmark::DoNotOptimize(
-          RootFinder::toms748(f, lower_bound, upper_bound, f_at_lower_bound,
-                              f_at_upper_bound, 1.0e-14, 1.0e-12));
+    for (size_t i = 0; i < SimdType::size; ++i) {
+      benchmark::DoNotOptimize(RootFinder::toms748(
+          f, lower_bound.get(i), upper_bound.get(i), f_at_lower_bound.get(i),
+          f_at_upper_bound.get(i), 1.0e-14, 1.0e-12));
     }
   }
 }
-// BENCHMARK(benchmark_cubic_roots_scalar);
+BENCHMARK(benchmark_cubic_roots_scalar)  //
+    ->DenseRange(0, 3, 1);               //
 }  // namespace
 
 // Ignore the warning about an extra ';' because some versions of benchmark
