@@ -240,7 +240,7 @@ void bracket(F f, simd::batch<T, Arch>& a, simd::batch<T, Arch>& b,
   const simd::batch<T, Arch> b_filt = simd::fnma(fabs(b), tol_batch, b);
   const simd::batch<T, Arch> b_minus_a = b - a;
   c = simd::select(
-      (b_minus_a < tol_batch * a) and incomplete_mask,
+      (static_cast<T>(2) * tol_batch * a > b_minus_a) and incomplete_mask,
       simd::fma(b_minus_a, simd::batch<T, Arch>(static_cast<T>(0.5)), a),
       simd::clip(c, a_filt, b_filt));
 
@@ -318,6 +318,7 @@ std::pair<simd::batch<T, Arch>, simd::batch<T, Arch>> toms748_solve(
   auto completion_mask = tol(a, b) or fa_is_zero_mask or fb_is_zero_mask;
   auto incomplete_mask = not completion_mask;
   if (UNLIKELY(simd::all(completion_mask))) {
+    max_iter = 0;
     return std::pair{simd::select(fb_is_zero_mask, b, a),
                      simd::select(fa_is_zero_mask, a, b)};
   }

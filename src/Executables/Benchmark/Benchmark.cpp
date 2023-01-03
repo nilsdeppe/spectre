@@ -156,8 +156,6 @@ namespace {
 
 void benchmark_cubic_roots_simd(benchmark::State& state) {
   enable_floating_point_exceptions();
-  // TODO: Make sure code really does match Boost.
-  //
   // TODO: make unified with double type. This needs a type trait to either
   //       grab value_type or return T, I think.
   //
