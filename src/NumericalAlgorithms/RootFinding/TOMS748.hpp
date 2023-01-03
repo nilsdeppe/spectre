@@ -42,13 +42,13 @@ simd::batch<T, Arch> safe_div(const simd::batch<T, Arch>& num,
                               const simd::batch<T, Arch>& denom,
                               const simd::batch<T, Arch>& r) {
   // return num / denom without overflow, return r if overflow would occur.
-  //
-  // This also prevents division by zero.
-  const auto mask = (fabs(denom) < (static_cast<T>(1))) and
-                    (fabs(denom * std::numeric_limits<T>::max()) <= fabs(num));
-  return simd::select(
-      mask, r,
-      num / simd::select(mask, simd::batch<T, Arch>(static_cast<T>(1)), denom));
+  const auto mask0 = static_cast<T>(1) > fabs(denom);
+  // Note: if denom >= 1.0 you get an FPE because of overflow from
+  // `max() * (1. + value)`
+  const auto mask =
+      fabs(simd::select(mask0, denom, simd::batch<T, Arch>(static_cast<T>(0))) *
+           std::numeric_limits<T>::max()) <= fabs(num);
+  return simd::select(mask, r, num / denom);
 }
 
 template <typename T, typename Arch>
