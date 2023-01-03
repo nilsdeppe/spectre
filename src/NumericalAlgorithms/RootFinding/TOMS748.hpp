@@ -109,6 +109,9 @@ simd::batch<T, Arch> quadratic_interpolate(
   }
 
   // Determine the starting point of the Newton steps:
+  //
+  // Note: unlike Boost, we assume A*fa doesn't overflow. This speeds up the
+  // code quite a bit.
   simd::batch<T, Arch> c = simd::select(A * fa > static_cast<T>(0), a, b);
 
   // Take the Newton steps:
@@ -261,11 +264,13 @@ void bracket(F f, simd::batch<T, Arch>& a, simd::batch<T, Arch>& b,
   }
 
   // Non-zero fc, update the interval:
-  // Need the != 0 because simd sign is non-zero for zero, but boost::sign is
-  // zero at zero. Boost code is:
+  //
+  // Note: unlike Boost, we assume fa*fc doesn't overflow. This speeds up the
+  // code quite a bit.
+  //
+  // Boost code is:
   // if (boost::math::sign(fa) * boost::math::sign(fc) < 0) {...} else {...}
-  const auto sign_mask =
-      (fa * fc < static_cast<T>(0)) and (fa != static_cast<T>(0));
+  const auto sign_mask = fa * fc < static_cast<T>(0);
   const auto mask_if =
       (sign_mask and (not fc_is_zero_mask)) and incomplete_mask;
   d = simd::select(mask_if, b, d);
@@ -317,6 +322,8 @@ std::pair<simd::batch<T, Arch>, simd::batch<T, Arch>> toms748_solve(
                      simd::select(fa_is_zero_mask, a, b)};
   }
 
+  // Note: unlike Boost, we assume a*fb doesn't overflow. This speeds up the
+  // code quite a bit.
   if (UNLIKELY(simd::any(a * fb > static_cast<T>(0) and
                          (not fa_is_zero_mask) and (not fb_is_zero_mask)))) {
     throw std::domain_error(
@@ -355,6 +362,7 @@ std::pair<simd::batch<T, Arch>, simd::batch<T, Arch>> toms748_solve(
     toms748_detail::bracket(f, a, b, c, fa, fb, d, fd, incomplete_mask);
     --count;
 
+    // Note: The Boost fa!=0 check is handled with the completion_mask.
     if (count and not update_completed()) {
       // On the second step we take a quadratic interpolation:
       c = toms748_detail::quadratic_interpolate(a, b, d, fa, fb, fd,
