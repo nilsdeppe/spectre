@@ -239,7 +239,7 @@ void bracket(F f, simd::batch<T, Arch>& a, simd::batch<T, Arch>& b,
   c = simd::select(
       (b_minus_a < tol_batch * a) and incomplete_mask,
       simd::fma(b_minus_a, simd::batch<T, Arch>(static_cast<T>(0.5)), a),
-      simd::select(c <= a_filt, a_filt, simd::select(c >= b_filt, b_filt, c)));
+      simd::clip(c, a_filt, b_filt));
 
   // Invoke f(c):
   simd::batch<T, Arch> fc = f(c);
