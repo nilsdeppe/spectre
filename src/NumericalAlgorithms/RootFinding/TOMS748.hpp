@@ -172,7 +172,10 @@ simd::batch<T, Arch> cubic_interpolate(
   const simd::batch<T, Arch> denom =
       denom_fe_fb * denom_fe_fd * denom_fd_fa * denom_fd_fb * (fe - fa);
 
-  const simd::batch<T, Arch> fa_by_denom = fa / (denom_fb_fa * denom);
+  // Avoid division by zero with mask.
+  const simd::batch<T, Arch> fa_by_denom =
+      fa / simd::select(incomplete_mask, denom_fb_fa * denom,
+                        simd::batch<T, Arch>(static_cast<T>(1)));
 
   const simd::batch<T, Arch> d31 = (a - b);
   const simd::batch<T, Arch> q21 = (b - d);
