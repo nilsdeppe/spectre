@@ -9,17 +9,36 @@
 
 namespace evolution::dg {
 template <size_t Dim>
-void* BoundaryMessage<Dim>::pack(BoundaryMessage* inmsg) {
+BoundaryMessage<Dim>::BoundaryMessage(
+    const size_t subcell_ghost_data_size_in, const size_t dg_flux_data_size_in,
+    const bool sent_across_nodes_in,
+    const ::TimeStepId& current_time_step_id_in,
+    const ::TimeStepId& next_time_step_id_in,
+    const Mesh<Dim>& volume_or_ghost_mesh_in,
+    const Mesh<Dim - 1>& interface_mesh_in, double* subcell_ghost_data_in,
+    double* dg_flux_data_in)
+    : subcell_ghost_data_size(subcell_ghost_data_size_in),
+      dg_flux_data_size(dg_flux_data_size_in),
+      sent_across_nodes(sent_across_nodes_in),
+      current_time_step_id(current_time_step_id_in),
+      next_time_step_id(next_time_step_id_in),
+      volume_or_ghost_mesh(volume_or_ghost_mesh_in),
+      interface_mesh(interface_mesh_in),
+      subcell_ghost_data(subcell_ghost_data_in),
+      dg_flux_data(dg_flux_data_in) {}
+
+template <size_t Dim>
+void* BoundaryMessage<Dim>::pack(BoundaryMessage<Dim>* inmsg) {
   // Size of everything
-  size_t totalsize = size_of_object_in_bytes(inmsg->subcell_ghost_data_size);
-  totalsize += size_of_object_in_bytes(inmsg->dg_flux_data_size);
-  totalsize += size_of_object_in_bytes(inmsg->sent_across_nodes);
-  totalsize += size_of_object_in_bytes(inmsg->current_time_step_id);
-  totalsize += size_of_object_in_bytes(inmsg->next_time_step_id);
-  totalsize += size_of_object_in_bytes(inmsg->volume_or_ghost_mesh);
-  totalsize += size_of_object_in_bytes(inmsg->interface_mesh);
-  totalsize += inmsg->subcell_ghost_data_size * sizeof(double);
-  totalsize += inmsg->dg_flux_data_size * sizeof(double);
+  size_t totalsize = sizeof(inmsg->subcell_ghost_data_size);
+  totalsize += sizeof(inmsg->dg_flux_data_size);
+  totalsize += sizeof(inmsg->sent_across_nodes);
+  totalsize += sizeof(inmsg->current_time_step_id);
+  totalsize += sizeof(inmsg->next_time_step_id);
+  totalsize += sizeof(inmsg->volume_or_ghost_mesh);
+  totalsize += sizeof(inmsg->interface_mesh);
+  totalsize += sizeof(*(inmsg->subcell_ghost_data));
+  totalsize += sizeof(*(inmsg->dg_flux_data));
 
   char* buffer =
       static_cast<char*>(CkAllocBuffer(inmsg, static_cast<int>(totalsize)));
@@ -50,18 +69,22 @@ BoundaryMessage<Dim>* BoundaryMessage<Dim>::unpack(void* inbuf) {
   // inbuf is the raw memory allocated and assigned in pack. This next buffer is
   // only used to get the sizes of the arrays. It cannot be used to access the
   // data
-  BoundaryMessage* buffer = static_cast<BoundaryMessage*>(inbuf);
+  BoundaryMessage<Dim>* buffer = reinterpret_cast<BoundaryMessage<Dim>*>(inbuf);
 
   const size_t subcell_ghost_data_size = buffer->subcell_ghost_data_size;
   const size_t dg_flux_data_size = buffer->dg_flux_data_size;
 
-  BoundaryMessage* unpacked_message = static_cast<BoundaryMessage*>(
-      CkAllocBuffer(inbuf, sizeof(BoundaryMessage) +
-                               subcell_ghost_data_size * sizeof(double) +
-                               dg_flux_data_size * sizeof(double)));
+  BoundaryMessage<Dim>* unpacked_message =
+      reinterpret_cast<BoundaryMessage<Dim>*>(
+          // FIXME: Is this supposed to be the size of a BoundaryMessage plus
+          // the size of the arrays? Or is it supposed to be the size of the
+          // inbuf? Because those are two different sizes.
+          CkAllocBuffer(inbuf, sizeof(BoundaryMessage<Dim>) +
+                                   subcell_ghost_data_size * sizeof(double) +
+                                   dg_flux_data_size * sizeof(double)));
 
   unpacked_message =
-      new (static_cast<void*>(unpacked_message)) BoundaryMessage();
+      new (static_cast<void*>(unpacked_message)) BoundaryMessage<Dim>();
 
   PUP::fromMem reader(inbuf);
   reader | unpacked_message->subcell_ghost_data_size;
@@ -73,20 +96,21 @@ BoundaryMessage<Dim>* BoundaryMessage<Dim>::unpack(void* inbuf) {
   reader | unpacked_message->interface_mesh;
   // If we actually have data, set the pointer, then call PUParray to copy the
   // data
-  if (unpacked_message->subcell_ghost_data_size != 0) {
-    unpacked_message->subcell_ghost_data = reinterpret_cast<double*>(
-        reinterpret_cast<char*>(unpacked_message) + sizeof(BoundaryMessage));
+  if (subcell_ghost_data_size != 0) {
+    unpacked_message->subcell_ghost_data =
+        reinterpret_cast<double*>(reinterpret_cast<char*>(unpacked_message) +
+                                  sizeof(BoundaryMessage<Dim>));
     PUParray(reader, unpacked_message->subcell_ghost_data,
-             unpacked_message->subcell_ghost_data_size);
+             subcell_ghost_data_size);
   } else {
     // Otherwise just set the data to a nullptr
     unpacked_message->subcell_ghost_data = nullptr;
   }
-  if (unpacked_message->dg_flux_data_size != 0) {
+  if (dg_flux_data_size != 0) {
     unpacked_message->subcell_ghost_data = reinterpret_cast<double*>(
-        reinterpret_cast<char*>(unpacked_message) + sizeof(BoundaryMessage));
-    PUParray(reader, unpacked_message->dg_flux_data,
-             unpacked_message->dg_flux_data_size);
+        reinterpret_cast<char*>(unpacked_message) +
+        sizeof(BoundaryMessage<Dim>) + subcell_ghost_data_size);
+    PUParray(reader, unpacked_message->dg_flux_data, dg_flux_data_size);
   } else {
     unpacked_message->dg_flux_data = nullptr;
   }
@@ -95,4 +119,8 @@ BoundaryMessage<Dim>* BoundaryMessage<Dim>::unpack(void* inbuf) {
   CkFreeMsg(inbuf);
   return unpacked_message;
 }
+
+template struct BoundaryMessage<1>;
+template struct BoundaryMessage<2>;
+template struct BoundaryMessage<3>;
 }  // namespace evolution::dg

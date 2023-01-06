@@ -28,6 +28,17 @@ struct BoundaryMessage : public CMessage_BoundaryMessage<Dim> {
   double* subcell_ghost_data;
   double* dg_flux_data;
 
+  BoundaryMessage() = default;
+
+  BoundaryMessage(const size_t subcell_ghost_data_size_in,
+                  const size_t dg_flux_data_size_in,
+                  const bool sent_across_nodes_in,
+                  const ::TimeStepId& current_time_step_id_in,
+                  const ::TimeStepId& next_time_step_id_in,
+                  const Mesh<Dim>& volume_or_ghost_mesh_in,
+                  const Mesh<Dim - 1>& interface_mesh_in,
+                  double* subcell_ghost_data_in, double* dg_flux_data_in);
+
   static void* pack(BoundaryMessage*);
   static BoundaryMessage* unpack(void*);
 };
