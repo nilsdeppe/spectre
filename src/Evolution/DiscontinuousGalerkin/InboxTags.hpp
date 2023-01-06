@@ -106,6 +106,8 @@ struct BoundaryCorrectionAndGhostCellsInbox {
                    std::pair<Direction<Dim>, ElementId<Dim>>, stored_type,
                    boost::hash<std::pair<Direction<Dim>, ElementId<Dim>>>>>;
 
+  // TODO: This will take BoundaryMessage. Need to unpack everything in order to
+  // insert into inbox. Probably use unique_ptr.
   template <typename Inbox, typename ReceiveDataType>
   static void insert_into_inbox(const gsl::not_null<Inbox*> inbox,
                                 const temporal_id& time_step_id,

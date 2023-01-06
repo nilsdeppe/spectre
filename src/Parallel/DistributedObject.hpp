@@ -315,6 +315,9 @@ class DistributedObject<ParallelComponent,
   void receive_data(typename ReceiveTag::temporal_id instance,
                     ReceiveDataType&& t, bool enable_if_disabled = false);
 
+  template <typename MessageType>
+  void receive_data(MessageType* message);
+
   /// @{
   /// Start evaluating the algorithm until it is stopped by an action.
   void perform_algorithm();
@@ -868,6 +871,14 @@ void DistributedObject<ParallelComponent,
   } catch (const std::exception& exception) {
     initiate_shutdown(exception);
   }
+}
+
+template <typename ParallelComponent, typename... PhaseDepActionListsPack>
+template <typename MessageType>
+void DistributedObject<ParallelComponent,
+                       tmpl::list<PhaseDepActionListsPack...>>::
+    receive_data(MessageType* message) {
+  (void)message;
 }
 
 template <typename ParallelComponent, typename... PhaseDepActionListsPack>
