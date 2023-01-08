@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cstddef>
+#include <ostream>
 
 #include "NumericalAlgorithms/Spectral/Mesh.hpp"
 #include "Time/TimeStepId.hpp"
@@ -39,9 +40,21 @@ struct BoundaryMessage : public CMessage_BoundaryMessage<Dim> {
                   const Mesh<Dim - 1>& interface_mesh_in,
                   double* subcell_ghost_data_in, double* dg_flux_data_in);
 
+  static size_t total_size_without_data();
+
   static void* pack(BoundaryMessage*);
   static BoundaryMessage* unpack(void*);
 };
+
+template <size_t Dim>
+bool operator==(const BoundaryMessage<Dim>& lhs,
+                const BoundaryMessage<Dim>& rhs);
+template <size_t Dim>
+bool operator!=(const BoundaryMessage<Dim>& lhs,
+                const BoundaryMessage<Dim>& rhs);
+
+template <size_t Dim>
+std::ostream& operator<<(std::ostream& os, const BoundaryMessage<Dim>& message);
 
 // TODO: Add operator== and check that data is same. Add test then using pack
 // and unpack

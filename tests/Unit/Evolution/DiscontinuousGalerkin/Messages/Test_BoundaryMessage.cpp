@@ -15,18 +15,20 @@
 #include "Time/Time.hpp"
 #include "Time/TimeStepId.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/TMPL.hpp"
+
+#include "Parallel/Printf.hpp"
 
 namespace evolution::dg {
 namespace {
 template <size_t Dim, typename Generator>
-void test_boundary_message(const gsl::not_null<Generator*> generator) {
-  std::uniform_int_distribution<size_t> size_dist{1, 10};
-  // const size_t subcell_size = size_dist(*generator);
-  // const size_t dg_size = size_dist(*generator);
-  const size_t subcell_size = 4;
-  const size_t dg_size = 4;
+void test_boundary_message(const gsl::not_null<Generator*> generator,
+                           const size_t subcell_size, const size_t dg_size) {
+  CAPTURE(Dim);
   CAPTURE(subcell_size);
   CAPTURE(dg_size);
+  Parallel::printf("\ntest: subcell size = %d\n", subcell_size);
+  Parallel::printf("test: dg size = %d\n", dg_size);
   const bool sent_across_nodes = true;
 
   const Slab current_slab{0.1, 0.5};
@@ -60,22 +62,44 @@ void test_boundary_message(const gsl::not_null<Generator*> generator) {
 
   BoundaryMessage<Dim>* boundary_message = new BoundaryMessage<Dim>(
       subcell_size, dg_size, sent_across_nodes, current_time_id, next_time_id,
-      volume_mesh, interface_mesh, subcell_data.data(), dg_data.data());
+      volume_mesh, interface_mesh,
+      subcell_size != 0 ? subcell_data.data() : nullptr,
+      dg_size != 0 ? dg_data.data() : nullptr);
 
   CHECK(subcell_data.size() == subcell_size);
   CHECK(dg_data.size() == dg_size);
 
-  void* packed_message = boundary_message->pack(boundary_message);
-  (void)packed_message;
+  // void* packed_message = boundary_message->pack(boundary_message);
+  // (void)packed_message;
 
-  BoundaryMessage<Dim>* packed_and_unpacked_message=
+  BoundaryMessage<Dim>* packed_and_unpacked_message =
       boundary_message->unpack(boundary_message->pack(boundary_message));
-  (void)packed_and_unpacked_message;
+
+  Parallel::printf("boundary message = %s\n\npacked/unpacked message = %s\n",
+                   *boundary_message, *packed_and_unpacked_message);
+
+  CHECK(*boundary_message == *packed_and_unpacked_message);
+
+  // NOTE: Can't delete the pointers here????
 }
 
 SPECTRE_TEST_CASE("Unit.Evolution.DG.BoundaryMessage", "[Unit][Evolution]") {
   MAKE_GENERATOR(generator);
-  test_boundary_message<3>(make_not_null(&generator));
+  std::uniform_int_distribution<size_t> size_dist{2, 10};
+  tmpl::for_each<tmpl::integral_list<size_t, /*1*/, 2, 3>>(
+      [&generator, &size_dist](auto dim_t) {
+        constexpr size_t Dim =
+            tmpl::type_from<std::decay_t<decltype(dim_t)>>::value;
+        test_boundary_message<Dim>(make_not_null(&generator),
+                                   size_dist(generator), 0);
+        test_boundary_message<Dim>(make_not_null(&generator), 0,
+                                   size_dist(generator));
+        // Although our use case is when *either* dg or subcell is zero, we
+        // still test if both are non-zero just to check we can pack/unpack
+        // correctly
+        // test_boundary_message<Dim>(make_not_null(&generator),
+        // size_dist(generator), size_dist(generator));
+      });
 }
 }  // namespace
 }  // namespace evolution::dg
