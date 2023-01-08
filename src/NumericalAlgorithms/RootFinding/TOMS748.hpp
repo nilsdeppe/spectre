@@ -189,6 +189,11 @@ simd::batch<T, Arch> cubic_interpolate(
       simd::fms(denom_fe_fd, q21, (d - e) * denom_fd_fb) * fd * denom_fb_fa *
       denom_fd_fa;
 
+  // Note: the reduction in rounding error that comes from the improvement by
+  // Stoer & Bulirsch to Neville's algorithm is adding `a` at the very end as
+  // we do below. Alternative ways of evaluating polynomials do not delay this
+  // inclusion of `a`, and so then when the correction to `a` is small,
+  // floating point errors decrease the accuracy of the result.
   simd::batch<T, Arch> c = simd::fma(
       fa_by_denom,
       simd::fma(fb, simd::fms(q32, (fe + denom_fd_fa), q22), d31 * denom), a);
