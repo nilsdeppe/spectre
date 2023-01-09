@@ -81,7 +81,7 @@ size_t BoundaryMessage<Dim>::total_size_without_data() {
   // Mesh<Dim-1>
   totalsize += detail::offset<Mesh<Dim - 1>>();
   // // two double*
-  // totalsize += 2 * detail::offset<double*>();
+  totalsize += 2 * detail::offset<double*>();
 
   return totalsize;
 }
@@ -185,40 +185,32 @@ void* BoundaryMessage<Dim>::pack(BoundaryMessage<Dim>* inmsg) {
 
   char* buffer =
       static_cast<char*>(CkAllocBuffer(inmsg, static_cast<int>(totalsize)));
-  char* original_buffer = buffer;
+  auto* out_msg = reinterpret_cast<BoundaryMessage*>(buffer);
 
-  memcpy(buffer, &inmsg->subcell_ghost_data_size, detail::offset<size_t>());
-  buffer += detail::offset<size_t>();
-  memcpy(buffer, &inmsg->dg_flux_data_size, detail::offset<size_t>());
-  buffer += detail::offset<size_t>();
-  memcpy(buffer, &inmsg->sent_across_nodes, detail::offset<bool>());
-  buffer += detail::offset<bool>();
-  memcpy(buffer, &inmsg->current_time_step_id, detail::offset<TimeStepId>());
-  buffer += detail::offset<TimeStepId>();
-  memcpy(buffer, &inmsg->next_time_step_id, detail::offset<TimeStepId>());
-  buffer += detail::offset<TimeStepId>();
-  memcpy(buffer, &inmsg->volume_or_ghost_mesh, detail::offset<Mesh<Dim>>());
-  buffer += detail::offset<Mesh<Dim>>();
-  memcpy(buffer, &inmsg->interface_mesh, detail::offset<Mesh<Dim - 1>>());
-  buffer += detail::offset<Mesh<Dim - 1>>();
-  memcpy(buffer, &inmsg->subcell_ghost_data, detail::offset<double*>());
-  buffer += detail::offset<double*>();
-  memcpy(buffer, &inmsg->dg_flux_data, detail::offset<double*>());
-  buffer += detail::offset<double*>();
+  memcpy(out_msg, &inmsg->subcell_ghost_data_size,
+         BoundaryMessage::total_size_without_data());
   if (subcell_size != 0) {
-    memcpy(buffer, inmsg->subcell_ghost_data, subcell_size * sizeof(double));
-    Parallel::printf("pack: (%f,%f,%f)\n",
-    buffer[0], buffer[1], buffer[2]
-    );
-    buffer += subcell_size;
+    out_msg->subcell_ghost_data =
+        reinterpret_cast<double*>(std::addressof(out_msg->dg_flux_data)) + 1;
+    memcpy(out_msg->subcell_ghost_data, inmsg->subcell_ghost_data,
+           subcell_size * sizeof(double));
+    Parallel::printf("pack: (%f,%f,%f)\n", inmsg->subcell_ghost_data[0],
+                     inmsg->subcell_ghost_data[1],
+                     inmsg->subcell_ghost_data[2]);
+    Parallel::printf("pack: (%f,%f,%f)\n", out_msg->subcell_ghost_data[0],
+                     out_msg->subcell_ghost_data[1],
+                     out_msg->subcell_ghost_data[2]);
   }
   if (dg_size != 0) {
-    memcpy(buffer, inmsg->dg_flux_data, dg_size * sizeof(double));
-    buffer += dg_size;
+    out_msg->dg_flux_data =
+        reinterpret_cast<double*>(std::addressof(out_msg->dg_flux_data)) + 1 +
+        subcell_size;
+    memcpy(out_msg->dg_flux_data, inmsg->dg_flux_data,
+           dg_size * sizeof(double));
   }
 
   delete inmsg;
-  return static_cast<void*>(original_buffer);
+  return static_cast<void*>(out_msg);
 }
 
 template <size_t Dim>
@@ -375,15 +367,17 @@ BoundaryMessage<Dim>* BoundaryMessage<Dim>::unpack(void* inbuf) {
 
   if (subcell_size != 0) {
     buffer->subcell_ghost_data =
-        reinterpret_cast<double*>(std::addressof(buffer->dg_flux_data)) +
-        detail::offset<double*>();
+        reinterpret_cast<double*>(std::addressof(buffer->dg_flux_data)) + 1;
+    Parallel::printf("unpack: (%f,%f,%f)\n", buffer->subcell_ghost_data[0],
+                     buffer->subcell_ghost_data[1],
+                     buffer->subcell_ghost_data[2]);
   } else {
     buffer->subcell_ghost_data = nullptr;
   }
   if (dg_size != 0) {
     buffer->dg_flux_data =
-        reinterpret_cast<double*>(std::addressof(buffer->dg_flux_data)) +
-        detail::offset<double*>() + subcell_size;
+        reinterpret_cast<double*>(std::addressof(buffer->dg_flux_data)) + 1 +
+        subcell_size;
   } else {
     buffer->dg_flux_data = nullptr;
   }

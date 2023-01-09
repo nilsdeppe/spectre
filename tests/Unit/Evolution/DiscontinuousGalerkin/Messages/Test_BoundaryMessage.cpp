@@ -59,56 +59,10 @@ void test_boundary_message(const gsl::not_null<Generator*> generator,
   CHECK(subcell_data.size() == subcell_size);
   CHECK(dg_data.size() == dg_size);
 
-  Parallel::printf("sizeof(BoundaryMessage<%d>) = %d\n", Dim,
-                   sizeof(BoundaryMessage<Dim>));
-  Parallel::printf("alignof(BoundaryMessage<%d>) = %d\n", Dim,
-                   alignof(BoundaryMessage<Dim>));
-  Parallel::printf("sizeof(CMessage_BoundaryMessage<%d>) = %d\n", Dim,
-                   sizeof(CMessage_BoundaryMessage<Dim>));
-  Parallel::printf("sizeof(CkMessage) = %d\n", sizeof(CkMessage));
-  Parallel::printf("sizeof(size_t) = %d, alignof(size_t) = %d\n",
-                   sizeof(size_t), alignof(size_t));
-  Parallel::printf("sizeof(bool) = %d, alignof(bool) = %d\n", sizeof(bool),
-                   alignof(bool));
-  Parallel::printf("sizeof(TimeStepId) = %d, alignof(TimeStepId) = %d\n",
-                   sizeof(TimeStepId), alignof(TimeStepId));
-  Parallel::printf("sizeof(Mesh<%d>) = %d, alignof(Mesh<%d>) = %d\n", Dim,
-                   sizeof(Mesh<Dim>), Dim, alignof(Mesh<Dim>));
-  Parallel::printf("sizeof(Mesh<%d>) = %d, alignof(Mesh<%d>) = %d\n", Dim - 1,
-                   sizeof(Mesh<Dim - 1>), Dim - 1, alignof(Mesh<Dim - 1>));
-  Parallel::printf("sizeof(double*) = %d, alignof(double*) = %d\n",
-                   sizeof(double*), alignof(double*));
-  size_t size = 2 * sizeof(size_t) + sizeof(bool) + 2 * sizeof(TimeStepId) +
-                sizeof(Mesh<Dim>) + sizeof(Mesh<Dim - 1>);
-  Parallel::printf("2 * sizeof(size_t) + ... (no pointers) = %d\n", size);
-  size += 2 * sizeof(double*);
-  Parallel::printf("2 * sizeof(size_t) + ... (yes pointers) = %d\n", size);
-  size = 2 * sizeof(size_t) + 8 + 2 * sizeof(TimeStepId) + sizeof(Mesh<Dim>) +
-         sizeof(Mesh<Dim - 1>);
-  Parallel::printf("2 * sizeof(size_t) + ... (bool = 8, no pointers) = %d\n",
-                   size);
-  size += 2 * sizeof(double*);
-  Parallel::printf("2 * sizeof(size_t) + ... (bool = 8, yes pointers) = %d\n",
-                   size);
-  PUP::sizer sizer;
-  sizer | boundary_message->subcell_ghost_data_size;
-  sizer | boundary_message->dg_flux_data_size;
-  sizer | boundary_message->sent_across_nodes;
-  sizer | boundary_message->current_time_step_id;
-  sizer | boundary_message->next_time_step_id;
-  sizer | boundary_message->volume_or_ghost_mesh;
-  sizer | boundary_message->interface_mesh;
-  Parallel::printf("sizer size (no pointers) = %d\n", sizer.size());
-
-  //   BoundaryMessage<Dim>* copied_boundary_message =
-  //       new (CkCopyMsg(reinterpret_cast<void**>(&boundary_message)))
-  //           BoundaryMessage<Dim>();
-
-  //   void* packed_message = boundary_message->pack(boundary_message);
-  //   (void)packed_message;
+  void* packed_message = boundary_message->pack(boundary_message);
 
   BoundaryMessage<Dim>* packed_and_unpacked_message =
-      boundary_message->unpack(boundary_message->pack(boundary_message));
+      boundary_message->unpack(packed_message);
   Parallel::printf("After pack/unpack\n");
 
   std::cout << std::addressof(packed_and_unpacked_message->subcell_ghost_data)
