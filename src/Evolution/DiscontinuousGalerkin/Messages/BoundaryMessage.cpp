@@ -7,8 +7,11 @@
 #include <pup.h>
 
 #include "Parallel/Serialize.hpp"
+#include "Utilities/ErrorHandling/Error.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
 
+#include <iostream>
+#include <sstream>
 #include "Parallel/Printf.hpp"
 
 namespace evolution::dg {
@@ -44,88 +47,169 @@ size_t BoundaryMessage<Dim>::total_size_without_data() {
   // so we have to use sizeof.
 
   // subcell_ghost_data_size
-  size_t totalsize = sizeof(size_t);
-  // dg_flux_data_size
-  totalsize += sizeof(size_t);
+  // size_t totalsize = sizeof(size_t);
+  // // dg_flux_data_size
+  // totalsize += sizeof(size_t);
+  // // sent_across_nodes
+  // totalsize += sizeof(bool);
+  // // NOTE: sizeof counts the bool in a TimeStepId as 8 bytes because it's
+  // // aligned inside the class, but the PUP::er we use in pack/unpack only
+  // // counts
+  // // it as 1 byte so we have to subtract off the extra 7 bytes.
+  // // current_time_step_id
+  // totalsize += sizeof(::TimeStepId) - 7;
+  // // next_time_step_id
+  // totalsize += sizeof(::TimeStepId) - 7;
+  // // volume_or_ghost_mesh
+  // totalsize += sizeof(Mesh<Dim>);
+  // // QUESTION: For a Mesh<0> the PUP::er calculates the size of the object as
+  // // 0 bytes. Not sure why but should we then exclude it from the send
+  // entirely?
+  // // interface_mesh
+  // if constexpr (Dim > 1) {
+  //   totalsize += sizeof(Mesh<Dim - 1>);
+  // }
+
+  // two sizes
+  size_t totalsize = 2 * detail::offset<size_t>();
   // sent_across_nodes
-  totalsize += sizeof(bool);
-  // NOTE: sizeof counts the bool in a TimeStepId as 8 bytes because it's
-  // aligned inside the class, but the PUP::er we use in pack/unpack only counts
-  // it as 1 byte so we have to subtract off the extra 7 bytes.
-  // current_time_step_id
-  totalsize += sizeof(::TimeStepId) - 7;
-  // next_time_step_id
-  totalsize += sizeof(::TimeStepId) - 7;
-  // volume_or_ghost_mesh
-  totalsize += sizeof(Mesh<Dim>);
-  // QUESTION: For a Mesh<0> the PUP::er calculates the size of the object as 0
-  // bytes. Not sure why but should we then exclude it from the send entirely?
-  // interface_mesh
-  totalsize += sizeof(Mesh<Dim - 1>);
+  totalsize += detail::offset<bool>();
+  // two TimeStepIds
+  totalsize += 2 * detail::offset<TimeStepId>();
+  // Mesh<Dim>
+  totalsize += detail::offset<Mesh<Dim>>();
+  // Mesh<Dim-1>
+  totalsize += detail::offset<Mesh<Dim - 1>>();
+  // // two double*
+  // totalsize += 2 * detail::offset<double*>();
 
   return totalsize;
 }
+
+template <size_t Dim>
+size_t BoundaryMessage<Dim>::total_size_with_data(const size_t subcell_size,
+                                                  const size_t dg_size) {
+  size_t totalsize = total_size_without_data();
+  totalsize += (subcell_size + dg_size) * sizeof(double);
+  return totalsize;
+}
+
+template <size_t Dim>
+size_t BoundaryMessage<Dim>::total_size_with_data_and_pointers(
+    const size_t subcell_size, const size_t dg_size) {
+  size_t totalsize = total_size_with_data(subcell_size, dg_size);
+  // two double*
+  totalsize += 2 * detail::offset<double*>();
+  return totalsize;
+}
+
 template <size_t Dim>
 void* BoundaryMessage<Dim>::pack(BoundaryMessage<Dim>* inmsg) {
   // Size of everything
   // DEBUG: This is just here so we can print sizes. Will delete later
-  size_t totalsize = sizeof(inmsg->subcell_ghost_data_size);
-  print("pack", "total size after size_t", totalsize);
-  totalsize += sizeof(inmsg->dg_flux_data_size);
-  print("pack", "total size after size_t", totalsize);
-  totalsize += sizeof(inmsg->sent_across_nodes);
-  print("pack", "total size after bool", totalsize);
-  totalsize += sizeof(inmsg->current_time_step_id) - 7;
-  print("pack", "total size after TimeStepId", totalsize);
-  totalsize += sizeof(inmsg->next_time_step_id) - 7;
-  print("pack", "total size after TimeStepId", totalsize);
-  totalsize += sizeof(inmsg->volume_or_ghost_mesh);
-  print("pack", "total size after Mesh<Dim>", totalsize);
-  totalsize += sizeof(inmsg->interface_mesh);
-  print("pack", "total size after Mesh<Dim-1>", totalsize);
-  print("total size without data", "size", total_size_without_data());
+  // size_t totalsize = sizeof(inmsg->subcell_ghost_data_size);
+  // print("pack", "total size after size_t", totalsize);
+  // totalsize += sizeof(inmsg->dg_flux_data_size);
+  // print("pack", "total size after size_t", totalsize);
+  // totalsize += sizeof(inmsg->sent_across_nodes);
+  // print("pack", "total size after bool", totalsize);
+  // totalsize += sizeof(inmsg->current_time_step_id) - 7;
+  // print("pack", "total size after TimeStepId", totalsize);
+  // totalsize += sizeof(inmsg->next_time_step_id) - 7;
+  // print("pack", "total size after TimeStepId", totalsize);
+  // totalsize += sizeof(inmsg->volume_or_ghost_mesh);
+  // // print("pack", "total size after Mesh<Dim>", totalsize);
+  // Parallel::printf("pack: total size after Mesh<%d> = %d\n", Dim, totalsize);
+  // if constexpr (Dim > 1) {
+  //   totalsize += sizeof(inmsg->interface_mesh);
+  // }
+  // // print("pack", "total size after Mesh<Dim-1>", totalsize);
+  // Parallel::printf("pack: total size after Mesh<%d> = %d\n", Dim - 1,
+  //                  totalsize);
+  // print("total size without data", "size", total_size_without_data());
 
-  totalsize += inmsg->subcell_ghost_data_size * sizeof(double);
-  print("pack", "total size after double*", totalsize);
-  totalsize += inmsg->dg_flux_data_size * sizeof(double);
-  print("pack", "total size after double*", totalsize);
+  // totalsize += inmsg->subcell_ghost_data_size * sizeof(double);
+  // print("pack", "total size after double*", totalsize);
+  // totalsize += inmsg->dg_flux_data_size * sizeof(double);
+  // print("pack", "total size after double*", totalsize);
 
-  totalsize = total_size_without_data() +
-              inmsg->subcell_ghost_data_size * sizeof(double) +
-              inmsg->dg_flux_data_size * sizeof(double);
-  print("pack", "total size", totalsize);
+  // totalsize = total_size_without_data() +
+  //             inmsg->subcell_ghost_data_size * sizeof(double) +
+  //             inmsg->dg_flux_data_size * sizeof(double);
+  // print("pack", "total size", totalsize);
+
+  // char* buffer =
+  //     static_cast<char*>(CkAllocBuffer(inmsg, static_cast<int>(totalsize)));
+
+  // // First do the size of the array, then the data itself
+  // PUP::toMem writer(buffer);
+  // writer | inmsg->subcell_ghost_data_size;
+  // print("pack", "writer size after size_t", writer.size());
+  // writer | inmsg->dg_flux_data_size;
+  // print("pack", "writer size after size_t", writer.size());
+  // writer | inmsg->sent_across_nodes;
+  // print("pack", "writer size after bool", writer.size());
+  // writer | inmsg->current_time_step_id;
+  // print("pack", "writer size after TimeStepId", writer.size());
+  // writer | inmsg->next_time_step_id;
+  // print("pack", "writer size after TimeStepId", writer.size());
+  // writer | inmsg->volume_or_ghost_mesh;
+  // // print("pack", "writer size after Mesh<Dim>", writer.size());
+  // Parallel::printf("pack: total size after Mesh<%d> = %d\n", Dim,
+  //                  writer.size());
+  // if constexpr (Dim > 1) {
+  //   writer | inmsg->interface_mesh;
+  // }
+  // // print("pack", "writer size after Mesh<Dim-1>", writer.size());
+  // Parallel::printf("pack: total size after Mesh<%d> = %d\n", Dim - 1,
+  //                  writer.size());
+  // if (inmsg->subcell_ghost_data_size != 0) {
+  //   PUParray(writer, inmsg->subcell_ghost_data,
+  //   inmsg->subcell_ghost_data_size);
+  // }
+  // print("pack", "writer size after double*", writer.size());
+  // if (inmsg->dg_flux_data_size != 0) {
+  //   PUParray(writer, inmsg->dg_flux_data, inmsg->dg_flux_data_size);
+  // }
+  // print("pack", "writer size", writer.size());
+
+  // Gotta clean up
+  // delete inmsg;
+  // return static_cast<void*>(buffer);
+
+  // DEBUG: memcpy approach... not working
+  const size_t subcell_size = inmsg->subcell_ghost_data_size;
+  const size_t dg_size = inmsg->dg_flux_data_size;
+
+  const size_t totalsize = total_size_with_data(subcell_size, dg_size);
 
   char* buffer =
       static_cast<char*>(CkAllocBuffer(inmsg, static_cast<int>(totalsize)));
+  char* original_buffer = buffer;
 
-  // First do the size of the array, then the data itself
-  PUP::toMem writer(buffer);
-  writer | inmsg->subcell_ghost_data_size;
-  print("pack", "writer size after size_t", writer.size());
-  writer | inmsg->dg_flux_data_size;
-  print("pack", "writer size after size_t", writer.size());
-  writer | inmsg->sent_across_nodes;
-  print("pack", "writer size after bool", writer.size());
-  writer | inmsg->current_time_step_id;
-  print("pack", "writer size after TimeStepId", writer.size());
-  writer | inmsg->next_time_step_id;
-  print("pack", "writer size after TimeStepId", writer.size());
-  writer | inmsg->volume_or_ghost_mesh;
-  print("pack", "writer size after Mesh<Dim>", writer.size());
-  writer | inmsg->interface_mesh;
-  print("pack", "writer size after Mesh<Dim-1>", writer.size());
-  if (inmsg->subcell_ghost_data_size != 0) {
-    PUParray(writer, inmsg->subcell_ghost_data, inmsg->subcell_ghost_data_size);
+  memcpy(buffer, &inmsg->subcell_ghost_data_size, detail::offset<size_t>());
+  buffer += detail::offset<size_t>();
+  memcpy(buffer, &inmsg->dg_flux_data_size, detail::offset<size_t>());
+  buffer += detail::offset<size_t>();
+  memcpy(buffer, &inmsg->sent_across_nodes, detail::offset<bool>());
+  buffer += detail::offset<bool>();
+  memcpy(buffer, &inmsg->current_time_step_id, detail::offset<TimeStepId>());
+  buffer += detail::offset<TimeStepId>();
+  memcpy(buffer, &inmsg->next_time_step_id, detail::offset<TimeStepId>());
+  buffer += detail::offset<TimeStepId>();
+  memcpy(buffer, &inmsg->volume_or_ghost_mesh, detail::offset<Mesh<Dim>>());
+  buffer += detail::offset<Mesh<Dim>>();
+  memcpy(buffer, &inmsg->interface_mesh, detail::offset<Mesh<Dim - 1>>());
+  buffer += detail::offset<Mesh<Dim - 1>>();
+  if (subcell_size != 0) {
+    memcpy(buffer, inmsg->subcell_ghost_data, subcell_size);
+    // buffer += subcell_size;
+  } else if (subcell_size != 0) {
+    memcpy(buffer, inmsg->dg_flux_data, dg_size);
   }
-  print("pack", "writer size after double*", writer.size());
-  if (inmsg->dg_flux_data_size != 0) {
-    PUParray(writer, inmsg->dg_flux_data, inmsg->dg_flux_data_size);
-  }
-  print("pack", "writer size", writer.size());
 
-  // Gotta clean up
   delete inmsg;
-  return static_cast<void*>(buffer);
+  return static_cast<void*>(original_buffer);
 }
 
 template <size_t Dim>
@@ -133,70 +217,224 @@ BoundaryMessage<Dim>* BoundaryMessage<Dim>::unpack(void* inbuf) {
   // inbuf is the raw memory allocated and assigned in pack. This next buffer is
   // only used to get the sizes of the arrays. It cannot be used to access the
   // data
-  BoundaryMessage<Dim>* buffer = reinterpret_cast<BoundaryMessage<Dim>*>(inbuf);
+  // BoundaryMessage<Dim>* buffer =
+  // reinterpret_cast<BoundaryMessage<Dim>*>(inbuf);
 
-  const size_t subcell_ghost_data_size = buffer->subcell_ghost_data_size;
-  const size_t dg_flux_data_size = buffer->dg_flux_data_size;
+  // const size_t subcell_size = buffer->subcell_ghost_data_size;
+  // const size_t dg_size = buffer->dg_flux_data_size;
 
-  print("unpack", "total size without data", total_size_without_data());
+  // print("unpack", "total size without data", total_size_without_data());
 
-  const size_t total_size_with_data = total_size_without_data() +
-                                      subcell_ghost_data_size * sizeof(double) +
-                                      dg_flux_data_size * sizeof(double);
+  // const size_t total_size_with_data = total_size_without_data() +
+  //                                     subcell_size * sizeof(double) +
+  //                                     dg_size * sizeof(double);
 
-  print("unpack", "subcell_ghost_data_size",
-        subcell_ghost_data_size * sizeof(double));
-  print("unpack", "dg_flux_data_size", dg_flux_data_size * sizeof(double));
-  print("unpack", "total size with data", total_size_with_data);
+  // print("unpack", "subcell_size", subcell_size * sizeof(double));
+  // print("unpack", "dg_size", dg_size * sizeof(double));
+  // print("unpack", "total size with data", total_size_with_data);
+
+  // BoundaryMessage<Dim>* unpacked_message =
+  //     reinterpret_cast<BoundaryMessage<Dim>*>(
+  //         CkAllocBuffer(inbuf, total_size_with_data));
+
+  // // QUESTION: Is this needed???
+  // // unpacked_message =
+  // //     new (static_cast<void*>(unpacked_message)) BoundaryMessage<Dim>();
+
+  // Parallel::printf("unpack: sizeof BoundaryMessage: %d\n",
+  //                  sizeof(BoundaryMessage<Dim>));
+  // Parallel::printf("unpack: sizeof unpacked_message: %d\n",
+  //                  sizeof(*unpacked_message));
+
+  // PUP::fromMem reader(inbuf);
+  // size_t prev_reader_size = reader.size();
+  // Parallel::printf("unpack: reader size: %d\n", prev_reader_size);
+  // reader | unpacked_message->subcell_ghost_data_size;
+  // size_t obj_size = reader.size() - prev_reader_size;
+  // Parallel::printf(
+  //     "unpack: unpacked size_t: %d, size_t size: %d, reader size: %d\n",
+  //     unpacked_message->subcell_ghost_data_size, obj_size, reader.size());
+  // prev_reader_size = reader.size();
+  // reader | unpacked_message->dg_flux_data_size;
+  // obj_size = reader.size() - prev_reader_size;
+  // Parallel::printf(
+  //     "unpack: unpacked size_t: %d, size_t size: %d, reader size: %d\n",
+  //     unpacked_message->dg_flux_data_size, obj_size, reader.size());
+  // prev_reader_size = reader.size();
+  // reader | unpacked_message->sent_across_nodes;
+  // obj_size = reader.size() - prev_reader_size;
+  // Parallel::printf(
+  //     "unpack: unpacked bool: %s, bool size: %d, reader size: %d\n",
+  //     unpacked_message->sent_across_nodes ? "true" : "false", obj_size,
+  //     reader.size());
+  // prev_reader_size = reader.size();
+  // reader | unpacked_message->current_time_step_id;
+  // obj_size = reader.size() - prev_reader_size;
+  // Parallel::printf(
+  //     "unpack: unpacked TimeStepId: %s, TimeStepId size: %d, reader
+  //     size:%d\n", unpacked_message->current_time_step_id, obj_size,
+  //     reader.size());
+  // prev_reader_size = reader.size();
+  // reader | unpacked_message->next_time_step_id;
+  // obj_size = reader.size() - prev_reader_size;
+  // Parallel::printf(
+  //     "unpack: unpacked TimeStepId: %s, TimeStepId size: %d, reader
+  //     size:%d\n", unpacked_message->next_time_step_id, obj_size,
+  //     reader.size());
+  // prev_reader_size = reader.size();
+  // reader | unpacked_message->volume_or_ghost_mesh;
+  // obj_size = reader.size() - prev_reader_size;
+  // Parallel::printf(
+  //     "unpack: unpacked Mesh<%d>: %s, Mesh<%d> size: %d, reader size: %d\n",
+  //     Dim, unpacked_message->volume_or_ghost_mesh, Dim, obj_size,
+  //     reader.size());
+  // prev_reader_size = reader.size();
+  // if constexpr (Dim > 1) {
+  //   reader | unpacked_message->interface_mesh;
+  // } else {
+  //   unpacked_message->interface_mesh = Mesh<0>{};
+  // }
+  // obj_size = reader.size() - prev_reader_size;
+  // Parallel::printf(
+  //     "unpack: unpacked Mesh<%d>: %s, Mesh<%d> size: %d, reader size: %d\n",
+  //     Dim, unpacked_message->interface_mesh, Dim, obj_size, reader.size());
+  // prev_reader_size = reader.size();
+  // Parallel::printf("unpack: sizeof unpacked_message: %d\n",
+  //                  sizeof(*unpacked_message));
+  // // If we actually have data, set the pointer, then call PUParray to copy
+  // // the data
+  // // std::stringstream ss{};
+  // if (subcell_size != 0) {
+  //   unpacked_message->subcell_ghost_data = reinterpret_cast<double*>(
+  //       reinterpret_cast<char*>(unpacked_message) +
+  //       total_size_without_data());
+  //   PUParray(reader, unpacked_message->subcell_ghost_data, subcell_size);
+  //   // ss << "(" << unpacked_message->subcell_ghost_data[0];
+  //   // for (size_t i=1; i<subcell_size; i++) {
+  //   //   ss << "," << unpacked_message->subcell_ghost_data[i];
+  //   // }
+  //   // ss << ")";
+  //   (void)unpacked_message->subcell_ghost_data;
+  // } else {
+  //   // Otherwise just set the data to a nullptr
+  //   unpacked_message->subcell_ghost_data = nullptr;
+  //   // ss << "()";
+  // }
+  // Parallel::printf("unpack: sizeof unpacked_message: %d\n",
+  //                  sizeof(*unpacked_message));
+  // obj_size = reader.size() - prev_reader_size;
+  // Parallel::printf("unpack: subcell data size: %d, reader size: %d\n",
+  // obj_size,
+  //                  reader.size());
+  // prev_reader_size = reader.size();
+  // // Parallel::printf("unpack: unpacked subcell data = %s\n", ss.str());
+  // // ss.str("");
+  // if (dg_size != 0) {
+  //   unpacked_message->dg_flux_data = reinterpret_cast<double*>(
+  //       reinterpret_cast<char*>(unpacked_message) + total_size_without_data()
+  //       + subcell_size * sizeof(double));
+  //   PUParray(reader, unpacked_message->dg_flux_data, dg_size);
+  //   // ss << "(" << unpacked_message->dg_flux_data[0];
+  //   // for (size_t i=1; i<dg_size; i++) {
+  //   //   ss << "," << unpacked_message->dg_flux_data[i];
+  //   // }
+  //   // ss << ")";
+  // } else {
+  //   unpacked_message->dg_flux_data = nullptr;
+  //   // ss << "()";
+  // }
+  // Parallel::printf("unpack: sizeof unpacked_message: %d\n",
+  //                  sizeof(*unpacked_message));
+  // const size_t sizeof_boundary_message_components =
+  //     2 * sizeof(size_t) + sizeof(bool) + 2 * sizeof(TimeStepId) +
+  //     sizeof(Mesh<Dim>) + sizeof(Mesh<Dim - 1>) + 2 * sizeof(double*);
+  // Parallel::printf("unpack: sizof boundary message components: %d\n",
+  //                  sizeof_boundary_message_components);
+  // obj_size = reader.size() - prev_reader_size;
+  // Parallel::printf("unpack: dg data size: %d, reader size: %d\n", obj_size,
+  //                  reader.size());
+  // Parallel::printf("unpack: unpacked dg data = %s\n", ss.str());
+
+  // DEBUG: memcpy approach....not working
+  (void)print;
+  char* buffer = reinterpret_cast<char*>(inbuf);
+
+  BoundaryMessage<Dim>* temp_buffer =
+      reinterpret_cast<BoundaryMessage<Dim>*>(inbuf);
+  Parallel::printf("Things %s, %s, %s, %s\n", temp_buffer->current_time_step_id,
+                   temp_buffer->next_time_step_id,
+                   temp_buffer->volume_or_ghost_mesh,
+                   temp_buffer->interface_mesh);
+
+  const size_t subcell_size = temp_buffer->subcell_ghost_data_size;
+  const size_t dg_size = temp_buffer->dg_flux_data_size;
+
+  const size_t totalsize =
+      total_size_with_data_and_pointers(subcell_size, dg_size);
 
   BoundaryMessage<Dim>* unpacked_message =
-      reinterpret_cast<BoundaryMessage<Dim>*>(
-          CkAllocBuffer(inbuf, total_size_with_data));
+      reinterpret_cast<BoundaryMessage<Dim>*>(CkAllocBuffer(buffer, totalsize));
 
-  // QUESTION: Is this needed???
-  // unpacked_message =
-  //     new (static_cast<void*>(unpacked_message)) BoundaryMessage<Dim>();
+  std::cout << "Address of unpacked message = "
+            << std::addressof(unpacked_message);
+  std::cout << "\nunpacked message ptr = " << unpacked_message << "\n";
 
-  PUP::fromMem reader(inbuf);
-  reader | unpacked_message->subcell_ghost_data_size;
-  Parallel::printf("unpack: unpacked size_t: %d\n",
-                   unpacked_message->subcell_ghost_data_size);
-  reader | unpacked_message->dg_flux_data_size;
-  Parallel::printf("unpack: unpacked size_t: %d\n",
-                   unpacked_message->dg_flux_data_size);
-  reader | unpacked_message->sent_across_nodes;
-  Parallel::printf("unpack: unpacked bool: %s\n",
-                   unpacked_message->sent_across_nodes ? "true" : "false");
-  reader | unpacked_message->current_time_step_id;
-  Parallel::printf("unpack: unpacked TimeStepId: %s\n",
-                   unpacked_message->current_time_step_id);
-  reader | unpacked_message->next_time_step_id;
-  Parallel::printf("unpack: unpacked TimeStepId: %s\n",
-                   unpacked_message->next_time_step_id);
-  reader | unpacked_message->volume_or_ghost_mesh;
-  Parallel::printf("unpack: unpacked Mesh<Dim>: %s\n",
-                   unpacked_message->volume_or_ghost_mesh);
-  reader | unpacked_message->interface_mesh;
-  Parallel::printf("unpack: unpacked Mesh<Dim-1>: %s\n",
-                   unpacked_message->interface_mesh);
-  // If we actually have data, set the pointer, then call PUParray to copy the
-  // data
-  if (subcell_ghost_data_size != 0) {
-    unpacked_message->subcell_ghost_data = reinterpret_cast<double*>(
-        reinterpret_cast<char*>(inbuf) + total_size_without_data());
-    PUParray(reader, unpacked_message->subcell_ghost_data,
-             subcell_ghost_data_size);
-  } else {
-    // Otherwise just set the data to a nullptr
-    unpacked_message->subcell_ghost_data = nullptr;
-  }
-  if (dg_flux_data_size != 0) {
-    unpacked_message->dg_flux_data = reinterpret_cast<double*>(
-        reinterpret_cast<char*>(inbuf) + total_size_without_data() +
-        subcell_ghost_data_size * sizeof(double));
-    PUParray(reader, unpacked_message->dg_flux_data, dg_flux_data_size);
-  } else {
+  memcpy(&unpacked_message->subcell_ghost_data_size, buffer,
+         detail::offset<size_t>());
+  buffer += detail::offset<size_t>();
+  memcpy(&unpacked_message->dg_flux_data_size, buffer,
+         detail::offset<size_t>());
+  buffer += detail::offset<size_t>();
+  memcpy(&unpacked_message->sent_across_nodes, buffer, detail::offset<bool>());
+  buffer += detail::offset<bool>();
+  memcpy(&unpacked_message->current_time_step_id, buffer,
+         detail::offset<TimeStepId>());
+  buffer += detail::offset<TimeStepId>();
+  memcpy(&unpacked_message->next_time_step_id, buffer,
+         detail::offset<TimeStepId>());
+  buffer += detail::offset<TimeStepId>();
+  memcpy(&unpacked_message->volume_or_ghost_mesh, buffer,
+         detail::offset<Mesh<Dim>>());
+  buffer += detail::offset<Mesh<Dim>>();
+  memcpy(&unpacked_message->interface_mesh, buffer,
+         detail::offset<Mesh<Dim - 1>>());
+  buffer += detail::offset<Mesh<Dim - 1>>();
+  std::cout << "Sizes: " << unpacked_message->subcell_ghost_data_size << " "
+            << unpacked_message->dg_flux_data_size << "\n";
+  Parallel::printf(
+      "Things %s, %s, %s, %s\n", unpacked_message->current_time_step_id,
+      unpacked_message->next_time_step_id,
+      unpacked_message->volume_or_ghost_mesh, unpacked_message->interface_mesh);
+  std::cout << "Addresses:\n"
+            << std::addressof(unpacked_message->volume_or_ghost_mesh) << "\n"
+            << std::addressof(unpacked_message->interface_mesh) << "\n"
+            << std::addressof(unpacked_message->subcell_ghost_data) << "\n"
+            << std::addressof(unpacked_message->dg_flux_data) << "\n";
+  // We don't need to set either of the pointers before we do a memcpy
+  // because
+  // only one will be a valid pointer at a time so whichever one it is will
+  // be
+  // the address right after Mesh<Dim>. The other will be a nullptr
+  if (subcell_size != 0) {
     unpacked_message->dg_flux_data = nullptr;
+    // unpacked_message->subcell_ghost_data =
+    //     reinterpret_cast<double*>(reinterpret_cast<char*>(std::addressof(
+    //                                   unpacked_message->dg_flux_data)) +
+    //                               8);
+    std::cout << unpacked_message->subcell_ghost_data << "\n";
+    std::cout << unpacked_message->subcell_ghost_data[0] << ","
+              << unpacked_message->subcell_ghost_data[1] << ","
+              << unpacked_message->subcell_ghost_data[2] << "\n";
+
+    memcpy(unpacked_message->subcell_ghost_data, buffer, subcell_size);
+    std::cout << unpacked_message->subcell_ghost_data[0] << ","
+              << unpacked_message->subcell_ghost_data[1] << ","
+              << unpacked_message->subcell_ghost_data[2] << "\n";
+
+    buffer += subcell_size;
+  } else if (dg_size != 0) {
+    unpacked_message->subcell_ghost_data = nullptr;
+    memcpy(unpacked_message->dg_flux_data, buffer, dg_size);
   }
 
   // Gotta clean up

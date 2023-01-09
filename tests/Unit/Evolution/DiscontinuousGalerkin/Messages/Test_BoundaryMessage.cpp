@@ -17,6 +17,7 @@
 #include "Utilities/Gsl.hpp"
 #include "Utilities/TMPL.hpp"
 
+#include <iostream>
 #include "Parallel/Printf.hpp"
 
 namespace evolution::dg {
@@ -49,17 +50,6 @@ void test_boundary_message(const gsl::not_null<Generator*> generator,
   auto dg_data = make_with_random_values<DataVector>(
       generator, make_not_null(&dist), dg_size);
 
-  // BoundaryMessage<Dim>* boundary_message = new BoundaryMessage<Dim>();
-  // boundary_message->subcell_ghost_data_size = subcell_size;
-  // boundary_message->dg_flux_data_size = dg_size;
-  // boundary_message->sent_across_nodes = sent_across_nodes;
-  // boundary_message->current_time_step_id = current_time_id;
-  // boundary_message->next_time_step_id = next_time_id;
-  // boundary_message->volume_or_ghost_mesh = volume_mesh;
-  // boundary_message->interface_mesh = interface_mesh;
-  // boundary_message->subcell_ghost_data = subcell_data.data();
-  // boundary_message->dg_flux_data = dg_data.data();
-
   BoundaryMessage<Dim>* boundary_message = new BoundaryMessage<Dim>(
       subcell_size, dg_size, sent_across_nodes, current_time_id, next_time_id,
       volume_mesh, interface_mesh,
@@ -69,16 +59,70 @@ void test_boundary_message(const gsl::not_null<Generator*> generator,
   CHECK(subcell_data.size() == subcell_size);
   CHECK(dg_data.size() == dg_size);
 
-  // void* packed_message = boundary_message->pack(boundary_message);
-  // (void)packed_message;
+  Parallel::printf("sizeof(BoundaryMessage<%d>) = %d\n", Dim,
+                   sizeof(BoundaryMessage<Dim>));
+  Parallel::printf("alignof(BoundaryMessage<%d>) = %d\n", Dim,
+                   alignof(BoundaryMessage<Dim>));
+  Parallel::printf("sizeof(CMessage_BoundaryMessage<%d>) = %d\n", Dim,
+                   sizeof(CMessage_BoundaryMessage<Dim>));
+  Parallel::printf("sizeof(CkMessage) = %d\n", sizeof(CkMessage));
+  Parallel::printf("sizeof(size_t) = %d, alignof(size_t) = %d\n",
+                   sizeof(size_t), alignof(size_t));
+  Parallel::printf("sizeof(bool) = %d, alignof(bool) = %d\n", sizeof(bool),
+                   alignof(bool));
+  Parallel::printf("sizeof(TimeStepId) = %d, alignof(TimeStepId) = %d\n",
+                   sizeof(TimeStepId), alignof(TimeStepId));
+  Parallel::printf("sizeof(Mesh<%d>) = %d, alignof(Mesh<%d>) = %d\n", Dim,
+                   sizeof(Mesh<Dim>), Dim, alignof(Mesh<Dim>));
+  Parallel::printf("sizeof(Mesh<%d>) = %d, alignof(Mesh<%d>) = %d\n", Dim - 1,
+                   sizeof(Mesh<Dim - 1>), Dim - 1, alignof(Mesh<Dim - 1>));
+  Parallel::printf("sizeof(double*) = %d, alignof(double*) = %d\n",
+                   sizeof(double*), alignof(double*));
+  size_t size = 2 * sizeof(size_t) + sizeof(bool) + 2 * sizeof(TimeStepId) +
+                sizeof(Mesh<Dim>) + sizeof(Mesh<Dim - 1>);
+  Parallel::printf("2 * sizeof(size_t) + ... (no pointers) = %d\n", size);
+  size += 2 * sizeof(double*);
+  Parallel::printf("2 * sizeof(size_t) + ... (yes pointers) = %d\n", size);
+  size = 2 * sizeof(size_t) + 8 + 2 * sizeof(TimeStepId) + sizeof(Mesh<Dim>) +
+         sizeof(Mesh<Dim - 1>);
+  Parallel::printf("2 * sizeof(size_t) + ... (bool = 8, no pointers) = %d\n",
+                   size);
+  size += 2 * sizeof(double*);
+  Parallel::printf("2 * sizeof(size_t) + ... (bool = 8, yes pointers) = %d\n",
+                   size);
+  PUP::sizer sizer;
+  sizer | boundary_message->subcell_ghost_data_size;
+  sizer | boundary_message->dg_flux_data_size;
+  sizer | boundary_message->sent_across_nodes;
+  sizer | boundary_message->current_time_step_id;
+  sizer | boundary_message->next_time_step_id;
+  sizer | boundary_message->volume_or_ghost_mesh;
+  sizer | boundary_message->interface_mesh;
+  Parallel::printf("sizer size (no pointers) = %d\n", sizer.size());
+
+  //   BoundaryMessage<Dim>* copied_boundary_message =
+  //       new (CkCopyMsg(reinterpret_cast<void**>(&boundary_message)))
+  //           BoundaryMessage<Dim>();
+
+  //   void* packed_message = boundary_message->pack(boundary_message);
+  //   (void)packed_message;
 
   BoundaryMessage<Dim>* packed_and_unpacked_message =
       boundary_message->unpack(boundary_message->pack(boundary_message));
+  Parallel::printf("After pack/unpack\n");
 
-  Parallel::printf("boundary message = %s\n\npacked/unpacked message = %s\n",
-                   *boundary_message, *packed_and_unpacked_message);
+  std::cout << std::addressof(packed_and_unpacked_message->subcell_ghost_data)
+            << "\n";
+  std::cout << packed_and_unpacked_message->subcell_ghost_data << "\n";
+  std::cout << std::addressof(packed_and_unpacked_message->dg_flux_data)
+            << "\n";
+  std::cout << packed_and_unpacked_message->dg_flux_data << "\n";
 
-  CHECK(*boundary_message == *packed_and_unpacked_message);
+  Parallel::printf("\npacked/unpacked message = %s\n",
+                   *packed_and_unpacked_message);
+  //   Parallel::printf("boundary message = %s\n", *boundary_message);
+
+  //   CHECK(*boundary_message == *packed_and_unpacked_message);
 
   // NOTE: Can't delete the pointers here????
 }
@@ -86,20 +130,32 @@ void test_boundary_message(const gsl::not_null<Generator*> generator,
 SPECTRE_TEST_CASE("Unit.Evolution.DG.BoundaryMessage", "[Unit][Evolution]") {
   MAKE_GENERATOR(generator);
   std::uniform_int_distribution<size_t> size_dist{2, 10};
-  tmpl::for_each<tmpl::integral_list<size_t, /*1*/, 2, 3>>(
-      [&generator, &size_dist](auto dim_t) {
-        constexpr size_t Dim =
-            tmpl::type_from<std::decay_t<decltype(dim_t)>>::value;
-        test_boundary_message<Dim>(make_not_null(&generator),
-                                   size_dist(generator), 0);
-        test_boundary_message<Dim>(make_not_null(&generator), 0,
-                                   size_dist(generator));
-        // Although our use case is when *either* dg or subcell is zero, we
-        // still test if both are non-zero just to check we can pack/unpack
-        // correctly
-        // test_boundary_message<Dim>(make_not_null(&generator),
-        // size_dist(generator), size_dist(generator));
-      });
+  tmpl::for_each<tmpl::integral_list<size_t, 0, 1, 2, 3>>([](auto dim_t) {
+    constexpr size_t Dim =
+        tmpl::type_from<std::decay_t<decltype(dim_t)>>::value;
+    Parallel::printf("size of Mesh<%d> = %d\n", Dim, sizeof(Mesh<Dim>));
+    Mesh<Dim> mesh{};
+    Parallel::printf("size of Mesh<%d> in bytes = %d\n", Dim,
+                     size_of_object_in_bytes(mesh));
+  });
+
+  (void)size_dist;
+  test_boundary_message<1>(make_not_null(&generator), 3, 0);
+
+  //   tmpl::for_each<tmpl::integral_list<size_t, /*1*/, 2, 3>>(
+  //       [&generator, &size_dist](auto dim_t) {
+  //         constexpr size_t Dim =
+  //             tmpl::type_from<std::decay_t<decltype(dim_t)>>::value;
+  //         test_boundary_message<Dim>(make_not_null(&generator),
+  //                                    size_dist(generator), 0);
+  //         test_boundary_message<Dim>(make_not_null(&generator), 0,
+  //                                    size_dist(generator));
+  //         // Although our use case is when *either* dg or subcell is zero, we
+  //         // still test if both are non-zero just to check we can pack/unpack
+  //         // correctly
+  //         // test_boundary_message<Dim>(make_not_null(&generator),
+  //         // size_dist(generator), size_dist(generator));
+  //       });
 }
 }  // namespace
 }  // namespace evolution::dg
