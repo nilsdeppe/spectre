@@ -201,11 +201,20 @@ void* BoundaryMessage<Dim>::pack(BoundaryMessage<Dim>* inmsg) {
   buffer += detail::offset<Mesh<Dim>>();
   memcpy(buffer, &inmsg->interface_mesh, detail::offset<Mesh<Dim - 1>>());
   buffer += detail::offset<Mesh<Dim - 1>>();
+  memcpy(buffer, &inmsg->subcell_ghost_data, detail::offset<double*>());
+  buffer += detail::offset<double*>();
+  memcpy(buffer, &inmsg->dg_flux_data, detail::offset<double*>());
+  buffer += detail::offset<double*>();
   if (subcell_size != 0) {
-    memcpy(buffer, inmsg->subcell_ghost_data, subcell_size);
-    // buffer += subcell_size;
-  } else if (subcell_size != 0) {
-    memcpy(buffer, inmsg->dg_flux_data, dg_size);
+    memcpy(buffer, inmsg->subcell_ghost_data, subcell_size * sizeof(double));
+    Parallel::printf("pack: (%f,%f,%f)\n",
+    buffer[0], buffer[1], buffer[2]
+    );
+    buffer += subcell_size;
+  }
+  if (dg_size != 0) {
+    memcpy(buffer, inmsg->dg_flux_data, dg_size * sizeof(double));
+    buffer += dg_size;
   }
 
   delete inmsg;
@@ -357,89 +366,110 @@ BoundaryMessage<Dim>* BoundaryMessage<Dim>::unpack(void* inbuf) {
 
   // DEBUG: memcpy approach....not working
   (void)print;
-  char* buffer = reinterpret_cast<char*>(inbuf);
+  // char* buffer = reinterpret_cast<char*>(inbuf);
 
-  BoundaryMessage<Dim>* temp_buffer =
-      reinterpret_cast<BoundaryMessage<Dim>*>(inbuf);
-  Parallel::printf("Things %s, %s, %s, %s\n", temp_buffer->current_time_step_id,
-                   temp_buffer->next_time_step_id,
-                   temp_buffer->volume_or_ghost_mesh,
-                   temp_buffer->interface_mesh);
+  BoundaryMessage<Dim>* buffer = reinterpret_cast<BoundaryMessage<Dim>*>(inbuf);
 
-  const size_t subcell_size = temp_buffer->subcell_ghost_data_size;
-  const size_t dg_size = temp_buffer->dg_flux_data_size;
+  const size_t subcell_size = buffer->subcell_ghost_data_size;
+  const size_t dg_size = buffer->dg_flux_data_size;
 
-  const size_t totalsize =
-      total_size_with_data_and_pointers(subcell_size, dg_size);
-
-  BoundaryMessage<Dim>* unpacked_message =
-      reinterpret_cast<BoundaryMessage<Dim>*>(CkAllocBuffer(buffer, totalsize));
-
-  std::cout << "Address of unpacked message = "
-            << std::addressof(unpacked_message);
-  std::cout << "\nunpacked message ptr = " << unpacked_message << "\n";
-
-  memcpy(&unpacked_message->subcell_ghost_data_size, buffer,
-         detail::offset<size_t>());
-  buffer += detail::offset<size_t>();
-  memcpy(&unpacked_message->dg_flux_data_size, buffer,
-         detail::offset<size_t>());
-  buffer += detail::offset<size_t>();
-  memcpy(&unpacked_message->sent_across_nodes, buffer, detail::offset<bool>());
-  buffer += detail::offset<bool>();
-  memcpy(&unpacked_message->current_time_step_id, buffer,
-         detail::offset<TimeStepId>());
-  buffer += detail::offset<TimeStepId>();
-  memcpy(&unpacked_message->next_time_step_id, buffer,
-         detail::offset<TimeStepId>());
-  buffer += detail::offset<TimeStepId>();
-  memcpy(&unpacked_message->volume_or_ghost_mesh, buffer,
-         detail::offset<Mesh<Dim>>());
-  buffer += detail::offset<Mesh<Dim>>();
-  memcpy(&unpacked_message->interface_mesh, buffer,
-         detail::offset<Mesh<Dim - 1>>());
-  buffer += detail::offset<Mesh<Dim - 1>>();
-  std::cout << "Sizes: " << unpacked_message->subcell_ghost_data_size << " "
-            << unpacked_message->dg_flux_data_size << "\n";
-  Parallel::printf(
-      "Things %s, %s, %s, %s\n", unpacked_message->current_time_step_id,
-      unpacked_message->next_time_step_id,
-      unpacked_message->volume_or_ghost_mesh, unpacked_message->interface_mesh);
-  std::cout << "Addresses:\n"
-            << std::addressof(unpacked_message->volume_or_ghost_mesh) << "\n"
-            << std::addressof(unpacked_message->interface_mesh) << "\n"
-            << std::addressof(unpacked_message->subcell_ghost_data) << "\n"
-            << std::addressof(unpacked_message->dg_flux_data) << "\n";
-  // We don't need to set either of the pointers before we do a memcpy
-  // because
-  // only one will be a valid pointer at a time so whichever one it is will
-  // be
-  // the address right after Mesh<Dim>. The other will be a nullptr
   if (subcell_size != 0) {
-    unpacked_message->dg_flux_data = nullptr;
-    // unpacked_message->subcell_ghost_data =
-    //     reinterpret_cast<double*>(reinterpret_cast<char*>(std::addressof(
-    //                                   unpacked_message->dg_flux_data)) +
-    //                               8);
-    std::cout << unpacked_message->subcell_ghost_data << "\n";
-    std::cout << unpacked_message->subcell_ghost_data[0] << ","
-              << unpacked_message->subcell_ghost_data[1] << ","
-              << unpacked_message->subcell_ghost_data[2] << "\n";
-
-    memcpy(unpacked_message->subcell_ghost_data, buffer, subcell_size);
-    std::cout << unpacked_message->subcell_ghost_data[0] << ","
-              << unpacked_message->subcell_ghost_data[1] << ","
-              << unpacked_message->subcell_ghost_data[2] << "\n";
-
-    buffer += subcell_size;
-  } else if (dg_size != 0) {
-    unpacked_message->subcell_ghost_data = nullptr;
-    memcpy(unpacked_message->dg_flux_data, buffer, dg_size);
+    buffer->subcell_ghost_data =
+        reinterpret_cast<double*>(std::addressof(buffer->dg_flux_data)) +
+        detail::offset<double*>();
+  } else {
+    buffer->subcell_ghost_data = nullptr;
+  }
+  if (dg_size != 0) {
+    buffer->dg_flux_data =
+        reinterpret_cast<double*>(std::addressof(buffer->dg_flux_data)) +
+        detail::offset<double*>() + subcell_size;
+  } else {
+    buffer->dg_flux_data = nullptr;
   }
 
+  // Parallel::printf("Things %s, %s, %s, %s\n",
+  // temp_buffer->current_time_step_id,
+  //                  temp_buffer->next_time_step_id,
+  //                  temp_buffer->volume_or_ghost_mesh,
+  //                  temp_buffer->interface_mesh);
+
+  // const size_t subcell_size = temp_buffer->subcell_ghost_data_size;
+  // const size_t dg_size = temp_buffer->dg_flux_data_size;
+
+  // const size_t totalsize =
+  //     total_size_with_data_and_pointers(subcell_size, dg_size);
+
+  // BoundaryMessage<Dim>* unpacked_message =
+  //     reinterpret_cast<BoundaryMessage<Dim>*>(CkAllocBuffer(buffer,
+  //     totalsize));
+
+  // std::cout << "Address of unpacked message = "
+  //           << std::addressof(unpacked_message);
+  // std::cout << "\nunpacked message ptr = " << unpacked_message << "\n";
+
+  // memcpy(&unpacked_message->subcell_ghost_data_size, buffer,
+  //        detail::offset<size_t>());
+  // buffer += detail::offset<size_t>();
+  // memcpy(&unpacked_message->dg_flux_data_size, buffer,
+  //        detail::offset<size_t>());
+  // buffer += detail::offset<size_t>();
+  // memcpy(&unpacked_message->sent_across_nodes, buffer,
+  // detail::offset<bool>()); buffer += detail::offset<bool>();
+  // memcpy(&unpacked_message->current_time_step_id, buffer,
+  //        detail::offset<TimeStepId>());
+  // buffer += detail::offset<TimeStepId>();
+  // memcpy(&unpacked_message->next_time_step_id, buffer,
+  //        detail::offset<TimeStepId>());
+  // buffer += detail::offset<TimeStepId>();
+  // memcpy(&unpacked_message->volume_or_ghost_mesh, buffer,
+  //        detail::offset<Mesh<Dim>>());
+  // buffer += detail::offset<Mesh<Dim>>();
+  // memcpy(&unpacked_message->interface_mesh, buffer,
+  //        detail::offset<Mesh<Dim - 1>>());
+  // buffer += detail::offset<Mesh<Dim - 1>>();
+  // std::cout << "Sizes: " << unpacked_message->subcell_ghost_data_size << " "
+  //           << unpacked_message->dg_flux_data_size << "\n";
+  // Parallel::printf(
+  //     "Things %s, %s, %s, %s\n", unpacked_message->current_time_step_id,
+  //     unpacked_message->next_time_step_id,
+  //     unpacked_message->volume_or_ghost_mesh,
+  //     unpacked_message->interface_mesh);
+  // std::cout << "Addresses:\n"
+  //           << std::addressof(unpacked_message->volume_or_ghost_mesh) << "\n"
+  //           << std::addressof(unpacked_message->interface_mesh) << "\n"
+  //           << std::addressof(unpacked_message->subcell_ghost_data) << "\n"
+  //           << std::addressof(unpacked_message->dg_flux_data) << "\n";
+  // // We don't need to set either of the pointers before we do a memcpy
+  // // because
+  // // only one will be a valid pointer at a time so whichever one it is will
+  // // be
+  // // the address right after Mesh<Dim>. The other will be a nullptr
+  // if (subcell_size != 0) {
+  //   unpacked_message->dg_flux_data = nullptr;
+  //   // unpacked_message->subcell_ghost_data =
+  //   //     reinterpret_cast<double*>(reinterpret_cast<char*>(std::addressof(
+  //   //                                   unpacked_message->dg_flux_data)) +
+  //   //                               8);
+  //   std::cout << unpacked_message->subcell_ghost_data << "\n";
+  //   std::cout << unpacked_message->subcell_ghost_data[0] << ","
+  //             << unpacked_message->subcell_ghost_data[1] << ","
+  //             << unpacked_message->subcell_ghost_data[2] << "\n";
+
+  //   memcpy(unpacked_message->subcell_ghost_data, buffer, subcell_size);
+  //   std::cout << unpacked_message->subcell_ghost_data[0] << ","
+  //             << unpacked_message->subcell_ghost_data[1] << ","
+  //             << unpacked_message->subcell_ghost_data[2] << "\n";
+
+  //   buffer += subcell_size;
+  // } else if (dg_size != 0) {
+  //   unpacked_message->subcell_ghost_data = nullptr;
+  //   memcpy(unpacked_message->dg_flux_data, buffer, dg_size);
+  // }
+
   // Gotta clean up
-  CkFreeMsg(inbuf);
-  return unpacked_message;
+  // CkFreeMsg(inbuf);
+  return buffer;
 }
 
 template <size_t Dim>
