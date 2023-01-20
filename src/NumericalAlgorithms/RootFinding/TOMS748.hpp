@@ -291,11 +291,12 @@ void bracket(F f, simd::batch<T, Arch>& a, simd::batch<T, Arch>& b,
   fa = simd::select(mask_else, fc, fa);
 }
 
-template <class F, class T, class Arch, class Tol>
+template <class F, class T, class Arch, class Tol,
+          class BatchBool = typename simd::batch<T, Arch>::batch_bool_type>
 std::pair<simd::batch<T, Arch>, simd::batch<T, Arch>> toms748_solve(
     F f, const simd::batch<T, Arch>& ax, const simd::batch<T, Arch>& bx,
     const simd::batch<T, Arch>& fax, const simd::batch<T, Arch>& fbx, Tol tol,
-    size_t& max_iter) {
+    const BatchBool ignore_filter, size_t& max_iter) {
   static_assert(std::is_floating_point_v<T>);
   // Main entry point and logic for Toms Algorithm 748
   // root finder.
@@ -320,7 +321,8 @@ std::pair<simd::batch<T, Arch>, simd::batch<T, Arch>> toms748_solve(
 
   const auto fa_is_zero_mask = (fa == static_cast<T>(0));
   const auto fb_is_zero_mask = (fb == static_cast<T>(0));
-  auto completion_mask = tol(a, b) or fa_is_zero_mask or fb_is_zero_mask;
+  auto completion_mask =
+      tol(a, b) or fa_is_zero_mask or fb_is_zero_mask or ignore_filter;
   auto incomplete_mask = not completion_mask;
   if (UNLIKELY(simd::all(completion_mask))) {
     max_iter = 0;
@@ -488,14 +490,14 @@ std::pair<simd::batch<T, Arch>, simd::batch<T, Arch>> toms748_solve(
 }  // namespace toms748_detail
 
 template <typename Function, typename T, typename Arch>
-simd::batch<T, Arch> toms748(const Function& f,
-                             const simd::batch<T, Arch> lower_bound,
-                             const simd::batch<T, Arch> upper_bound,
-                             const simd::batch<T, Arch> f_at_lower_bound,
-                             const simd::batch<T, Arch> f_at_upper_bound,
-                             const T absolute_tolerance,
-                             const T relative_tolerance,
-                             const size_t max_iterations = 100) {
+simd::batch<T, Arch> toms748(
+    const Function& f, const simd::batch<T, Arch> lower_bound,
+    const simd::batch<T, Arch> upper_bound,
+    const simd::batch<T, Arch> f_at_lower_bound,
+    const simd::batch<T, Arch> f_at_upper_bound, const T absolute_tolerance,
+    const T relative_tolerance, const size_t max_iterations = 100,
+    const typename simd::batch<T, Arch>::batch_bool_type ignore_filter =
+        simd::batch<T, Arch>::batch_bool_type::from_mask(0)) {
   ASSERT(relative_tolerance > std::numeric_limits<T>::epsilon(),
          "The relative tolerance is too small.");
 
@@ -512,9 +514,9 @@ simd::batch<T, Arch> toms748(const Function& f,
                      simd::min(simd::abs(lhs), simd::abs(rhs)),
                      simd::batch<T, Arch>(absolute_tolerance));
   };
-  auto result = toms748_detail::toms748_solve(f, lower_bound, upper_bound,
-                                              f_at_lower_bound,
-                                              f_at_upper_bound, tol, max_iters);
+  auto result = toms748_detail::toms748_solve(
+      f, lower_bound, upper_bound, f_at_lower_bound, f_at_upper_bound, tol,
+      ignore_filter, max_iters);
   if (max_iters >= max_iterations) {
     throw convergence_error(
         "toms748 reached max iterations without converging");
@@ -523,15 +525,17 @@ simd::batch<T, Arch> toms748(const Function& f,
                    (result.second - result.first), result.first);
 }
 
-template <typename Function, typename T, typename Arch>
-simd::batch<T, Arch> toms748(const Function& f,
-                             const simd::batch<T, Arch> lower_bound,
-                             const simd::batch<T, Arch> upper_bound,
-                             const T absolute_tolerance,
-                             const T relative_tolerance,
-                             const size_t max_iterations = 100) {
+template <typename Function, typename T, typename Arch,
+          typename BatchBool = typename simd::batch<T, Arch>::batch_bool_type>
+simd::batch<T, Arch> toms748(
+    const Function& f, const simd::batch<T, Arch> lower_bound,
+    const simd::batch<T, Arch> upper_bound, const T absolute_tolerance,
+    const T relative_tolerance, const size_t max_iterations = 100,
+    const typename simd::batch<T, Arch>::batch_bool_type ignore_filter =
+        simd::batch<T, Arch>::batch_bool_type::from_mask(0)) {
   return toms748(f, lower_bound, upper_bound, f(lower_bound), f(upper_bound),
-                 absolute_tolerance, relative_tolerance, max_iterations);
+                 absolute_tolerance, relative_tolerance, max_iterations,
+                 ignore_filter);
 }
 #endif  // SPECTRE_USE_SIMD
 
