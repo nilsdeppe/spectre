@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <iomanip>
+#include <memory>
 #include <ostream>
 #include <pup.h>  // IWYU pragma: keep
 
@@ -31,6 +33,7 @@
 // IWYU pragma: no_forward_declare Tensor
 
 namespace {
+using SimdType = typename simd::make_sized_batch<double, 8>::type;
 
 // This class codes Eq. (B.34), rewritten as a standard-form
 // polynomial in (W - 1) or (W - ((tau/D) - (B^2/D) + 1)) for better
@@ -140,6 +143,18 @@ batch_type make_sequence() {
       std::make_index_sequence<batch_type::size>{});
 }
 
+template <typename SimdType, typename Symm, typename IndexList>
+Tensor<SimdType, Symm, IndexList> extract_point(
+    const Tensor<DataVector, Symm, IndexList>& tensor, const size_t index) {
+  Tensor<SimdType, Symm, IndexList> result{};
+  for (size_t storage_index = 0; storage_index < tensor.size();
+       ++storage_index) {
+    result[storage_index] =
+        SimdType::load_unaligned(std::addressof(tensor[storage_index][index]));
+  }
+  return result;
+}
+
 [[nodiscard]] bool fix_impl_simd(
     const gsl::not_null<Scalar<DataVector>*> tilde_d,
     const gsl::not_null<Scalar<DataVector>*> tilde_ye,
@@ -149,56 +164,75 @@ batch_type make_sequence() {
     const double one_minus_safety_factor_for_magnetic_field,
     const double one_minus_safety_factor_for_momentum_density,
     const double rest_mass_density_times_lorentz_factor_cutoff,
+    const double minimum_electron_fraction,
+    const double electron_fraction_cutoff,
     const size_t size,  //
     const Scalar<DataVector>& sqrt_det_spatial_metric,
-    const DataVector& rest_mass_density_times_lorentz_factor,
     const Scalar<DataVector>& tilde_b_squared,
     const Scalar<DataVector>& tilde_s_squared,
-    const Scalar<DataVector>& tilde_s_dot_tilde_b) {
+    const Scalar<DataVector>& tilde_s_dot_tilde_b,
+    const tnsr::I<DataVector, 3, Frame::Inertial>& tilde_b,
+    const tnsr::ii<DataVector, 3, Frame::Inertial>& spatial_metric,
+    const tnsr::II<DataVector, 3, Frame::Inertial>& inv_spatial_metric) {
   bool needed_fixing = false;
-  const simd::batch<double> min_rho_times_w(
+  const SimdType min_rho_times_w(
       minimum_rest_mass_density_times_lorentz_factor),
       two_times_one_min_saf_mag_field(
           one_minus_safety_factor_for_magnetic_field * 2.),
       zero(0.);
 
-  if (UNLIKELY(size < simd::batch<double>::size)) {
-    ERROR("Too few points...");
-  }
+  ASSERT(size >= SimdType::size, "Too few points for SIMD operations. size: "
+                                     << size
+                                     << " SimdType::size: " << SimdType::size);
 
   bool done = false;
-  simd::batch_bool<double> incomplete_mask(true);
-  for (size_t s = 0; s < size and not done; s += simd::batch<double>::size) {
-    if (UNLIKELY(s + simd::batch<double>::size > size)) {
+  typename SimdType::batch_bool_type incomplete_mask(true);
+  for (size_t s = 0; s < size and not done; s += SimdType::size) {
+    if (UNLIKELY(s + SimdType::size > size)) {
       done = true;
-      const size_t remainder = s - (size - simd::batch<double>::size);
-      incomplete_mask = make_sequence<simd::batch<double>>() >=
+      const size_t remainder = s - (size - SimdType::size);
+      incomplete_mask = make_sequence<SimdType>() >=
                         static_cast<double>(remainder);
 
       // Use remainder to offset index
-      s = size - simd::batch<double>::size;
+      s = size - SimdType::size;
     }
-    // Increase density if necessary
-    const auto sqrt_det_g =
-        simd::load_unaligned(&get(sqrt_det_spatial_metric)[s]);
-    const auto rho_times_w =
-        simd::load_unaligned(&rest_mass_density_times_lorentz_factor[s]);
-    const auto d_tilde_mask =
-        (rho_times_w < rest_mass_density_times_lorentz_factor_cutoff) and
-        incomplete_mask;
-    auto d_tilde = simd::load_unaligned(&get(*tilde_d)[s]);
-    if (UNLIKELY(simd::any(d_tilde_mask))) {
+    auto d_tilde = SimdType::load_unaligned(&get(*tilde_d)[s]);
+
+    // Increase electron fraction if necessary
+    auto ye_tilde = SimdType::load_unaligned(&get(*tilde_ye)[s]);
+    if (const auto ye_mask =
+            ye_tilde < electron_fraction_cutoff * d_tilde and incomplete_mask;
+        UNLIKELY(simd::any(ye_mask))) {
       needed_fixing = true;
+      ye_tilde =
+          simd::select(ye_mask, minimum_electron_fraction * d_tilde, ye_tilde);
+      ye_tilde.store_unaligned(&get(*tilde_ye)[s]);
+    }
+
+    // Increase density if necessary
+    const auto sqrt_det_gamma =
+        SimdType::load_unaligned(&get(sqrt_det_spatial_metric)[s]);
+    if (const auto d_tilde_mask =
+            (d_tilde <
+             rest_mass_density_times_lorentz_factor_cutoff * sqrt_det_gamma) and
+            incomplete_mask;
+        UNLIKELY(simd::any(d_tilde_mask))) {
+      needed_fixing = true;
+      ye_tilde = ye_tilde / d_tilde;
       d_tilde =
-          simd::select(d_tilde_mask, min_rho_times_w * sqrt_det_g, d_tilde);
+          simd::select(d_tilde_mask, min_rho_times_w * sqrt_det_gamma, d_tilde);
       d_tilde.store_unaligned(&get(*tilde_d)[s]);
+      ye_tilde = ye_tilde * d_tilde;
+      ye_tilde.store_unaligned(&get(*tilde_ye)[s]);
     }
 
     // Increase internal energy if necessary
-    auto tau_tilde = simd::load_unaligned(&get(*tilde_tau)[s]);
-    const auto b_tilde_squared = simd::load_unaligned(&get(tilde_b_squared)[s]);
+    auto tau_tilde = SimdType::load_unaligned(&get(*tilde_tau)[s]);
+    const auto b_tilde_squared =
+        SimdType::load_unaligned(&get(tilde_b_squared)[s]);
     // Equation B.39 of Foucart
-    const auto mag_temp = two_times_one_min_saf_mag_field * sqrt_det_g;
+    const auto mag_temp = two_times_one_min_saf_mag_field * sqrt_det_gamma;
     const auto tau_tilde_mask =
         (b_tilde_squared > (tau_tilde * mag_temp)) and incomplete_mask;
     if (UNLIKELY(simd::any(tau_tilde_mask))) {
@@ -209,16 +243,17 @@ batch_type make_sequence() {
     }
 
     // Decrease momentum density if necessary
-    const auto s_tilde_squared = simd::load_unaligned(&get(tilde_s_squared)[s]);
+    const auto s_tilde_squared =
+        SimdType::load_unaligned(&get(tilde_s_squared)[s]);
     // Equation B.24 of Foucart
     const auto tau_over_d = tau_tilde / d_tilde;
     // Equation B.23 of Foucart
-    const auto b_squared_over_d = b_tilde_squared / (sqrt_det_g * d_tilde);
+    const auto b_squared_over_d = b_tilde_squared / (sqrt_det_gamma * d_tilde);
     // Equation B.27 of Foucart
     const auto normalized_s_dot_b =
         simd::select((b_tilde_squared > 1.e-16 * d_tilde and
                       s_tilde_squared > 1.e-16 * square(d_tilde)),
-                     simd::load_unaligned(&get(tilde_s_dot_tilde_b)[s]) /
+                     SimdType::load_unaligned(&get(tilde_s_dot_tilde_b)[s]) /
                          sqrt(b_tilde_squared * s_tilde_squared),
                      zero);
 
@@ -229,7 +264,7 @@ batch_type make_sequence() {
     const auto upper_bound_for_s_tilde_squared =
         [&b_squared_over_d, &d_tilde, &lower_bound_of_lorentz_factor_minus_one,
          &normalized_s_dot_b](
-            const simd::batch<double>& local_excess_lorentz_factor) {
+            const SimdType& local_excess_lorentz_factor) {
           const auto local_lorentz_factor_minus_one =
               lower_bound_of_lorentz_factor_minus_one +
               local_excess_lorentz_factor;
@@ -278,12 +313,12 @@ batch_type make_sequence() {
           simd::select(lower_bound_of_lorentz_factor_minus_one == 0.0,
                        tau_over_d, b_squared_over_d);
 
-      simd::batch<double> excess_lorentz_factor(0.0);
+      SimdType excess_lorentz_factor(0.0);
       if (simd::any(upper_bound != 0.0)) {
-        const simd::batch<double> f_at_lower = f_of_lorentz_factor(0.0);
-        const simd::batch<double> candidate_upper_bound =
+        const SimdType f_at_lower = f_of_lorentz_factor(0.0);
+        const SimdType candidate_upper_bound =
             9.0 * (lower_bound_of_lorentz_factor_minus_one + 1.0);
-        simd::batch<double> f_at_upper(
+        SimdType f_at_upper(
             std::numeric_limits<double>::signaling_NaN());
         // TODO: double check logic...
         const auto upper_bound_less_candidate_mask =
@@ -319,8 +354,8 @@ batch_type make_sequence() {
 
         try {
           excess_lorentz_factor = RootFinder::toms748(
-              f_of_lorentz_factor, simd::batch<double>(0.0), upper_bound,
-              f_at_lower, f_at_upper, 1.e-14, 1.e-14, 100);
+              f_of_lorentz_factor, SimdType(0.0), upper_bound, f_at_lower,
+              f_at_upper, 1.e-14, 1.e-14, 100, not tilde_s_mask);
         } catch (std::exception& exception) {
           // clang-format makes the streamed text hard to read in code...
           // clang-format off
@@ -328,25 +363,26 @@ batch_type make_sequence() {
             "Failed to fix conserved variables because the root finder failed"
             "to find the lorentz factor.\n"
             "upper_bound = "
-            // << std::scientific << std::setprecision(18)
-            // << upper_bound
-            // << "\n  lower_bound_of_lorentz_factor_minus_one = "
-            // << lower_bound_of_lorentz_factor_minus_one
-            // << "\n  s_tilde_squared = " << s_tilde_squared
-            // << "\n  d_tilde = " << d_tilde
-            // << "\n  sqrt_det_g = " << sqrt_det_g
-            // << "\n  tau_tilde = " << tau_tilde
-            // << "\n  b_tilde_squared = " << b_tilde_squared
-            // << "\n  b_squared_over_d = " << b_squared_over_d
-            // << "\n  tau_over_d = " << tau_over_d
-            // << "\n  normalized_s_dot_b = " << normalized_s_dot_b
-            // << "\n  tilde_s =\n" << extract_point(*tilde_s, s)
-            // << "\n  tilde_b =\n" << extract_point(tilde_b, s)
-            // << "\n  spatial_metric =\n" << extract_point(spatial_metric, s)
-            // << "\n  inv_spatial_metric =\n"
-            // << extract_point(inv_spatial_metric, s) << "\n"
-            // << "The message of the exception thrown by the root finder "
-            //    "is:\n"
+            << std::scientific << std::setprecision(18)
+            << upper_bound
+            << "\n  lower_bound_of_lorentz_factor_minus_one = "
+            << lower_bound_of_lorentz_factor_minus_one
+            << "\n  s_tilde_squared = " << s_tilde_squared
+            << "\n  d_tilde = " << d_tilde
+            << "\n  sqrt_det_g = " << sqrt_det_gamma
+            << "\n  tau_tilde = " << tau_tilde
+            << "\n  b_tilde_squared = " << b_tilde_squared
+            << "\n  b_squared_over_d = " << b_squared_over_d
+            << "\n  tau_over_d = " << tau_over_d
+            << "\n  normalized_s_dot_b = " << normalized_s_dot_b
+            << "\n  tilde_s =\n" << extract_point<SimdType>(*tilde_s, s)
+            << "\n  tilde_b =\n" << extract_point<SimdType>(tilde_b, s)
+            << "\n  spatial_metric =\n"
+            << extract_point<SimdType>(spatial_metric, s)
+            << "\n  inv_spatial_metric =\n"
+            << extract_point<SimdType>(inv_spatial_metric, s) << "\n"
+            << "The message of the exception thrown by the root finder "
+               "is:\n"
             << exception.what());
           // clang-format on
         }
@@ -358,12 +394,12 @@ batch_type make_sequence() {
               sqrt(one_minus_safety_factor_for_momentum_density *
                    upper_bound_for_s_tilde_squared(excess_lorentz_factor) /
                    (s_tilde_squared + 1.e-16 * square(d_tilde))),
-              xsimd::batch<double>(1.)),
-          xsimd::batch<double>(1.));
+              SimdType(1.)),
+          SimdType(1.));
       if (UNLIKELY(simd::any(rescaling_factor < 1.))) {
         needed_fixing = true;
         for (size_t i = 0; i < 3; i++) {
-          auto s_tilde = simd::load_unaligned(&tilde_s->get(i)[s]);
+          auto s_tilde = SimdType::load_unaligned(&tilde_s->get(i)[s]);
           s_tilde *= rescaling_factor;
           s_tilde.store_unaligned(&tilde_s->get(i)[s]);
         }
@@ -377,15 +413,17 @@ batch_type make_sequence() {
 
 [[nodiscard]] bool fix_impl_scalar(
     const gsl::not_null<Scalar<DataVector>*> tilde_d,
+    const gsl::not_null<Scalar<DataVector>*> tilde_ye,
     const gsl::not_null<Scalar<DataVector>*> tilde_tau,
     const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*> tilde_s,
     const double minimum_rest_mass_density_times_lorentz_factor,
     const double one_minus_safety_factor_for_magnetic_field,
     const double one_minus_safety_factor_for_momentum_density,
     const double rest_mass_density_times_lorentz_factor_cutoff,
+    const double minimum_electron_fraction,
+    const double electron_fraction_cutoff,
     const size_t size,  //
     const Scalar<DataVector>& sqrt_det_spatial_metric,
-    const DataVector& rest_mass_density_times_lorentz_factor,
     const Scalar<DataVector>& tilde_b_squared,
     const Scalar<DataVector>& tilde_s_squared,
     const Scalar<DataVector>& tilde_s_dot_tilde_b,
@@ -394,50 +432,28 @@ batch_type make_sequence() {
     const tnsr::ii<DataVector, 3, Frame::Inertial>& spatial_metric,
     const tnsr::II<DataVector, 3, Frame::Inertial>& inv_spatial_metric) {
   bool needed_fixing = false;
-  const size_t size = get<0>(tilde_b).size();
   Variables<tmpl::list<::Tags::TempScalar<0>, ::Tags::TempScalar<1>,
                        ::Tags::TempScalar<2>, ::Tags::TempScalar<3>,
                        ::Tags::TempScalar<4>>>
       temp_buffer(size);
-
-  DataVector& rest_mass_density_times_lorentz_factor =
-      get(get<::Tags::TempScalar<0>>(temp_buffer));
-  rest_mass_density_times_lorentz_factor =
-      get(*tilde_d) / get(sqrt_det_spatial_metric);
-
-  Scalar<DataVector>& tilde_b_squared = get<::Tags::TempScalar<1>>(temp_buffer);
-  dot_product(make_not_null(&tilde_b_squared), tilde_b, tilde_b,
-              spatial_metric);
-
-  Scalar<DataVector>& tilde_s_squared = get<::Tags::TempScalar<2>>(temp_buffer);
-  dot_product(make_not_null(&tilde_s_squared), *tilde_s, *tilde_s,
-              inv_spatial_metric);
-
-  Scalar<DataVector>& tilde_s_dot_tilde_b =
-      get<::Tags::TempScalar<3>>(temp_buffer);
-  dot_product(make_not_null(&tilde_s_dot_tilde_b), *tilde_s, tilde_b);
-
-  DataVector& local_ye = get(get<::Tags::TempScalar<4>>(temp_buffer));
-  local_ye = get(*tilde_ye) / get(*tilde_d);
 
   for (size_t s = 0; s < size; s++) {
     double& d_tilde = get(*tilde_d)[s];
 
     // Increase electron fraction if necessary
     double& ye_tilde = get(*tilde_ye)[s];
-    if (local_ye[s] < electron_fraction_cutoff_) {
+    if (ye_tilde < electron_fraction_cutoff * d_tilde) {
       needed_fixing = true;
-      local_ye[s] = minimum_electron_fraction_;
-      ye_tilde = local_ye[s] * d_tilde;
+      ye_tilde = minimum_electron_fraction * d_tilde;
     }
 
     // Increase mass density if necessary
     const double sqrt_det_g = get(sqrt_det_spatial_metric)[s];
-    if (rest_mass_density_times_lorentz_factor[s] <
-        rest_mass_density_times_lorentz_factor_cutoff) {
+    if (d_tilde < rest_mass_density_times_lorentz_factor_cutoff * sqrt_det_g) {
       needed_fixing = true;
+      ye_tilde = ye_tilde / d_tilde;
       d_tilde = minimum_rest_mass_density_times_lorentz_factor * sqrt_det_g;
-      ye_tilde = d_tilde * local_ye[s];
+      ye_tilde = ye_tilde * d_tilde;
     }
 
     // Increase internal energy if necessary
@@ -595,6 +611,8 @@ namespace grmhd::ValenciaDivClean {
 FixConservatives::FixConservatives(
     const double minimum_rest_mass_density_times_lorentz_factor,
     const double rest_mass_density_times_lorentz_factor_cutoff,
+    const double minimum_electron_fraction,
+    const double electron_fraction_cutoff,
     const double safety_factor_for_magnetic_field,
     const double safety_factor_for_momentum_density,
     const Options::Context& context)
@@ -602,6 +620,8 @@ FixConservatives::FixConservatives(
           minimum_rest_mass_density_times_lorentz_factor),
       rest_mass_density_times_lorentz_factor_cutoff_(
           rest_mass_density_times_lorentz_factor_cutoff),
+      minimum_electron_fraction_(minimum_electron_fraction),
+      electron_fraction_cutoff_(electron_fraction_cutoff),
       one_minus_safety_factor_for_magnetic_field_(
           1.0 - safety_factor_for_magnetic_field),
       one_minus_safety_factor_for_momentum_density_(
@@ -614,6 +634,13 @@ FixConservatives::FixConservatives(
                     << minimum_rest_mass_density_times_lorentz_factor_
                     << ") must be less than or equal to the cutoff value of D ("
                     << rest_mass_density_times_lorentz_factor_cutoff_ << ')');
+  }
+  if (minimum_electron_fraction_ > electron_fraction_cutoff_) {
+    PARSE_ERROR(context,
+                "The minimum value of electron fraction Y_e ("
+                    << minimum_electron_fraction_
+                    << ") must be less than or equal to the cutoff value ("
+                    << electron_fraction_cutoff_ << ')');
   }
 }
 
@@ -636,6 +663,7 @@ void FixConservatives::pup(PUP::er& p) {
 // \gamma_{mn}       g_{mn}
 bool FixConservatives::operator()(
     const gsl::not_null<Scalar<DataVector>*> tilde_d,
+    const gsl::not_null<Scalar<DataVector>*> tilde_ye,
     const gsl::not_null<Scalar<DataVector>*> tilde_tau,
     const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*> tilde_s,
     const tnsr::I<DataVector, 3, Frame::Inertial>& tilde_b,
@@ -644,14 +672,9 @@ bool FixConservatives::operator()(
     const Scalar<DataVector>& sqrt_det_spatial_metric) const {
   bool needed_fixing = false;
   const size_t size = get<0>(tilde_b).size();
-  Variables<tmpl::list<::Tags::TempScalar<0>, ::Tags::TempScalar<1>,
-                       ::Tags::TempScalar<2>, ::Tags::TempScalar<3>>>
+  Variables<tmpl::list<::Tags::TempScalar<1>, ::Tags::TempScalar<2>,
+                       ::Tags::TempScalar<3>>>
       temp_buffer(size);
-
-  DataVector& rest_mass_density_times_lorentz_factor =
-      get(get<::Tags::TempScalar<0>>(temp_buffer));
-  rest_mass_density_times_lorentz_factor =
-      get(*tilde_d) / get(sqrt_det_spatial_metric);
 
   Scalar<DataVector>& tilde_b_squared = get<::Tags::TempScalar<1>>(temp_buffer);
   dot_product(make_not_null(&tilde_b_squared), tilde_b, tilde_b,
@@ -666,30 +689,29 @@ bool FixConservatives::operator()(
   dot_product(make_not_null(&tilde_s_dot_tilde_b), *tilde_s, tilde_b);
 
 #ifdef SPECTRE_USE_SIMD
-  disable_floating_point_exceptions();
-  if (size >= simd::batch<double>::size
+  if (size >= SimdType::size
       // and false
-      ) {
+  ) {
     needed_fixing = fix_impl_simd(
-        tilde_d, tilde_tau, tilde_s,
+        tilde_d, tilde_ye, tilde_tau, tilde_s,
         minimum_rest_mass_density_times_lorentz_factor_,
         one_minus_safety_factor_for_magnetic_field_,
         one_minus_safety_factor_for_momentum_density_,
-        rest_mass_density_times_lorentz_factor_cutoff_, size,
-        sqrt_det_spatial_metric, rest_mass_density_times_lorentz_factor,
-        tilde_b_squared, tilde_s_squared, tilde_s_dot_tilde_b);
+        rest_mass_density_times_lorentz_factor_cutoff_,
+        minimum_electron_fraction_, electron_fraction_cutoff_, size,
+        sqrt_det_spatial_metric, tilde_b_squared, tilde_s_squared,
+        tilde_s_dot_tilde_b, tilde_b, spatial_metric, inv_spatial_metric);
   } else {
     needed_fixing = fix_impl_scalar(
-        tilde_d, tilde_tau, tilde_s,
+        tilde_d, tilde_ye, tilde_tau, tilde_s,
         minimum_rest_mass_density_times_lorentz_factor_,
         one_minus_safety_factor_for_magnetic_field_,
         one_minus_safety_factor_for_momentum_density_,
-        rest_mass_density_times_lorentz_factor_cutoff_, size,
-        sqrt_det_spatial_metric, rest_mass_density_times_lorentz_factor,
-        tilde_b_squared, tilde_s_squared, tilde_s_dot_tilde_b, tilde_b,
-        spatial_metric, inv_spatial_metric);
+        rest_mass_density_times_lorentz_factor_cutoff_,
+        minimum_electron_fraction_, electron_fraction_cutoff_, size,
+        sqrt_det_spatial_metric, tilde_b_squared, tilde_s_squared,
+        tilde_s_dot_tilde_b, tilde_b, spatial_metric, inv_spatial_metric);
   }
-  enable_floating_point_exceptions();
 #else
   needed_fixing = fix_impl_scalar(
       tilde_d, tilde_tau, tilde_s,
