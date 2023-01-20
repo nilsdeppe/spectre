@@ -10,11 +10,11 @@
 namespace simd = xsimd;
 
 namespace MakeWithValueImpls {
-template <typename U, typename T>
-struct MakeWithValueImpl<simd::batch<U>, T> {
-  static SPECTRE_ALWAYS_INLINE simd::batch<U> apply(const T& /* input */,
-                                                    const U value) {
-    return simd::batch<U>(value);
+template <typename U, typename T, typename Arch>
+struct MakeWithValueImpl<xsimd::batch<U, Arch>, T> {
+  static SPECTRE_ALWAYS_INLINE xsimd::batch<U, Arch> apply(const T& /* input */,
+                                                           const U value) {
+    return xsimd::batch<U, Arch>(value);
   }
 };
 }  // namespace MakeWithValueImpls
