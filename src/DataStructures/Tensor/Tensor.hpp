@@ -49,6 +49,8 @@
 // Not all the TensorExpression includes are necessary, but we include them so
 // that Tensor.hpp provides a uniform interface to Tensors and TensorExpressions
 
+#include <Utilities/Simd/Simd.hpp>
+
 /// \cond
 template <typename X, typename Symm = Symmetry<>,
           typename IndexList = index_list<>>
@@ -107,7 +109,9 @@ class Tensor<X, Symm, IndexList<Indices...>> {
           std::is_same_v<X, ComplexModalVector> or
           std::is_same_v<X, DataVector> or std::is_same_v<X, ModalVector> or
           is_spin_weighted_of_v<ComplexDataVector, X> or
-          is_spin_weighted_of_v<ComplexModalVector, X>,
+          // TODO: get include for xsimd.
+          is_spin_weighted_of_v<ComplexModalVector, X> or
+          xsimd::is_batch<X>::value,
       "Only a Tensor<std::complex<double>>, Tensor<double>, "
       "Tensor<ComplexDataVector>, Tensor<ComplexModalVector>, "
       "Tensor<DataVector>, Tensor<ModalVector>, "
