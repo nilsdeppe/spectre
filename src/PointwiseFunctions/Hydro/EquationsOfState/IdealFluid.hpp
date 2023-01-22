@@ -17,6 +17,7 @@
 #include "Options/Options.hpp"
 #include "Parallel/CharmPupable.hpp"
 #include "PointwiseFunctions/Hydro/EquationsOfState/EquationOfState.hpp"  // IWYU pragma: keep
+#include "Utilities/Simd/Simd.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -87,6 +88,16 @@ class IdealFluid : public EquationOfState<IsRelativistic, 2> {
   WRAPPED_PUPable_decl_base_template(  // NOLINT
       SINGLE_ARG(EquationOfState<IsRelativistic, 2>), IdealFluid);
 
+  template <typename Arch>
+  Scalar<xsimd::batch<double, Arch>> pressure_from_density_and_energy(
+      const Scalar<xsimd::batch<double, Arch>>& rest_mass_density,
+      const Scalar<xsimd::batch<double, Arch>>& specific_internal_energy)
+      const {
+    return Scalar<xsimd::batch<double, Arch>>{get(rest_mass_density) *
+                            get(specific_internal_energy) *
+                            (adiabatic_index_ - 1.0)};
+  }
+
   /// The lower bound of the rest mass density that is valid for this EOS
   double rest_mass_density_lower_bound() const override { return 0.0; }
 
@@ -102,14 +113,36 @@ class IdealFluid : public EquationOfState<IsRelativistic, 2> {
     return 0.0;
   }
 
+  template <typename Arch>
+  xsimd::batch<double, Arch> specific_internal_energy_lower_bound(
+      const xsimd::batch<double, Arch> /* rest_mass_density */) const {
+    return xsimd::batch<double, Arch>(0.0);
+  }
+
   /// The upper bound of the specific internal energy that is valid for this EOS
   /// at the given rest mass density \f$\rho\f$
   double specific_internal_energy_upper_bound(
       double rest_mass_density) const override;
 
+  template <typename Arch>
+  xsimd::batch<double, Arch> specific_internal_energy_upper_bound(
+      xsimd::batch<double, Arch> /*rest_mass_density*/) const {
+    if constexpr (IsRelativistic) {
+      if (adiabatic_index_ > 2.0) {
+        return xsimd::batch<double, Arch>(1.0 / (adiabatic_index_ - 2.0));
+      }
+    }
+    return xsimd::batch<double, Arch>(std::numeric_limits<double>::max());
+  }
+
   /// The lower bound of the specific enthalpy that is valid for this EOS
   double specific_enthalpy_lower_bound() const override {
     return IsRelativistic ? 1.0 : 0.0;
+  }
+
+  template <typename Arch>
+  xsimd::batch<double, Arch> specific_enthalpy_lower_bound() const {
+    return xsimd::batch<double, Arch>(IsRelativistic ? 1.0 : 0.0);
   }
 
  private:
