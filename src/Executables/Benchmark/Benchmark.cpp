@@ -28,6 +28,26 @@
 #include "Utilities/ErrorHandling/FloatingPointExceptions.hpp"
 #include "NumericalAlgorithms/RootFinding/TOMS748.hpp"
 
+#include <cmath>
+#include <cstddef>
+#include <limits>
+#include <random>
+
+#include "DataStructures/DataVector.hpp"
+#include "DataStructures/Tensor/EagerMath/DeterminantAndInverse.hpp"
+#include "DataStructures/Tensor/Tensor.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/ConservativeFromPrimitive.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/KastaunEtAl.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/NewmanHamlin.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/PalenzuelaEtAl.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/PrimitiveFromConservative.hpp"
+#include "Helpers/PointwiseFunctions/GeneralRelativity/TestHelpers.hpp"
+#include "Helpers/PointwiseFunctions/Hydro/TestHelpers.hpp"
+#include "PointwiseFunctions/Hydro/EquationsOfState/EquationOfState.hpp"
+#include "PointwiseFunctions/Hydro/EquationsOfState/IdealFluid.hpp"
+#include "PointwiseFunctions/Hydro/EquationsOfState/PolytropicFluid.hpp"
+#include "PointwiseFunctions/Hydro/SpecificEnthalpy.hpp"
+
 // Charm looks for this function but since we build without a main function or
 // main module we just have it be empty
 extern "C" void CkRegisterMainModule(void) {}
@@ -301,7 +321,124 @@ void benchmark_fix_cons(benchmark::State& state) {
         inv_spatial_metric, sqrt_det_spatial_metric));
   }
 }
-BENCHMARK(benchmark_fix_cons)->Iterations(40380);
+// BENCHMARK(benchmark_fix_cons)->Iterations(40380);
+
+template <size_t ThermodynamicDim>
+void benchmark_c2p_impl(
+    benchmark::State& state,
+    const EquationsOfState::EquationOfState<true, ThermodynamicDim>&
+        equation_of_state) {
+  std::mt19937 generator_value{};
+  gsl::not_null<std::mt19937*> generator(&generator_value);
+
+  const size_t number_of_points = 512;
+  const DataVector used_for_size{number_of_points};
+  // generate random primitives with interesting astrophysical values
+  const auto expected_rest_mass_density =
+      TestHelpers::hydro::random_density(generator, used_for_size);
+  const auto expected_electron_fraction =
+      TestHelpers::hydro::random_electron_fraction(generator, used_for_size);
+  const auto expected_lorentz_factor =
+      TestHelpers::hydro::random_lorentz_factor(generator, used_for_size);
+  const auto spatial_metric =
+      TestHelpers::gr::random_spatial_metric<3>(generator, used_for_size);
+  const auto expected_spatial_velocity = TestHelpers::hydro::random_velocity(
+      generator, expected_lorentz_factor, spatial_metric);
+  Scalar<DataVector> expected_specific_internal_energy{};
+  Scalar<DataVector> expected_pressure{};
+  if constexpr (ThermodynamicDim == 1) {
+    expected_specific_internal_energy =
+        equation_of_state.specific_internal_energy_from_density(
+            expected_rest_mass_density);
+    expected_pressure =
+        equation_of_state.pressure_from_density(expected_rest_mass_density);
+  } else if constexpr (ThermodynamicDim == 2) {
+    // note this call assumes an ideal fluid
+    expected_specific_internal_energy =
+        TestHelpers::hydro::random_specific_internal_energy(generator,
+                                                            used_for_size);
+    expected_pressure = equation_of_state.pressure_from_density_and_energy(
+        expected_rest_mass_density, expected_specific_internal_energy);
+  }
+
+  const auto expected_specific_enthalpy = hydro::relativistic_specific_enthalpy(
+      expected_rest_mass_density, expected_specific_internal_energy,
+      expected_pressure);
+  const auto expected_magnetic_field =
+      TestHelpers::hydro::random_magnetic_field(generator, expected_pressure,
+                                                spatial_metric);
+  const auto expected_divergence_cleaning_field =
+      TestHelpers::hydro::random_divergence_cleaning_field(generator,
+                                                           used_for_size);
+
+  const auto det_and_inv = determinant_and_inverse(spatial_metric);
+  const auto& inv_spatial_metric = det_and_inv.second;
+  const Scalar<DataVector> sqrt_det_spatial_metric =
+      Scalar<DataVector>{sqrt(get(det_and_inv.first))};
+
+  Scalar<DataVector> tilde_d(number_of_points);
+  Scalar<DataVector> tilde_ye(number_of_points);
+  Scalar<DataVector> tilde_tau(number_of_points);
+  tnsr::i<DataVector, 3> tilde_s(number_of_points);
+  tnsr::I<DataVector, 3> tilde_b(number_of_points);
+  Scalar<DataVector> tilde_phi(number_of_points);
+
+  grmhd::ValenciaDivClean::ConservativeFromPrimitive::apply(
+      make_not_null(&tilde_d), make_not_null(&tilde_ye),
+      make_not_null(&tilde_tau), make_not_null(&tilde_s),
+      make_not_null(&tilde_b), make_not_null(&tilde_phi),
+      expected_rest_mass_density, expected_electron_fraction,
+      expected_specific_internal_energy, expected_specific_enthalpy,
+      expected_pressure, expected_spatial_velocity, expected_lorentz_factor,
+      expected_magnetic_field, sqrt_det_spatial_metric, spatial_metric,
+      expected_divergence_cleaning_field);
+
+  Scalar<DataVector> rest_mass_density(number_of_points);
+  Scalar<DataVector> electron_fraction(number_of_points);
+  Scalar<DataVector> specific_internal_energy(number_of_points);
+  tnsr::I<DataVector, 3> spatial_velocity(number_of_points);
+  tnsr::I<DataVector, 3> magnetic_field(number_of_points);
+  Scalar<DataVector> divergence_cleaning_field(number_of_points);
+  Scalar<DataVector> lorentz_factor(number_of_points);
+  Scalar<DataVector> pressure(number_of_points, 0.0);
+  Scalar<DataVector> specific_enthalpy(number_of_points);
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(
+        grmhd::ValenciaDivClean::PrimitiveFromConservative<tmpl::list<
+            grmhd::ValenciaDivClean::PrimitiveRecoverySchemes::KastaunEtAl>>::
+            apply(make_not_null(&rest_mass_density),
+                  make_not_null(&electron_fraction),
+                  make_not_null(&specific_internal_energy),
+                  make_not_null(&spatial_velocity),
+                  make_not_null(&magnetic_field),
+                  make_not_null(&divergence_cleaning_field),
+                  make_not_null(&lorentz_factor), make_not_null(&pressure),
+                  make_not_null(&specific_enthalpy), tilde_d, tilde_ye,
+                  tilde_tau, tilde_s, tilde_b, tilde_phi, spatial_metric,
+                  inv_spatial_metric, sqrt_det_spatial_metric,
+                  equation_of_state));
+  }
+}
+
+void benchmark_c2p_polytrope(
+    benchmark::State& state) {
+  const EquationsOfState::PolytropicFluid<true> polytropic_fluid(100.0, 2.0);
+  benchmark_c2p_impl(state, polytropic_fluid);
+}
+BENCHMARK(benchmark_c2p_polytrope); //->Iterations(40380);
+
+void benchmark_c2p_ideal_fluid(
+    benchmark::State& state) {
+  const EquationsOfState::IdealFluid<true> ideal_fluid(4.0 / 3.0);
+  benchmark_c2p_impl(state, ideal_fluid);
+}
+BENCHMARK(benchmark_c2p_ideal_fluid); //->Iterations(40380);
+
+// Reference times:
+// benchmark_c2p_polytrope       775022 ns       774529 ns          740
+// benchmark_c2p_ideal_fluid     612335 ns       611891 ns          963
+
+
 }  // namespace
 
 // Ignore the warning about an extra ';' because some versions of benchmark
