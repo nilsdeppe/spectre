@@ -18,4 +18,10 @@ struct MakeWithValueImpl<xsimd::batch<U, Arch>, T> {
   }
 };
 }  // namespace MakeWithValueImpls
+
+namespace xsimd {
+inline bool any(const bool t) { return t; }
+inline bool all(const bool t) { return t; }
+inline bool none(const bool t) { return not t; }
+}  // namespace xsimd
 #endif
