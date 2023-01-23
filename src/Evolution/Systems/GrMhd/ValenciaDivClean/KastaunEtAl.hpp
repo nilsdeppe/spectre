@@ -49,12 +49,12 @@ namespace grmhd::ValenciaDivClean::PrimitiveRecoverySchemes {
  */
 class KastaunEtAl {
  public:
-  template <size_t ThermodynamicDim>
+  template <size_t ThermodynamicDim, typename T>
   static std::optional<PrimitiveRecoveryData> apply(
-      double initial_guess_pressure, double total_energy_density,
-      double momentum_density_squared,
-      double momentum_density_dot_magnetic_field, double magnetic_field_squared,
-      double rest_mass_density_times_lorentz_factor, double electron_fraction,
+      T initial_guess_pressure, T total_energy_density,
+      T momentum_density_squared, T momentum_density_dot_magnetic_field,
+      T magnetic_field_squared, T rest_mass_density_times_lorentz_factor,
+      T electron_fraction,
       const EquationsOfState::EquationOfState<true, ThermodynamicDim>&
           equation_of_state);
 
