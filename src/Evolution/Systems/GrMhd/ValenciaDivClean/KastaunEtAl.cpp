@@ -32,13 +32,8 @@ CREATE_GET_TYPE_ALIAS_OR_DEFAULT(value_type)
 template <typename T>
 T compute_x(const T mu, const T b_squared) {
   using std::fma;
-  return 1.0 / fma(mu, b_squared, T(1.0));
-}
-
-template <typename T>
-T compute_approx_x(const T mu, const T b_squared) {
-  using std::fma;
-  return xsimd::reciprocal(fma(mu, b_squared, T(1.0)));
+  const T one(1.0);
+  return 1.0 / fma(mu, b_squared, one);
 }
 
 // Equation (38)
@@ -50,12 +45,12 @@ T compute_r_bar_squared(const T mu, const T x, const T r_squared,
 
 // Equations (33) and (32)
 template <typename T>
-T compute_v_0_squared(const T r_squared, const T h_0) {
-  const T z_0_squared(r_squared / square(h_0));
+T compute_v_0_squared(const T r_squared, const T h_0_squared) {
   static T velocity_squared_upper_bound(
       1.0 - 4.0 * std::numeric_limits<double>::epsilon());
   using std::min;
-  return min(z_0_squared / (1.0 + z_0_squared), velocity_squared_upper_bound);
+  return min(r_squared / (h_0_squared + r_squared),
+             velocity_squared_upper_bound);
 }
 
 template <typename T>
@@ -101,9 +96,9 @@ class CornerCaseFunction {
 template <typename T>
 class AuxiliaryFunction {
  public:
-  AuxiliaryFunction(const T h_0, const T r_squared,
-                    const T b_squared, const T r_dot_b_squared)
-      : h_0_(h_0),
+  AuxiliaryFunction(const T h_0_squared, const T r_squared, const T b_squared,
+                    const T r_dot_b_squared)
+      : h_0_squared_(h_0_squared),
         r_squared_(r_squared),
         b_squared_(b_squared),
         r_dot_b_squared_(r_dot_b_squared) {}
@@ -113,11 +108,11 @@ class AuxiliaryFunction {
     const T r_bar_squared =
         compute_r_bar_squared(mu, x, r_squared_, r_dot_b_squared_);
     // Equation (49)
-    return mu * sqrt(square(h_0_) + r_bar_squared) - 1.0;
+    return mu * sqrt(h_0_squared_ + r_bar_squared) - 1.0;
   }
 
  private:
-  const T h_0_;
+  const T h_0_squared_;
   const T r_squared_;
   const T b_squared_;
   const T r_dot_b_squared_;
@@ -144,14 +139,15 @@ class FunctionOfMu {
         electron_fraction_(electron_fraction),
         equation_of_state_(equation_of_state),
         h_0_(equation_of_state_.specific_enthalpy_lower_bound()),
-        v_0_squared_(compute_v_0_squared(r_squared_, h_0_)),
+        h_0_squared_(square(h_0_)),
+        v_0_squared_(compute_v_0_squared(r_squared_, h_0_squared_)),
         one_over_rho_max_(equation_of_state_.rest_mass_density_upper_bound()),
         one_over_rho_min_(equation_of_state_.rest_mass_density_lower_bound()) {}
 
   std::pair<T, T> root_bracket(
       T rest_mass_density_times_lorentz_factor,
-      get_value_type_or_default_t<T, double> absolute_tolerance,
-      get_value_type_or_default_t<T, double> relative_tolerance,
+      get_value_type_or_default_t<T, T> absolute_tolerance,
+      get_value_type_or_default_t<T, T> relative_tolerance,
       size_t max_iterations) const;
 
   Primitives<T> primitives(T mu) const;
@@ -167,6 +163,7 @@ class FunctionOfMu {
   const T electron_fraction_;
   const Eos& equation_of_state_;
   const T h_0_;
+  const T h_0_squared_;
   const T v_0_squared_;
   const T one_over_rho_max_;
   const T one_over_rho_min_;
@@ -175,40 +172,44 @@ class FunctionOfMu {
 template <typename T, typename Eos>
 std::pair<T, T> FunctionOfMu<T, Eos>::root_bracket(
     const T rest_mass_density_times_lorentz_factor,
-    const get_value_type_or_default_t<T, double> absolute_tolerance,
-    const get_value_type_or_default_t<T, double> relative_tolerance,
+    const get_value_type_or_default_t<T, T> absolute_tolerance,
+    const get_value_type_or_default_t<T, T> relative_tolerance,
     const size_t max_iterations) const {
   // see text between Equations (49) and (50) and after Equation (54)
-  T lower_bound = 0.0;
+  T lower_bound(0.0);
   // We use `1 / (h_0_ + numeric_limits<T>::min())` to avoid division by
   // zero in a way that avoids conditionals.
 
-  T upper_bound = 1.0 / (h_0_ + std::numeric_limits<T>::min());
-  if (const auto mask = r_squared_ < square(h_0_); xsimd::any(mask)) {
+  T upper_bound(1.0 / (h_0_ + std::numeric_limits<T>::min()));
+  if (const auto mask = r_squared_ < h_0_squared_; xsimd::any(mask)) {
     // need to solve auxiliary function to determine mu_+ which will
     // be the upper bound for the master function bracket
-    const auto auxiliary_function =
-        AuxiliaryFunction{h_0_, r_squared_, b_squared_, r_dot_b_squared_};
+    const auto auxiliary_function = AuxiliaryFunction{
+        h_0_squared_, r_squared_, b_squared_, r_dot_b_squared_};
     if constexpr (std::is_fundamental_v<T>) {
       upper_bound = RootFinder::toms748(auxiliary_function, lower_bound,
                                         upper_bound, absolute_tolerance,
                                         relative_tolerance, max_iterations);
     } else {
-      upper_bound = RootFinder::toms748(
-          auxiliary_function, lower_bound, upper_bound, absolute_tolerance,
-          relative_tolerance, max_iterations, not mask);
+      upper_bound = xsimd::select(
+          mask,
+          RootFinder::toms748(auxiliary_function, lower_bound, upper_bound,
+                              absolute_tolerance, relative_tolerance,
+                              max_iterations, not mask),
+          upper_bound);
     }
   }
 
   // Determine if the corner case discussed in Appendix A occurs where the
   // mass density is outside the valid range of the EOS
-  const T rho_min = equation_of_state_.rest_mass_density_lower_bound();
-  const T rho_max = equation_of_state_.rest_mass_density_upper_bound();
+  const T rho_min(equation_of_state_.rest_mass_density_lower_bound());
+  const T rho_max(equation_of_state_.rest_mass_density_upper_bound());
 
   // If this is triggering, the most likely cause is that the density cutoff
   // for atmosphere is smaller than the minimum density of the EOS, i.e. this
   // point should have been flagged as atmosphere
-  if (rest_mass_density_times_lorentz_factor < rho_min) {
+  if (const auto mask = rest_mass_density_times_lorentz_factor < rho_min;
+      simd::any(mask)) {
     throw std::runtime_error("Density too small for EOS");
   }
 
@@ -309,20 +310,9 @@ Primitives<T> FunctionOfMu<T, Eos>::primitives(const T mu) const {
                       (r_squared_ * b_squared_ - r_dot_b_squared_);
   // Equation (42) with bounds from Equation (6)
   const T epsilon_hat = xsimd::clip(
-      (q_bar - mu * r_bar_squared) / one_over_w_hat +
-          v_hat_squared / fma(one_over_w_hat, one_over_w_hat,
-          one_over_w_hat),
-
-      // (q_bar - mu * r_bar_squared) / one_over_w_hat +
-      //     v_hat_squared / (one_over_w_hat * (one_over_w_hat + 1.0)),
-
-      // ((q_bar - mu * r_bar_squared) * (one_over_w_hat + 1.0) + v_hat_squared)
-      // /
-      //     fma(one_over_w_hat, one_over_w_hat, one_over_w_hat),
-
-      // fma(fnma(mu, r_bar_squared, q_bar), (one_over_w_hat + 1.0),
-      //     v_hat_squared) /
-      //     fma(one_over_w_hat, one_over_w_hat, one_over_w_hat),
+      fma(fnma(mu, r_bar_squared, q_bar), (one_over_w_hat + 1.0),
+          v_hat_squared) /
+          fma(one_over_w_hat, one_over_w_hat, one_over_w_hat),
 
       T(equation_of_state_.specific_internal_energy_lower_bound(rho_hat)),
       T(equation_of_state_.specific_internal_energy_upper_bound(rho_hat)));
@@ -344,15 +334,29 @@ template <typename T, typename Eos>
 T FunctionOfMu<T, Eos>::operator()(const T mu) const {
   const auto [rho_hat, one_over_w_hat, p_hat, epsilon_hat, q_bar,
               r_bar_squared] = primitives(mu);
-  // Equation (43)
-  const T a_hat = p_hat / (rho_hat * (1.0 + epsilon_hat));
-  const T h_hat = (1.0 + epsilon_hat) * (1.0 + a_hat);
-  // Equations (46) - (48)
+  // Original implementation from Kastaun et al.
+  //
+  // // Equation (43)
+  // const T a_hat = p_hat / (rho_hat * (1.0 + epsilon_hat));
+  // const T h_hat = (1.0 + epsilon_hat) * (1.0 + a_hat);
+  // // Equations (46) - (48)
+  // using std::max;
+  // const T nu_hat = max(h_hat * one_over_w_hat,
+  //                      (1.0 + a_hat) * (1.0 + q_bar - mu * r_bar_squared));
+  // // Equations (44) - (45)
+  // return mu - 1.0 / (nu_hat + mu * r_bar_squared);
+
+  // Optimized implementation to minimize FLOPs and specifically divides
+  //
+  // Equations (44) - (48)
   using std::max;
-  const T nu_hat = max(h_hat * one_over_w_hat,
-                       (1.0 + a_hat) * (1.0 + q_bar - mu * r_bar_squared));
-  // Equations (44) - (45)
-  return mu - 1.0 / (nu_hat + mu * r_bar_squared);
+  const T nu_hat = max((1.0 + epsilon_hat) * one_over_w_hat,
+                       xsimd::fnma(mu, r_bar_squared, 1.0 + q_bar));
+  const T a_hat_denom = rho_hat * (1.0 + epsilon_hat);
+  return mu -
+         a_hat_denom /
+             xsimd::fma(nu_hat, p_hat,
+                        a_hat_denom * xsimd::fma(mu, r_bar_squared, nu_hat));
 }
 }  // namespace
 
@@ -390,13 +394,17 @@ std::optional<PrimitiveRecoveryData> KastaunEtAl::apply(
     const auto[lower_bound, upper_bound] = f_of_mu.root_bracket(
         rest_mass_density_times_lorentz_factor, absolute_tolerance_,
         relative_tolerance_, max_iterations_);
-
     // Try to recover primitves
     one_over_specific_enthalpy_times_lorentz_factor =
         // NOLINTNEXTLINE(clang-analyzer-core)
         RootFinder::toms748(f_of_mu, lower_bound, upper_bound,
                             absolute_tolerance_, relative_tolerance_,
                             max_iterations_);
+
+    return PrimitiveRecoveryData{get_element(lower_bound, 0, GetFromXsimd{}),
+                                 get_element(upper_bound, 0, GetFromXsimd{}),
+                                 0., 0., 0.};
+
   } catch (std::exception& exception) {
     return std::nullopt;
   }
@@ -413,8 +421,9 @@ std::optional<PrimitiveRecoveryData> KastaunEtAl::apply(
   const T rho = rest_mass_density_times_lorentz_factor /
                 one_over_specific_enthalpy_times_lorentz_factor;
 
+  // TODO: return correct thing.
   return PrimitiveRecoveryData{
-      get_element(rest_mass_density, 0, GetFromXsimd{}),
+    get_element(rest_mass_density, 0, GetFromXsimd{}),
       get_element(lorentz_factor, 0, GetFromXsimd{}),
       get_element(pressure, 0, GetFromXsimd{}),
       get_element(rho, 0, GetFromXsimd{}),
@@ -446,8 +455,7 @@ using helper = typename ::xsimd::make_sized_batch<double, N>::type;
 }  // namespace
 
 GENERATE_INSTANTIATIONS(INSTANTIATION, (1, 2),
-                        (double, helper<8>// , helper<4>, helper<2>
-                         ))
+                        (double, helper<8>, helper<4>, helper<2>))
 
 #undef INSTANTIATION
 #undef THERMODIM
