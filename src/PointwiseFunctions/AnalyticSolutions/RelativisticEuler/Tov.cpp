@@ -12,6 +12,8 @@
 #include <cmath>
 #include <cstddef>
 #include <functional>
+#include <iomanip>
+#include <limits>
 #include <ostream>
 #include <pup.h>
 #include <string>
@@ -258,9 +260,14 @@ DataType TovSolution::mass_over_radius(const DataType& r) const {
   auto result = make_with_value<DataType>(r, 0.);
   for (size_t i = 0; i < get_size(r); ++i) {
     ASSERT(
-        get_element(r, i) >= 0.0 and get_element(r, i) <= outer_radius_,
-        "Invalid radius: " << r << " not in [0.0, " << outer_radius_ << "]\n");
-    get_element(result, i) = mass_over_radius_interpolant_(get_element(r, i));
+        get_element(r, i) >= 0.0 and
+            get_element(r, i) <=
+                outer_radius() * (1.0 + std::numeric_limits<double>::epsilon()),
+        std::setprecision(18) << "Invalid radius: " << r << " not in [0.0, "
+                              << outer_radius_ << "]\n");
+    using std::min;
+    get_element(result, i) =
+        mass_over_radius_interpolant_(min(get_element(r, i), outer_radius()));
   }
   return result;
 }
@@ -271,9 +278,14 @@ DataType TovSolution::log_specific_enthalpy(const DataType& r) const {
   auto result = make_with_value<DataType>(r, 0.);
   for (size_t i = 0; i < get_size(r); ++i) {
     ASSERT(
-        get_element(r, i) >= 0.0 and get_element(r, i) <= outer_radius_,
-        "Invalid radius: " << r << " not in [0.0, " << outer_radius_ << "]\n");
-    get_element(result, i) = log_enthalpy_interpolant_(get_element(r, i));
+        get_element(r, i) >= 0.0 and
+            get_element(r, i) <=
+                outer_radius() * (1.0 + std::numeric_limits<double>::epsilon()),
+        std::setprecision(18) << "Invalid radius: " << r << " not in [0.0, "
+                              << outer_radius_ << "]\n");
+    using std::min;
+    get_element(result, i) =
+        log_enthalpy_interpolant_(min(get_element(r, i), outer_radius()));
   }
   return result;
 }
@@ -286,9 +298,14 @@ DataType TovSolution::conformal_factor(const DataType& r) const {
   auto result = make_with_value<DataType>(r, 0.);
   for (size_t i = 0; i < get_size(r); ++i) {
     ASSERT(
-        get_element(r, i) >= 0.0 and get_element(r, i) <= outer_radius_,
-        "Invalid radius: " << r << " not in [0.0, " << outer_radius_ << "]\n");
-    get_element(result, i) = conformal_factor_interpolant_(get_element(r, i));
+        get_element(r, i) >= 0.0 and
+            get_element(r, i) <=
+                outer_radius() * (1.0 + std::numeric_limits<double>::epsilon()),
+        std::setprecision(18) << "Invalid radius: " << r << " not in [0.0, "
+                              << outer_radius_ << "]\n");
+    using std::min;
+    get_element(result, i) =
+        conformal_factor_interpolant_(min(get_element(r, i), outer_radius()));
   }
   return result;
 }
