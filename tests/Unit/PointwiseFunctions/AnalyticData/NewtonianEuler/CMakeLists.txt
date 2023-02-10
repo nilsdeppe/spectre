@@ -5,6 +5,7 @@ set(LIBRARY "Test_NewtonianEulerAnalyticData")
 
 set(LIBRARY_SOURCES
   Test_KhInstability.cpp
+  Test_RayleighTaylorInst.cpp
   Test_ShuOsherTube.cpp
   Test_SodExplosion.cpp
   )

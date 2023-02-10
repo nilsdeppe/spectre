@@ -9,6 +9,7 @@ spectre_target_sources(
   ${LIBRARY}
   PRIVATE
   KhInstability.cpp
+  RayleighTaylorInst.cpp
   ShuOsherTube.cpp
   SodExplosion.cpp
   )
@@ -19,6 +20,7 @@ spectre_target_headers(
   HEADERS
   AnalyticData.hpp
   KhInstability.hpp
+  RayleighTaylorInst.hpp
   ShuOsherTube.hpp
   SodExplosion.hpp
   )
