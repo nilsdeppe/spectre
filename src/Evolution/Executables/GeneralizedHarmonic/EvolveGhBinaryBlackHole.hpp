@@ -36,6 +36,7 @@
 #include "Evolution/DiscontinuousGalerkin/Actions/ComputeTimeDerivative.hpp"
 #include "Evolution/DiscontinuousGalerkin/DgElementArray.hpp"
 #include "Evolution/DiscontinuousGalerkin/Initialization/Mortars.hpp"
+#include "Evolution/DiscontinuousGalerkin/Tags/DelayCounts.hpp"
 #include "Evolution/EventsAndDenseTriggers/DenseTrigger.hpp"
 #include "Evolution/EventsAndDenseTriggers/DenseTriggers/Factory.hpp"
 #include "Evolution/Initialization/DgDomain.hpp"
@@ -84,6 +85,7 @@
 #include "Parallel/Reduction.hpp"
 #include "Parallel/RegisterDerivedClassesWithCharm.hpp"
 #include "ParallelAlgorithms/Actions/AddComputeTags.hpp"
+#include "ParallelAlgorithms/Actions/AddSimpleTags.hpp"
 #include "ParallelAlgorithms/Actions/InitializeItems.hpp"
 #include "ParallelAlgorithms/Actions/MemoryMonitor/ContributeMemoryData.hpp"
 #include "ParallelAlgorithms/Actions/MutateApply.hpp"
@@ -163,6 +165,14 @@ template <typename Metavariables>
 class CProxy_GlobalCache;
 }  // namespace Parallel
 /// \endcond
+
+struct InitializeDelayCount {
+  using return_tags = tmpl::list<evolution::dg::Tags::DelayCount>;
+  using argument_tags = tmpl::list<>;
+  static void apply(const gsl::not_null<size_t*> delay_count) {
+    *delay_count = 0;
+  }
+};
 
 // Note: this executable does not use GeneralizedHarmonicBase.hpp, because
 // using it would require a number of changes in GeneralizedHarmonicBase.hpp
@@ -460,6 +470,7 @@ struct EvolutionMetavars {
               GeneralizedHarmonic::Tags::Phi<volume_dim, Frame::Inertial>>>>;
 
   using initialization_actions = tmpl::list<
+      Initialization::Actions::AddSimpleTags<InitializeDelayCount>,
       Initialization::Actions::InitializeItems<
           Initialization::TimeStepping<EvolutionMetavars, local_time_stepping>,
           evolution::dg::Initialization::Domain<volume_dim,

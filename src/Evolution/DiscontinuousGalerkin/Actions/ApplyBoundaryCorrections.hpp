@@ -26,6 +26,7 @@
 #include "Evolution/DiscontinuousGalerkin/MortarData.hpp"
 #include "Evolution/DiscontinuousGalerkin/MortarTags.hpp"
 #include "Evolution/DiscontinuousGalerkin/NormalVectorTags.hpp"
+#include "Evolution/DiscontinuousGalerkin/Tags/DelayCounts.hpp"
 #include "Evolution/DiscontinuousGalerkin/Tags/NeighborMesh.hpp"
 #include "Evolution/DiscontinuousGalerkin/UsingSubcell.hpp"
 #include "NumericalAlgorithms/DiscontinuousGalerkin/Formulation.hpp"
@@ -828,8 +829,8 @@ struct ApplyLtsBoundaryCorrections {
             typename ParallelComponent>
   static Parallel::iterable_action_return_t apply(
       db::DataBox<DbTagsList>& box, tuples::TaggedTuple<InboxTags...>& inboxes,
-      const Parallel::GlobalCache<Metavariables>& /*cache*/,
-      const ArrayIndex& /*array_index*/, ActionList /*meta*/,
+      Parallel::GlobalCache<Metavariables>& cache,
+      const ArrayIndex& array_index, ActionList /*meta*/,
       const ParallelComponent* const /*meta*/) {
     constexpr size_t volume_dim = Metavariables::system::volume_dim;
     const Element<volume_dim>& element =
@@ -843,6 +844,47 @@ struct ApplyLtsBoundaryCorrections {
     if (not receive_boundary_data_local_time_stepping<Metavariables>(
             make_not_null(&box), make_not_null(&inboxes))) {
       return {Parallel::AlgorithmExecution::Retry, std::nullopt};
+    }
+
+    if constexpr (db::tag_is_retrievable_v<evolution::dg::Tags::DelayCount,
+                                           db::DataBox<DbTagsList>>) {
+      auto& receiver_proxy =
+          Parallel::get_parallel_component<ParallelComponent>(cache);
+      // If none of our neighbors are remote, and we did a delay, then retry is
+      // true.
+      const bool retry =
+          alg::all_of(
+              element.neighbors(),
+              [&receiver_proxy](
+                  const auto& direction_and_neighbors_in_direction) {
+                return alg::none_of(
+                    direction_and_neighbors_in_direction.second,
+                    [&receiver_proxy](
+                        const ElementId<volume_dim>& neighbor_id) {
+                      return Parallel::local(receiver_proxy[neighbor_id]) ==
+                             nullptr;
+                    });
+              }) and
+
+          db::mutate<evolution::dg::Tags::DelayCount>(
+              make_not_null(&box),
+              [](const gsl::not_null<size_t*> delay_count) {
+                // Controls the number of times we requeue ourselves to be
+                // evaluated later. Increases this effectively increases the
+                // priority of elements that have neighbors on different cores.
+                constexpr size_t delay_amount = 1;
+
+                if (*delay_count < delay_amount) {
+                  *delay_count = *delay_count + 1;
+                  return true;
+                }
+                *delay_count = 0;
+                return false;
+              });
+      if (retry) {
+        receiver_proxy[array_index].perform_algorithm();
+        return {Parallel::AlgorithmExecution::Retry, std::nullopt};
+      }
     }
 
     db::mutate_apply<
