@@ -651,82 +651,95 @@ void ComputeTimeDerivative<Dim, EvolutionSystem, DgStepChoosers,
     tci_decision = evolution::dg::subcell::get_tci_decision(*box);
   }
 
-  for (const auto& [direction, neighbors] : element.neighbors()) {
-    const auto& orientation = neighbors.orientation();
-    const auto direction_from_neighbor = orientation(direction.opposite());
+  const auto impl = [&](const bool send_to_remote) {
+    for (const auto& [direction, neighbors] : element.neighbors()) {
+      const auto& orientation = neighbors.orientation();
+      const auto direction_from_neighbor = orientation(direction.opposite());
 
-    DataVector ghost_and_subcell_data{};
-    if constexpr (using_subcell_v<Metavariables>) {
-      ASSERT(all_neighbor_data_for_reconstruction.has_value(),
-             "Trying to do DG-subcell but the ghost and subcell data for the "
-             "neighbor has not been set.");
-      ghost_and_subcell_data =
-          std::move(all_neighbor_data_for_reconstruction.value()[direction]);
-    }
-
-    const size_t total_neighbors = neighbors.size();
-    size_t neighbor_count = 1;
-    for (const auto& neighbor : neighbors) {
-      const std::pair mortar_id{direction, neighbor};
-
-      std::pair<Mesh<Dim - 1>, DataVector> neighbor_boundary_data_on_mortar{};
-      ASSERT(time_step_id == all_mortar_data.at(mortar_id).time_step_id(),
-             "The current time step id of the volume is "
-                 << time_step_id
-                 << "but the time step id on the mortar with mortar id "
-                 << mortar_id << " is "
-                 << all_mortar_data.at(mortar_id).time_step_id());
-
-      if (LIKELY(orientation.is_aligned())) {
-        neighbor_boundary_data_on_mortar =
-            *all_mortar_data.at(mortar_id).local_mortar_data();
-      } else {
-        const auto& slice_extents = mortar_meshes.at(mortar_id).extents();
-        neighbor_boundary_data_on_mortar.first =
-            all_mortar_data.at(mortar_id).local_mortar_data()->first;
-        neighbor_boundary_data_on_mortar.second = orient_variables_on_slice(
-            all_mortar_data.at(mortar_id).local_mortar_data()->second,
-            slice_extents, direction.dimension(), orientation);
+      DataVector ghost_and_subcell_data{};
+      if constexpr (using_subcell_v<Metavariables>) {
+        ASSERT(all_neighbor_data_for_reconstruction.has_value(),
+               "Trying to do DG-subcell but the ghost and subcell data for the "
+               "neighbor has not been set.");
+        ghost_and_subcell_data =
+            std::move(all_neighbor_data_for_reconstruction.value()[direction]);
       }
 
-      const TimeStepId& next_time_step_id = [&box]() {
-        if (LocalTimeStepping) {
-          return db::get<::Tags::Next<::Tags::TimeStepId>>(*box);
-        } else {
-          return db::get<::Tags::TimeStepId>(*box);
+      const size_t total_neighbors = neighbors.size();
+      size_t neighbor_count = 1;
+      for (const auto& neighbor : neighbors) {
+        if (send_to_remote and
+            Parallel::local(receiver_proxy[neighbor]) != nullptr) {
+          continue;
         }
-      }();
+        if (not send_to_remote and
+            Parallel::local(receiver_proxy[neighbor]) == nullptr) {
+          continue;
+        }
 
-      using SendData =
-          std::tuple<Mesh<Dim>, Mesh<Dim - 1>, std::optional<DataVector>,
-                     std::optional<DataVector>, ::TimeStepId, int>;
-      SendData data{};
+        const std::pair mortar_id{direction, neighbor};
 
-      if (neighbor_count == total_neighbors) {
-        data = SendData{ghost_data_mesh,
-                        neighbor_boundary_data_on_mortar.first,
-                        std::move(ghost_and_subcell_data),
-                        {std::move(neighbor_boundary_data_on_mortar.second)},
-                        next_time_step_id,
-                        tci_decision};
-      } else {
-        data = SendData{ghost_data_mesh,
-                        neighbor_boundary_data_on_mortar.first,
-                        ghost_and_subcell_data,
-                        {std::move(neighbor_boundary_data_on_mortar.second)},
-                        next_time_step_id,
-                        tci_decision};
+        std::pair<Mesh<Dim - 1>, DataVector> neighbor_boundary_data_on_mortar{};
+        ASSERT(time_step_id == all_mortar_data.at(mortar_id).time_step_id(),
+               "The current time step id of the volume is "
+                   << time_step_id
+                   << "but the time step id on the mortar with mortar id "
+                   << mortar_id << " is "
+                   << all_mortar_data.at(mortar_id).time_step_id());
+
+        if (LIKELY(orientation.is_aligned())) {
+          neighbor_boundary_data_on_mortar =
+              *all_mortar_data.at(mortar_id).local_mortar_data();
+        } else {
+          const auto& slice_extents = mortar_meshes.at(mortar_id).extents();
+          neighbor_boundary_data_on_mortar.first =
+              all_mortar_data.at(mortar_id).local_mortar_data()->first;
+          neighbor_boundary_data_on_mortar.second = orient_variables_on_slice(
+              all_mortar_data.at(mortar_id).local_mortar_data()->second,
+              slice_extents, direction.dimension(), orientation);
+        }
+
+        const TimeStepId& next_time_step_id = [&box]() {
+          if (LocalTimeStepping) {
+            return db::get<::Tags::Next<::Tags::TimeStepId>>(*box);
+          } else {
+            return db::get<::Tags::TimeStepId>(*box);
+          }
+        }();
+
+        using SendData =
+            std::tuple<Mesh<Dim>, Mesh<Dim - 1>, std::optional<DataVector>,
+                       std::optional<DataVector>, ::TimeStepId, int>;
+        SendData data{};
+
+        if (neighbor_count == total_neighbors) {
+          data = SendData{ghost_data_mesh,
+                          neighbor_boundary_data_on_mortar.first,
+                          std::move(ghost_and_subcell_data),
+                          {std::move(neighbor_boundary_data_on_mortar.second)},
+                          next_time_step_id,
+                          tci_decision};
+        } else {
+          data = SendData{ghost_data_mesh,
+                          neighbor_boundary_data_on_mortar.first,
+                          ghost_and_subcell_data,
+                          {std::move(neighbor_boundary_data_on_mortar.second)},
+                          next_time_step_id,
+                          tci_decision};
+        }
+
+        // Send mortar data (the `std::tuple` named `data`) to neighbor
+        Parallel::receive_data<
+            evolution::dg::Tags::BoundaryCorrectionAndGhostCellsInbox<Dim>>(
+            receiver_proxy[neighbor], time_step_id,
+            std::make_pair(std::pair{direction_from_neighbor, element.id()},
+                           std::move(data)));
+        ++neighbor_count;
       }
-
-      // Send mortar data (the `std::tuple` named `data`) to neighbor
-      Parallel::receive_data<
-          evolution::dg::Tags::BoundaryCorrectionAndGhostCellsInbox<Dim>>(
-          receiver_proxy[neighbor], time_step_id,
-          std::make_pair(std::pair{direction_from_neighbor, element.id()},
-                         std::move(data)));
-      ++neighbor_count;
     }
-  }
+  };
+  impl(true);
+  impl(false);
 
   if constexpr (LocalTimeStepping) {
     using variables_tag = typename EvolutionSystem::variables_tag;
