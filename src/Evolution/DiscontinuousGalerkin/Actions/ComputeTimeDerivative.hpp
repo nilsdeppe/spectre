@@ -540,6 +540,19 @@ ComputeTimeDerivative<Dim, EvolutionSystem, DgStepChoosers, LocalTimeStepping>::
           box);
     }
   }
+  // TODO:
+  // 1. set bool allow_step_rejection
+  // 2. if allow_step_rejection:
+  //       do current things
+  //    else:
+  //       i. Compute lapse, shift, etc. for upwind
+  //       ii. loop over derived_boundary_corrections, but I think only do
+  //           internal_mortar_data
+  //       iii. Send to remote neighbors
+  //       iv. Call volume_terms
+  //       v. Apply boundary conditions
+  //       vi. Compute lapse, shift, etc. for upwind
+
   db::mutate_apply<
       tmpl::list<dt_variables_tag>,
       typename compute_volume_time_derivative_terms::argument_tags>(
