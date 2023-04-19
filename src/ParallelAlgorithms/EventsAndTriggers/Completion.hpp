@@ -35,9 +35,11 @@ class Completion : public Event {
                   const ArrayIndex& array_index,
                   const Component* const /*meta*/,
                   const ObservationValue& /*observation_value*/) const {
-    auto al_gore = Parallel::local(
-        Parallel::get_parallel_component<Component>(cache)[array_index]);
-    al_gore->set_terminate(true);
+    // auto al_gore = Parallel::local(
+    //     Parallel::get_parallel_component<Component>(cache)[array_index]);
+    // al_gore->set_terminate(true);
+    ERROR("Not yet implemented");
+    (void)cache, (void)array_index;
   }
 
   using is_ready_argument_tags = tmpl::list<>;

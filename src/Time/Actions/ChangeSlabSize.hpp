@@ -336,24 +336,26 @@ class ChangeSlabSize : public Event {
       }
     }
 
-    const auto& component_proxy =
-        Parallel::get_parallel_component<ParallelComponent>(cache);
-    const auto& self_proxy = component_proxy[array_index];
-    // This message is sent synchronously, so it is guaranteed to
-    // arrive before the ChangeSlabSize action is called.
-    Parallel::receive_data<
-        ChangeSlabSize_detail::NumberOfExpectedMessagesInbox>(
-        *Parallel::local(self_proxy), slab_to_change,
-        ChangeSlabSize_detail::NumberOfExpectedMessagesInbox::NoData{});
-    if (synchronization_required) {
-      Parallel::contribute_to_reduction<
-          ChangeSlabSize_detail::StoreNewSlabSize>(
-          ReductionData(slab_to_change, desired_slab_size), self_proxy,
-          component_proxy);
-    } else {
-      Parallel::receive_data<ChangeSlabSize_detail::NewSlabSizeInbox>(
-          *Parallel::local(self_proxy), slab_to_change, desired_slab_size);
-    }
+    // const auto& component_proxy =
+    //     Parallel::get_parallel_component<ParallelComponent>(cache);
+    // const auto& self_proxy = component_proxy[array_index];
+    // // This message is sent synchronously, so it is guaranteed to
+    // // arrive before the ChangeSlabSize action is called.
+    // Parallel::receive_data<
+    //     ChangeSlabSize_detail::NumberOfExpectedMessagesInbox>(
+    //     *Parallel::local(self_proxy), slab_to_change,
+    //     ChangeSlabSize_detail::NumberOfExpectedMessagesInbox::NoData{});
+    // if (synchronization_required) {
+    //   Parallel::contribute_to_reduction<
+    //       ChangeSlabSize_detail::StoreNewSlabSize>(
+    //       ReductionData(slab_to_change, desired_slab_size), self_proxy,
+    //       component_proxy);
+    // } else {
+    //   Parallel::receive_data<ChangeSlabSize_detail::NewSlabSizeInbox>(
+    //       *Parallel::local(self_proxy), slab_to_change, desired_slab_size);
+    // }
+    ERROR("Not yet implemented");
+    (void)slab_to_change, (void)cache, (void)array_index;
   }
 
   using is_ready_argument_tags = tmpl::list<>;
