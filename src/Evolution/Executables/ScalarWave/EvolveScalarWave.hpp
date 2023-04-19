@@ -100,6 +100,8 @@
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 #include "Utilities/TMPL.hpp"
 
+#include "Parallel/ArrayCollection.hpp"
+
 /// \cond
 namespace Frame {
 // IWYU pragma: no_forward_declare MathFunction
@@ -124,7 +126,7 @@ struct EvolutionMetavars {
   static constexpr dg::Formulation dg_formulation =
       dg::Formulation::StrongInertial;
   using temporal_id = Tags::TimeStepId;
-  static constexpr bool local_time_stepping = true;
+  static constexpr bool local_time_stepping = false;
 
   using analytic_solution_fields = typename system::variables_tag::tags_list;
   using deriv_compute = ::Tags::DerivCompute<
@@ -256,8 +258,8 @@ struct EvolutionMetavars {
       evolution::Actions::InitializeRunEventsAndDenseTriggers,
       Parallel::Actions::TerminatePhase>;
 
-  using dg_element_array = DgElementArray<
-      EvolutionMetavars,
+  using dg_element_array = Parallel::DgElementCollection<
+      volume_dim, EvolutionMetavars,
       tmpl::list<
           Parallel::PhaseActions<Parallel::Phase::Initialization,
                                  initialization_actions>,
@@ -275,6 +277,27 @@ struct EvolutionMetavars {
               tmpl::list<Actions::RunEventsAndTriggers, Actions::ChangeSlabSize,
                          step_actions, Actions::AdvanceTime,
                          PhaseControl::Actions::ExecutePhaseChange>>>>;
+
+  // DgElementArray<
+  //       EvolutionMetavars,
+  //     tmpl::list<
+  //           Parallel::PhaseActions<Parallel::Phase::Initialization,
+  //                                  initialization_actions>,
+
+  //           Parallel::PhaseActions<
+  //               Parallel::Phase::InitializeTimeStepperHistory,
+  //               SelfStart::self_start_procedure<step_actions, system>>,
+
+  //           Parallel::PhaseActions<Parallel::Phase::Register,
+  //                                  tmpl::list<dg_registration_list,
+  //                                             Parallel::Actions::TerminatePhase>>,
+
+  //           Parallel::PhaseActions<
+  //               Parallel::Phase::Evolve,
+  //               tmpl::list<Actions::RunEventsAndTriggers,
+  //               Actions::ChangeSlabSize,
+  //                          step_actions, Actions::AdvanceTime,
+  //                          PhaseControl::Actions::ExecutePhaseChange>>>>;
 
   template <typename ParallelComponent>
   struct registration_list {
