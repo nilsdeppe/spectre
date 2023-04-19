@@ -26,20 +26,21 @@ PhaseChangeAndTriggers:
 Evolution:
   InitialTime: 0.0
   InitialTimeStep: 0.001
-  InitialSlabSize: 0.1
+  # InitialSlabSize: 0.1
   TimeStepper:
+    # DormandPrince5:
     AdamsBashforth:
       Order: 3
-  StepChoosers:
-    - PreventRapidIncrease
-    - Increase:
-        Factor: 2
-    - ErrorControl:
-        AbsoluteTolerance: 1.0e-5
-        RelativeTolerance: 1.0e-5
-        MaxFactor: 10000.0
-        MinFactor: 0.0
-        SafetyFactor: 0.9
+  # StepChoosers:
+  #   - PreventRapidIncrease
+  #   - Increase:
+  #       Factor: 2
+  #   - ErrorControl:
+  #       AbsoluteTolerance: 1.0e-5
+  #       RelativeTolerance: 1.0e-5
+  #       MaxFactor: 10000.0
+  #       MinFactor: 0.0
+  #       SafetyFactor: 0.9
 
 DomainCreator:
   RotatedIntervals:
