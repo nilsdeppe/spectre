@@ -18,6 +18,7 @@
 #include "Parallel/Invoke.hpp"
 #include "Parallel/Local.hpp"
 #include "Parallel/Tags/Metavariables.hpp"
+#include "Parallel/TypeTraits.hpp"
 #include "ParallelAlgorithms/EventsAndTriggers/Tags.hpp"
 #include "Utilities/Gsl.hpp"
 #include "Utilities/TMPL.hpp"
@@ -113,6 +114,9 @@ namespace Actions {
  * core. The use of separate functions is necessary to provide an interface
  * usable outside of iterable actions, e.g. in specialized `pup` functions.
  */
+template <class...>
+struct td;
+
 struct RegisterEventsWithObservers {
  private:
   template <typename ParallelComponent, typename RegisterOrDeregisterAction,
@@ -121,9 +125,6 @@ struct RegisterEventsWithObservers {
       const db::DataBox<DbTagList>& box,
       Parallel::GlobalCache<Metavariables>& cache,
       const ArrayIndex& array_index) {
-    auto& observer = *Parallel::local_branch(
-        Parallel::get_parallel_component<observers::Observer<Metavariables>>(
-            cache));
     std::vector<
         std::pair<observers::TypeOfObservation, observers::ObservationKey>>
         type_of_observation_and_observation_key_pairs;
@@ -163,14 +164,61 @@ struct RegisterEventsWithObservers {
       }
     }
 
-    for (const auto& [type_of_observation, observation_key] :
-         type_of_observation_and_observation_key_pairs) {
-      Parallel::simple_action<RegisterOrDeregisterAction>(
-          observer, observation_key,
-          observers::ArrayComponentId(
-              std::add_pointer_t<ParallelComponent>{nullptr},
-              Parallel::ArrayIndex<std::decay_t<ArrayIndex>>{array_index}),
-          type_of_observation);
+    if constexpr (Parallel::is_nodegroup_v<ParallelComponent>) {
+      using volume_register_action =
+          tmpl::conditional_t<std::is_same_v<RegisterOrDeregisterAction,
+                                             RegisterContributorWithObserver>,
+                              RegisterVolumeContributorWithObserverWriter,
+                              DeregisterVolumeContributorWithObserverWriter>;
+      using reduction_register_action =
+          tmpl::conditional_t<std::is_same_v<RegisterOrDeregisterAction,
+                                             RegisterContributorWithObserver>,
+                              RegisterReductionContributorWithObserverWriter,
+                              DeregisterReductionContributorWithObserverWriter>;
+      auto* observer_writer = Parallel::local_branch(
+          Parallel::get_parallel_component<
+              observers::ObserverWriter<Metavariables>>(cache));
+      ASSERT(observer_writer != nullptr,
+             "The observer writer component should be valid. This is an "
+             "internal bug.");
+      for (const auto& [type_of_observation, observation_key] :
+           type_of_observation_and_observation_key_pairs) {
+        switch (type_of_observation) {
+          case TypeOfObservation::Reduction:
+            Parallel::simple_action<reduction_register_action>(
+                *observer_writer, observation_key,
+                ArrayComponentId{
+                    std::add_pointer_t<ParallelComponent>{nullptr},
+                    Parallel::ArrayIndex<ArrayIndex>(array_index)});
+            break;
+          case TypeOfObservation::Volume:
+            Parallel::simple_action<volume_register_action>(
+                *observer_writer, observation_key,
+                ArrayComponentId{
+                    std::add_pointer_t<ParallelComponent>{nullptr},
+                    Parallel::ArrayIndex<ArrayIndex>(array_index)});
+            break;
+          default:
+            ERROR(
+                "Attempting to deregister an unknown TypeOfObservation. "
+                "Should be one of 'Reduction' or 'Volume'");
+        };
+      }
+    } else {
+      static_assert(Parallel::is_array_v<ParallelComponent>);
+
+      for (const auto& [type_of_observation, observation_key] :
+           type_of_observation_and_observation_key_pairs) {
+        auto& observer =
+            *Parallel::local_branch(Parallel::get_parallel_component<
+                                    observers::Observer<Metavariables>>(cache));
+        Parallel::simple_action<RegisterOrDeregisterAction>(
+            observer, observation_key,
+            observers::ArrayComponentId(
+                std::add_pointer_t<ParallelComponent>{nullptr},
+                Parallel::ArrayIndex<std::decay_t<ArrayIndex>>{array_index}),
+            type_of_observation);
+      }
     }
   }
 

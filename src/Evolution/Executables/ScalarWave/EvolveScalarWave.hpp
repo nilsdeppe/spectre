@@ -126,7 +126,7 @@ struct EvolutionMetavars {
   static constexpr dg::Formulation dg_formulation =
       dg::Formulation::StrongInertial;
   using temporal_id = Tags::TimeStepId;
-  static constexpr bool local_time_stepping = false;
+  static constexpr bool local_time_stepping = true;
 
   using analytic_solution_fields = typename system::variables_tag::tags_list;
   using deriv_compute = ::Tags::DerivCompute<
@@ -290,7 +290,7 @@ struct EvolutionMetavars {
 
   //           Parallel::PhaseActions<Parallel::Phase::Register,
   //                                  tmpl::list<dg_registration_list,
-  //                                             Parallel::Actions::TerminatePhase>>,
+  //                          Parallel::Actions::TerminatePhase>>,
 
   //           Parallel::PhaseActions<
   //               Parallel::Phase::Evolve,
@@ -301,9 +301,9 @@ struct EvolutionMetavars {
 
   template <typename ParallelComponent>
   struct registration_list {
-    using type =
-        std::conditional_t<std::is_same_v<ParallelComponent, dg_element_array>,
-                           dg_registration_list, tmpl::list<>>;
+    using type = tmpl::list<>;
+    // std::conditional_t<std::is_same_v<ParallelComponent, dg_element_array>,
+    //                    dg_registration_list, tmpl::list<>>;
   };
 
   using component_list =

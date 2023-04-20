@@ -45,6 +45,7 @@
 #include "NumericalAlgorithms/Spectral/Projection.hpp"
 #include "Parallel/AlgorithmExecution.hpp"
 #include "Parallel/GlobalCache.hpp"
+#include "Parallel/Invoke.hpp"
 #include "Time/Actions/SelfStartActions.hpp"
 #include "Time/BoundaryHistory.hpp"
 #include "Time/Tags.hpp"
@@ -54,6 +55,13 @@
 #include "Utilities/TMPL.hpp"
 
 /// \cond
+namespace Parallel::Actions {
+struct ReceiveDataForElement;
+}
+namespace Parallel::Tags {
+template <size_t Dim>
+struct ElementLocationsPointer;
+}
 namespace evolution::dg::subcell {
 // We use a forward declaration instead of including a header file to avoid
 // coupling to the DG-subcell libraries for executables that don't use subcell.
@@ -724,14 +732,25 @@ void ComputeTimeDerivative<Dim, EvolutionSystem, DgStepChoosers,
       }
 
       // Send mortar data (the `std::tuple` named `data`) to neighbor
-      ERROR("We need to send data better");
-      (void)receiver_proxy;
-      (void)direction_from_neighbor;
-      // Parallel::receive_data<
-      //     evolution::dg::Tags::BoundaryCorrectionAndGhostCellsInbox<Dim>>(
-      //     receiver_proxy[neighbor], time_step_id,
-      //     std::make_pair(std::pair{direction_from_neighbor, element.id()},
-      //                    std::move(data)));
+      if constexpr (db::tag_is_retrievable_v<
+                        Parallel::Tags::ElementLocationsPointer<Dim>,
+                        db::DataBox<DbTagsList>>) {
+        const size_t neighbor_location =
+            db::get<Parallel::Tags::ElementLocationsPointer<Dim>>(*box)->at(
+                neighbor);
+        Parallel::threaded_action<Parallel::Actions::ReceiveDataForElement>(
+            receiver_proxy[neighbor_location],
+            evolution::dg::Tags::BoundaryCorrectionAndGhostCellsInbox<Dim>{},
+            neighbor, time_step_id,
+            std::make_pair(std::pair{direction_from_neighbor, element.id()},
+                           std::move(data)));
+      } else {
+        Parallel::receive_data<
+            evolution::dg::Tags::BoundaryCorrectionAndGhostCellsInbox<Dim>>(
+            receiver_proxy[neighbor], time_step_id,
+            std::make_pair(std::pair{direction_from_neighbor, element.id()},
+                           std::move(data)));
+      }
       ++neighbor_count;
     }
   }

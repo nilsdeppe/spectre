@@ -58,6 +58,9 @@ struct Inertial;
 }  // namespace Frame
 /// \endcond
 
+template <class...>
+struct td;
+
 namespace dg {
 namespace Events {
 /// \cond
@@ -290,19 +293,44 @@ class ObserveFields<VolumeDim, ObservationValueTag, tmpl::list<Tensors...>,
         };
     EXPAND_PACK_LEFT_TO_RIGHT(record_tensor_components(tmpl::type_<Tensors>{}));
 
-    // Send data to volume observer
-    auto& local_observer = *Parallel::local_branch(
-        Parallel::get_parallel_component<observers::Observer<Metavariables>>(
-            cache));
-    Parallel::simple_action<observers::Actions::ContributeVolumeData>(
-        local_observer,
-        observers::ObservationId(observation_value, subfile_path + ".vol"),
-        subfile_path,
-        observers::ArrayComponentId(
-            std::add_pointer_t<ParallelComponent>{nullptr},
-            Parallel::ArrayIndex<ElementId<VolumeDim>>(element_id)),
-        ElementVolumeData{element_id, std::move(components),
-                          interpolation_mesh.value_or(mesh)});
+    // td<ParallelComponent> aeou;
+
+    if constexpr (Parallel::is_nodegroup_v<ParallelComponent>) {
+      // Send data to reduction observer writer (nodegroup)
+      auto& local_observer = *Parallel::local_branch(
+          Parallel::get_parallel_component<
+              observers::ObserverWriter<Metavariables>>(cache));
+      std::unordered_map<observers::ArrayComponentId,
+                         std::vector<ElementVolumeData>>
+          data_to_send{};
+      data_to_send[observers::ArrayComponentId(
+          std::add_pointer_t<ParallelComponent>{nullptr},
+          Parallel::ArrayIndex<ElementId<VolumeDim>>(element_id))] =
+          std::vector{ElementVolumeData{element_id, std::move(components),
+                                        interpolation_mesh.value_or(mesh)}};
+      Parallel::threaded_action<
+          observers::ThreadedActions::ContributeVolumeDataToWriter>(
+          local_observer,
+          observers::ObservationId(observation_value, subfile_path + ".vol"),
+          observers::ArrayComponentId(
+              std::add_pointer_t<ParallelComponent>{nullptr},
+              Parallel::ArrayIndex<ElementId<VolumeDim>>(element_id)),
+          subfile_path, std::move(data_to_send));
+    } else {
+      // Send data to volume observer
+      auto& local_observer = *Parallel::local_branch(
+          Parallel::get_parallel_component<observers::Observer<Metavariables>>(
+              cache));
+      Parallel::simple_action<observers::Actions::ContributeVolumeData>(
+          local_observer,
+          observers::ObservationId(observation_value, subfile_path + ".vol"),
+          subfile_path,
+          observers::ArrayComponentId(
+              std::add_pointer_t<ParallelComponent>{nullptr},
+              Parallel::ArrayIndex<ElementId<VolumeDim>>(element_id)),
+          ElementVolumeData{element_id, std::move(components),
+                            interpolation_mesh.value_or(mesh)});
+    }
   }
 
   using observation_registration_tags = tmpl::list<::Tags::DataBox>;

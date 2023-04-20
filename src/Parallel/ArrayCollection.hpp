@@ -1,4 +1,8 @@
+#include <brigand/algorithms/transform.hpp>
 #include <iostream>
+#include <stdexcept>
+#include "DataStructures/DataBox/Tag.hpp"
+#include "Parallel/Invoke.hpp"
 
 // Distributed under the MIT License.
 // See LICENSE.txt for details.
@@ -70,6 +74,35 @@ template <size_t Dim, typename Metavariables, typename PhaseDepActionList,
           typename SimpleTagsFromOptions>
 class DgElementArrayMember;
 
+namespace Tags {
+struct ElementCollectionBase : db::BaseTag {};
+
+template <size_t Dim, class Metavariables, class PhaseDepActionList,
+          typename SimpleTagsFromOptions>
+struct ElementCollection : db::SimpleTag, ElementCollectionBase {
+  using type = std::unordered_map<
+      ElementId<Dim>,
+      DgElementArrayMember<Dim, Metavariables, PhaseDepActionList,
+                           SimpleTagsFromOptions>>;
+};
+template <size_t Dim>
+struct ElementLocations : db::SimpleTag {
+  using type = std::unordered_map<ElementId<Dim>, size_t>;
+};
+
+struct ElementLocationsPointerBase : db::BaseTag {};
+
+template <size_t Dim>
+struct ElementLocationsPointer : db::SimpleTag, ElementLocationsPointerBase {
+  using type = std::unordered_map<ElementId<Dim>, size_t>*;
+};
+
+struct NumberOfElementsTerminated : db::SimpleTag {
+  using type = size_t;
+};
+}  // namespace Tags
+
+
 template <size_t Dim, typename Metavariables,
           typename... PhaseDepActionListsPack, typename SimpleTagsFromOptions>
 class DgElementArrayMember<Dim, Metavariables,
@@ -92,7 +125,7 @@ class DgElementArrayMember<Dim, Metavariables,
 
   using databox_type = db::compute_databox_type<tmpl::flatten<tmpl::list<
       Tags::MetavariablesImpl<metavariables>,
-      Tags::ArrayIndexImpl<ElementId<Dim>>,
+      Tags::ArrayIndexImpl<ElementId<Dim>>, Tags::ElementLocationsPointer<Dim>,
       Tags::GlobalCacheProxy<metavariables>, SimpleTagsFromOptions,
       Tags::GlobalCacheImplCompute<metavariables>,
       Tags::ResourceInfoReference<metavariables>,
@@ -108,7 +141,11 @@ class DgElementArrayMember<Dim, Metavariables,
   DgElementArrayMember(
       const Parallel::CProxy_GlobalCache<Metavariables>& global_cache_proxy,
       tuples::TaggedTuple<InitializationTags...> initialization_items,
-      ElementId<Dim> element_id);
+      ElementId<Dim> element_id,
+      gsl::not_null<std::unordered_map<ElementId<Dim>, size_t>*>
+          element_locations,
+      gsl::not_null<size_t*> number_of_elements_terminated,
+      gsl::not_null<Parallel::NodeLock*> nodegroup_lock);
 
   /// \cond
   ~DgElementArrayMember() = default;
@@ -125,12 +162,29 @@ class DgElementArrayMember<Dim, Metavariables,
   /// where the previous execution of the same phase left off.
   void start_phase(Parallel::Phase next_phase);
 
+  /// Get the current phase
+  Phase phase() const { return phase_; }
+
   /// Tell the Algorithm it should no longer execute the algorithm. This does
   /// not mean that the execution of the program is terminated, but only that
   /// the algorithm has terminated. An algorithm can be restarted by passing
   /// `true` as the second argument to the `receive_data` method or by calling
   /// perform_algorithm(true).
-  void set_terminate(const bool t) { terminate_ = t; }
+  void set_terminate(const bool terminate) {
+    std::lock_guard nodegroup_lock(*nodegroup_lock_);
+    if (not terminate_ and terminate) {
+      ++(*number_of_elements_terminated_);
+    } else if (terminate_ and not terminate) {
+      --(*number_of_elements_terminated_);
+    } else {
+      ASSERT(terminate_ == terminate,
+             "The DG element with id "
+                 << element_id_ << " currently has termination status "
+                 << terminate_ << " and is being set to " << terminate
+                 << ". This is an internal inconsistency problem.");
+    }
+    terminate_ = terminate;
+  }
 
   /// Check if an algorithm should continue being evaluated
   bool get_terminate() const { return terminate_; }
@@ -161,6 +215,9 @@ class DgElementArrayMember<Dim, Metavariables,
   // const auto& get_inboxes() const { return inboxes_; }
 
   void receive_data();
+
+  auto& inboxes() { return inboxes_; }
+  const auto& inboxes() const { return inboxes_; }
 
   /// The inbox_lock_ only locks the inbox, nothing else. The inbox is unsafe
   /// to access without the lock.
@@ -208,6 +265,9 @@ class DgElementArrayMember<Dim, Metavariables,
   // Parallel::Spinlock inbox_lock_;
   // Parallel::Spinlock element_lock_;
 
+  size_t* number_of_elements_terminated_{0};
+  Parallel::NodeLock* nodegroup_lock_{nullptr};
+
   bool terminate_{true};
   bool halt_algorithm_until_next_phase_{false};
 
@@ -228,14 +288,21 @@ DgElementArrayMember<Dim, Metavariables, tmpl::list<PhaseDepActionListsPack...>,
     DgElementArrayMember(
         const Parallel::CProxy_GlobalCache<Metavariables>& global_cache_proxy,
         tuples::TaggedTuple<InitializationTags...> initialization_items,
-        ElementId<Dim> element_id) {
+        ElementId<Dim> element_id,
+        const gsl::not_null<std::unordered_map<ElementId<Dim>, size_t>*>
+            element_locations,
+        const gsl::not_null<size_t*> number_of_elements_terminated,
+        const gsl::not_null<Parallel::NodeLock*> nodegroup_lock) {
   (void)initialization_items;  // avoid potential compiler warnings if unused
   global_cache_proxy_ = global_cache_proxy;
   element_id_ = std::move(element_id);
+  number_of_elements_terminated_ = number_of_elements_terminated;
+  nodegroup_lock_ = nodegroup_lock;
   ::Initialization::mutate_assign<
       tmpl::list<Tags::ArrayIndex, Tags::GlobalCacheProxy<Metavariables>,
-                 InitializationTags...>>(
+                 Tags::ElementLocationsPointer<Dim>, InitializationTags...>>(
       make_not_null(&box_), element_id_, global_cache_proxy_,
+      element_locations.get(),
       std::move(get<InitializationTags>(initialization_items))...);
 }
 
@@ -489,62 +556,156 @@ void DgElementArrayMember<
   set_terminate(true);
 }
 
-namespace Tags {
-struct ElementCollectionBase : db::BaseTag {};
-
-template <size_t Dim, class Metavariables, class PhaseDepActionList,
-          typename SimpleTagsFromOptions>
-struct ElementCollection : db::SimpleTag, ElementCollectionBase {
-  using type = std::unordered_map<
-      ElementId<Dim>,
-      DgElementArrayMember<Dim, Metavariables, PhaseDepActionList,
-                           SimpleTagsFromOptions>>;
-};
-template <size_t Dim>
-struct ElementLocations : db::SimpleTag {
-  using type = std::unordered_map<ElementId<Dim>, size_t>;
-};
-}  // namespace Tags
-
 namespace Actions {
 /// Always invoked on the local component.
 ///
 /// In the future we can use this to try and elide Charm++ calls when the
 /// receiver is local.
 
-// struct SendToNeighbor {
-//   template <typename ParallelComponent, typename DbTagsList,
-//             typename Metavariables, typename ArrayIndex>
-//   static void apply(db::DataBox<DbTagsList>& box,
-//                     Parallel::GlobalCache<Metavariables>& cache,
-//                     const ArrayIndex& array_index,
-//                     CollectionMessage<ReceiveTag, ReceiveDataType, Dim> data,
-//                     const size_t destination_node) {
-//     auto& proxy = Parallel::get_parallel_component<ParallelComponent>(cache);
-
-//   }
-// };
-
-struct InitializeElementsInCollection {
+struct SetTerminateOnElement {
   template <typename ParallelComponent, typename DbTagsList,
-            typename Metavariables, typename ArrayIndex>
+            typename Metavariables, size_t Dim>
+  static void apply(db::DataBox<DbTagsList>& box,
+                    Parallel::GlobalCache<Metavariables>& cache,
+                    const size_t& /*array_index*/,
+                    const gsl::not_null<Parallel::NodeLock*> node_lock,
+                    const ElementId<Dim>& element_to_terminate) {
+    auto& element = [&node_lock, &box, &element_to_terminate ]() -> auto& {
+      std::lock_guard node_guard(*node_lock);
+      return db::mutate<Tags::ElementCollectionBase>(
+          make_not_null(&box),
+          [&element_to_terminate](const auto element_collection_ptr) -> auto& {
+            try {
+              return element_collection_ptr->at(element_to_terminate);
+            } catch (const std::out_of_range&) {
+              ERROR("Could not find element with ID " << element_to_terminate
+                                                      << " on node");
+            }
+          });
+    }
+    ();
+    element.set_terminate(true);
+
+    std::lock_guard node_guard(*node_lock);
+    const size_t number_of_elements = db::mutate<Tags::ElementCollectionBase>(
+        make_not_null(&box),
+        [&element_to_terminate](const auto element_collection_ptr) {
+          try {
+            return element_collection_ptr->size();
+          } catch (const std::out_of_range&) {
+            ERROR("Could not find element with ID " << element_to_terminate
+                                                    << " on node");
+          }
+        });
+    if (db::get<Tags::NumberOfElementsTerminated>(box) == number_of_elements) {
+      auto* local_branch = Parallel::local_branch(
+          Parallel::get_parallel_component<ParallelComponent>(cache));
+      ASSERT(local_branch != nullptr,
+             "The local branch is nullptr, which is inconsistent");
+      local_branch->set_terminate(true);
+    }
+  }
+};
+
+/// \brief Receive data for a specific element.
+struct ReceiveDataForElement {
+  template <typename ParallelComponent, typename DbTagsList,
+            typename Metavariables, typename ArrayIndex, typename ReceiveData,
+            typename ReceiveTag, size_t Dim>
   static void apply(db::DataBox<DbTagsList>& box,
                     Parallel::GlobalCache<Metavariables>& /*cache*/,
                     const ArrayIndex& /*array_index*/,
-                    const gsl::not_null<Parallel::NodeLock*> /*node_lock*/) {
-    // TODO: run the initialization actions on the elements...
-    //
-    // TODO: this assumes no communication during initialization right now...
-    //
-    // TODO: support parallel initialization
-    db::mutate<Tags::ElementCollectionBase>(
-        make_not_null(&box), [](const auto element_collection_ptr) {
-          for (auto& element : *element_collection_ptr) {
-            // TODO: lock element
-            //
-            // TODO: run initialization actions.
-          }
-        });
+                    const gsl::not_null<Parallel::NodeLock*> node_lock,
+                    const ReceiveTag& /*meta*/,
+                    const ElementId<Dim>& element_to_execute_on,
+                    typename ReceiveTag::temporal_id instance,
+                    ReceiveData receive_data) {
+    auto& element = [&node_lock, &box, &element_to_execute_on ]() -> auto& {
+      std::lock_guard node_guard(*node_lock);
+      return db::mutate<Tags::ElementCollectionBase>(
+          make_not_null(&box),
+          [&element_to_execute_on](const auto element_collection_ptr) -> auto& {
+            try {
+              return element_collection_ptr->at(element_to_execute_on);
+            } catch (const std::out_of_range&) {
+              ERROR("Could not find element with ID " << element_to_execute_on
+                                                      << " on node");
+            }
+          });
+    }
+    ();
+    // {
+    //   std::lock_guard inbox_lock(element.inbox_lock());
+    //   ReceiveTag::insert_into_inbox(
+    //       make_not_null(&tuples::get<ReceiveTag>(element.inboxes())),
+    //       instance,
+    //       std::move(receive_data));
+    // }
+    {
+      // TODO: we should really do a `try_lock` and then have an integer
+      // guarded by the inbox lock that counts the number of missed messages.
+      std::lock_guard element_lock(element.element_lock());
+      ReceiveTag::insert_into_inbox(
+          make_not_null(&tuples::get<ReceiveTag>(element.inboxes())), instance,
+          std::move(receive_data));
+      element.perform_algorithm();
+    }
+  }
+};
+
+/// \brief Starts the current nodegroup phase on the element to execute.
+struct StartPhaseOnElement {
+  template <typename ParallelComponent, typename DbTagsList,
+            typename Metavariables, typename ArrayIndex, size_t Dim>
+  static void apply(db::DataBox<DbTagsList>& box,
+                    Parallel::GlobalCache<Metavariables>& cache,
+                    const ArrayIndex& /*array_index*/,
+                    const gsl::not_null<Parallel::NodeLock*> node_lock,
+                    const ElementId<Dim>& element_to_execute) {
+    const Phase current_phase =
+        Parallel::local_branch(
+            Parallel::get_parallel_component<ParallelComponent>(cache))
+            ->phase();
+    auto& element = [&node_lock, &box, &element_to_execute ]() -> auto& {
+      std::lock_guard node_guard(*node_lock);
+      return db::mutate<Tags::ElementCollectionBase>(
+          make_not_null(&box),
+          [&element_to_execute](const auto element_collection_ptr) -> auto& {
+            try {
+              return element_collection_ptr->at(element_to_execute);
+            } catch (const std::out_of_range&) {
+              ERROR("Could not find element with ID " << element_to_execute
+                                                      << " on node");
+            }
+          });
+    }
+    ();
+    const std::lock_guard element_lock(element.element_lock());
+    element.start_phase(current_phase);
+  }
+};
+
+/// \brief Starts the next phase on the nodegroup and calls
+/// `StartPhaseOnElement` for each element on the node.
+struct StartPhaseOnNodegroup {
+  template <typename DbTagsList, typename... InboxTags, typename ArrayIndex,
+            typename ActionList, typename ParallelComponent,
+            typename Metavariables>
+  static Parallel::iterable_action_return_t apply(
+      db::DataBox<DbTagsList>& box,
+      const tuples::TaggedTuple<InboxTags...>& /*inboxes*/,
+      Parallel::GlobalCache<Metavariables>& cache,
+      const ArrayIndex& /*array_index*/, const ActionList /*meta*/,
+      const ParallelComponent* const /*meta*/) {
+    const size_t my_node = Parallel::my_node<size_t>(cache);
+    auto proxy_to_this_node =
+        Parallel::get_parallel_component<ParallelComponent>(cache)[my_node];
+    for (const auto& [element_id, element] :
+         db::get<Tags::ElementCollectionBase>(box)) {
+      Parallel::threaded_action<StartPhaseOnElement>(proxy_to_this_node,
+                                                     element_id);
+    }
+    return {Parallel::AlgorithmExecution::Halt, std::nullopt};
   }
 };
 
@@ -553,18 +714,15 @@ struct SpawnInitializeElementsInCollection {
             typename Metavariables, typename ArrayIndex,
             typename DataBox = db::DataBox<DbTagsList>>
   static void apply(db::DataBox<DbTagsList>& box,
-                    Parallel::GlobalCache<Metavariables>& /*cache*/,
+                    Parallel::GlobalCache<Metavariables>& cache,
                     const ArrayIndex& /*array_index*/,
                     const double /*unused_but_we_needed_to_reduce_something*/) {
-    Parallel::printf("Here Yay!!\n");
+    auto my_proxy = Parallel::get_parallel_component<ParallelComponent>(cache);
     db::mutate<Tags::ElementCollectionBase>(
-        make_not_null(&box), [](const auto element_collection_ptr) {
+        make_not_null(&box), [&my_proxy](const auto element_collection_ptr) {
           for (auto& [element_id, element] : *element_collection_ptr) {
-            const std::lock_guard element_lock(element.element_lock());
-            // TODO: we might be able to generalize this.
-            element.start_phase(Phase::Initialization);
-            std::cout << element_id << '\n'
-                      << get<ScalarWave::Tags::Psi>(element.databox()) << "\n";
+            Parallel::threaded_action<StartPhaseOnElement>(my_proxy,
+                                                           element_id);
           }
         });
   }
@@ -576,7 +734,7 @@ struct InitializeElementCollection {  // TODO: CreateElementCollection
   using simple_tags =
       tmpl::list<Tags::ElementCollection<Dim, Metavariables, PhaseDepActionList,
                                          SimpleTagsFromOptions>,
-                 Tags::ElementLocations<Dim>>;
+                 Tags::ElementLocations<Dim>, Tags::NumberOfElementsTerminated>;
   using compute_tags = tmpl::list<>;
 
   using return_tag_list = tmpl::append<simple_tags, compute_tags>;
@@ -699,12 +857,19 @@ struct InitializeElementCollection {  // TODO: CreateElementCollection
     tuples::tagged_tuple_from_typelist<SimpleTagsFromOptions>
         initialization_items = db::copy_items<SimpleTagsFromOptions>(box);
 
+    const gsl::not_null<Parallel::NodeLock*> node_lock = make_not_null(
+        &Parallel::local_branch(
+             Parallel::get_parallel_component<ParallelComponent>(local_cache))
+             ->get_node_lock());
     db::mutate<Tags::ElementLocations<Dim>,
                Tags::ElementCollection<Dim, Metavariables, PhaseDepActionList,
-                                       SimpleTagsFromOptions>>(
+                                       SimpleTagsFromOptions>,
+               Tags::NumberOfElementsTerminated>(
         make_not_null(&box),
-        [&local_cache, &initialization_items, &my_elements, &node_of_elements](
-            const auto element_locations_ptr, const auto collection_ptr) {
+        [&local_cache, &initialization_items, &my_elements, &node_of_elements,
+         &node_lock](
+            const auto element_locations_ptr, const auto collection_ptr,
+            const gsl::not_null<size_t*> number_of_elements_terminated) {
           const auto serialized_initialization_items =
               serialize(initialization_items);
           *element_locations_ptr = std::move(node_of_elements);
@@ -719,15 +884,17 @@ struct InitializeElementCollection {  // TODO: CreateElementCollection
                                 deserialize<tuples::tagged_tuple_from_typelist<
                                     SimpleTagsFromOptions>>(
                                     serialized_initialization_items.data()),
-                                element_id}})
+                                element_id, element_locations_ptr,
+                                number_of_elements_terminated, node_lock}})
                         .second) {
               ERROR("Failed to insert element with ID: " << element_id);
             }
+            (*number_of_elements_terminated) = 0;
+            if (collection_ptr->at(element_id).get_terminate() == true) {
+              ++(*number_of_elements_terminated);
+            }
           }
         });
-
-    // ERROR("Need to reduce and then run the individual elements\n"
-    //       << db::get<Tags::ElementLocations<Dim>>(box));
 
     Parallel::contribute_to_reduction<SpawnInitializeElementsInCollection>(
         Parallel::ReductionData<
@@ -747,6 +914,19 @@ struct InitializeElementCollection {  // TODO: CreateElementCollection
 };
 }  // namespace Actions
 
+/// \brief Metafunction that turns the PhaseActions into the right one for
+/// each phase for the nodegroup.
+template <typename OnePhaseActions>
+struct TransformPdalToStartPhaseOnNodegroup {
+  using type = tmpl::conditional_t<
+      OnePhaseActions::phase == Parallel::Phase::Initialization, tmpl::list<>,
+      Parallel::PhaseActions<OnePhaseActions::phase,
+                             tmpl::list<Actions::StartPhaseOnNodegroup>>>;
+};
+
+template <class...>
+struct td;
+
 template <size_t Dim, class Metavariables, class PhaseDepActionList>
 struct DgElementCollection {
   using chare_type = Parallel::Algorithms::Nodegroup;
@@ -754,12 +934,32 @@ struct DgElementCollection {
   using simple_tags_from_options = Parallel::get_simple_tags_from_options<
       Parallel::get_initialization_actions_list<PhaseDepActionList>>;
 
-  using phase_dependent_action_list = tmpl::list<Parallel::PhaseActions<
-      Parallel::Phase::Initialization,
-      tmpl::list<
-          Actions::InitializeElementCollection<
-              Dim, Metavariables, PhaseDepActionList, simple_tags_from_options>,
-          Parallel::Actions::TerminatePhase>>>;
+  // td<tmpl::flatten<tmpl::transform<
+  //     PhaseDepActionList, TransformPdalToStartPhaseOnNodegroup<tmpl::_1>>>>
+  //     aoeu;
+
+  using phase_dependent_action_list =
+      tmpl::append<tmpl::list<
+          Parallel::PhaseActions<
+              Parallel::Phase::Initialization,
+              tmpl::list<Actions::InitializeElementCollection<
+                             Dim, Metavariables, PhaseDepActionList,
+                             simple_tags_from_options>,
+                         Parallel::Actions::TerminatePhase>>,
+
+          Parallel::PhaseActions<Parallel::Phase::InitializeTimeStepperHistory,
+                                 tmpl::list<Actions::StartPhaseOnNodegroup>>,
+
+          Parallel::PhaseActions<Parallel::Phase::Register,
+                                 tmpl::list<Actions::StartPhaseOnNodegroup>>,
+
+          Parallel::PhaseActions<Parallel::Phase::Evolve,
+                                 tmpl::list<Actions::StartPhaseOnNodegroup>>>
+
+                   // tmpl::flatten<tmpl::transform<
+                   //       PhaseDepActionList,
+                   //       TransformPdalToStartPhaseOnNodegroup<tmpl::_1>>>
+                   >;
   using const_global_cache_tags = tmpl::remove_duplicates<tmpl::append<
       tmpl::list<::domain::Tags::Domain<Dim>>,
       typename Parallel::detail::get_const_global_cache_tags_from_pdal<

@@ -7,6 +7,7 @@
 #include <iterator>
 #include <mutex>
 #include <optional>
+#include <stdexcept>
 #include <unordered_map>
 
 #include "DataStructures/DataBox/DataBox.hpp"
@@ -34,6 +35,7 @@
 #include "Utilities/Gsl.hpp"
 #include "Utilities/Requires.hpp"
 #include "Utilities/Serialization/Serialize.hpp"
+#include "Utilities/StdHelpers.hpp"
 #include "Utilities/TMPL.hpp"
 #include "Utilities/TaggedTuple.hpp"
 
@@ -241,13 +243,21 @@ struct ContributeVolumeDataToWriter {
                                        std::unordered_set<ArrayComponentId>>&
                   observations_registered) {
             const ObservationKey& key{observation_id.observation_key()};
-            const auto& registered_group_ids = observations_registered.at(key);
-            if (UNLIKELY(registered_group_ids.find(observer_group_id) ==
-                         registered_group_ids.end())) {
-              ERROR("The observer group id "
-                    << observer_group_id
-                    << " was not registered for the observation id "
-                    << observation_id);
+            try {
+              const auto& registered_group_ids =
+                  observations_registered.at(key);
+              if (UNLIKELY(registered_group_ids.find(observer_group_id) ==
+                           registered_group_ids.end())) {
+                ERROR("The observer group id "
+                      << observer_group_id
+                      << " was not registered for the observation id "
+                      << observation_id);
+              }
+            } catch (const std::out_of_range& /*e*/) {
+              ERROR(
+                  "key " << key
+                         << " not in the registered group ids. Known keys are "
+                         << keys_of(observations_registered));
             }
 
             all_volume_data = &*volume_data_ptr;

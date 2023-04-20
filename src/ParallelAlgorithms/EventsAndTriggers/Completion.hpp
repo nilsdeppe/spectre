@@ -1,14 +1,26 @@
 // Distributed under the MIT License.
 // See LICENSE.txt for details.
 
+template <class...>
+struct td;
+
 #pragma once
 
+#include "DataStructures/DataBox/DataBox.hpp"
+#include "DataStructures/DataBox/DataBoxTag.hpp"
 #include "Options/Options.hpp"
 #include "Parallel/GlobalCache.hpp"
 #include "Parallel/Local.hpp"
 #include "ParallelAlgorithms/EventsAndTriggers/Event.hpp"
 #include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
+
+namespace Parallel::Actions {
+struct SetTerminateOnElement;
+}  // namespace Parallel::Actions
+namespace Parallel::Tags {
+struct ElementLocationsPointerBase;
+}  // namespace Parallel::Tags
 
 namespace Events {
 /// \ingroup EventsAndTriggersGroup
@@ -28,17 +40,29 @@ class Completion : public Event {
 
   Completion() = default;
 
-  using argument_tags = tmpl::list<>;
+  using argument_tags = tmpl::list<::Tags::DataBox>;
 
-  template <typename Metavariables, typename ArrayIndex, typename Component>
-  void operator()(Parallel::GlobalCache<Metavariables>& cache,
+  template <typename Metavariables, typename ArrayIndex, typename Component,
+            typename DbTagsList>
+  void operator()(const db::DataBox<DbTagsList>& box,
+                  Parallel::GlobalCache<Metavariables>& cache,
                   const ArrayIndex& array_index,
                   const Component* const /*meta*/) const {
-    // auto al_gore = Parallel::local(
-    //     Parallel::get_parallel_component<Component>(cache)[array_index]);
-    // al_gore->set_terminate(true);
-    ERROR("Not yet implemented");
-    (void)cache, (void)array_index;
+    if constexpr (db::tag_is_retrievable_v<
+                        Parallel::Tags::ElementLocationsPointerBase,
+                        db::DataBox<DbTagsList>>) {
+      const size_t neighbor_location =
+          db::get<Parallel::Tags::ElementLocationsPointerBase>(box)->at(
+              array_index);
+      Parallel::threaded_action<Parallel::Actions::SetTerminateOnElement>(
+          Parallel::get_parallel_component<Component>(cache)[neighbor_location],
+          array_index);
+    } else {
+      (void)box;
+      auto al_gore = Parallel::local(
+          Parallel::get_parallel_component<Component>(cache)[array_index]);
+      al_gore->set_terminate(true);
+    }
   }
 
   using is_ready_argument_tags = tmpl::list<>;

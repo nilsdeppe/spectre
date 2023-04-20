@@ -33,6 +33,7 @@
 #include "Parallel/Invoke.hpp"
 #include "Parallel/Local.hpp"
 #include "Parallel/Reduction.hpp"
+#include "Parallel/TypeTraits.hpp"
 #include "ParallelAlgorithms/Events/Tags.hpp"
 #include "ParallelAlgorithms/EventsAndTriggers/Event.hpp"
 #include "Utilities/ErrorHandling/Assert.hpp"
@@ -317,6 +318,9 @@ ObserveNorms<ObservationValueTag, tmpl::list<ObservableTensorTags...>,
   }
 }
 
+template <class...>
+struct td;
+
 template <typename ObservationValueTag, typename... ObservableTensorTags,
           typename... NonTensorComputeTags, typename ArraySectionIdTag>
 template <typename ComputeTagsList, typename DataBoxType,
@@ -451,25 +455,50 @@ operator()(const typename ObservationValueTag::type& observation_value,
                 norm_values_and_names["L2IntegralNorm"].second.begin(),
                 norm_values_and_names["L2IntegralNorm"].second.end());
 
-  // Send data to reduction observer
-  auto& local_observer = *Parallel::local_branch(
-      Parallel::get_parallel_component<observers::Observer<Metavariables>>(
-          cache));
+  // td<ParallelComponent> aeou;
+
   const std::string subfile_path_with_suffix =
       subfile_path_ + section_observation_key.value();
-  Parallel::simple_action<observers::Actions::ContributeReductionData>(
-      local_observer,
-      observers::ObservationId(observation_value,
-                               subfile_path_with_suffix + ".dat"),
-      observers::ArrayComponentId{
-          std::add_pointer_t<ParallelComponent>{nullptr},
-          Parallel::ArrayIndex<ElementId<VolumeDim>>(array_index)},
-      subfile_path_with_suffix, std::move(legend),
-      ReductionData{static_cast<double>(observation_value), number_of_points,
-                    local_volume, std::move(norm_values_and_names["Max"].first),
-                    std::move(norm_values_and_names["Min"].first),
-                    std::move(norm_values_and_names["L2Norm"].first),
-                    std::move(norm_values_and_names["L2IntegralNorm"].first)});
+  if constexpr (Parallel::is_nodegroup_v<ParallelComponent>) {
+    // Send data to reduction observer writer (nodegroup)
+    auto& local_observer = *Parallel::local_branch(
+        Parallel::get_parallel_component<
+            observers::ObserverWriter<Metavariables>>(cache));
+    Parallel::threaded_action<
+        observers::ThreadedActions::CollectReductionDataOnNode>(
+        local_observer,
+        observers::ObservationId(observation_value,
+                                 subfile_path_with_suffix + ".dat"),
+        observers::ArrayComponentId{
+            std::add_pointer_t<ParallelComponent>{nullptr},
+            Parallel::ArrayIndex<ElementId<VolumeDim>>(array_index)},
+        subfile_path_with_suffix, std::move(legend),
+        ReductionData{
+            static_cast<double>(observation_value), number_of_points,
+            local_volume, std::move(norm_values_and_names["Max"].first),
+            std::move(norm_values_and_names["Min"].first),
+            std::move(norm_values_and_names["L2Norm"].first),
+            std::move(norm_values_and_names["L2IntegralNorm"].first)});
+  } else {
+    // Send data to reduction observer
+    auto& local_observer = *Parallel::local_branch(
+        Parallel::get_parallel_component<observers::Observer<Metavariables>>(
+            cache));
+    Parallel::simple_action<observers::Actions::ContributeReductionData>(
+        local_observer,
+        observers::ObservationId(observation_value,
+                                 subfile_path_with_suffix + ".dat"),
+        observers::ArrayComponentId{
+            std::add_pointer_t<ParallelComponent>{nullptr},
+            Parallel::ArrayIndex<ElementId<VolumeDim>>(array_index)},
+        subfile_path_with_suffix, std::move(legend),
+        ReductionData{
+            static_cast<double>(observation_value), number_of_points,
+            local_volume, std::move(norm_values_and_names["Max"].first),
+            std::move(norm_values_and_names["Min"].first),
+            std::move(norm_values_and_names["L2Norm"].first),
+            std::move(norm_values_and_names["L2IntegralNorm"].first)});
+  }
 }
 
 template <typename ObservationValueTag, typename... ObservableTensorTags,
