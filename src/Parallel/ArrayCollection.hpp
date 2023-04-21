@@ -1,9 +1,3 @@
-#include <brigand/algorithms/transform.hpp>
-#include <iostream>
-#include <stdexcept>
-#include "DataStructures/DataBox/Tag.hpp"
-#include "Parallel/Invoke.hpp"
-
 // Distributed under the MIT License.
 // See LICENSE.txt for details.
 
@@ -11,22 +5,28 @@
 
 #include <charm++.h>
 #include <cmath>
+#include <iostream>
+#include <limits>
 #include <mutex>
+#include <stdexcept>
 #include <unordered_map>
 
 #include "DataStructures/DataBox/DataBox.hpp"
 #include "DataStructures/DataBox/PrefixHelpers.hpp"
+#include "DataStructures/DataBox/Tag.hpp"
 #include "Domain/Creators/Tags/Domain.hpp"
 #include "Domain/Creators/Tags/InitialExtents.hpp"
 #include "Domain/Creators/Tags/InitialRefinementLevels.hpp"
 #include "Domain/ElementDistribution.hpp"
 #include "Domain/Structure/ElementId.hpp"
+#include "Domain/Structure/InitialElementIds.hpp"
 #include "Evolution/DiscontinuousGalerkin/Initialization/QuadratureTag.hpp"
 #include "Parallel/AlgorithmExecution.hpp"
 #include "Parallel/AlgorithmMetafunctions.hpp"
 #include "Parallel/Algorithms/AlgorithmNodegroupDeclarations.hpp"
 #include "Parallel/GlobalCache.hpp"
 #include "Parallel/Info.hpp"
+#include "Parallel/Invoke.hpp"
 #include "Parallel/NodeLock.hpp"
 #include "Parallel/Phase.hpp"
 #include "Parallel/Reduction.hpp"
@@ -100,6 +100,10 @@ struct ElementLocationsPointer : db::SimpleTag, ElementLocationsPointerBase {
 struct NumberOfElementsTerminated : db::SimpleTag {
   using type = size_t;
 };
+
+struct InboxesLockPtr : db::SimpleTag {
+  using type = Parallel::NodeLock*;
+};
 }  // namespace Tags
 
 
@@ -126,8 +130,8 @@ class DgElementArrayMember<Dim, Metavariables,
   using databox_type = db::compute_databox_type<tmpl::flatten<tmpl::list<
       Tags::MetavariablesImpl<metavariables>,
       Tags::ArrayIndexImpl<ElementId<Dim>>, Tags::ElementLocationsPointer<Dim>,
-      Tags::GlobalCacheProxy<metavariables>, SimpleTagsFromOptions,
-      Tags::GlobalCacheImplCompute<metavariables>,
+      Tags::InboxesLockPtr, Tags::GlobalCacheProxy<metavariables>,
+      SimpleTagsFromOptions, Tags::GlobalCacheImplCompute<metavariables>,
       Tags::ResourceInfoReference<metavariables>,
       db::wrap_tags_in<Tags::FromGlobalCache, all_cache_tags>,
       Algorithm_detail::get_pdal_simple_tags<phase_dependent_action_lists>,
@@ -242,6 +246,10 @@ class DgElementArrayMember<Dim, Metavariables,
     p | halt_algorithm_until_next_phase_;
     p | deadlock_analysis_next_iterable_action_;
     p | element_id_;
+    if (p.isUnpacking()) {
+      my_node_ = Parallel::my_node<size_t>(
+          *Parallel::local_branch(global_cache_proxy_));
+    }
   }
 
  private:
@@ -253,17 +261,14 @@ class DgElementArrayMember<Dim, Metavariables,
   template <typename PhaseDepActions, size_t... Is>
   bool iterate_over_actions(std::index_sequence<Is...> /*meta*/);
 
+  Parallel::NodeLock inbox_lock_{};
+  Parallel::NodeLock element_lock_{};
+
   Parallel::CProxy_GlobalCache<Metavariables> global_cache_proxy_;
   bool performing_action_ = false;
   Parallel::Phase phase_{Parallel::Phase::Initialization};
   std::unordered_map<Parallel::Phase, size_t> phase_bookmarks_{};
   std::size_t algorithm_step_ = 0;
-  Parallel::NodeLock inbox_lock_;
-  Parallel::NodeLock element_lock_;
-  // TODO: These Spinlocks are fast but non-copyable and non-movable because
-  // they use std::atomic
-  // Parallel::Spinlock inbox_lock_;
-  // Parallel::Spinlock element_lock_;
 
   size_t* number_of_elements_terminated_{0};
   Parallel::NodeLock* nodegroup_lock_{nullptr};
@@ -278,6 +283,7 @@ class DgElementArrayMember<Dim, Metavariables,
   databox_type box_;
   inbox_type inboxes_{};
   ElementId<Dim> element_id_;
+  size_t my_node_{std::numeric_limits<size_t>::max()};
 };
 
 template <size_t Dim, typename Metavariables,
@@ -296,13 +302,16 @@ DgElementArrayMember<Dim, Metavariables, tmpl::list<PhaseDepActionListsPack...>,
   (void)initialization_items;  // avoid potential compiler warnings if unused
   global_cache_proxy_ = global_cache_proxy;
   element_id_ = std::move(element_id);
+  my_node_ =
+      Parallel::my_node<size_t>(*Parallel::local_branch(global_cache_proxy_));
   number_of_elements_terminated_ = number_of_elements_terminated;
   nodegroup_lock_ = nodegroup_lock;
   ::Initialization::mutate_assign<
       tmpl::list<Tags::ArrayIndex, Tags::GlobalCacheProxy<Metavariables>,
-                 Tags::ElementLocationsPointer<Dim>, InitializationTags...>>(
+                 Tags::ElementLocationsPointer<Dim>, Tags::InboxesLockPtr,
+                 InitializationTags...>>(
       make_not_null(&box_), element_id_, global_cache_proxy_,
-      element_locations.get(),
+      element_locations.get(), &inbox_lock_,
       std::move(get<InitializationTags>(initialization_items))...);
 }
 
@@ -471,6 +480,17 @@ bool DgElementArrayMember<Dim, Metavariables,
   }
 #endif  // SPECTRE_CHARM_PROJECTIONS
 
+  // If anything got copied we need to update the lock location.
+  //
+  // We could probably fix this by being _extremely_ careful.
+  //
+  // TODO: do this for simple & threaded actions too?
+  db::mutate<Tags::InboxesLockPtr>(
+      make_not_null(&box_),
+      [this](const gsl::not_null<Parallel::NodeLock**> nl) {
+        *nl = &(this->inbox_lock_);
+      });
+
   const auto& [requested_execution, next_action_step] = ThisAction::apply(
       box_, inboxes_, *Parallel::local_branch(global_cache_proxy_),
       std::as_const(element_id_), actions_list{},
@@ -567,7 +587,7 @@ struct SetTerminateOnElement {
             typename Metavariables, size_t Dim>
   static void apply(db::DataBox<DbTagsList>& box,
                     Parallel::GlobalCache<Metavariables>& cache,
-                    const size_t& /*array_index*/,
+                    const int& /*array_index*/,
                     const gsl::not_null<Parallel::NodeLock*> node_lock,
                     const ElementId<Dim>& element_to_terminate) {
     auto& element = [&node_lock, &box, &element_to_terminate ]() -> auto& {
@@ -609,6 +629,7 @@ struct SetTerminateOnElement {
 
 /// \brief Receive data for a specific element.
 struct ReceiveDataForElement {
+  /// \brief Entry method called when receiving data from another node.
   template <typename ParallelComponent, typename DbTagsList,
             typename Metavariables, typename ArrayIndex, typename ReceiveData,
             typename ReceiveTag, size_t Dim>
@@ -634,21 +655,106 @@ struct ReceiveDataForElement {
           });
     }
     ();
-    // {
-    //   std::lock_guard inbox_lock(element.inbox_lock());
-    //   ReceiveTag::insert_into_inbox(
-    //       make_not_null(&tuples::get<ReceiveTag>(element.inboxes())),
-    //       instance,
-    //       std::move(receive_data));
-    // }
+    {
+      std::lock_guard inbox_lock(element.inbox_lock());
+      ReceiveTag::insert_into_inbox(
+          make_not_null(&tuples::get<ReceiveTag>(element.inboxes())),
+          instance,
+          std::move(receive_data));
+    }
     {
       // TODO: we should really do a `try_lock` and then have an integer
       // guarded by the inbox lock that counts the number of missed messages.
       std::lock_guard element_lock(element.element_lock());
-      ReceiveTag::insert_into_inbox(
-          make_not_null(&tuples::get<ReceiveTag>(element.inboxes())), instance,
-          std::move(receive_data));
       element.perform_algorithm();
+    }
+  }
+
+  /// \brief Entry method call when receiving from same node.
+  template <typename ParallelComponent, typename DbTagsList,
+            typename Metavariables, typename ArrayIndex, typename ReceiveData,
+            typename ReceiveTag, size_t Dim>
+  static void apply(db::DataBox<DbTagsList>& box,
+                    Parallel::GlobalCache<Metavariables>& /*cache*/,
+                    const ArrayIndex& /*array_index*/,
+                    const gsl::not_null<Parallel::NodeLock*> node_lock,
+                    const ElementId<Dim>& element_to_execute_on) {
+    auto& element = [&node_lock, &box, &element_to_execute_on ]() -> auto& {
+      std::lock_guard node_guard(*node_lock);
+      return db::mutate<Tags::ElementCollectionBase>(
+          make_not_null(&box),
+          [&element_to_execute_on](const auto element_collection_ptr) -> auto& {
+            try {
+              return element_collection_ptr->at(element_to_execute_on);
+            } catch (const std::out_of_range&) {
+              ERROR("Could not find element with ID " << element_to_execute_on
+                                                      << " on node");
+            }
+          });
+    }
+    ();
+
+    // TODO: we should really do a `try_lock` and then have an integer
+    // guarded by the inbox lock that counts the number of missed messages.
+    std::lock_guard element_lock(element.element_lock());
+    element.perform_algorithm();
+  }
+};
+
+/// \brief A local synchronous action where data is communicated to neighbor
+/// elements in the most optimal way possible.
+struct SendDataToElement {
+  using return_type = void;
+
+  template <typename ParallelComponent, typename DbTagList, size_t Dim,
+            typename ReceiveTag, typename ReceiveData, typename Metavariables>
+  static return_type apply(
+      db::DataBox<DbTagList>& box,
+      const gsl::not_null<Parallel::NodeLock*> node_lock,
+      const gsl::not_null<Parallel::GlobalCache<Metavariables>*> cache,
+      const ReceiveTag& /*meta*/, const ElementId<Dim>& element_to_execute_on,
+      typename ReceiveTag::temporal_id instance, ReceiveData&& receive_data) {
+    using ElementType = typename decltype(*db::get<Tags::ElementCollectionBase>(
+        box))::value_type;
+    ElementType* element = nullptr;
+    const size_t my_node = Parallel::my_node<size_t>(*cache);
+    const size_t node_of_element = [&node_lock, &box, &element_to_execute_on,
+                                    &element]() {
+      std::lock_guard node_guard(*node_lock);
+      return db::mutate<Tags::ElementCollectionBase>(
+          make_not_null(&box),
+          [&element_to_execute_on, &element](const auto element_collection_ptr,
+                                             const auto& element_locations) {
+            size_t node_of_element = element_locations.at(node_of_element);
+            if (node_of_element == my_node) {
+              try {
+                element = &(element_collection_ptr->at(element_to_execute_on));
+              } catch (const std::out_of_range&) {
+                ERROR("Could not find element with ID " << element_to_execute_on
+                                                        << " on node");
+              }
+              return my_node;
+            } else {
+              return node_of_element;
+            }
+          },
+          db::get<Parallel::Tags::ElementLocationsPointer<Dim>>(box));
+    }();
+    auto& my_proxy =
+        Parallel::get_parallel_component<ParallelComponent>(*cache);
+    if (node_of_element == my_node) {
+      std::lock_guard inbox_lock(element->inbox_lock());
+      ReceiveTag::insert_into_inbox(
+          make_not_null(&tuples::get<ReceiveTag>(element->inboxes())), instance,
+          std::forward<ReceiveData>(receive_data));
+      Parallel::threaded_action<Parallel::Actions::ReceiveDataForElement>(
+          my_proxy[node_of_element], element_to_execute_on);
+      // TODO: eliminate threaded action invocation.
+      //
+    } else {
+      Parallel::threaded_action<Parallel::Actions::ReceiveDataForElement>(
+          my_proxy[node_of_element], ReceiveTag{}, element_to_execute_on,
+          instance, std::forward<ReceiveData>(receive_data));
     }
   }
 };
@@ -815,7 +921,7 @@ struct InitializeElementCollection {  // TODO: CreateElementCollection
           initial_extents[block.id()], 1_st, std::multiplies<>());
 
       const std::vector<ElementId<Dim>> element_ids =
-          initial_element_ids(block.id(), initial_ref_levs);
+          ::initial_element_ids(block.id(), initial_ref_levs);
 
       if (use_z_order_distribution) {
         for (const auto& element_id : element_ids) {
