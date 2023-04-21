@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <limits>
 #include <map>
+#include <mutex>
 #include <optional>
 #include <tuple>
 #include <type_traits>
@@ -59,9 +60,10 @@ struct Time;
 struct TimeStep;
 struct TimeStepId;
 }  // namespace Tags
-/// \endcond
+namespace Parallel::Tags {
+struct InboxesLockPtr;
+}  // namespace Parallel::Tags
 
-/// \cond
 namespace evolution::dg::subcell {
 // We use a forward declaration instead of including a header file to avoid
 // coupling to the DG-subcell libraries for executables that don't use subcell.
@@ -107,38 +109,67 @@ bool receive_boundary_data_global_time_stepping(
 
   const TimeStepId& temporal_id = get<::Tags::TimeStepId>(*box);
   using Key = std::pair<Direction<volume_dim>, ElementId<volume_dim>>;
-  std::map<
+  using InboxMap = std::map<
       TimeStepId,
       FixedHashMap<maximum_number_of_neighbors(volume_dim), Key,
                    std::tuple<Mesh<volume_dim>, Mesh<volume_dim - 1>,
                               std::optional<DataVector>,
                               std::optional<DataVector>, ::TimeStepId, int>,
-                   boost::hash<Key>>>& inbox =
-      tuples::get<evolution::dg::Tags::BoundaryCorrectionAndGhostCellsInbox<
-          volume_dim>>(*inboxes);
-  const auto received_temporal_id_and_data = inbox.find(temporal_id);
-  if (received_temporal_id_and_data == inbox.end()) {
-    return false;
-  }
-  const auto& received_neighbor_data = received_temporal_id_and_data->second;
-  const Element<volume_dim>& element =
-      db::get<domain::Tags::Element<volume_dim>>(*box);
-  for (const auto& [direction, neighbors] : element.neighbors()) {
-    for (const auto& neighbor : neighbors) {
-      const auto neighbor_received =
-          received_neighbor_data.find(Key{direction, neighbor});
-      if (neighbor_received == received_neighbor_data.end()) {
-        return false;
+                   boost::hash<Key>>>;
+  using NodeType = typename InboxMap::node_type;
+  using InboxMapValueType = typename InboxMap::value_type;
+  auto get_temporal_id_and_data_node =
+      [&box, &inboxes, &temporal_id](const auto&&...) -> NodeType {
+    InboxMap& inbox = tuples::get<
+        evolution::dg::Tags::BoundaryCorrectionAndGhostCellsInbox<volume_dim>>(
+        *inboxes);
+    const auto received_temporal_id_and_data = inbox.find(temporal_id);
+    if (received_temporal_id_and_data == inbox.end()) {
+      return NodeType{};
+    }
+    const auto& received_neighbor_data = received_temporal_id_and_data->second;
+    const Element<volume_dim>& element =
+        db::get<domain::Tags::Element<volume_dim>>(*box);
+    for (const auto& [direction, neighbors] : element.neighbors()) {
+      for (const auto& neighbor : neighbors) {
+        const auto neighbor_received =
+            received_neighbor_data.find(Key{direction, neighbor});
+        if (neighbor_received == received_neighbor_data.end()) {
+          return NodeType{};
+        }
       }
     }
+    return inbox.extract(received_temporal_id_and_data);
+  };
+
+  InboxMapValueType received_temporal_id_and_data{};
+  {
+    // Scope to make sure the `NodeType node` can't be used later. Don't use
+    // lambda because we want to `return false` if the node is empty.
+    NodeType node = [&box, &get_temporal_id_and_data_node]() -> NodeType {
+      if constexpr (db::tag_is_retrievable_v<Parallel::Tags::InboxesLockPtr,
+                                             db::DataBox<DbTagsList>>) {
+        std::lock_guard inboxes_lock(
+            *db::get<Parallel::Tags::InboxesLockPtr>(*box));
+        return get_temporal_id_and_data_node();
+      } else {
+        (void)box;
+        return get_temporal_id_and_data_node();
+      }
+    }();
+    if (node.empty()) {
+      return false;
+    }
+    received_temporal_id_and_data =
+        InboxMapValueType{std::move(node.key()), std::move(node.mapped())};
   }
 
   // Move inbox contents into the DataBox
   if constexpr (using_subcell_v<Metavariables>) {
     evolution::dg::subcell::neighbor_reconstructed_face_solution<Metavariables>(
-        box, make_not_null(&*received_temporal_id_and_data));
+        box, make_not_null(&received_temporal_id_and_data));
     evolution::dg::subcell::neighbor_tci_decision<volume_dim>(
-        box, *received_temporal_id_and_data);
+        box, received_temporal_id_and_data);
   }
 
   db::mutate<evolution::dg::Tags::MortarData<volume_dim>,
@@ -160,15 +191,15 @@ bool receive_boundary_data_global_time_stepping(
               neighbor_mesh) {
         neighbor_mesh->clear();
         for (auto& received_mortar_data :
-             received_temporal_id_and_data->second) {
+             received_temporal_id_and_data.second) {
           const auto& mortar_id = received_mortar_data.first;
-          ASSERT(received_temporal_id_and_data->first ==
+          ASSERT(received_temporal_id_and_data.first ==
                      mortar_data->at(mortar_id).time_step_id(),
                  "Expected to receive mortar data on mortar "
                      << mortar_id << " at time "
                      << mortar_next_time_step_id->at(mortar_id)
                      << " but actually received at time "
-                     << received_temporal_id_and_data->first);
+                     << received_temporal_id_and_data.first);
           neighbor_mesh->insert_or_assign(
               mortar_id, std::get<0>(received_mortar_data.second));
           mortar_next_time_step_id->at(mortar_id) =
@@ -179,14 +210,13 @@ bool receive_boundary_data_global_time_stepping(
                  "DG-subcell.");
           if (std::get<3>(received_mortar_data.second).has_value()) {
             mortar_data->at(mortar_id).insert_neighbor_mortar_data(
-                received_temporal_id_and_data->first,
+                received_temporal_id_and_data.first,
                 std::get<1>(received_mortar_data.second),
                 std::move(*std::get<3>(received_mortar_data.second)));
           }
         }
       },
       box);
-  inbox.erase(received_temporal_id_and_data);
   return true;
 }
 
@@ -205,22 +235,6 @@ bool receive_boundary_data_local_time_stepping(
   using variables_tag = typename Metavariables::system::variables_tag;
   using dt_variables_tag = db::add_tag_prefix<::Tags::dt, variables_tag>;
 
-  // The boundary history coupling computation (which computes the _lifted_
-  // boundary correction) returns a Variables<dt<EvolvedVars>> instead of
-  // using the `NormalDotNumericalFlux` prefix tag. This is because the
-  // returned quantity is more a `dt` quantity than a
-  // `NormalDotNormalDotFlux` since it's been lifted to the volume.
-  using Key = std::pair<Direction<volume_dim>, ElementId<volume_dim>>;
-  std::map<
-      TimeStepId,
-      FixedHashMap<maximum_number_of_neighbors(volume_dim), Key,
-                   std::tuple<Mesh<volume_dim>, Mesh<volume_dim - 1>,
-                              std::optional<DataVector>,
-                              std::optional<DataVector>, ::TimeStepId, int>,
-                   boost::hash<Key>>>& inbox =
-      tuples::get<evolution::dg::Tags::BoundaryCorrectionAndGhostCellsInbox<
-          volume_dim>>(*inboxes);
-
   const auto needed_time = [&box]() {
     const auto& local_next_temporal_id =
         db::get<::Tags::Next<::Tags::TimeStepId>>(*box);
@@ -238,6 +252,34 @@ bool receive_boundary_data_local_time_stepping(
       };
     }
   }();
+
+  // TODO: we could limit the scope of the lock further. In particular, we
+  // only need to lock _if_ we've received all data.
+  auto inbox_lock = [&box]() {
+    if constexpr (db::tag_is_retrievable_v<Parallel::Tags::InboxesLockPtr,
+                                           db::DataBox<DbTagsList>>) {
+      return std::lock_guard(
+          *db::get<Parallel::Tags::InboxesLockPtr>(*box));
+    } else {
+      return 0;
+    }
+  }();
+
+  // The boundary history coupling computation (which computes the _lifted_
+  // boundary correction) returns a Variables<dt<EvolvedVars>> instead of
+  // using the `NormalDotNumericalFlux` prefix tag. This is because the
+  // returned quantity is more a `dt` quantity than a
+  // `NormalDotNormalDotFlux` since it's been lifted to the volume.
+  using Key = std::pair<Direction<volume_dim>, ElementId<volume_dim>>;
+  std::map<
+      TimeStepId,
+      FixedHashMap<maximum_number_of_neighbors(volume_dim), Key,
+                   std::tuple<Mesh<volume_dim>, Mesh<volume_dim - 1>,
+                              std::optional<DataVector>,
+                              std::optional<DataVector>, ::TimeStepId, int>,
+                   boost::hash<Key>>>& inbox =
+      tuples::get<evolution::dg::Tags::BoundaryCorrectionAndGhostCellsInbox<
+          volume_dim>>(*inboxes);
 
   const bool have_all_intermediate_messages = db::mutate<
       evolution::dg::Tags::MortarDataHistory<volume_dim,

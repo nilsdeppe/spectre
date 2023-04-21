@@ -47,6 +47,7 @@
 #include "NumericalAlgorithms/Spectral/Quadrature.hpp"
 #include "NumericalAlgorithms/Spectral/Spectral.hpp"
 #include "Parallel/AlgorithmExecution.hpp"
+#include "Parallel/ArrayCollection.hpp"
 #include "Parallel/GlobalCache.hpp"
 #include "Parallel/Invoke.hpp"
 #include "Time/Actions/SelfStartActions.hpp"
@@ -64,6 +65,7 @@ struct TimeStepId;
 
 namespace Parallel::Actions {
 struct ReceiveDataForElement;
+struct SendDataToElement;
 }  // namespace Parallel::Actions
 namespace Parallel::Tags {
 template <size_t Dim>
@@ -748,6 +750,13 @@ void ComputeTimeDerivative<Dim, EvolutionSystem, DgStepChoosers,
       if constexpr (db::tag_is_retrievable_v<
                         Parallel::Tags::ElementLocationsPointer<Dim>,
                         db::DataBox<DbTagsList>>) {
+        // Parallel::local_synchronous_action<
+        //     Parallel::Actions::SendDataToElement>(
+        //     receiver_proxy,
+        //     evolution::dg::Tags::BoundaryCorrectionAndGhostCellsInbox<Dim>{},
+        //     neighbor, time_step_id,
+        //     std::make_pair(std::pair{direction_from_neighbor, element.id()},
+        //                    std::move(data)));
         const size_t neighbor_location =
             db::get<Parallel::Tags::ElementLocationsPointer<Dim>>(*box)->at(
                 neighbor);
