@@ -750,18 +750,9 @@ void ComputeTimeDerivative<Dim, EvolutionSystem, DgStepChoosers,
       if constexpr (db::tag_is_retrievable_v<
                         Parallel::Tags::ElementLocationsPointer<Dim>,
                         db::DataBox<DbTagsList>>) {
-        // Parallel::local_synchronous_action<
-        //     Parallel::Actions::SendDataToElement>(
-        //     receiver_proxy,
-        //     evolution::dg::Tags::BoundaryCorrectionAndGhostCellsInbox<Dim>{},
-        //     neighbor, time_step_id,
-        //     std::make_pair(std::pair{direction_from_neighbor, element.id()},
-        //                    std::move(data)));
-        const size_t neighbor_location =
-            db::get<Parallel::Tags::ElementLocationsPointer<Dim>>(*box)->at(
-                neighbor);
-        Parallel::threaded_action<Parallel::Actions::ReceiveDataForElement>(
-            receiver_proxy[neighbor_location],
+        Parallel::local_synchronous_action<
+            Parallel::Actions::SendDataToElement>(
+            receiver_proxy, cache,
             evolution::dg::Tags::BoundaryCorrectionAndGhostCellsInbox<Dim>{},
             neighbor, time_step_id,
             std::make_pair(std::pair{direction_from_neighbor, element.id()},
