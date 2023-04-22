@@ -7,6 +7,7 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <mutex>
 #include <stdexcept>
 #include <unordered_map>
@@ -74,6 +75,9 @@ template <size_t Dim, typename Metavariables, typename PhaseDepActionList,
           typename SimpleTagsFromOptions>
 class DgElementArrayMember;
 
+/// TODO: make into input file option
+constexpr size_t max_num_evaluations = 50;
+
 namespace Tags {
 struct ElementCollectionBase : db::BaseTag {};
 
@@ -103,6 +107,23 @@ struct NumberOfElementsTerminated : db::SimpleTag {
 
 struct InboxesLockPtr : db::SimpleTag {
   using type = Parallel::NodeLock*;
+};
+
+/// \brief The elements that have messages locally queued on the core.
+///
+/// The outer vector is the size of the number of cores on a node. The inner
+/// vector has a fixed size set at runtime. Each element is attempted to be
+/// invoked up to `N` times, where the second element in the pair is a counter
+/// for the number of times an invocation has been attempted.
+template <size_t Dim>
+struct ElementsToEvaluate : db::SimpleTag {
+  using type = std::vector<std::vector<std::pair<ElementId<Dim>, size_t>>>;
+};
+
+/// \brief The number of direct (i.e. ones that did not go through Charm)
+/// element invocations on the core.
+struct NumberOfDirectElementInvocations : db::SimpleTag {
+  using type = std::vector<size_t>;
 };
 }  // namespace Tags
 
@@ -582,6 +603,7 @@ namespace Actions {
 /// In the future we can use this to try and elide Charm++ calls when the
 /// receiver is local.
 
+// TODO: this should be a local synchronous action!
 struct SetTerminateOnElement {
   template <typename ParallelComponent, typename DbTagsList,
             typename Metavariables, size_t Dim>
@@ -625,6 +647,19 @@ struct SetTerminateOnElement {
       local_branch->set_terminate(true);
     }
   }
+
+  using return_type = void;
+
+  template <typename ParallelComponent, typename DbTagList, size_t Dim,
+            typename ReceiveTag, typename ReceiveData, typename Metavariables>
+  static return_type apply(
+      db::DataBox<DbTagList>& box,
+      const gsl::not_null<Parallel::NodeLock*> node_lock,
+      const gsl::not_null<Parallel::GlobalCache<Metavariables>*> cache,
+      const ElementId<Dim>& my_element_id) {
+  std::lock_guard node_guard(*node_lock);
+
+}
 };
 
 /// \brief Receive data for a specific element.
@@ -675,29 +710,63 @@ struct ReceiveDataForElement {
             typename Metavariables, typename ArrayIndex, typename ReceiveData,
             typename ReceiveTag, size_t Dim>
   static void apply(db::DataBox<DbTagsList>& box,
-                    Parallel::GlobalCache<Metavariables>& /*cache*/,
+                    Parallel::GlobalCache<Metavariables>& cache,
                     const ArrayIndex& /*array_index*/,
                     const gsl::not_null<Parallel::NodeLock*> node_lock,
                     const ElementId<Dim>& element_to_execute_on) {
-    auto& element = [&node_lock, &box, &element_to_execute_on ]() -> auto& {
+    std::vector<std::pair<ElementId<Dim>, size_t>>* core_queue = nullptr;
+    size_t* core_number_of_elements_executed = nullptr;
+    const size_t my_proc = Parallel::my_proc<size_t>(cache);
+    const auto get_element = [
+      &node_lock, &box, &element_to_execute_on, &core_queue, &
+      core_number_of_elements_executed, my_proc
+    ](const ElementId<Dim>& element_id) -> auto& {
       std::lock_guard node_guard(*node_lock);
-      return db::mutate<Tags::ElementCollectionBase>(
+      return db::mutate<Tags::ElementCollectionBase,
+                        Tags::ElementsToEvaluate<Dim>,
+                        Tags::NumberOfDirectElementInvocations>(
           make_not_null(&box),
-          [&element_to_execute_on](const auto element_collection_ptr) -> auto& {
+          [
+            &element_id, &core_queue, &core_number_of_elements_executed,
+            my_proc
+          ](const auto element_collection_ptr,
+            const auto elements_to_evaluate_ptr,
+            const auto num_evaluations_ptr) -> auto& {
+            core_queue = std::addressof((*elements_to_evaluate_ptr)[my_proc]);
+            core_number_of_elements_executed = (*num_evaluations_ptr)[my_proc];
             try {
-              return element_collection_ptr->at(element_to_execute_on);
+              return element_collection_ptr->at(element_id);
             } catch (const std::out_of_range&) {
-              ERROR("Could not find element with ID " << element_to_execute_on
+              ERROR("Could not find element with ID " << element_id
                                                       << " on node");
             }
           });
-    }
-    ();
+    };
 
-    // TODO: we should really do a `try_lock` and then have an integer
-    // guarded by the inbox lock that counts the number of missed messages.
-    std::lock_guard element_lock(element.element_lock());
-    element.perform_algorithm();
+    *core_number_of_elements_executed = 0;
+    {
+      auto& element = get_element(element_to_execute_on);
+      std::unique_lock element_lock(element.element_lock());
+      if (element_lock.try_lock()) {
+        element.perform_algorithm();
+        ++(*core_number_of_elements_executed);
+      } else {
+        core_queue->push_back(std::pair{element_to_execute_on, 0});
+      }
+    }
+    while (*core_number_of_elements_executed < max_num_evaluations) {
+      for (size_t i = 0; i < core_queue->size(); ++i) {
+        const auto& id = (*core_queue)[i].first;
+        auto& element = get_element(id);
+        std::unique_lock element_lock(element.element_lock());
+        if (element_lock.try_lock()) {
+          element.perform_algorithm();
+          ++(*core_number_of_elements_executed);
+        } else {
+          ++((*core_queue)[i].second);
+        }
+      }
+    }
   }
 };
 
@@ -718,17 +787,23 @@ struct SendDataToElement {
         box))::value_type;
     ElementType* element = nullptr;
     const size_t my_node = Parallel::my_node<size_t>(*cache);
+    const size_t my_proc = Parallel::my_proc<size_t>(*cache);
     const size_t node_of_element = [&node_lock, &box, &element_to_execute_on,
-                                    &element]() {
+                                    &element, my_proc]() {
       std::lock_guard node_guard(*node_lock);
-      return db::mutate<Tags::ElementCollectionBase>(
+      return db::mutate<Tags::ElementCollectionBase,
+                        Tags::ElementsToEvaluate<Dim>>(
           make_not_null(&box),
-          [&element_to_execute_on, &element](const auto element_collection_ptr,
-                                             const auto& element_locations) {
+          [&element_to_execute_on, &element, my_proc](
+              const auto element_collection_ptr,
+              const auto elements_to_evaluate_ptr,
+              const auto& element_locations) {
             size_t node_of_element = element_locations.at(node_of_element);
             if (node_of_element == my_node) {
               try {
                 element = &(element_collection_ptr->at(element_to_execute_on));
+                (*elements_to_evaluate_ptr)[my_proc].push_back(
+                    std::pair{element_to_execute_on, 0_st});
               } catch (const std::out_of_range&) {
                 ERROR("Could not find element with ID " << element_to_execute_on
                                                         << " on node");
@@ -747,10 +822,6 @@ struct SendDataToElement {
       ReceiveTag::insert_into_inbox(
           make_not_null(&tuples::get<ReceiveTag>(element->inboxes())), instance,
           std::forward<ReceiveData>(receive_data));
-      Parallel::threaded_action<Parallel::Actions::ReceiveDataForElement>(
-          my_proxy[node_of_element], element_to_execute_on);
-      // TODO: eliminate threaded action invocation.
-      //
     } else {
       Parallel::threaded_action<Parallel::Actions::ReceiveDataForElement>(
           my_proxy[node_of_element], ReceiveTag{}, element_to_execute_on,
@@ -840,7 +911,9 @@ struct InitializeElementCollection {  // TODO: CreateElementCollection
   using simple_tags =
       tmpl::list<Tags::ElementCollection<Dim, Metavariables, PhaseDepActionList,
                                          SimpleTagsFromOptions>,
-                 Tags::ElementLocations<Dim>, Tags::NumberOfElementsTerminated>;
+                 Tags::ElementLocations<Dim>, Tags::NumberOfElementsTerminated,
+                 Tags::ElementsToEvaluate<Dim>,
+                 Tags::NumberOfDirectElementInvocations>;
   using compute_tags = tmpl::list<>;
 
   using return_tag_list = tmpl::append<simple_tags, compute_tags>;
@@ -1000,6 +1073,21 @@ struct InitializeElementCollection {  // TODO: CreateElementCollection
               ++(*number_of_elements_terminated);
             }
           }
+        });
+
+    const size_t number_of_cores_on_node =
+        Parallel::procs_on_node<size_t>(my_node, local_cache);
+    db::mutate<Tags::ElementsToEvaluate<Dim>,
+               Tags::NumberOfDirectElementInvocations>(
+        make_not_null(&box),
+        [number_of_cores_on_node](const auto elements_to_evaluate_ptr,
+                                  const auto number_of_direct_invocations_ptr) {
+          elements_to_evaluate_ptr->resize(number_of_cores_on_node);
+          for (auto& elements_to_evaluate_on_core : *elements_to_evaluate_ptr) {
+            elements_to_evaluate_on_core.reserve(max_num_evaluations);
+          }
+
+          number_of_direct_invocations_ptr->resize(number_of_cores_on_node, 0);
         });
 
     Parallel::contribute_to_reduction<SpawnInitializeElementsInCollection>(
