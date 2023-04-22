@@ -51,12 +51,10 @@ class Completion : public Event {
     if constexpr (db::tag_is_retrievable_v<
                         Parallel::Tags::ElementLocationsPointerBase,
                         db::DataBox<DbTagsList>>) {
-      const size_t neighbor_location =
-          db::get<Parallel::Tags::ElementLocationsPointerBase>(box)->at(
-              array_index);
-      Parallel::threaded_action<Parallel::Actions::SetTerminateOnElement>(
-          Parallel::get_parallel_component<Component>(cache)[neighbor_location],
-          array_index);
+      Parallel::local_synchronous_action<
+          Parallel::Actions::SetTerminateOnElement>(
+          Parallel::get_parallel_component<Component>(cache),
+          make_not_null(&cache), array_index);
     } else {
       (void)box;
       auto al_gore = Parallel::local(
