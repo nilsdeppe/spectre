@@ -508,8 +508,8 @@ bool DgElementArrayMember<Dim, Metavariables,
   // TODO: do this for simple & threaded actions too?
   db::mutate<Tags::InboxesLockPtr>(
       make_not_null(&box_),
-      [this](const gsl::not_null<Parallel::NodeLock**> nl) {
-        *nl = &(this->inbox_lock_);
+      [this](const gsl::not_null<Parallel::NodeLock**> inbox_lock_ptr) {
+        *inbox_lock_ptr = &(this->inbox_lock_);
       });
 
   const auto& [requested_execution, next_action_step] = ThisAction::apply(
@@ -602,52 +602,7 @@ namespace Actions {
 ///
 /// In the future we can use this to try and elide Charm++ calls when the
 /// receiver is local.
-
-// TODO: this should be a local synchronous action!
 struct SetTerminateOnElement {
-  template <typename ParallelComponent, typename DbTagsList,
-            typename Metavariables, size_t Dim>
-  static void apply(db::DataBox<DbTagsList>& box,
-                    Parallel::GlobalCache<Metavariables>& cache,
-                    const int& /*array_index*/,
-                    const gsl::not_null<Parallel::NodeLock*> node_lock,
-                    const ElementId<Dim>& element_to_terminate) {
-    auto& element = [&node_lock, &box, &element_to_terminate ]() -> auto& {
-      std::lock_guard node_guard(*node_lock);
-      return db::mutate<Tags::ElementCollectionBase>(
-          make_not_null(&box),
-          [&element_to_terminate](const auto element_collection_ptr) -> auto& {
-            try {
-              return element_collection_ptr->at(element_to_terminate);
-            } catch (const std::out_of_range&) {
-              ERROR("Could not find element with ID " << element_to_terminate
-                                                      << " on node");
-            }
-          });
-    }
-    ();
-    element.set_terminate(true);
-
-    std::lock_guard node_guard(*node_lock);
-    const size_t number_of_elements = db::mutate<Tags::ElementCollectionBase>(
-        make_not_null(&box),
-        [&element_to_terminate](const auto element_collection_ptr) {
-          try {
-            return element_collection_ptr->size();
-          } catch (const std::out_of_range&) {
-            ERROR("Could not find element with ID " << element_to_terminate
-                                                    << " on node");
-          }
-        });
-    if (db::get<Tags::NumberOfElementsTerminated>(box) == number_of_elements) {
-      auto* local_branch = Parallel::local_branch(
-          Parallel::get_parallel_component<ParallelComponent>(cache));
-      ASSERT(local_branch != nullptr,
-             "The local branch is nullptr, which is inconsistent");
-      local_branch->set_terminate(true);
-    }
-  }
-
   using return_type = void;
 
   template <typename ParallelComponent, typename DbTagList,
@@ -657,29 +612,35 @@ struct SetTerminateOnElement {
       const gsl::not_null<Parallel::NodeLock*> node_lock,
       const gsl::not_null<Parallel::GlobalCache<Metavariables>*> cache,
       const ElementId<Dim>& my_element_id) {
-    std::lock_guard node_guard(*node_lock);
-    db::mutate<Tags::ElementCollectionBase, Tags::NumberOfElementsTerminated>(
-        make_not_null(&box),
-        [&cache, &my_element_id](const auto element_collection_ptr,
-                                 const auto num_terminated_ptr) {
-          try {
-            // We've already locked the element since this is a local
-            // synchronous method.
-            element_collection_ptr->at(my_element_id)
-                .set_terminate(true);
-            ++(*num_terminated_ptr);
-            if (*num_terminated_ptr == element_collection_ptr->size()) {
-              auto* local_branch = Parallel::local_branch(
-                  Parallel::get_parallel_component<ParallelComponent>(*cache));
-              ASSERT(local_branch != nullptr,
-                     "The local branch is nullptr, which is inconsistent");
-              local_branch->set_terminate(true);
+    auto& element = [&box, &cache, &my_element_id, &node_lock ]() -> auto& {
+      std::lock_guard node_guard(*node_lock);
+      return db::mutate<Tags::ElementCollectionBase,
+                        Tags::NumberOfElementsTerminated>(
+          make_not_null(&box),
+          [&cache, &my_element_id ](const auto element_collection_ptr,
+                                    const auto num_terminated_ptr) -> auto& {
+            try {
+              ++(*num_terminated_ptr);
+              if (*num_terminated_ptr == element_collection_ptr->size()) {
+                auto* local_branch = Parallel::local_branch(
+                    Parallel::get_parallel_component<ParallelComponent>(
+                        *cache));
+                ASSERT(local_branch != nullptr,
+                       "The local branch is nullptr, which is inconsistent");
+                local_branch->set_terminate(true);
+              }
+              return element_collection_ptr->at(my_element_id);
+            } catch (const std::out_of_range&) {
+              ERROR("Could not find element with ID " << my_element_id
+                                                      << " on node");
             }
-          } catch (const std::out_of_range&) {
-            ERROR("Could not find element with ID " << my_element_id
-                                                    << " on node");
-          }
-        });
+          });
+    }
+    ();
+    // Note: since this is a local synchronous action running on the element
+    // that called it, we already have the element locked and so setting
+    // terminate is threadsafe.
+    element.set_terminate(true);
   }
 };
 
@@ -845,11 +806,16 @@ struct SendDataToElement {
     auto& my_proxy =
         Parallel::get_parallel_component<ParallelComponent>(*cache);
     if (node_of_element == my_node) {
-      std::lock_guard inbox_lock(element->inbox_lock());
-      ReceiveTag::insert_into_inbox(
-          make_not_null(&tuples::get<ReceiveTag>(element->inboxes())), instance,
-          std::forward<ReceiveData>(receive_data));
-      // TODO: deal with sending data to lock element
+      {
+        // Scope so that we minimize how long we lock the inbox.
+        std::lock_guard inbox_lock(element->inbox_lock());
+        ReceiveTag::insert_into_inbox(
+            make_not_null(&tuples::get<ReceiveTag>(element->inboxes())),
+            instance, std::forward<ReceiveData>(receive_data));
+      }
+      // TODO: We should elide this send by queueing on the local core.
+      // Charm++ does memory allocations on send, so best to minimize going
+      // through Charm++.
       Parallel::threaded_action<Parallel::Actions::ReceiveDataForElement>(
           my_proxy[node_of_element], element_to_execute_on);
     } else {
