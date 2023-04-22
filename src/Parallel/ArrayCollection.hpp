@@ -650,16 +650,37 @@ struct SetTerminateOnElement {
 
   using return_type = void;
 
-  template <typename ParallelComponent, typename DbTagList, size_t Dim,
-            typename ReceiveTag, typename ReceiveData, typename Metavariables>
+  template <typename ParallelComponent, typename DbTagList,
+            typename Metavariables, size_t Dim>
   static return_type apply(
       db::DataBox<DbTagList>& box,
       const gsl::not_null<Parallel::NodeLock*> node_lock,
       const gsl::not_null<Parallel::GlobalCache<Metavariables>*> cache,
       const ElementId<Dim>& my_element_id) {
-  std::lock_guard node_guard(*node_lock);
-
-}
+    std::lock_guard node_guard(*node_lock);
+    db::mutate<Tags::ElementCollectionBase, Tags::NumberOfElementsTerminated>(
+        make_not_null(&box),
+        [&cache, &my_element_id](const auto element_collection_ptr,
+                                 const auto num_terminated_ptr) {
+          try {
+            // We've already locked the element since this is a local
+            // synchronous method.
+            element_collection_ptr->at(my_element_id)
+                .set_terminate(true);
+            ++(*num_terminated_ptr);
+            if (*num_terminated_ptr == element_collection_ptr->size()) {
+              auto* local_branch = Parallel::local_branch(
+                  Parallel::get_parallel_component<ParallelComponent>(*cache));
+              ASSERT(local_branch != nullptr,
+                     "The local branch is nullptr, which is inconsistent");
+              local_branch->set_terminate(true);
+            }
+          } catch (const std::out_of_range&) {
+            ERROR("Could not find element with ID " << my_element_id
+                                                    << " on node");
+          }
+        });
+  }
 };
 
 /// \brief Receive data for a specific element.
@@ -707,8 +728,7 @@ struct ReceiveDataForElement {
 
   /// \brief Entry method call when receiving from same node.
   template <typename ParallelComponent, typename DbTagsList,
-            typename Metavariables, typename ArrayIndex, typename ReceiveData,
-            typename ReceiveTag, size_t Dim>
+            typename Metavariables, typename ArrayIndex, size_t Dim>
   static void apply(db::DataBox<DbTagsList>& box,
                     Parallel::GlobalCache<Metavariables>& cache,
                     const ArrayIndex& /*array_index*/,
@@ -718,8 +738,8 @@ struct ReceiveDataForElement {
     size_t* core_number_of_elements_executed = nullptr;
     const size_t my_proc = Parallel::my_proc<size_t>(cache);
     const auto get_element = [
-      &node_lock, &box, &element_to_execute_on, &core_queue, &
-      core_number_of_elements_executed, my_proc
+      &node_lock, &box, &core_queue, &core_number_of_elements_executed,
+      my_proc
     ](const ElementId<Dim>& element_id) -> auto& {
       std::lock_guard node_guard(*node_lock);
       return db::mutate<Tags::ElementCollectionBase,
@@ -733,7 +753,8 @@ struct ReceiveDataForElement {
             const auto elements_to_evaluate_ptr,
             const auto num_evaluations_ptr) -> auto& {
             core_queue = std::addressof((*elements_to_evaluate_ptr)[my_proc]);
-            core_number_of_elements_executed = (*num_evaluations_ptr)[my_proc];
+            core_number_of_elements_executed =
+                std::addressof((*num_evaluations_ptr)[my_proc]);
             try {
               return element_collection_ptr->at(element_id);
             } catch (const std::out_of_range&) {
@@ -743,30 +764,34 @@ struct ReceiveDataForElement {
           });
     };
 
-    *core_number_of_elements_executed = 0;
-    {
-      auto& element = get_element(element_to_execute_on);
-      std::unique_lock element_lock(element.element_lock());
-      if (element_lock.try_lock()) {
-        element.perform_algorithm();
-        ++(*core_number_of_elements_executed);
-      } else {
-        core_queue->push_back(std::pair{element_to_execute_on, 0});
-      }
-    }
-    while (*core_number_of_elements_executed < max_num_evaluations) {
-      for (size_t i = 0; i < core_queue->size(); ++i) {
-        const auto& id = (*core_queue)[i].first;
-        auto& element = get_element(id);
-        std::unique_lock element_lock(element.element_lock());
-        if (element_lock.try_lock()) {
-          element.perform_algorithm();
-          ++(*core_number_of_elements_executed);
-        } else {
-          ++((*core_queue)[i].second);
-        }
-      }
-    }
+    auto& element  = get_element(element_to_execute_on);
+    std::lock_guard element_lock(element.element_lock());
+    element.perform_algorithm();
+
+    // *core_number_of_elements_executed = 0;
+    // {
+    //   auto& element = get_element(element_to_execute_on);
+    //   std::unique_lock element_lock(element.element_lock());
+    //   if (element_lock.try_lock()) {
+    //     element.perform_algorithm();
+    //     ++(*core_number_of_elements_executed);
+    //   } else {
+    //     core_queue->push_back(std::pair{element_to_execute_on, 0});
+    //   }
+    // }
+    // while (*core_number_of_elements_executed < max_num_evaluations) {
+    //   for (size_t i = 0; i < core_queue->size(); ++i) {
+    //     const auto& id = (*core_queue)[i].first;
+    //     auto& element = get_element(id);
+    //     std::unique_lock element_lock(element.element_lock());
+    //     if (element_lock.try_lock()) {
+    //       element.perform_algorithm();
+    //       ++(*core_number_of_elements_executed);
+    //     } else {
+    //       ++((*core_queue)[i].second);
+    //     }
+    //   }
+    // }
   }
 };
 
@@ -783,22 +808,24 @@ struct SendDataToElement {
       const gsl::not_null<Parallel::GlobalCache<Metavariables>*> cache,
       const ReceiveTag& /*meta*/, const ElementId<Dim>& element_to_execute_on,
       typename ReceiveTag::temporal_id instance, ReceiveData&& receive_data) {
-    using ElementType = typename decltype(*db::get<Tags::ElementCollectionBase>(
-        box))::value_type;
+    using ElementType =
+        typename std::decay_t<decltype(db::get<Tags::ElementCollectionBase>(
+            box))>::mapped_type;
     ElementType* element = nullptr;
     const size_t my_node = Parallel::my_node<size_t>(*cache);
     const size_t my_proc = Parallel::my_proc<size_t>(*cache);
     const size_t node_of_element = [&node_lock, &box, &element_to_execute_on,
-                                    &element, my_proc]() {
+                                    &element, my_proc, my_node]() {
       std::lock_guard node_guard(*node_lock);
       return db::mutate<Tags::ElementCollectionBase,
                         Tags::ElementsToEvaluate<Dim>>(
           make_not_null(&box),
-          [&element_to_execute_on, &element, my_proc](
+          [&element_to_execute_on, &element, my_proc, my_node](
               const auto element_collection_ptr,
               const auto elements_to_evaluate_ptr,
               const auto& element_locations) {
-            size_t node_of_element = element_locations.at(node_of_element);
+            size_t node_of_element =
+                element_locations.at(element_to_execute_on);
             if (node_of_element == my_node) {
               try {
                 element = &(element_collection_ptr->at(element_to_execute_on));
@@ -813,7 +840,7 @@ struct SendDataToElement {
               return node_of_element;
             }
           },
-          db::get<Parallel::Tags::ElementLocationsPointer<Dim>>(box));
+          db::get<Parallel::Tags::ElementLocations<Dim>>(box));
     }();
     auto& my_proxy =
         Parallel::get_parallel_component<ParallelComponent>(*cache);
@@ -822,6 +849,9 @@ struct SendDataToElement {
       ReceiveTag::insert_into_inbox(
           make_not_null(&tuples::get<ReceiveTag>(element->inboxes())), instance,
           std::forward<ReceiveData>(receive_data));
+      // TODO: deal with sending data to lock element
+      Parallel::threaded_action<Parallel::Actions::ReceiveDataForElement>(
+          my_proxy[node_of_element], element_to_execute_on);
     } else {
       Parallel::threaded_action<Parallel::Actions::ReceiveDataForElement>(
           my_proxy[node_of_element], ReceiveTag{}, element_to_execute_on,
