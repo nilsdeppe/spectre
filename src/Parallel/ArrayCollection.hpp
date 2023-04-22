@@ -18,6 +18,7 @@
 #include "Domain/Creators/Tags/Domain.hpp"
 #include "Domain/Creators/Tags/InitialExtents.hpp"
 #include "Domain/Creators/Tags/InitialRefinementLevels.hpp"
+#include "Domain/DiagnosticInfo.hpp"
 #include "Domain/ElementDistribution.hpp"
 #include "Domain/Structure/ElementId.hpp"
 #include "Domain/Structure/InitialElementIds.hpp"
@@ -1093,11 +1094,12 @@ struct InitializeElementCollection {  // TODO: CreateElementCollection
             local_cache)[my_node],
         Parallel::get_parallel_component<ParallelComponent>(local_cache));
 
-    // Parallel::printf(
-    //     "\n%s\n", domain::diagnostic_info(
-    //                   domain, local_cache, elements_per_core,
-    //                   elements_per_node, grid_points_per_core,
-    //                   grid_points_per_node));
+    if (my_node == 0) {
+      Parallel::printf("\n%s\n", domain::diagnostic_info(
+                                     domain, local_cache, elements_per_core,
+                                     elements_per_node, grid_points_per_core,
+                                     grid_points_per_node));
+    }
 
     return {Parallel::AlgorithmExecution::Continue, std::nullopt};
   }
