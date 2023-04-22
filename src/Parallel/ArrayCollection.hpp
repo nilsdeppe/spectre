@@ -1167,42 +1167,4 @@ struct DgElementCollection {
         .start_phase(next_phase);
   }
 };
-
-// template <size_t Dim>
-// class ElementCollection {
-//  public:
-//   ElementCollection();
-
-//   /// \brief Threaded action that receives neighbor data and calls the next
-//   /// iterable action on the specified element.
-//   template <typename ReceiveTag, typename ReceiveDataType>
-//   void receive_data(CollectionMessage<ReceiveTag, ReceiveDataType, Dim> data)
-//   {
-//     // (void)Parallel::charmxx::RegisterReceiveData<ParallelComponent,
-//     // ReceiveTag,
-//     //                                              false>::registrar;
-//     const ElementId<Dim> element_id = data.element_id;  // TODO: I don't know
-//                                                         // if I need this.
-//     try {
-//       array_elements_.at(element_id).receive_data(std::move(data));
-//     } catch (...) {
-//       // TODO: catch for real.
-//     }
-//   }
-
-//  private:
-//   Parallel::CProxy_GlobalCache<metavariables> global_cache_proxy_{};
-
-//   std::unordered_map<ElementId<Dim>, DgElementArrayMember<Dim>>
-//       array_elements_{};
-// };
-
-// template <typename ArrayId, typename ArrayElement>
-// class ArrayCollection {
-//  public:
-
-//  private:
-//   std::unordered_map<ArrayId, ArrayElement> array_elements_{};
-// };
-
 }  // namespace Parallel
