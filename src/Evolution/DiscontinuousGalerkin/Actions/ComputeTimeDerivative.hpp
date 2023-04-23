@@ -57,7 +57,6 @@
 
 /// \cond
 namespace Parallel::Actions {
-struct ReceiveDataForElement;
 struct SendDataToElement;
 }
 namespace Parallel::Tags {
