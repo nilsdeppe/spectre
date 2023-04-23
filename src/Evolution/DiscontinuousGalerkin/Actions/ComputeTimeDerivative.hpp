@@ -64,7 +64,6 @@ struct TimeStepId;
 }  // namespace Tags
 
 namespace Parallel::Actions {
-struct ReceiveDataForElement;
 struct SendDataToElement;
 }  // namespace Parallel::Actions
 namespace Parallel::Tags {
