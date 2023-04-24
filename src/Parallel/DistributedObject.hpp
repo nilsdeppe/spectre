@@ -16,6 +16,7 @@
 #include <sstream>
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -64,6 +65,8 @@
 /// \cond
 template <size_t Dim>
 class ElementId;
+
+struct PassComponentThisPointer;
 
 template <size_t Dim>
 bool is_zeroth_element(const ElementId<Dim>&, const std::optional<size_t>&);
@@ -405,6 +408,10 @@ class DistributedObject<ParallelComponent,
   const std::string& deadlock_analysis_next_iterable_action() const {
     return deadlock_analysis_next_iterable_action_;
   }
+
+
+  void* evil_ptr0 = nullptr;
+  void* evil_ptr1 = nullptr;
 
  private:
   void set_array_index();
@@ -1062,10 +1069,18 @@ void DistributedObject<ParallelComponent,
     forward_tuple_to_threaded_action(std::tuple<Args...>&& args,
                                      std::index_sequence<Is...> /*meta*/) {
   const gsl::not_null<Parallel::NodeLock*> node_lock{&node_lock_};
-  Action::template apply<ParallelComponent>(
-      box_, *Parallel::local_branch(global_cache_proxy_),
-      static_cast<const array_index&>(array_index_), node_lock,
-      std::forward<Args>(std::get<Is>(args))...);
+  if constexpr (std::is_base_of_v<PassComponentThisPointer,
+                                  parallel_component>) {
+    Action::template apply<ParallelComponent>(
+        box_, *Parallel::local_branch(global_cache_proxy_),
+        static_cast<const array_index&>(array_index_), node_lock, this,
+        std::forward<Args>(std::get<Is>(args))...);
+  } else {
+    Action::template apply<ParallelComponent>(
+        box_, *Parallel::local_branch(global_cache_proxy_),
+        static_cast<const array_index&>(array_index_), node_lock,
+        std::forward<Args>(std::get<Is>(args))...);
+  }
 }
 
 template <typename ParallelComponent, typename... PhaseDepActionListsPack>
