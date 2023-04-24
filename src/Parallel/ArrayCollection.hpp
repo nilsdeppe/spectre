@@ -61,6 +61,8 @@ CREATE_HAS_STATIC_MEMBER_VARIABLE(local_time_stepping)
 CREATE_HAS_STATIC_MEMBER_VARIABLE_V(local_time_stepping)
 }  // namespace detail
 
+struct PassComponentThisPointer {};
+
 template <size_t Dim, class Metavariables, class PhaseDepActionList>
 struct DgElementCollection;
 
@@ -109,6 +111,7 @@ struct NumberOfElementsTerminated : db::SimpleTag {
 
 struct InboxesLockPtr : db::SimpleTag {
   using type = Parallel::NodeLock*;
+  // using type = std::mutex*;
 };
 
 /// \brief The elements that have messages locally queued on the core.
@@ -277,6 +280,9 @@ class DgElementArrayMember<Dim, Metavariables,
 
   template <typename PhaseDepActions, size_t... Is>
   bool iterate_over_actions(std::index_sequence<Is...> /*meta*/);
+
+  // std::mutex inbox_lock_{};
+  // std::mutex element_lock_{};
 
   Parallel::NodeLock inbox_lock_{};
   Parallel::NodeLock element_lock_{};
@@ -502,11 +508,10 @@ bool DgElementArrayMember<Dim, Metavariables,
   // We could probably fix this by being _extremely_ careful.
   //
   // TODO: do this for simple & threaded actions too?
-  db::mutate<Tags::InboxesLockPtr>(
-      make_not_null(&box_),
-      [this](const gsl::not_null<Parallel::NodeLock**> inbox_lock_ptr) {
-        *inbox_lock_ptr = &(this->inbox_lock_);
-      });
+  db::mutate<Tags::InboxesLockPtr>(make_not_null(&box_),
+                                   [this](const auto inbox_lock_ptr) {
+                                     *inbox_lock_ptr = &(this->inbox_lock_);
+                                   });
 
   const auto& [requested_execution, next_action_step] = ThisAction::apply(
       box_, inboxes_, *Parallel::local_branch(global_cache_proxy_),
@@ -646,30 +651,31 @@ struct ReceiveDataForElement {
   /// \brief Entry method called when receiving data from another node.
   template <typename ParallelComponent, typename DbTagsList,
             typename Metavariables, typename ArrayIndex, typename ReceiveData,
-            typename ReceiveTag, size_t Dim>
+            typename ReceiveTag, size_t Dim, typename DistObject>
   static void apply(db::DataBox<DbTagsList>& box,
                     Parallel::GlobalCache<Metavariables>& cache,
                     const ArrayIndex& /*array_index*/,
-                    const gsl::not_null<Parallel::NodeLock*> node_lock,
-                    const ReceiveTag& /*meta*/,
+                    const gsl::not_null<Parallel::NodeLock*> /*node_lock*/,
+                    DistObject* dist_object, const ReceiveTag& /*meta*/,
                     const ElementId<Dim>& element_to_execute_on,
                     typename ReceiveTag::temporal_id instance,
                     ReceiveData receive_data) {
+    ERROR(
+        "The multi-node code hasn't been tested. It should work, but be aware "
+        "that I haven't tried yet.");
     std::vector<ElementId<Dim>>* core_queue = nullptr;
     const size_t my_proc = Parallel::my_proc<size_t>(cache);
     using ElementCollection =
         std::decay_t<decltype(db::get<Tags::ElementCollectionBase>(box))>;
     ElementCollection* element_collection = nullptr;
-    {
-      std::lock_guard node_guard(*node_lock);
-      db::mutate<Tags::ElementCollectionBase, Tags::ElementsToEvaluate<Dim>>(
-          make_not_null(&box), [&core_queue, my_proc, &element_collection](
-                                   const auto element_collection_ptr,
-                                   const auto elements_to_evaluate_ptr) {
-            core_queue = std::addressof((*elements_to_evaluate_ptr)[my_proc]);
-            element_collection = element_collection_ptr.get();
-          });
-    }
+    ASSERT(
+        dist_object->evil_ptr0 != nullptr and dist_object->evil_ptr1 != nullptr,
+        "The evil pointers were not set!");
+    element_collection =
+        static_cast<ElementCollection*>(dist_object->evil_ptr0);
+    core_queue =
+        std::addressof((*static_cast<std::vector<std::vector<ElementId<Dim>>>*>(
+            dist_object->evil_ptr1))[my_proc]);
     {
       auto& element = element_collection->at(element_to_execute_on);
       std::lock_guard inbox_lock(element.inbox_lock());
@@ -685,27 +691,27 @@ struct ReceiveDataForElement {
 
   /// \brief Entry method call when receiving from same node.
   template <typename ParallelComponent, typename DbTagsList,
-            typename Metavariables, typename ArrayIndex, size_t Dim>
+            typename Metavariables, typename ArrayIndex, size_t Dim,
+            typename DistObject>
   static void apply(db::DataBox<DbTagsList>& box,
                     Parallel::GlobalCache<Metavariables>& cache,
                     const ArrayIndex& /*array_index*/,
-                    const gsl::not_null<Parallel::NodeLock*> node_lock,
+                    const gsl::not_null<Parallel::NodeLock*> /*node_lock*/,
+                    DistObject* dist_object,
                     const ElementId<Dim>& element_to_execute_on) {
     std::vector<ElementId<Dim>>* core_queue = nullptr;
     const size_t my_proc = Parallel::my_proc<size_t>(cache);
     using ElementCollection =
         std::decay_t<decltype(db::get<Tags::ElementCollectionBase>(box))>;
     ElementCollection* element_collection = nullptr;
-    {
-      std::lock_guard node_guard(*node_lock);
-      db::mutate<Tags::ElementCollectionBase, Tags::ElementsToEvaluate<Dim>>(
-          make_not_null(&box), [&core_queue, my_proc, &element_collection](
-                                   const auto element_collection_ptr,
-                                   const auto elements_to_evaluate_ptr) {
-            core_queue = std::addressof((*elements_to_evaluate_ptr)[my_proc]);
-            element_collection = element_collection_ptr.get();
-          });
-    }
+    ASSERT(
+        dist_object->evil_ptr0 != nullptr and dist_object->evil_ptr1 != nullptr,
+        "The evil pointers were not set!");
+    element_collection =
+        static_cast<ElementCollection*>(dist_object->evil_ptr0);
+    core_queue =
+        std::addressof((*static_cast<std::vector<std::vector<ElementId<Dim>>>*>(
+            dist_object->evil_ptr1))[my_proc]);
     apply_impl<ParallelComponent>(cache, element_to_execute_on,
                                   make_not_null(core_queue),
                                   make_not_null(element_collection));
@@ -1019,6 +1025,8 @@ struct InitializeElementCollection {  // TODO: CreateElementCollection
     tuples::tagged_tuple_from_typelist<SimpleTagsFromOptions>
         initialization_items = db::copy_items<SimpleTagsFromOptions>(box);
 
+    auto* dist_object = Parallel::local_branch(
+        Parallel::get_parallel_component<ParallelComponent>(local_cache));
     const gsl::not_null<Parallel::NodeLock*> node_lock = make_not_null(
         &Parallel::local_branch(
              Parallel::get_parallel_component<ParallelComponent>(local_cache))
@@ -1029,25 +1037,26 @@ struct InitializeElementCollection {  // TODO: CreateElementCollection
                Tags::NumberOfElementsTerminated>(
         make_not_null(&box),
         [&local_cache, &initialization_items, &my_elements, &node_of_elements,
-         &node_lock](
+         &node_lock, dist_object](
             const auto element_locations_ptr, const auto collection_ptr,
             const gsl::not_null<size_t*> number_of_elements_terminated) {
+          dist_object->evil_ptr0 =
+              static_cast<void*>(collection_ptr.get());
           const auto serialized_initialization_items =
               serialize(initialization_items);
           *element_locations_ptr = std::move(node_of_elements);
           for (const auto& element_id : my_elements) {
             if (not collection_ptr
-                        ->insert(std::pair{
-                            element_id,
-                            DgElementArrayMember<Dim, Metavariables,
-                                                 PhaseDepActionList,
-                                                 SimpleTagsFromOptions>{
+                        ->emplace(
+                            std::piecewise_construct,
+                            std::forward_as_tuple(element_id),
+                            std::forward_as_tuple(
                                 local_cache.get_this_proxy(),
                                 deserialize<tuples::tagged_tuple_from_typelist<
                                     SimpleTagsFromOptions>>(
                                     serialized_initialization_items.data()),
                                 element_id, element_locations_ptr,
-                                number_of_elements_terminated, node_lock}})
+                                number_of_elements_terminated, node_lock))
                         .second) {
               ERROR("Failed to insert element with ID: " << element_id);
             }
@@ -1061,12 +1070,14 @@ struct InitializeElementCollection {  // TODO: CreateElementCollection
     const size_t number_of_cores_on_node =
         Parallel::procs_on_node<size_t>(my_node, local_cache);
     db::mutate<Tags::ElementsToEvaluate<Dim>>(
-        make_not_null(&box),
-        [number_of_cores_on_node](const auto elements_to_evaluate_ptr) {
+        make_not_null(&box), [number_of_cores_on_node, dist_object](
+                                 const auto elements_to_evaluate_ptr) {
           elements_to_evaluate_ptr->resize(number_of_cores_on_node);
           for (auto& elements_to_evaluate_on_core : *elements_to_evaluate_ptr) {
             elements_to_evaluate_on_core.reserve(max_num_evaluations);
           }
+          dist_object->evil_ptr1 =
+              static_cast<void*>(std::addressof((*elements_to_evaluate_ptr)));
         });
 
     Parallel::contribute_to_reduction<SpawnInitializeElementsInCollection>(
@@ -1102,7 +1113,7 @@ template <class...>
 struct td;
 
 template <size_t Dim, class Metavariables, class PhaseDepActionList>
-struct DgElementCollection {
+struct DgElementCollection : PassComponentThisPointer {
   using chare_type = Parallel::Algorithms::Nodegroup;
   using metavariables = Metavariables;
   using simple_tags_from_options = Parallel::get_simple_tags_from_options<
