@@ -29,7 +29,7 @@ Evolution:
   InitialSlabSize: 0.01
   TimeStepper:
     AdamsBashforth:
-      Order: 3
+      Order: 5
   StepChoosers:
     - Constant: 0.05
     - Increase:
@@ -41,8 +41,8 @@ DomainCreator:
   Brick:
     LowerBound: [0.0, 0.0, 0.0]
     UpperBound: [6.283185307179586, 6.283185307179586, 6.283185307179586]
-    InitialRefinement: [1, 1, 1]
-    InitialGridPoints: [5, 5, 5]
+    InitialRefinement: [2, 2, 2]
+    InitialGridPoints: [6, 6, 6]
     TimeDependence: None
     BoundaryConditionInX: Periodic
     BoundaryConditionInY: Periodic
@@ -64,23 +64,61 @@ SpatialDiscretization:
 #     BlocksToFilter: All
 
 EventsAndTriggers:
+  # - - Times:
+  #       Specified:
+  #         Values: [&final_time -0.05]
+  #   - - Completion
+  # - - Always
+  #   - - ChangeSlabSize:
+  #         DelayChange: 0
+  #         StepChoosers:
+  #           - Increase:
+  #               Factor: 1.1
+  #           - StepToTimes:
+  #               Times:
+  #                 Specified:
+  #                   Values: [*final_time]
   - Trigger:
-      Times:
+      Slabs:
         Specified:
-          Values: [&final_time -0.05]
+          Values: [1000]
     Events:
       - Completion
-  - Trigger: Always
+  - Trigger:
+      Slabs:
+        EvenlySpaced:
+          Interval: 10000
+          Offset: 0
     Events:
-      - ChangeSlabSize:
-          DelayChange: 0
-          StepChoosers:
-            - Increase:
-                Factor: 1.1
-            - StepToTimes:
-                Times:
-                  Specified:
-                    Values: [*final_time]
+      - ObserveNorms:
+          SubfileName: Errors
+          TensorsToObserve:
+            - Name: Error(Psi)
+              NormType: L2Norm
+              Components: Sum
+            - Name: Error(Phi)
+              NormType: L2Norm
+              Components: Sum
+            - Name: Error(Pi)
+              NormType: L2Norm
+              Components: Sum
+      - ObserveFields:
+          SubfileName: VolumePsiPiPhiEvery50Slabs
+          VariablesToObserve: ["Psi", "Pi", "Phi"]
+          InterpolateToMesh: None
+          CoordinatesFloatingPointType: Double
+          FloatingPointTypes: [Double, Float, Float]
+          OverrideObservationValue: None
+  - Trigger:
+      Slabs:
+        EvenlySpaced:
+          Interval: 100
+          Offset: 0
+    Events:
+      - ObserveTimeStep:
+          SubfileName: time_steps
+          PrintTimeToTerminal: true
+          ObservePerCore: false
 
 EventsAndDenseTriggers:
 
