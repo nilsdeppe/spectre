@@ -25,29 +25,29 @@ PhaseChangeAndTriggers:
 Evolution:
   InitialTime: 0.0
   InitialTimeStep: 0.001
-  # InitialSlabSize: 0.1
+  InitialSlabSize: 0.1
   TimeStepper:
     # DormandPrince5:
     AdamsBashforth:
       Order: 3
-  # StepChoosers:
-  #   - PreventRapidIncrease
-  #   - Increase:
-  #       Factor: 2
-  #   - ErrorControl:
-  #       AbsoluteTolerance: 1.0e-5
-  #       RelativeTolerance: 1.0e-5
-  #       MaxFactor: 10000.0
-  #       MinFactor: 0.0
-  #       SafetyFactor: 0.9
+  StepChoosers:
+    - PreventRapidIncrease
+    - Increase:
+        Factor: 2
+    - ErrorControl:
+        AbsoluteTolerance: 1.0e-5
+        RelativeTolerance: 1.0e-5
+        MaxFactor: 10000.0
+        MinFactor: 0.0
+        SafetyFactor: 0.9
 
 DomainCreator:
   RotatedIntervals:
     LowerBound: [0.0]
     Midpoint: [3.14159]
     UpperBound: [6.283185307179586]
-    InitialRefinement: [1]
-    InitialGridPoints: [[7, 3]]
+    InitialRefinement: [4]
+    InitialGridPoints: [[7, 7]]
     TimeDependence: None
     BoundaryConditions:
       LowerBoundary:
@@ -76,11 +76,51 @@ EventsAndTriggers:
   - Trigger:
       Slabs:
         Specified:
-          Values: [5]
+          Values: [200]
     Events:
       - Completion
+  - Trigger:
+      Slabs:
+        EvenlySpaced:
+          Interval: 50
+          Offset: 0
+    Events:
+      - ObserveNorms:
+          SubfileName: Errors
+          TensorsToObserve:
+            - Name: Error(Psi)
+              NormType: L2Norm
+              Components: Sum
+            - Name: Error(Phi)
+              NormType: L2Norm
+              Components: Sum
+            - Name: Error(Pi)
+              NormType: L2Norm
+              Components: Sum
+      - ObserveFields:
+          SubfileName: VolumePsiPiPhiEvery50Slabs
+          VariablesToObserve: ["Psi", "Pi", "Phi"]
+          InterpolateToMesh: None
+          CoordinatesFloatingPointType: Double
+          FloatingPointTypes: [Double, Float, Float]
+          OverrideObservationValue: None
 
 EventsAndDenseTriggers:
+  # - - Times:
+  #       Specified:
+  #         Values: [0.0, 1.0]
+  #   - - ObserveNorms:
+  #         SubfileName: Errors
+  #         TensorsToObserve:
+  #           - Name: Error(Psi)
+  #             NormType: L2Norm
+  #             Components: Sum
+  #           - Name: Error(Phi)
+  #             NormType: L2Norm
+  #             Components: Sum
+  #           - Name: Error(Pi)
+  #             NormType: L2Norm
+  #             Components: Sum
 
 Observers:
   VolumeFileName: "ScalarWavePlaneWave1DVolume"
