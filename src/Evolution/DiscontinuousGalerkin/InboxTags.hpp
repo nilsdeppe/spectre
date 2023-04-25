@@ -112,7 +112,7 @@ struct BoundaryCorrectionAndGhostCellsInbox {
                    boost::hash<std::pair<Direction<Dim>, ElementId<Dim>>>>>;
 
   template <typename Inbox, typename ReceiveDataType>
-  static void insert_into_inbox(const gsl::not_null<Inbox*> inbox,
+  static size_t insert_into_inbox(const gsl::not_null<Inbox*> inbox,
                                 const temporal_id& time_step_id,
                                 ReceiveDataType&& data) {
     auto& current_inbox = (*inbox)[time_step_id];
@@ -178,6 +178,7 @@ struct BoundaryCorrectionAndGhostCellsInbox {
               << "' with tag 'BoundaryCorrectionAndGhostCellsInbox'.\n");
       }
     }
+    return current_inbox.size();
   }
 
   static std::string output_inbox(const type& inbox,
