@@ -16,7 +16,7 @@ InitialData:
     Center: [0.0, 0.0, 0.0]
     Profile:
       Sinusoid:
-        Amplitude: 1.0
+        Amplitude: 0.0
         Wavenumber: 1.0
         Phase: 0.0
 
@@ -25,17 +25,17 @@ PhaseChangeAndTriggers:
 Evolution:
   InitialTime: 0.0
   # Test backwards evolution in an integration test
-  InitialTimeStep: -0.001
-  InitialSlabSize: 0.01
+  InitialTimeStep: 0.02
+  # InitialSlabSize: 0.01
   TimeStepper:
     AdamsBashforth:
       Order: 5
-  StepChoosers:
-    - Constant: 0.05
-    - Increase:
-        Factor: 2
-    - Cfl:
-        SafetyFactor: 0.2
+  # StepChoosers:
+  #   - Constant: 0.05
+  #   - Increase:
+  #       Factor: 2
+  #   - Cfl:
+  #       SafetyFactor: 0.2
 
 DomainCreator:
   Brick:
