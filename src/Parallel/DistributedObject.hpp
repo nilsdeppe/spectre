@@ -425,6 +425,7 @@ class DistributedObject<ParallelComponent,
 
   void* evil_ptr0 = nullptr;
   void* evil_ptr1 = nullptr;
+  void* evil_ptr2 = nullptr;
 
  private:
   void set_array_index();

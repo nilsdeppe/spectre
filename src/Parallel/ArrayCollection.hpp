@@ -80,7 +80,7 @@ template <size_t Dim, typename Metavariables, typename PhaseDepActionList,
 class DgElementArrayMember;
 
 /// TODO: make into input file option
-constexpr size_t max_num_evaluations = 50;
+constexpr size_t max_num_evaluations = 1;
 
 namespace Tags {
 struct ElementCollectionBase : db::BaseTag {};
@@ -787,60 +787,62 @@ struct SendDataToElement {
             typename ReceiveTag, typename ReceiveData, typename Metavariables>
   static return_type apply(
       db::DataBox<DbTagList>& box,
-      const gsl::not_null<Parallel::NodeLock*> node_lock,
+      const gsl::not_null<Parallel::NodeLock*> /*node_lock*/,
       const gsl::not_null<Parallel::GlobalCache<Metavariables>*> cache,
       const ReceiveTag& /*meta*/, const ElementId<Dim>& element_to_execute_on,
       typename ReceiveTag::temporal_id instance, ReceiveData&& receive_data) {
     using ElementType =
         typename std::decay_t<decltype(db::get<Tags::ElementCollectionBase>(
             box))>::mapped_type;
-    ElementType* element = nullptr;
+    using ElementCollection =
+        std::decay_t<decltype(db::get<Tags::ElementCollectionBase>(box))>;
+
     const size_t my_node = Parallel::my_node<size_t>(*cache);
     const size_t my_proc = Parallel::my_proc<size_t>(*cache);
-    const auto [node_of_element, send] = [&node_lock, &box,
-                                          &element_to_execute_on, &element,
-                                          my_proc, my_node]() {
-      std::lock_guard node_guard(*node_lock);
-      return db::mutate<Tags::ElementCollectionBase,
-                        Tags::ElementsToEvaluate<Dim>>(
-          make_not_null(&box),
-          [&element_to_execute_on, &element, my_proc, my_node](
-              const auto element_collection_ptr,
-              const auto elements_to_evaluate_ptr,
-              const auto& element_locations) {
-            size_t local_node_of_element =
-                element_locations.at(element_to_execute_on);
-            bool send_data = true;
-            if (local_node_of_element == my_node) {
-              try {
-                element = &(element_collection_ptr->at(element_to_execute_on));
-              } catch (const std::out_of_range&) {
-                ERROR("Could not find element with ID " << element_to_execute_on
-                                                        << " on node");
-              }
-              // Buffer just in case elsewhere needs to increase
-              if ((*elements_to_evaluate_ptr)[my_proc].size() + 5 <
-                  max_num_evaluations) {
-                (*elements_to_evaluate_ptr)[my_proc].push_back(
-                    element_to_execute_on);
-                send_data = false;
-              }
-            }
-            return std::pair{local_node_of_element, send_data};
-          },
-          db::get<Parallel::Tags::ElementLocations<Dim>>(box));
-    }();
+    auto* dist_object = Parallel::local_branch(
+        Parallel::get_parallel_component<ParallelComponent>(*cache));
+
+    ElementType* element =
+        std::addressof(static_cast<ElementCollection*>(dist_object->evil_ptr0)
+                           ->at(element_to_execute_on));
+    std::vector<ElementId<Dim>>* core_queue = nullptr;
+    core_queue =
+        std::addressof((*static_cast<std::vector<std::vector<ElementId<Dim>>>*>(
+            dist_object->evil_ptr1))[my_proc]);
+    const size_t node_of_element =
+        static_cast<std::unordered_map<ElementId<Dim>, size_t>*>(
+            dist_object->evil_ptr2)
+            ->at(element_to_execute_on);
     auto& my_proxy =
         Parallel::get_parallel_component<ParallelComponent>(*cache);
     if (node_of_element == my_node) {
+      // bool send = true;
+      size_t count = 0;
       {
         // Scope so that we minimize how long we lock the inbox.
         std::lock_guard inbox_lock(element->inbox_lock());
-        ReceiveTag::insert_into_inbox(
+        count = ReceiveTag::insert_into_inbox(
             make_not_null(&tuples::get<ReceiveTag>(element->inboxes())),
             instance, std::forward<ReceiveData>(receive_data));
+        // std::unique_lock inbox_lock(element->inbox_lock(), std::defer_lock);
+        // if (inbox_lock.try_lock()) {
+        //   ReceiveTag::insert_into_inbox(
+        //       make_not_null(&tuples::get<ReceiveTag>(element->inboxes())),
+        //       instance, std::forward<ReceiveData>(receive_data));
+        // } else {
+        //   Parallel::threaded_action<Parallel::Actions::
+        //ReceiveDataForElement<>>(
+        //       my_proxy[node_of_element], ReceiveTag{}, element_to_execute_on,
+        //       instance, std::forward<ReceiveData>(receive_data));
+        //   return;
+        // }
       }
-      if (send) {
+      // if (send and ((*core_queue).size() + 5 < max_num_evaluations)) {
+      //   (*core_queue).push_back(element_to_execute_on);
+      //   send = false;
+      // }
+      // Parallel::printf("count: %ld\n", count);
+      if (count == 6) {
         Parallel::threaded_action<Parallel::Actions::ReceiveDataForElement<>>(
             my_proxy[node_of_element], element_to_execute_on);
       }
@@ -1045,6 +1047,8 @@ struct InitializeElementCollection {  // TODO: CreateElementCollection
           const auto serialized_initialization_items =
               serialize(initialization_items);
           *element_locations_ptr = std::move(node_of_elements);
+          dist_object->evil_ptr2 =
+              static_cast<void*>(element_locations_ptr.get());
           for (const auto& element_id : my_elements) {
             if (not collection_ptr
                         ->emplace(

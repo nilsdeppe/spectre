@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include <chrono>
+#include <thread>
+
 #include <cstddef>
 #include <limits>
 #include <map>
@@ -111,7 +114,6 @@ bool receive_boundary_data_global_time_stepping(
                               std::optional<DataVector>, ::TimeStepId, int>,
                    boost::hash<Key>>>;
   using NodeType = typename InboxMap::node_type;
-  using InboxMapValueType = typename InboxMap::value_type;
   auto get_temporal_id_and_data_node =
       [&box, &inboxes, &temporal_id](const auto&&...) -> NodeType {
     InboxMap& inbox = tuples::get<
@@ -136,6 +138,8 @@ bool receive_boundary_data_global_time_stepping(
     return inbox.extract(received_temporal_id_and_data);
   };
 
+  using InboxMapValueType =
+      std::pair<typename InboxMap::key_type, typename InboxMap::mapped_type>;
   InboxMapValueType received_temporal_id_and_data{};
   {
     // Scope to make sure the `NodeType node` can't be used later. Don't use
@@ -154,8 +158,9 @@ bool receive_boundary_data_global_time_stepping(
     if (node.empty()) {
       return false;
     }
-    received_temporal_id_and_data =
-        InboxMapValueType{std::move(node.key()), std::move(node.mapped())};
+    received_temporal_id_and_data.first = std::move(node.key());
+    received_temporal_id_and_data.second = std::move(node.mapped());
+        // InboxMapValueType{std::move(node.key()), std::move(node.mapped())};
   }
 
   // Move inbox contents into the DataBox
@@ -249,6 +254,7 @@ bool receive_boundary_data_local_time_stepping(
 
   // TODO: we could limit the scope of the lock further. In particular, we
   // only need to lock _if_ we've received all data.
+  // std::this_thread::sleep_for(std::chrono::microseconds(200));
   auto inbox_lock = [&box]() {
     if constexpr (db::tag_is_retrievable_v<Parallel::Tags::InboxesLockPtr,
                                            db::DataBox<DbTagsList>>) {
