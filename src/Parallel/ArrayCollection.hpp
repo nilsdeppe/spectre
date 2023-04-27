@@ -46,6 +46,25 @@
 #include "Utilities/TaggedTuple.hpp"
 #include "Utilities/TypeTraits/CreateHasStaticMemberVariable.hpp"
 
+namespace OptionTags {
+struct WaitTime {
+  using type = size_t;
+  static constexpr Options::String help = {"The wait time in microseconds"};
+};
+}
+
+namespace Tags {
+struct WaitTime : db::SimpleTag {
+  using type = size_t;
+  using option_tags = tmpl::list<OptionTags::WaitTime>;
+
+  static constexpr bool pass_metavariables = false;
+  static size_t create_from_options(const size_t wait_time) {
+    return wait_time;
+  }
+};
+}  // namespace Tags
+
 namespace Parallel {
 namespace detail {
 // template <typename Metavariable, bool = false>
@@ -1150,7 +1169,7 @@ struct DgElementCollection : PassComponentThisPointer {
                    //       TransformPdalToStartPhaseOnNodegroup<tmpl::_1>>>
                    >;
   using const_global_cache_tags = tmpl::remove_duplicates<tmpl::append<
-      tmpl::list<::domain::Tags::Domain<Dim>>,
+      tmpl::list<::domain::Tags::Domain<Dim>, ::Tags::WaitTime>,
       typename Parallel::detail::get_const_global_cache_tags_from_pdal<
           PhaseDepActionList>::type>>;
   using mutable_global_cache_tags =

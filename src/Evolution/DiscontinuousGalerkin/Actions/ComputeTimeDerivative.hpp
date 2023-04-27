@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include <chrono>
+#include <thread>
+
 #include <optional>
 #include <tuple>
 #include <type_traits>
@@ -62,6 +65,9 @@ struct SendDataToElement;
 namespace Parallel::Tags {
 template <size_t Dim>
 struct ElementLocationsPointer;
+}
+namespace Tags {
+struct WaitTime;
 }
 namespace evolution::dg::subcell {
 // We use a forward declaration instead of including a header file to avoid
@@ -385,6 +391,9 @@ ComputeTimeDerivative<Dim, EvolutionSystem, DgStepChoosers, LocalTimeStepping>::
           Parallel::GlobalCache<Metavariables>& cache,
           const ArrayIndex& /*array_index*/, ActionList /*meta*/,
           const ParallelComponent* const /*meta*/) {  // NOLINT const
+  std::this_thread::sleep_for(
+      std::chrono::microseconds(db::get<::Tags::WaitTime>(box)));
+
   using variables_tag = typename EvolutionSystem::variables_tag;
   using dt_variables_tag = db::add_tag_prefix<::Tags::dt, variables_tag>;
   using partial_derivative_tags = typename EvolutionSystem::gradient_variables;
