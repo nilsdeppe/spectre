@@ -8,6 +8,10 @@
 #include <memory>
 #include <pup.h>
 
+#include <mutex>
+
+#include "Parallel/Spinlock.hpp"
+
 namespace Parallel {
 
 /*!
@@ -48,6 +52,8 @@ class NodeLock {
   void pup(PUP::er& p);
 
  private:
-  std::unique_ptr<CmiNodeLock> lock_;
+  // std::unique_ptr<CmiNodeLock> lock_;
+  // std::unique_ptr<std::mutex> lock_;
+  std::unique_ptr<Spinlock> lock_;
 };
 }  // namespace Parallel
