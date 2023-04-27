@@ -45,6 +45,7 @@
 #include "Utilities/TMPL.hpp"
 #include "Utilities/TaggedTuple.hpp"
 #include "Utilities/TypeTraits/CreateHasStaticMemberVariable.hpp"
+#include "Utilities/TypeTraits/IsStdArray.hpp"
 
 namespace OptionTags {
 struct WaitTime {
@@ -835,33 +836,20 @@ struct SendDataToElement {
     auto& my_proxy =
         Parallel::get_parallel_component<ParallelComponent>(*cache);
     if (node_of_element == my_node) {
-      // bool send = true;
       size_t count = 0;
-      {
+      if constexpr (tt::is_std_array_v<typename ReceiveTag::type>) {
+        // Scope so that we minimize how long we lock the inbox.
+        count = ReceiveTag::insert_into_inbox(
+            make_not_null(&tuples::get<ReceiveTag>(element->inboxes())),
+            instance, std::forward<ReceiveData>(receive_data));
+      } else {
         // Scope so that we minimize how long we lock the inbox.
         std::lock_guard inbox_lock(element->inbox_lock());
         count = ReceiveTag::insert_into_inbox(
             make_not_null(&tuples::get<ReceiveTag>(element->inboxes())),
             instance, std::forward<ReceiveData>(receive_data));
-        // std::unique_lock inbox_lock(element->inbox_lock(), std::defer_lock);
-        // if (inbox_lock.try_lock()) {
-        //   ReceiveTag::insert_into_inbox(
-        //       make_not_null(&tuples::get<ReceiveTag>(element->inboxes())),
-        //       instance, std::forward<ReceiveData>(receive_data));
-        // } else {
-        //   Parallel::threaded_action<Parallel::Actions::
-        //ReceiveDataForElement<>>(
-        //       my_proxy[node_of_element], ReceiveTag{}, element_to_execute_on,
-        //       instance, std::forward<ReceiveData>(receive_data));
-        //   return;
-        // }
       }
-      // if (send and ((*core_queue).size() + 5 < max_num_evaluations)) {
-      //   (*core_queue).push_back(element_to_execute_on);
-      //   send = false;
-      // }
-      // Parallel::printf("count: %ld\n", count);
-      if (count == 6) {
+      if (count == 2 * Dim) {
         Parallel::threaded_action<Parallel::Actions::ReceiveDataForElement<>>(
             my_proxy[node_of_element], element_to_execute_on);
       }
