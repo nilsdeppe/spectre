@@ -719,8 +719,8 @@ struct ReceiveDataForElement {
                     const gsl::not_null<Parallel::NodeLock*> /*node_lock*/,
                     DistObject* dist_object,
                     const ElementId<Dim>& element_to_execute_on) {
-    std::vector<ElementId<Dim>>* core_queue = nullptr;
-    const size_t my_proc = Parallel::my_proc<size_t>(cache);
+    // std::vector<ElementId<Dim>>* core_queue = nullptr;
+    // const size_t my_proc = Parallel::my_proc<size_t>(cache);
     using ElementCollection =
         std::decay_t<decltype(db::get<Tags::ElementCollectionBase>(box))>;
     ElementCollection* element_collection = nullptr;
@@ -729,12 +729,37 @@ struct ReceiveDataForElement {
         "The evil pointers were not set!");
     element_collection =
         static_cast<ElementCollection*>(dist_object->evil_ptr0);
-    core_queue =
-        std::addressof((*static_cast<std::vector<std::vector<ElementId<Dim>>>*>(
-            dist_object->evil_ptr1))[my_proc]);
-    apply_impl<ParallelComponent>(cache, element_to_execute_on,
-                                  make_not_null(core_queue),
-                                  make_not_null(element_collection));
+    const thread_local size_t my_node = Parallel::my_node<size_t>(cache);
+    auto& my_proxy = Parallel::get_parallel_component<ParallelComponent>(cache);
+
+    if constexpr (StartPhase) {
+      const Phase current_phase =
+          Parallel::local_branch(
+              Parallel::get_parallel_component<ParallelComponent>(cache))
+              ->phase();
+      auto& element = element_collection->at(element_to_execute_on);
+      const std::lock_guard element_lock(element.element_lock());
+      element.start_phase(current_phase);
+    } else {
+      auto& element = element_collection->at(element_to_execute_on);
+      std::unique_lock element_lock(element.element_lock(), std::defer_lock);
+      if (element_lock.try_lock()) {
+        element.perform_algorithm();
+      } else {
+        Parallel::threaded_action<Parallel::Actions::ReceiveDataForElement<>>(
+            my_proxy[my_node], element_to_execute_on);
+        return;
+        // core_queue->push_back(element_to_execute_on);
+      }
+    }
+
+    // core_queue =
+    //     std::addressof((*static_cast<std::vector<std::vector<
+    // ElementId<Dim>>>*>(
+    //         dist_object->evil_ptr1))[my_proc]);
+    // apply_impl<ParallelComponent>(cache, element_to_execute_on,
+    //                               make_not_null(core_queue),
+    //                               make_not_null(element_collection));
   }
 
  private:
@@ -762,7 +787,10 @@ struct ReceiveDataForElement {
       if (element_lock.try_lock()) {
         element.perform_algorithm();
       } else {
-        core_queue->push_back(element_to_execute_on);
+        Parallel::threaded_action<Parallel::Actions::ReceiveDataForElement<>>(
+            my_proxy[my_node], element_to_execute_on);
+        return;
+        // core_queue->push_back(element_to_execute_on);
       }
     }
     const size_t max_iters = 5;
