@@ -7,7 +7,8 @@ Testing:
 
 ---
 
-WaitTime: 200
+WaitTime: 0
+NumberOfThreads: 16
 
 ResourceInfo:
   AvoidGlobalProc0: false
@@ -84,44 +85,44 @@ EventsAndTriggers:
   - Trigger:
       Slabs:
         Specified:
-          Values: [1000]
+          Values: [4000]
     Events:
       - Completion
-  - Trigger:
-      Slabs:
-        EvenlySpaced:
-          Interval: 10000
-          Offset: 0
-    Events:
-      - ObserveNorms:
-          SubfileName: Errors
-          TensorsToObserve:
-            - Name: Error(Psi)
-              NormType: L2Norm
-              Components: Sum
-            - Name: Error(Phi)
-              NormType: L2Norm
-              Components: Sum
-            - Name: Error(Pi)
-              NormType: L2Norm
-              Components: Sum
-      - ObserveFields:
-          SubfileName: VolumePsiPiPhiEvery50Slabs
-          VariablesToObserve: ["Psi", "Pi", "Phi"]
-          InterpolateToMesh: None
-          CoordinatesFloatingPointType: Double
-          FloatingPointTypes: [Double, Float, Float]
-          OverrideObservationValue: None
-  - Trigger:
-      Slabs:
-        EvenlySpaced:
-          Interval: 100
-          Offset: 0
-    Events:
-      - ObserveTimeStep:
-          SubfileName: time_steps
-          PrintTimeToTerminal: true
-          ObservePerCore: false
+  # - Trigger:
+  #     Slabs:
+  #       EvenlySpaced:
+  #         Interval: 10000
+  #         Offset: 0
+  #   Events:
+  #     - ObserveNorms:
+  #         SubfileName: Errors
+  #         TensorsToObserve:
+  #           - Name: Error(Psi)
+  #             NormType: L2Norm
+  #             Components: Sum
+  #           - Name: Error(Phi)
+  #             NormType: L2Norm
+  #             Components: Sum
+  #           - Name: Error(Pi)
+  #             NormType: L2Norm
+  #             Components: Sum
+  #     - ObserveFields:
+  #         SubfileName: VolumePsiPiPhiEvery50Slabs
+  #         VariablesToObserve: ["Psi", "Pi", "Phi"]
+  #         InterpolateToMesh: None
+  #         CoordinatesFloatingPointType: Double
+  #         FloatingPointTypes: [Double, Float, Float]
+  #         OverrideObservationValue: None
+  # - Trigger:
+  #     Slabs:
+  #       EvenlySpaced:
+  #         Interval: 100
+  #         Offset: 0
+  #   Events:
+  #     - ObserveTimeStep:
+  #         SubfileName: time_steps
+  #         PrintTimeToTerminal: true
+  #         ObservePerCore: false
 
 
 EventsAndDenseTriggers:

@@ -7,7 +7,8 @@ Testing:
 
 ---
 
-WaitTime: 200
+WaitTime: 0
+NumberOfThreads: 4
 
 ResourceInfo:
   AvoidGlobalProc0: false
@@ -44,20 +45,35 @@ Evolution:
   #       SafetyFactor: 0.9
 
 DomainCreator:
-  RotatedIntervals:
+  Interval:
     LowerBound: [0.0]
-    Midpoint: [3.14159]
     UpperBound: [6.283185307179586]
-    InitialRefinement: [4]
-    InitialGridPoints: [[7, 7]]
+    InitialRefinement: [2]
+    InitialGridPoints: [10]
+    Distribution: Linear
+    Singularity: None
     TimeDependence: None
     BoundaryConditions:
       LowerBoundary:
-        DirichletAnalytic:
-          AnalyticPrescription: *InitialData
+        Periodic
       UpperBoundary:
-        DirichletAnalytic:
-          AnalyticPrescription: *InitialData
+        Periodic
+  # RotatedIntervals:
+  #   LowerBound: [0.0]
+  #   Midpoint: [3.14159]
+  #   UpperBound: [6.283185307179586]
+  #   InitialRefinement: [2]
+  #   InitialGridPoints: [[10, 10]]
+  #   TimeDependence: None
+  #   BoundaryConditions:
+  #     LowerBoundary:
+  #       Periodic
+  #       # DirichletAnalytic:
+  #       #   AnalyticPrescription: *InitialData
+  #     UpperBoundary:
+  #       Periodic
+  #       # DirichletAnalytic:
+  #       #   AnalyticPrescription: *InitialData
 
 SpatialDiscretization:
   BoundaryCorrection:
@@ -81,31 +97,31 @@ EventsAndTriggers:
           Values: [200]
     Events:
       - Completion
-  - Trigger:
-      Slabs:
-        EvenlySpaced:
-          Interval: 50
-          Offset: 0
-    Events:
-      - ObserveNorms:
-          SubfileName: Errors
-          TensorsToObserve:
-            - Name: Error(Psi)
-              NormType: L2Norm
-              Components: Sum
-            - Name: Error(Phi)
-              NormType: L2Norm
-              Components: Sum
-            - Name: Error(Pi)
-              NormType: L2Norm
-              Components: Sum
-      - ObserveFields:
-          SubfileName: VolumePsiPiPhiEvery50Slabs
-          VariablesToObserve: ["Psi", "Pi", "Phi"]
-          InterpolateToMesh: None
-          CoordinatesFloatingPointType: Double
-          FloatingPointTypes: [Double, Float, Float]
-          OverrideObservationValue: None
+  # - Trigger:
+  #     Slabs:
+  #       EvenlySpaced:
+  #         Interval: 50
+  #         Offset: 0
+  #   Events:
+  #     - ObserveNorms:
+  #         SubfileName: Errors
+  #         TensorsToObserve:
+  #           - Name: Error(Psi)
+  #             NormType: L2Norm
+  #             Components: Sum
+  #           - Name: Error(Phi)
+  #             NormType: L2Norm
+  #             Components: Sum
+  #           - Name: Error(Pi)
+  #             NormType: L2Norm
+  #             Components: Sum
+  #     - ObserveFields:
+  #         SubfileName: VolumePsiPiPhiEvery50Slabs
+  #         VariablesToObserve: ["Psi", "Pi", "Phi"]
+  #         InterpolateToMesh: None
+  #         CoordinatesFloatingPointType: Double
+  #         FloatingPointTypes: [Double, Float, Float]
+  #         OverrideObservationValue: None
 
 EventsAndDenseTriggers:
   # - - Times:

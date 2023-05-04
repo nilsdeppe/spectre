@@ -11,6 +11,9 @@ ExpectedOutput:
 
 ---
 
+WaitTime: 0
+NumberOfThreads: 2
+
 ResourceInfo:
   AvoidGlobalProc0: false
   Singletons: Auto
@@ -19,8 +22,9 @@ Evolution:
   InitialTime: 0.0
   InitialTimeStep: 0.0002
   TimeStepper:
-    AdamsBashforth:
-      Order: 3
+    DormandPrince5:
+    # AdamsBashforth:
+    #   Order: 3
 
 PhaseChangeAndTriggers:
   - Trigger:
@@ -42,8 +46,8 @@ DomainCreator:
   Brick:
     LowerBound: [0.0, 0.0, 0.0]
     UpperBound: [1.0, 1.0, 1.0]
-    InitialRefinement: [1, 1, 1]
-    InitialGridPoints: [5, 5, 5]
+    InitialRefinement: [2, 2, 2]
+    InitialGridPoints: [10, 10, 10]
     TimeDependence: None
     BoundaryConditionInX: Periodic
     BoundaryConditionInY: Periodic
@@ -76,8 +80,8 @@ EvolutionSystem:
 Filtering:
   ExpFilter0:
     Alpha: 36.0
-    HalfPower: 64
-    Enable: false
+    HalfPower: 128
+    Enable: true
     BlocksToFilter: All
 
 SpatialDiscretization:
@@ -88,47 +92,47 @@ SpatialDiscretization:
     UpwindPenalty:
 
 EventsAndTriggers:
-  - Trigger:
-      Slabs:
-        EvenlySpaced:
-          Interval: 2
-          Offset: 0
-    Events:
-      - ObserveNorms:
-          SubfileName: Errors
-          TensorsToObserve:
-            - Name: Error(SpacetimeMetric)
-              NormType: L2Norm
-              Components: Sum
-            - Name: Error(Pi)
-              NormType: L2Norm
-              Components: Sum
-            - Name: Error(Phi)
-              NormType: L2Norm
-              Components: Sum
-  - Trigger:
-      Slabs:
-        EvenlySpaced:
-          Interval: 5
-          Offset: 0
-    Events:
-      - ObserveFields:
-          SubfileName: VolumeData
-          VariablesToObserve:
-            - SpacetimeMetric
-            - Pi
-            - Phi
-            - PointwiseL2Norm(GaugeConstraint)
-            - PointwiseL2Norm(ThreeIndexConstraint)
-            - PointwiseL2Norm(FourIndexConstraint)
-          InterpolateToMesh: None
-          CoordinatesFloatingPointType: Double
-          FloatingPointTypes: [Double]
-          OverrideObservationValue: None
+  # - Trigger:
+  #     Slabs:
+  #       EvenlySpaced:
+  #         Interval: 2
+  #         Offset: 0
+  #   Events:
+  #     - ObserveNorms:
+  #         SubfileName: Errors
+  #         TensorsToObserve:
+  #           - Name: Error(SpacetimeMetric)
+  #             NormType: L2Norm
+  #             Components: Sum
+  #           - Name: Error(Pi)
+  #             NormType: L2Norm
+  #             Components: Sum
+  #           - Name: Error(Phi)
+  #             NormType: L2Norm
+  #             Components: Sum
+  # - Trigger:
+  #     Slabs:
+  #       EvenlySpaced:
+  #         Interval: 5
+  #         Offset: 0
+  #   Events:
+  #     - ObserveFields:
+  #         SubfileName: VolumeData
+  #         VariablesToObserve:
+  #           - SpacetimeMetric
+  #           - Pi
+  #           - Phi
+  #           - PointwiseL2Norm(GaugeConstraint)
+  #           - PointwiseL2Norm(ThreeIndexConstraint)
+  #           - PointwiseL2Norm(FourIndexConstraint)
+  #         InterpolateToMesh: None
+  #         CoordinatesFloatingPointType: Double
+  #         FloatingPointTypes: [Double]
+  #         OverrideObservationValue: None
   - Trigger:
       Slabs:
         Specified:
-          Values: [2]
+          Values: [45]
     Events:
       - Completion
 
