@@ -1171,6 +1171,9 @@ struct DgElementCollection : PassComponentThisPointer {
                              simple_tags_from_options>,
                          Parallel::Actions::TerminatePhase>>,
 
+          Parallel::PhaseActions<Parallel::Phase::ImportInitialData,
+                                 tmpl::list<Actions::StartPhaseOnNodegroup>>,
+
           Parallel::PhaseActions<Parallel::Phase::InitializeTimeStepperHistory,
                                  tmpl::list<Actions::StartPhaseOnNodegroup>>,
 
