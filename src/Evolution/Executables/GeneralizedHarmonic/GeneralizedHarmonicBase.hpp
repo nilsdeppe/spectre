@@ -269,10 +269,12 @@ struct FactoryCreation : tt::ConformsTo<Options::protocols::FactoryCreation> {
       tmpl::pair<gh::gauges::GaugeCondition, gh::gauges::all_gauges>,
       tmpl::pair<
           evolution::initial_data::InitialData,
-          tmpl::append<gh::Solutions::all_solutions<volume_dim>,
-                       tmpl::conditional_t<volume_dim == 3,
-                                           tmpl::list<gh::NumericInitialData>,
-                                           tmpl::list<>>>>,
+          // tmpl::append<
+            gh::Solutions::all_solutions<volume_dim>// ,
+                       // tmpl::conditional_t<volume_dim == 3,
+                       //                     tmpl::list<gh::NumericInitialData>,
+                       //                     tmpl::list<>>>
+                          >,
       tmpl::pair<LtsTimeStepper, TimeSteppers::lts_time_steppers>,
       tmpl::pair<PhaseChange, PhaseControl::factory_creatable_classes>,
       tmpl::pair<StepChooser<StepChooserUse::LtsStep>,
