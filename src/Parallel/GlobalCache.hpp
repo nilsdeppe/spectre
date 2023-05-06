@@ -523,6 +523,19 @@ class GlobalCache : public CBase_GlobalCache<Metavariables> {
   int my_local_rank() const;
   /// @}
 
+  MutableGlobalCache<Metavariables>* mutable_global_cache() {
+    return mutable_global_cache_;
+  }
+
+  const MutableGlobalCache<Metavariables>* mutable_global_cache() const {
+    return mutable_global_cache_;
+  }
+
+  void set_mutable_global_cache_pointer(
+      MutableGlobalCache<Metavariables>* mutable_global_cache) {
+    mutable_global_cache_ = mutable_global_cache;
+  }
+
  private:
   // clang-tidy: false positive, redundant declaration
   template <typename GlobalCacheTag, typename MV>
@@ -870,7 +883,9 @@ auto get(const GlobalCache<Metavariables>& cache)
       GlobalCache_detail::get_matching_tag<GlobalCacheTag, Metavariables>;
   if constexpr (is_in_mutable_global_cache<Metavariables, GlobalCacheTag>) {
     // Tag is not in the const tags, so use MutableGlobalCache
-    if (cache.mutable_global_cache_proxy_is_set()) {
+    if (cache.mutable_global_cache() != nullptr) {
+      return cache.mutable_global_cache()->template get<GlobalCacheTag>();
+    } else if (cache.mutable_global_cache_proxy_is_set()) {
       const auto& local_mutable_cache =
           *Parallel::local_branch(cache.mutable_global_cache_proxy_);
       return local_mutable_cache.template get<GlobalCacheTag>();

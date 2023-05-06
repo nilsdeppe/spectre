@@ -6,6 +6,7 @@
 #include <charm++.h>
 #include <cmath>
 #include <cstddef>
+#include <exception>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -40,6 +41,7 @@
 #include "ParallelAlgorithms/Actions/TerminatePhase.hpp"
 #include "ParallelAlgorithms/Initialization/MutateAssign.hpp"
 #include "Utilities/ConstantExpressions.hpp"
+#include "Utilities/ErrorHandling/FloatingPointExceptions.hpp"
 #include "Utilities/Functional.hpp"
 #include "Utilities/StdHelpers.hpp"
 #include "Utilities/TMPL.hpp"
@@ -47,12 +49,34 @@
 #include "Utilities/TypeTraits/CreateHasStaticMemberVariable.hpp"
 #include "Utilities/TypeTraits/IsStdArray.hpp"
 
+#include <atomic>
+#include <cstddef>
+#include <hwloc.h>
+#include <iostream>
+#include <mutex>
+#include <stdexcept>
+#include <thread>
+#include <vector>
+
+#include "Parallel/ConcurrentQueue.hpp"
+#include "Parallel/Spinlock.hpp"
+#include "Time/TimeStepId.hpp"
+
+namespace rts {
+template <class MessageType, class ProcessLocalDataType>
+class ThreadPool;
+}  // namespace rts
+
 namespace OptionTags {
 struct WaitTime {
   using type = size_t;
   static constexpr Options::String help = {"The wait time in microseconds"};
 };
-}
+struct NumberOfThreads {
+  using type = uint32_t;
+  static constexpr Options::String help = {"Number of threads to use."};
+};
+}  // namespace OptionTags
 
 namespace Tags {
 struct WaitTime : db::SimpleTag {
@@ -64,7 +88,64 @@ struct WaitTime : db::SimpleTag {
     return wait_time;
   }
 };
+
+struct NumberOfThreads : db::SimpleTag {
+  using type = uint32_t;
+  using option_tags = tmpl::list<OptionTags::NumberOfThreads>;
+
+  static constexpr bool pass_metavariables = false;
+  static uint32_t create_from_options(const uint32_t number_of_threads) {
+    return number_of_threads;
+  }
+};
 }  // namespace Tags
+
+namespace Parallel::Tags {
+struct ThreadId : db::SimpleTag {
+  using type = uint32_t;
+};
+}  // namespace Parallel::Tags
+
+template <size_t Dim>
+struct Message {
+  template <typename ElementMap>
+  static bool execute(rts::ThreadPool<Message, ElementMap*>& pool,
+                      uint32_t thread_id, Message& message,
+                      ElementMap* elements) {
+    disable_floating_point_exceptions();
+    // std::cout << "In message " << message.element_to_execute_on << " "
+    //           << message.time_step_id << "\n";
+    enable_floating_point_exceptions();
+    if (message.set_terminate) {
+      // Assumes that the Element's own `terminate` flag was set inline.
+      pool.increment_terminated_elements();
+      return true;
+    } else {
+      auto& element = elements->at(message.element_to_execute_on);
+      std::unique_lock element_lock(element.element_lock(), std::defer_lock);
+      if (element_lock.try_lock()) {
+        db::mutate<Parallel::Tags::ThreadId>(
+            make_not_null(&element.databox()),
+            [&thread_id](const auto thread_id_ptr) {
+              *thread_id_ptr = thread_id;
+            });
+        if (message.phase.has_value()) {
+          element.start_phase(message.phase.value());
+        } else {
+          element.perform_algorithm();
+        }
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
+
+  bool set_terminate{false};
+  ElementId<Dim> element_to_execute_on{};
+  std::optional<Parallel::Phase> phase{};
+  TimeStepId time_step_id{};
+};
 
 namespace Parallel {
 namespace detail {
@@ -144,6 +225,20 @@ template <size_t Dim>
 struct ElementsToEvaluate : db::SimpleTag {
   using type = std::vector<std::vector<ElementId<Dim>>>;
 };
+
+struct ThreadPoolPtrBase : db::BaseTag {};
+
+template <size_t Dim, class Metavariables, class PhaseDepActionList,
+          typename SimpleTagsFromOptions>
+struct ThreadPoolPtr : db::SimpleTag, ThreadPoolPtrBase {
+  using type = rts::ThreadPool<
+      Message<Dim>,
+      std::unordered_map<
+          ElementId<Dim>,
+          DgElementArrayMember<Dim, Metavariables, PhaseDepActionList,
+                               SimpleTagsFromOptions>>*>*;
+};
+
 }  // namespace Tags
 
 
@@ -170,6 +265,11 @@ class DgElementArrayMember<Dim, Metavariables,
   using databox_type = db::compute_databox_type<tmpl::flatten<tmpl::list<
       Tags::MetavariablesImpl<metavariables>,
       Tags::ArrayIndexImpl<ElementId<Dim>>, Tags::ElementLocationsPointer<Dim>,
+
+      Tags::ThreadPoolPtr<Dim, Metavariables, phase_dependent_action_lists,
+                          SimpleTagsFromOptions>,
+      Tags::ThreadId,
+
       Tags::InboxesLockPtr, Tags::GlobalCacheProxy<metavariables>,
       SimpleTagsFromOptions, Tags::GlobalCacheImplCompute<metavariables>,
       Tags::ResourceInfoReference<metavariables>,
@@ -215,18 +315,18 @@ class DgElementArrayMember<Dim, Metavariables,
   /// `true` as the second argument to the `receive_data` method or by calling
   /// perform_algorithm(true).
   void set_terminate(const bool terminate) {
-    std::lock_guard nodegroup_lock(*nodegroup_lock_);
-    if (not terminate_ and terminate) {
-      ++(*number_of_elements_terminated_);
-    } else if (terminate_ and not terminate) {
-      --(*number_of_elements_terminated_);
-    } else {
-      ASSERT(terminate_ == terminate,
-             "The DG element with id "
-                 << element_id_ << " currently has termination status "
-                 << terminate_ << " and is being set to " << terminate
-                 << ". This is an internal inconsistency problem.");
-    }
+    // std::lock_guard nodegroup_lock(*nodegroup_lock_);
+    // if (not terminate_ and terminate) {
+    //   ++(*number_of_elements_terminated_);
+    // } else if (terminate_ and not terminate) {
+    //   --(*number_of_elements_terminated_);
+    // } else {
+    //   ASSERT(terminate_ == terminate,
+    //          "The DG element with id "
+    //              << element_id_ << " currently has termination status "
+    //              << terminate_ << " and is being set to " << terminate
+    //              << ". This is an internal inconsistency problem.");
+    // }
     terminate_ = terminate;
   }
 
@@ -275,6 +375,12 @@ class DgElementArrayMember<Dim, Metavariables,
   /// This should always be managed by `std::unique_lock` or `std::lock_guard`.
   auto& element_lock() { return element_lock_; }
 
+  auto& databox() { return box_; }
+  void set_gc_ptr(Parallel::GlobalCache<Metavariables>* global_cache) {
+    ASSERT(global_cache != nullptr, "sigh...");
+    global_cache_ = global_cache;
+  }
+
   void pup(PUP::er& p) {
     p | global_cache_proxy_;
     p | performing_action_;
@@ -308,6 +414,7 @@ class DgElementArrayMember<Dim, Metavariables,
   Parallel::NodeLock element_lock_{};
 
   Parallel::CProxy_GlobalCache<Metavariables> global_cache_proxy_;
+  Parallel::GlobalCache<Metavariables>* global_cache_{nullptr};
   bool performing_action_ = false;
   Parallel::Phase phase_{Parallel::Phase::Initialization};
   std::unordered_map<Parallel::Phase, size_t> phase_bookmarks_{};
@@ -534,10 +641,20 @@ bool DgElementArrayMember<Dim, Metavariables,
                                      *inbox_lock_ptr = &(this->inbox_lock_);
                                    });
 
+  if (global_cache_ == nullptr) {
+    global_cache_ = Parallel::local_branch(global_cache_proxy_);
+  }
+  if (global_cache_->mutable_global_cache_proxy_is_set()) {
+    global_cache_->set_mutable_global_cache_pointer(
+        Parallel::local_branch(global_cache_->mutable_global_cache_proxy()));
+  }
+  // const auto thread_id = db::get<Tags::ThreadId>(box_);
+
+  ASSERT(global_cache_ != nullptr, "Come on, man");
+
   const auto& [requested_execution, next_action_step] = ThisAction::apply(
-      box_, inboxes_, *Parallel::local_branch(global_cache_proxy_),
-      std::as_const(element_id_), actions_list{},
-      std::add_pointer_t<ParallelComponent>{});
+      box_, inboxes_, *global_cache_, std::as_const(element_id_),
+      actions_list{}, std::add_pointer_t<ParallelComponent>{});
 
   if (next_action_step.has_value()) {
     ASSERT(
@@ -618,7 +735,277 @@ void DgElementArrayMember<
   main_proxy.value().add_exception_message(message);
   set_terminate(true);
 }
+}  // namespace Parallel
 
+// Copyright, Nils Deppe, 2022-
+// Distributed under the MIT License.
+// See LICENSE.txt for details.
+
+namespace rts {
+/*!
+ *
+ *
+ * Basic ideas from:
+ *   https://stackoverflow.com/questions/15752659/thread-pooling-in-c11
+ *
+ * Other useful links:
+ * https://www.1024cores.net/home/lock-free-algorithms/queues/queue-catalog
+ * https://moodycamel.com/blog/2014/a-fast-general-purpose-lock-free-queue-for-c++
+ * https://iditkeidar.com/wp-content/uploads/files/ftp/spaa049-gidron.pdf
+ */
+template <class MessageType, class ProcessLocalDataType>
+class ThreadPool {
+ public:
+  ThreadPool() = default;
+  ThreadPool(uint32_t number_of_threads, uint32_t thread_pin_offset,
+             ProcessLocalDataType process_local_data_for_execution);
+
+  /// \brief Pin the thread with ID `thread_id` to a core, then call
+  /// `thread_loop(thread_id);`
+  void pin_and_thread_loop(uint32_t thread_id);
+
+  /// \brief Busy loop on each thread that grabs tasks from the task queue.
+  void thread_loop(uint32_t thread_id);
+
+  /// \brief The task `message` is added to the queue from thread with thread ID
+  /// `thread_id`.
+  ///
+  /// The `thread_id` is the ID of the _current_ thread.
+  void add_task(uint32_t thread_id, MessageType message);
+
+  /// \brief Launch all the threads and pin them to a core..
+  void launch_threads();
+
+  size_t increment_terminated_elements() {
+    return number_of_terminated_elements_.fetch_add(1,
+                                                    std::memory_order_acq_rel) +
+           1;
+  }
+
+  /// \brief Stop all threads.
+  void stop() {
+    stop_threads_.store(true, std::memory_order_release);
+    for (std::thread& active_thread : threads_) {
+      ASSERT(active_thread.joinable(),
+             "The thread is not joinable. This is an internal bug\n");
+      active_thread.join();
+    }
+    threads_.clear();
+  }
+
+  /// \brief Log to `std::cout`
+  void print_to(std::string to_print) {
+    logging_queue_.enqueue(std::move(to_print));
+  }
+
+  bool stopped() const { return stop_threads_.load(std::memory_order_acquire); }
+
+  ProcessLocalDataType& data() { return process_local_data_for_execution_; }
+  const ProcessLocalDataType& data() const {
+    return process_local_data_for_execution_;
+  }
+
+ private:
+  // Task design:
+  // - We have a list of tasks for each thread. Another design is to have one
+  //   task list for _all_ threads. A single task list has the advantage of
+  //   being able to automatically load balance within a node. This downside is
+  //   then we need some way of determining if a task can safely be run to
+  //   avoid race conditions.
+  // - The big question is what should the queue of tasks hold? std::function
+  //   is one (expensive) option.
+  std::atomic<uint32_t> number_of_terminated_elements_{0};
+  ProcessLocalDataType process_local_data_for_execution_;
+  uint32_t thread_pin_offset_ = 0;
+  std::vector<std::thread> threads_{};
+  std::atomic<bool> stop_threads_{false};
+  moodycamel::ConcurrentQueue<MessageType> task_queue_{};
+  std::vector<moodycamel::ProducerToken> producer_tokens_{};
+  std::vector<moodycamel::ConsumerToken> consumer_tokens_{};
+
+  moodycamel::ConcurrentQueue<std::string> logging_queue_{};
+
+  hwloc_topology_t topology_{};
+};
+
+template <class MessageType, class ProcessLocalDataType>
+inline ThreadPool<MessageType, ProcessLocalDataType>::ThreadPool(
+    const uint32_t number_of_threads, const uint32_t thread_pin_offset,
+    ProcessLocalDataType process_local_data_for_execution)
+    : process_local_data_for_execution_(
+          std::move(process_local_data_for_execution)),
+      thread_pin_offset_(thread_pin_offset),
+      threads_(number_of_threads),
+      stop_threads_{false},
+      // Static size for 1024 tasks per thread.
+      task_queue_(1024, number_of_threads, 0),
+      logging_queue_{} {
+  // Pin the threads to CPU cores. This is often called "affinity"
+  //
+  // Modified from:
+  // https://github.com/eliben/code-for-blog/blob/master/2016/threads-affinity/hwloc-example.cpp
+  if (hwloc_topology_init(&topology_) < 0) {
+    throw std::runtime_error("error calling hwloc_topology_init");
+  }
+  if (hwloc_topology_load(topology_) < 0) {
+    throw std::runtime_error("error calling hwloc_topology_load");
+  }
+  // PU=processing unit, which are hardware threads.
+  [[maybe_unused]] const int number_of_processing_units =
+      hwloc_get_nbobjs_by_type(topology_, hwloc_obj_type_t::HWLOC_OBJ_PU);
+  const int number_of_cores =
+      hwloc_get_nbobjs_by_type(topology_, hwloc_obj_type_t::HWLOC_OBJ_CORE);
+  if (static_cast<uint32_t>(number_of_cores) <
+      thread_pin_offset_ + number_of_threads) {
+    throw std::runtime_error(
+        "There are fewer cores than the offset and number of threads can "
+        "accomodate");
+  }
+
+  producer_tokens_.reserve(number_of_threads);
+  consumer_tokens_.reserve(number_of_threads);
+  for (uint32_t i = 0; i < number_of_threads; i++) {
+    producer_tokens_.emplace_back(task_queue_);
+    consumer_tokens_.emplace_back(task_queue_);
+  }
+}
+
+template <class MessageType, class ProcessLocalDataType>
+inline void ThreadPool<MessageType, ProcessLocalDataType>::launch_threads() {
+  for (size_t i = 0; i < threads_.size(); i++) {
+    threads_[i] = std::thread(&ThreadPool::pin_and_thread_loop, this, i);
+  }
+}
+
+template <class MessageType, class ProcessLocalDataType>
+inline void ThreadPool<MessageType, ProcessLocalDataType>::pin_and_thread_loop(
+    const uint32_t thread_id) {
+  // The tool lstopo is useful for understanding mappings between logical PUs
+  // (SMT threads) and CPU cores. On an AMD 3970X with 32 cores and 64 SMT
+  // threads, lstopo gives something like:
+  //
+  // Package L#0
+  //  NUMANode L#0 (P#0 94GB)
+  //    L3 L#0 (16MB)
+  //      L2 L#0 (512KB) + L1d L#0 (32KB) + L1i L#0 (32KB) + Core L#0
+  //        PU L#0 (P#0)
+  //        PU L#1 (P#32)
+  //      L2 L#1 (512KB) + L1d L#1 (32KB) + L1i L#1 (32KB) + Core L#1
+  //        PU L#2 (P#1)
+  //        PU L#3 (P#33)
+  //
+  // We can see that logical PUs 0 & 1 are assigned to the same L2+L1 caches,
+  // meaning they are running on the same _physical_ core. The associated OS
+  // PUs are 0 and 32, so in an application like htop PUs 0 and 32 correspond
+  // to the same physical core.
+  //
+  // First get an hwloc_obj that we can use to pin threads to specific CPU
+  // cores. We don't want to bind to logical CPUs since if SMT
+  // (hyperthreading) is enabled then we'd bind 2 threads to one physical
+  // core, degrading performance.
+  hwloc_obj_t core_to_pin =
+      hwloc_get_obj_by_type(topology_, hwloc_obj_type_t::HWLOC_OBJ_CORE,
+                            thread_pin_offset_ + thread_id);
+
+  // Now we want to singlify the cpuset that we have. This allows us to pin
+  // threads to an individual SMT, preventing the OS (and hardware) from
+  // migrating our threads from one SMT thread to another. This is crucial for
+  // not thrashing the caches.
+  if (hwloc_bitmap_singlify(core_to_pin->cpuset) < 0) {
+    throw std::runtime_error(
+        "Error: failed to singlify cpuset for affinity binding.");
+  }
+
+  // Do the actual pinning of the threads to the underlying hardware.
+  if (hwloc_set_cpubind(topology_, core_to_pin->cpuset, HWLOC_CPUBIND_THREAD) <
+      0) {
+    throw std::runtime_error("Error calling hwloc_set_cpubind\n");
+  }
+  return thread_loop(thread_id);
+}
+
+template <class MessageType, class ProcessLocalDataType>
+inline void ThreadPool<MessageType, ProcessLocalDataType>::thread_loop(
+    const uint32_t thread_id) {
+  // We use the miss_count to keep track of how many messages we failed to
+  // evaluate for various different reasons.
+  int32_t miss_count = 0;
+  const int32_t allowed_misses = 100;
+
+  uint32_t number_of_times_we_saw_stopped = 0;
+  uint32_t stop_iterations = 0;
+  const uint32_t max_stop_iterations = 20;
+
+  while (true) {
+    do {
+      MessageType message{};
+      if (not task_queue_.try_dequeue_from_producer(producer_tokens_[thread_id],
+                                                    message)) {
+        // If we failed to dequeue from ourselves, try to dequeue from other
+        // threads.
+        if (not task_queue_.try_dequeue(consumer_tokens_[thread_id], message)) {
+          ++miss_count;
+          continue;
+        }
+      }
+
+      // `execute` returns `true` on success and `false` on failure. On
+      // failure we need to requeue the message.
+      if (MessageType::execute(*this, thread_id, message,
+                               process_local_data_for_execution_)) {
+        // print_to();
+        // std::cout << "Thread: " << thread_id << "\n";
+        miss_count = 0;
+      } else {
+        if (not task_queue_.try_enqueue(producer_tokens_[thread_id], message)) {
+          ERROR("Failed to re-queue task.\n");
+        }
+        ++miss_count;
+      }
+    } while (miss_count < allowed_misses);
+
+    // TODO: how to do quiessence detection?
+
+    miss_count = 0;
+
+    if (thread_id == 0) {
+      std::string message_to_print{};
+      std::array<std::string, 20> messages_to_print{};
+      const size_t number_to_print = logging_queue_.try_dequeue_bulk(
+          messages_to_print.begin(), messages_to_print.size());
+      for (size_t i = 0; i < number_to_print; ++i) {
+        std::cout << gsl::at(messages_to_print, i);
+      }
+    }
+
+    // Use relaxed order since we don't care if we execute one more task or not.
+    //
+    // Check the stop_threads_ variable and if all elements have
+    // terminated. This assumes we don't do insert/remove dynamically.
+    if (stop_iterations++ == max_stop_iterations) {
+      stop_iterations = 0;
+      if ((stop_threads_.load(std::memory_order_relaxed) or
+           (process_local_data_for_execution_->size() ==
+            number_of_terminated_elements_.load(std::memory_order_relaxed))) and
+          (number_of_times_we_saw_stopped++ == 5)) {
+        stop_threads_.store(true, std::memory_order_release);
+        return;
+      }
+    }
+  }
+}
+
+template <class MessageType, class ProcessLocalDataType>
+inline void ThreadPool<MessageType, ProcessLocalDataType>::add_task(
+    const uint32_t thread_id, MessageType message) {
+  if (not task_queue_.enqueue(producer_tokens_[thread_id],
+                              std::move(message))) {
+    throw std::runtime_error("Failed to enqueue a message onto the thread");
+  }
+}
+}  // namespace rts
+
+namespace Parallel {
 namespace Actions {
 /// Always invoked on the local component.
 ///
@@ -896,6 +1283,77 @@ struct SendDataToElement {
   }
 };
 
+template <size_t Dim, typename PhaseDepActionList,
+          typename SimpleTagsFromOptions>
+struct StartThreadedEvolution {
+  template <typename DbTagsList, typename... InboxTags, typename ArrayIndex,
+            typename ActionList, typename ParallelComponent,
+            typename Metavariables>
+  static Parallel::iterable_action_return_t apply(
+      db::DataBox<DbTagsList>& box,
+      const tuples::TaggedTuple<InboxTags...>& /*inboxes*/,
+      Parallel::GlobalCache<Metavariables>& cache,
+      const ArrayIndex& /*array_index*/, const ActionList /*meta*/,
+      const ParallelComponent* const /*meta*/) {
+    // const size_t my_node = Parallel::my_node<size_t>(cache);
+    // auto proxy_to_this_node =
+    //     Parallel::get_parallel_component<ParallelComponent>(cache)[my_node];
+    // for (const auto& [element_id, element] :
+    //      db::get<Tags::ElementCollectionBase>(box)) {
+    //   Parallel::threaded_action<ReceiveDataForElement<true>>(proxy_to_this_node,
+    //                                                          element_id);
+    // }
+
+    const uint32_t core_offset = 1;
+    const uint32_t number_of_threads = db::get<::Tags::NumberOfThreads>(box);
+
+    using ElementCollection =
+        std::decay_t<decltype(db::get<Tags::ElementCollectionBase>(box))>;
+    auto* dist_object = Parallel::local_branch(
+        Parallel::get_parallel_component<ParallelComponent>(cache));
+
+    ElementCollection* elements =  // NOLINT
+        static_cast<ElementCollection*>(dist_object->evil_ptr0);
+    rts::ThreadPool<
+        Message<Dim>,
+        std::unordered_map<
+            ElementId<Dim>,
+            DgElementArrayMember<Dim, Metavariables, PhaseDepActionList,
+                                 SimpleTagsFromOptions>>*>
+        thread_pool{number_of_threads, core_offset, elements};
+
+    for (auto& [element_id, element] : *elements) {
+      element.set_gc_ptr(&cache);
+      db::mutate<Parallel::Tags::ThreadPoolPtrBase>(
+          make_not_null(&element.databox()),
+          [&thread_pool](const auto thread_pool_ptr) {
+            *thread_pool_ptr = &thread_pool;
+          });
+    }
+    size_t thread_to_launch = 0;
+    for (auto& [element_id, element] : *elements) {
+      thread_pool.add_task(
+          thread_to_launch,
+          Message<Dim>{false, element_id, Parallel::Phase::Evolve});
+      thread_to_launch = (thread_to_launch + 1) % number_of_threads;
+    }
+
+    thread_pool.launch_threads();
+
+    do {
+      // Check every 100ms if we are done...
+      using namespace std::chrono_literals;
+      std::this_thread::sleep_for(50ms);
+    } while (not thread_pool.stopped());
+    std::cout << "Stopping\n";
+    // Have all spawned threads join.
+    thread_pool.stop();
+    std::cout << "Done\n";
+
+    return {Parallel::AlgorithmExecution::Halt, std::nullopt};
+  }
+};
+
 /// \brief Starts the next phase on the nodegroup and calls
 /// `StartPhaseOnElement` for each element on the node.
 struct StartPhaseOnNodegroup {
@@ -1084,8 +1542,7 @@ struct InitializeElementCollection {  // TODO: CreateElementCollection
          &node_lock, dist_object](
             const auto element_locations_ptr, const auto collection_ptr,
             const gsl::not_null<size_t*> number_of_elements_terminated) {
-          dist_object->evil_ptr0 =
-              static_cast<void*>(collection_ptr.get());
+          dist_object->evil_ptr0 = static_cast<void*>(collection_ptr.get());
           const auto serialized_initialization_items =
               serialize(initialization_items);
           *element_locations_ptr = std::move(node_of_elements);
@@ -1191,15 +1648,19 @@ struct DgElementCollection : PassComponentThisPointer {
           Parallel::PhaseActions<Parallel::Phase::Register,
                                  tmpl::list<Actions::StartPhaseOnNodegroup>>,
 
-          Parallel::PhaseActions<Parallel::Phase::Evolve,
-                                 tmpl::list<Actions::StartPhaseOnNodegroup>>>
+          Parallel::PhaseActions<
+              Parallel::Phase::Evolve,
+              tmpl::list<  // Actions::StartPhaseOnNodegroup,
+                  Actions::StartThreadedEvolution<Dim, PhaseDepActionList,
+                                                  simple_tags_from_options>>>>
 
                    // tmpl::flatten<tmpl::transform<
                    //       PhaseDepActionList,
                    //       TransformPdalToStartPhaseOnNodegroup<tmpl::_1>>>
                    >;
   using const_global_cache_tags = tmpl::remove_duplicates<tmpl::append<
-      tmpl::list<::domain::Tags::Domain<Dim>, ::Tags::WaitTime>,
+      tmpl::list<::domain::Tags::Domain<Dim>, ::Tags::WaitTime,
+                 ::Tags::NumberOfThreads>,
       typename Parallel::detail::get_const_global_cache_tags_from_pdal<
           PhaseDepActionList>::type>>;
   using mutable_global_cache_tags =

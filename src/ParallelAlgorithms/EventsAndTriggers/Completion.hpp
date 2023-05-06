@@ -20,6 +20,7 @@ struct SetTerminateOnElement;
 }  // namespace Parallel::Actions
 namespace Parallel::Tags {
 struct ElementLocationsPointerBase;
+struct ThreadPoolPtrBase;
 }  // namespace Parallel::Tags
 
 namespace Events {
@@ -48,9 +49,16 @@ class Completion : public Event {
                   Parallel::GlobalCache<Metavariables>& cache,
                   const ArrayIndex& array_index,
                   const Component* const /*meta*/) const {
-    if constexpr (db::tag_is_retrievable_v<
-                        Parallel::Tags::ElementLocationsPointerBase,
-                        db::DataBox<DbTagsList>>) {
+    if constexpr (db::tag_is_retrievable_v<Parallel::Tags::ThreadPoolPtrBase,
+                                           db::DataBox<DbTagsList>>) {
+      auto& thread_pool = db::get<Parallel::Tags::ThreadPoolPtrBase>(box);
+
+      thread_pool->data()->at(array_index).set_terminate(true);
+      thread_pool->increment_terminated_elements();
+      // ERROR("We do not yet know how to handle thread pools :(");
+    } else if constexpr (db::tag_is_retrievable_v<
+                             Parallel::Tags::ElementLocationsPointerBase,
+                             db::DataBox<DbTagsList>>) {
       Parallel::local_synchronous_action<
           Parallel::Actions::SetTerminateOnElement>(
           Parallel::get_parallel_component<Component>(cache),
