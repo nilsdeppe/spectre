@@ -64,9 +64,11 @@ template <typename T>
 void compute_substep(const gsl::not_null<T*> u,
                      const ConstUntypedHistory<T>& history, const double dt,
                      const std::vector<double>& substep_coefficients) {
-  *u = *history.front().value;
   if (substep_coefficients[0] != 0.0) {
-    *u += substep_coefficients[0] * dt * history.front().derivative;
+    *u = *history.front().value +
+         substep_coefficients[0] * dt * history.front().derivative;
+  } else {
+    *u = *history.front().value;
   }
   for (size_t i = 1; i < substep_coefficients.size(); ++i) {
     if (substep_coefficients[i] != 0.0) {
@@ -81,6 +83,10 @@ void update_u_impl_with_tableau(const gsl::not_null<T*> u,
                                 const TimeDelta& time_step,
                                 const RungeKutta::ButcherTableau& tableau,
                                 const size_t number_of_substeps) {
+  if constexpr (std::is_same_v<T, DataVector>) {
+    __builtin_prefetch(u->data(), 1, 3);
+  }
+
   // Clean up old history
   if (history.at_step_start()) {
     history.clear_substeps();
@@ -88,6 +94,10 @@ void update_u_impl_with_tableau(const gsl::not_null<T*> u,
       history.pop_front();
     }
   } else {
+    if constexpr (std::is_same_v<T, DataVector>) {
+      __builtin_prefetch(history.front().value->data(), 0, 1);
+      __builtin_prefetch(history.front().derivative.data(), 0, 1);
+    }
     history.discard_value(history.substeps().back().time_step_id);
   }
   ASSERT(history.size() == 1, "Have more than one step after cleanup.");
