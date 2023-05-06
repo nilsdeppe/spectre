@@ -13,7 +13,7 @@ ExpectedOutput:
 ---
 
 WaitTime: 0
-NumberOfThreads: 2
+NumberOfThreads: 16
 
 ResourceInfo:
   AvoidGlobalProc0: false
@@ -21,7 +21,7 @@ ResourceInfo:
 
 Evolution:
   InitialTime: 0.0
-  InitialTimeStep: 0.0002
+  InitialTimeStep: 0.0001
   TimeStepper:
     DormandPrince5:
     # AdamsBashforth:
@@ -47,7 +47,7 @@ DomainCreator:
   Brick:
     LowerBound: [0.0, 0.0, 0.0]
     UpperBound: [1.0, 1.0, 1.0]
-    InitialRefinement: [2, 2, 2]
+    InitialRefinement: [2, 3, 3]
     InitialGridPoints: [10, 10, 10]
     TimeDependence: None
     BoundaryConditionInX: Periodic
@@ -132,7 +132,7 @@ EventsAndTriggers:
   - Trigger:
       Slabs:
         Specified:
-          Values: [45]
+          Values: [30]
     Events:
       - Completion
 
