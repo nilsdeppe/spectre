@@ -1,6 +1,7 @@
 // Distributed under the MIT License.
 // See LICENSE.txt for details.
 
+#include "Evolution/Systems/GeneralizedHarmonic/GaugeSourceFunctions/Harmonic.hpp"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wredundant-decls"
 #include <benchmark/benchmark.h>
@@ -24,6 +25,10 @@
 #include "NumericalAlgorithms/Spectral/Mesh.hpp"
 #include "NumericalAlgorithms/Spectral/Spectral.hpp"
 #include "PointwiseFunctions/MathFunctions/PowX.hpp"
+
+#include "DataStructures/TaggedContainers.hpp"
+#include "Evolution/Systems/GeneralizedHarmonic/TimeDerivative.hpp"
+#include "PointwiseFunctions/GeneralRelativity/Tags.hpp"
 
 // Charm looks for this function but since we build without a main function or
 // main module we just have it be empty
@@ -72,18 +77,46 @@ namespace {
 // In this anonymous namespace is an example of microbenchmarking the
 // all_gradient routine for the GH system
 
-template <size_t Dim>
-struct Kappa : db::SimpleTag {
-  using type = tnsr::abb<DataVector, Dim, Frame::Grid>;
-};
-template <size_t Dim>
-struct Psi : db::SimpleTag {
-  using type = tnsr::aa<DataVector, Dim, Frame::Grid>;
-};
+// template <size_t Dim>
+// struct Kappa : db::SimpleTag {
+//   using type = tnsr::abb<DataVector, Dim, Frame::Grid>;
+// };
+// template <size_t Dim>
+// struct Psi : db::SimpleTag {
+//   using type = tnsr::aa<DataVector, Dim, Frame::Grid>;
+// };
+
+template <class Tm1, class T0, class T1, class T2, typename... TempTags,
+          typename... ArgTags>
+void forward_to(Tm1&& dt_vars, const Mesh<3>& mesh, T0&& temp_vars,
+                T1&& evolved_vars, T2&& d_vars,
+                const tnsr::I<DataVector, 3, Frame::Inertial>& inertial_coords,
+                const InverseJacobian<DataVector, 3, Frame::ElementLogical,
+                                      Frame::Inertial>& inverse_jacobian,
+                tmpl::list<TempTags...>, tmpl::list<ArgTags...>) {
+  using Ats = tmpl::list<ArgTags...>;
+  const Scalar<DataVector> gamma{evolved_vars.number_of_grid_points(), 0.0};
+  const double time = 1.0;
+  GeneralizedHarmonic::gauges::Harmonic gauge{};
+  using vars_list = typename std::decay_t<T2>::tags_list;
+  GeneralizedHarmonic::TimeDerivative<3>::apply(
+      get<tmpl::at_c<Ats, 0>>(dt_vars), get<tmpl::at_c<Ats, 1>>(dt_vars),
+      get<tmpl::at_c<Ats, 2>>(dt_vars), get<TempTags>(temp_vars)...,
+      get<tmpl::at_c<vars_list, 0>>(d_vars),
+      get<tmpl::at_c<vars_list, 1>>(d_vars),
+      get<tmpl::at_c<vars_list, 2>>(d_vars),
+
+      get<tmpl::at_c<Ats, 0>>(evolved_vars),
+      get<tmpl::at_c<Ats, 1>>(evolved_vars),
+      get<tmpl::at_c<Ats, 2>>(evolved_vars), gamma, gamma, gamma, gauge, mesh,
+      time, inertial_coords, inverse_jacobian,
+
+      {});
+}
 
 // clang-tidy: don't pass be non-const reference
 void bench_all_gradient(benchmark::State& state) {  // NOLINT
-  constexpr const size_t pts_1d = 4;
+  constexpr const size_t pts_1d = 5;
   constexpr const size_t Dim = 3;
   const Mesh<Dim> mesh{pts_1d, Spectral::Basis::Legendre,
                        Spectral::Quadrature::GaussLobatto};
@@ -92,17 +125,33 @@ void bench_all_gradient(benchmark::State& state) {  // NOLINT
       domain::CoordinateMaps::ProductOf3Maps<domain::CoordinateMaps::Affine,
                                              domain::CoordinateMaps::Affine,
                                              domain::CoordinateMaps::Affine>;
-  domain::CoordinateMap<Frame::ElementLogical, Frame::Grid, Map3d> map(
+  domain::CoordinateMap<Frame::ElementLogical, Frame::Inertial, Map3d> map(
       Map3d{map1d, map1d, map1d});
 
-  using VarTags = tmpl::list<Kappa<Dim>, Psi<Dim>>;
-  const InverseJacobian<DataVector, Dim, Frame::ElementLogical, Frame::Grid>
+  using VarTags = tmpl::list<gr::Tags::SpacetimeMetric<3>,
+                             GeneralizedHarmonic::Tags::Pi<Dim>,
+                             GeneralizedHarmonic::Tags::Phi<Dim>>;
+  const InverseJacobian<DataVector, Dim, Frame::ElementLogical, Frame::Inertial>
       inv_jac = map.inv_jacobian(logical_coordinates(mesh));
   const auto grid_coords = map(logical_coordinates(mesh));
   Variables<VarTags> vars(mesh.number_of_grid_points(), 0.0);
+  for (size_t i = 0; i < 4; ++i) {
+    get<gr::Tags::SpacetimeMetric<3>>(vars).get(i, i) = 1.0;
+  }
+  Variables<VarTags> dt_vars(mesh.number_of_grid_points(), 0.0);
+  benchmark::DoNotOptimize(dt_vars);
 
   while (state.KeepRunning()) {
-    benchmark::DoNotOptimize(partial_derivatives<VarTags>(vars, mesh, inv_jac));
+    Variables<typename GeneralizedHarmonic::TimeDerivative<3>::temporary_tags>
+      temp_tags{mesh.number_of_grid_points(), 0.0};
+    const auto d_vars = partial_derivatives<VarTags>(vars, mesh, inv_jac);
+    benchmark::DoNotOptimize(d_vars);
+    forward_to(
+        make_not_null(&dt_vars), mesh, make_not_null(&temp_tags), vars, d_vars,
+        grid_coords, inv_jac,
+        typename GeneralizedHarmonic::TimeDerivative<3>::temporary_tags{},
+        tmpl::pop_back<
+            typename GeneralizedHarmonic::TimeDerivative<3>::argument_tags>{});
   }
 }
 BENCHMARK(bench_all_gradient);  // NOLINT
