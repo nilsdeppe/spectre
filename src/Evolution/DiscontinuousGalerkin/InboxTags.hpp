@@ -16,6 +16,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "DataStructures/DataBox/Tag.hpp"
 #include "DataStructures/FixedHashMap.hpp"
 #include "Domain/Structure/Direction.hpp"
 #include "Domain/Structure/ElementId.hpp"
@@ -24,8 +25,10 @@
 #include "NumericalAlgorithms/Spectral/Mesh.hpp"
 #include "Parallel/InboxInserters.hpp"
 #include "Parallel/MpscArray.hpp"
+#include "Parallel/StaticSpscQueue.hpp"
 #include "Time/TimeStepId.hpp"
 #include "Utilities/TMPL.hpp"
+#include "Utilities/TypeTraits/IsA.hpp"
 #include "Utilities/TypeTraits/IsStdArray.hpp"
 
 namespace evolution::dg::Tags {
@@ -108,11 +111,11 @@ struct BoundaryCorrectionAndGhostCellsInbox {
 
  public:
   using temporal_id = TimeStepId;
-  // using type = std::map<
-  //     TimeStepId,
-  //     FixedHashMap<maximum_number_of_neighbors(Dim),
-  //                  std::pair<Direction<Dim>, ElementId<Dim>>, stored_type,
-  //                  boost::hash<std::pair<Direction<Dim>, ElementId<Dim>>>>>;
+  using type_map = std::map<
+      TimeStepId,
+      FixedHashMap<maximum_number_of_neighbors(Dim),
+                   std::pair<Direction<Dim>, ElementId<Dim>>, stored_type,
+                   boost::hash<std::pair<Direction<Dim>, ElementId<Dim>>>>>;
 
   /// \brief The structure here is that the outer array is the Slab index
   /// module its size. This is to 1. reduce memory allocations and 2. allow
@@ -122,99 +125,138 @@ struct BoundaryCorrectionAndGhostCellsInbox {
   /// - Middle vector is `2 Dim` directions for each element and the atomic
   ///   uint is used to count the number of neighbors contributed.
   /// - McncArray has the capacity for maximum number of neighbors.
-  using type =
-      std::array<std::pair<std::array<stored_type
-                                      // Parallel::MpncArray<stored_type,
-                                      //                       (Dim == 1 ? 1 : 2
-                                      //                       * (Dim - 1))>
-                                      ,
-                                      2 * Dim>,
-                           std::atomic<uint>>,
+  using type_array =
+      std::array<std::pair<std::array<stored_type, 2 * Dim>, std::atomic<uint>>,
                  8>;
+  // Per side:
+  //  2 containers, the "active" and the "last"
+  //  Basically, given the current time of my neighbor, I need to know what
+  //  times I could overwrite.
+  //  I could store <SentTime, DataOverNeighbors, CanBeUsed>
+  //  In each direction: Times:
+  //
+  // The uint counter is used to count how many neighbors have contributed
+  // for the next time. I don't know if one counter is actually enough, we
+  // might need one counter per step. One counter should be fine, we just need
+  // to have a way of deciding when to send a perform_algorithm() message to
+  // the neighbor. That's either based on number of neighbors or just always
+  // when the count is above `2*Dim - number_of_external_boundaries_on_neighbor`
+  using type_spsc = std::pair<
+      std::array<Parallel::StaticSpscQueue<
+                     std::tuple<::TimeStepId, stored_type,
+                                std::pair<Direction<Dim>, ElementId<Dim>>>,
+                     20>,
+                 maximum_number_of_neighbors(Dim)>,
+      std::atomic_uint>;
 
-  template <typename Inbox, typename ReceiveDataType>
-  static size_t insert_into_inbox(const gsl::not_null<Inbox*> inbox,
-                                const temporal_id& time_step_id,
-                                ReceiveDataType&& data) {
-    if constexpr (tt::is_std_array_v<type>) {
-      const size_t time_index = time_step_id.substep();
-      const std::pair<Direction<Dim>, ElementId<Dim>>& neighbor_id = data.first;
-      const size_t neighbor_index = DirectionHash<Dim>{}(neighbor_id.first);
-      gsl::at(gsl::at(*inbox, time_index).first, neighbor_index) =
-          std::move(data.second);
-      // Note: fetch_add does a post-increment.
-      return gsl::at(*inbox, time_index)
-                 .second.fetch_add(1, std::memory_order_acq_rel) +
-             1;
-    } else {
-      auto& current_inbox = (*inbox)[time_step_id];
-      if (auto it = current_inbox.find(data.first); it != current_inbox.end()) {
-        auto& [volume_mesh_of_ghost_cell_data, face_mesh, ghost_cell_data,
-               boundary_data, boundary_data_validity_range,
-               boundary_tci_status] = data.second;
-        (void)ghost_cell_data;
-        auto& [current_volume_mesh_of_ghost_cell_data, current_face_mesh,
-               current_ghost_cell_data, current_boundary_data,
-               current_boundary_data_validity_range, current_tci_status] =
-            it->second;
-        (void)current_volume_mesh_of_ghost_cell_data;  // Need to use when
-                                                       // optimizing subcell
-        // We have already received some data at this time. Receiving data twice
-        // at the same time should only occur when receiving fluxes after having
-        // previously received ghost cells. We sanity check that the data we
-        // already have is the ghost cells and that we have not yet received
-        // flux data.
-        //
-        // This is used if a 2-send implementation is used (which we don't right
-        // now!). We generally find that the number of communications is more
-        // important than the size of each communication, and so a single
-        // communication per time/sub step is preferred.
-        ASSERT(
-            current_ghost_cell_data.has_value(),
-            "Have not yet received ghost cells at time step "
-                << time_step_id
-                << " but the inbox entry already exists. This is a bug in the "
-                   "ordering of the actions.");
-        ASSERT(
-            not current_boundary_data.has_value(),
-            "The fluxes have already been received at time step "
-                << time_step_id
-                << ". They are either being received for a second time, there "
-                   "is a bug in the ordering of the actions (though a "
-                   "different ASSERT should've caught that), or the incorrect "
-                   "temporal ID is being sent.");
+  using type = type_spsc;
 
-        ASSERT(current_face_mesh == face_mesh,
-               "The mesh being received for the fluxes is different than the "
-               "mesh received for the ghost cells. Mesh for fluxes: "
-                   << face_mesh << " mesh for ghost cells "
-                   << current_face_mesh);
-        ASSERT(
-            current_volume_mesh_of_ghost_cell_data ==
-                volume_mesh_of_ghost_cell_data,
-            "The mesh being received for the ghost cell data is different "
-            "than the mesh received previously. Mesh for received when we got "
-            "fluxes: "
-                << volume_mesh_of_ghost_cell_data
-                << " mesh received when we got ghost cells "
-                << current_volume_mesh_of_ghost_cell_data);
-
-        // We always move here since we take ownership of the data and moves
-        // implicitly decay to copies
-        current_boundary_data = std::move(boundary_data);
-        current_boundary_data_validity_range = boundary_data_validity_range;
-        current_tci_status = boundary_tci_status;
-      } else {
-        // We have not received ghost cells or fluxes at this time.
-        if (not current_inbox.insert(std::forward<ReceiveDataType>(data))
-                    .second) {
-          ERROR("Failed to insert data to receive at instance '"
-                << time_step_id
-                << "' with tag 'BoundaryCorrectionAndGhostCellsInbox'.\n");
-        }
-      }
-      return current_inbox.size();
+  template <typename ReceiveDataType>
+  static size_t insert_into_inbox(const gsl::not_null<type_spsc*> inbox,
+                                  const temporal_id& time_step_id,
+                                  ReceiveDataType&& data) {
+    const std::pair<Direction<Dim>, ElementId<Dim>>& neighbor_id = data.first;
+    // TODO: Need to get hashing working for multiple neighbors in one direction
+    const size_t neighbor_index = DirectionHash<Dim>{}(neighbor_id.first);
+    if (UNLIKELY(not gsl::at(inbox->first, neighbor_index)
+                         .try_emplace(time_step_id, std::move(data.second),
+                                      std::move(data.first)))) {
+      ERROR("Failed to emplace data into inbox. neighbor_id: ("
+            << neighbor_id.first << ',' << neighbor_id.second
+            << ") at TimeStepID: " << time_step_id);
     }
+    // Notes:
+    // 1. fetch_add does a post-increment.
+    // 2. We need thread synchronization here, so doing relaxed_order would be a
+    //    bug.
+    return inbox->second.fetch_add(1, std::memory_order_acq_rel) + 1;
+  }
+
+  template <typename ReceiveDataType>
+  static size_t insert_into_inbox(const gsl::not_null<type_array*> inbox,
+                                  const temporal_id& time_step_id,
+                                  ReceiveDataType&& data) {
+    const size_t time_index = time_step_id.substep();
+    const std::pair<Direction<Dim>, ElementId<Dim>>& neighbor_id = data.first;
+    const size_t neighbor_index = DirectionHash<Dim>{}(neighbor_id.first);
+    gsl::at(gsl::at(*inbox, time_index).first, neighbor_index) =
+        std::move(data.second);
+    // Notes:
+    // 1. fetch_add does a post-increment.
+    // 2. We need thread synchronization here, so doing relaxed_order would be a
+    //    bug.
+    return gsl::at(*inbox, time_index)
+               .second.fetch_add(1, std::memory_order_acq_rel) +
+           1;
+  }
+
+  template <typename ReceiveDataType>
+  static size_t insert_into_inbox(const gsl::not_null<type_map*> inbox,
+                                  const temporal_id& time_step_id,
+                                  ReceiveDataType&& data) {
+    auto& current_inbox = (*inbox)[time_step_id];
+    if (auto it = current_inbox.find(data.first); it != current_inbox.end()) {
+      auto& [volume_mesh_of_ghost_cell_data, face_mesh, ghost_cell_data,
+             boundary_data, boundary_data_validity_range, boundary_tci_status] =
+          data.second;
+      (void)ghost_cell_data;
+      auto& [current_volume_mesh_of_ghost_cell_data, current_face_mesh,
+             current_ghost_cell_data, current_boundary_data,
+             current_boundary_data_validity_range, current_tci_status] =
+          it->second;
+      (void)current_volume_mesh_of_ghost_cell_data;  // Need to use when
+                                                     // optimizing subcell
+      // We have already received some data at this time. Receiving data twice
+      // at the same time should only occur when receiving fluxes after having
+      // previously received ghost cells. We sanity check that the data we
+      // already have is the ghost cells and that we have not yet received
+      // flux data.
+      //
+      // This is used if a 2-send implementation is used (which we don't right
+      // now!). We generally find that the number of communications is more
+      // important than the size of each communication, and so a single
+      // communication per time/sub step is preferred.
+      ASSERT(current_ghost_cell_data.has_value(),
+             "Have not yet received ghost cells at time step "
+                 << time_step_id
+                 << " but the inbox entry already exists. This is a bug in the "
+                    "ordering of the actions.");
+      ASSERT(not current_boundary_data.has_value(),
+             "The fluxes have already been received at time step "
+                 << time_step_id
+                 << ". They are either being received for a second time, there "
+                    "is a bug in the ordering of the actions (though a "
+                    "different ASSERT should've caught that), or the incorrect "
+                    "temporal ID is being sent.");
+
+      ASSERT(current_face_mesh == face_mesh,
+             "The mesh being received for the fluxes is different than the "
+             "mesh received for the ghost cells. Mesh for fluxes: "
+                 << face_mesh << " mesh for ghost cells " << current_face_mesh);
+      ASSERT(current_volume_mesh_of_ghost_cell_data ==
+                 volume_mesh_of_ghost_cell_data,
+             "The mesh being received for the ghost cell data is different "
+             "than the mesh received previously. Mesh for received when we got "
+             "fluxes: "
+                 << volume_mesh_of_ghost_cell_data
+                 << " mesh received when we got ghost cells "
+                 << current_volume_mesh_of_ghost_cell_data);
+
+      // We always move here since we take ownership of the data and moves
+      // implicitly decay to copies
+      current_boundary_data = std::move(boundary_data);
+      current_boundary_data_validity_range = boundary_data_validity_range;
+      current_tci_status = boundary_tci_status;
+    } else {
+      // We have not received ghost cells or fluxes at this time.
+      if (not current_inbox.insert(std::forward<ReceiveDataType>(data))
+                  .second) {
+        ERROR("Failed to insert data to receive at instance '"
+              << time_step_id
+              << "' with tag 'BoundaryCorrectionAndGhostCellsInbox'.\n");
+      }
+    }
+    return current_inbox.size();
   }
 
   static std::string output_inbox(const type& inbox,
@@ -238,6 +280,19 @@ struct BoundaryCorrectionAndGhostCellsInbox {
   }
 
   void pup(PUP::er& /*p*/) {}
+};
+
+/*!
+ * \brief Simple tag used to store inbox data in the DataBox.
+ *
+ * Since the inbox data can be received asynchronously and lockfree ordered
+ * containers are slow and challenging to implement, we instead using an
+ * unordered container for the inbox, then transfer the data into an order map
+ * in the DataBox.
+ */
+template <size_t Dim>
+struct BoundaryData : db::SimpleTag {
+  using type = typename BoundaryCorrectionAndGhostCellsInbox<Dim>::type_map;
 };
 
 /*!
