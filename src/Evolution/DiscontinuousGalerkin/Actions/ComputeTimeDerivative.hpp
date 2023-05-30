@@ -59,12 +59,16 @@
 #include "Utilities/TMPL.hpp"
 
 /// \cond
+template <size_t Dim>
+struct Message;
 namespace Parallel::Actions {
 struct SendDataToElement;
 }
 namespace Parallel::Tags {
 template <size_t Dim>
 struct ElementLocationsPointer;
+struct ThreadPoolPtrBase;
+struct ThreadId;
 }
 namespace Tags {
 struct WaitTime;
@@ -742,9 +746,26 @@ void ComputeTimeDerivative<Dim, EvolutionSystem, DgStepChoosers,
       }
 
       // Send mortar data (the `std::tuple` named `data`) to neighbor
-      if constexpr (db::tag_is_retrievable_v<
-                        Parallel::Tags::ElementLocationsPointer<Dim>,
-                        db::DataBox<DbTagsList>>) {
+      if constexpr (db::tag_is_retrievable_v<Parallel::Tags::ThreadPoolPtrBase,
+                                             db::DataBox<DbTagsList>>) {
+        auto& thread_pool = db::get<Parallel::Tags::ThreadPoolPtrBase>(*box);
+        using ReceiveTag =
+            evolution::dg::Tags::BoundaryCorrectionAndGhostCellsInbox<Dim>;
+        const size_t count = ReceiveTag::insert_into_inbox(
+            make_not_null(&tuples::get<ReceiveTag>(
+                thread_pool->data()->at(neighbor).inboxes())),
+            time_step_id,
+            std::make_pair(std::pair{direction_from_neighbor, element.id()},
+                           std::move(data)));
+        if (count >= 2 * Dim) {
+          const auto thread_id = db::get<Parallel::Tags::ThreadId>(*box);
+          thread_pool->add_task(
+              thread_id,
+              Message<Dim>{false, neighbor, std::nullopt, time_step_id});
+        }
+      } else if constexpr (db::tag_is_retrievable_v<
+                               Parallel::Tags::ElementLocationsPointer<Dim>,
+                               db::DataBox<DbTagsList>>) {
         Parallel::local_synchronous_action<
             Parallel::Actions::SendDataToElement>(
             receiver_proxy, cache,
