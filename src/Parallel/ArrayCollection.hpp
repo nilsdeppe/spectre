@@ -877,7 +877,13 @@ struct SendDataToElement {
             make_not_null(&tuples::get<ReceiveTag>(element->inboxes())),
             instance, std::forward<ReceiveData>(receive_data));
       }
-      if (count == 2 * Dim) {
+      // A lower bound for the number of neighbors is
+      // `2 * Dim - number_of_block_boundaries`, which doesn't give us the
+      // exact minimum number of sends we need to do, but gets us close in most
+      // cases. If we really wanted to we could also add the number of
+      // directions that don't have external boundaries in our neighbors block.
+      if (count >=
+          (2 * Dim - element_to_execute_on.number_of_block_boundaries())) {
         Parallel::threaded_action<Parallel::Actions::ReceiveDataForElement<>>(
             my_proxy[node_of_element], element_to_execute_on);
       }

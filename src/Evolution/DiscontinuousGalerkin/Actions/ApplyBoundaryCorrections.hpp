@@ -478,10 +478,6 @@ bool receive_boundary_data_local_time_stepping(
         box,
         [](const auto boundary_data_ptr, const auto inbox_ptr,
            const Element<volume_dim>& element) -> InboxMap* {
-          if (std::get<1>(*inbox_ptr).load(std::memory_order_relaxed) <
-              2 * volume_dim) {
-            return {};
-          }
           unsigned int number_of_boundary_data_copied = 0;
           for (const auto& [direction, neighbors] : element.neighbors()) {
             if (neighbors.size() != 1) {
@@ -608,7 +604,7 @@ bool receive_boundary_data_local_time_stepping(
                  evolution::dg::Tags::MortarNextTemporalId<volume_dim>,
                  evolution::dg::Tags::NeighborMesh<volume_dim>>(
           box,
-          [&inbox, &needed_time](
+          [inbox, &needed_time](
               const gsl::not_null<
                   std::unordered_map<Key,
                                      TimeSteppers::BoundaryHistory<
@@ -632,6 +628,7 @@ bool receive_boundary_data_local_time_stepping(
             domain::remove_nonexistent_neighbors(neighbor_mesh, element);
 
             // Move received boundary data into boundary history.
+            ASSERT(inbox != nullptr, "The inbox pointer should not be null.");
             for (auto received_data = inbox->begin();
                  received_data != inbox->end() and
                  needed_time(received_data->first);
@@ -706,7 +703,9 @@ bool receive_boundary_data_local_time_stepping(
       get<1>(
           tuples::get<evolution::dg::Tags::BoundaryCorrectionAndGhostCellsInbox<
               volume_dim>>(*inboxes))
-          .fetch_sub(2 * volume_dim, std::memory_order_acq_rel);
+          .fetch_sub(db::get<domain::Tags::Element<volume_dim>>(*box)
+                         .number_of_neighbors(),
+                     std::memory_order_acq_rel);
       return true;
     } else {
       return false;
