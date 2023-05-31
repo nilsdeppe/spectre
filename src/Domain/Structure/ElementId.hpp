@@ -136,6 +136,26 @@ class ElementId {
   /// which should never correspond to the Id of an actual element.
   static ElementId<VolumeDim> external_boundary_id();
 
+  size_t number_of_block_boundaries() const {
+    return (index_xi_ == 0                                        ? 1
+            : (index_xi_ == two_to_the(refinement_level_xi_) - 1) ? 1
+                                                                  : 0) +
+           (VolumeDim > 1
+                ? (index_eta_ == 0
+                       ? 1
+                       : ((index_eta_ == two_to_the(refinement_level_eta_) - 1)
+                              ? 1
+                              : 0))
+                : 0) +
+           (VolumeDim > 2
+                ? (index_zeta_ == 0 ? 1
+                                    : ((index_zeta_ ==
+                                        two_to_the(refinement_level_zeta_) - 1)
+                                           ? 1
+                                           : 0))
+                : 0);
+  }
+
  private:
   uint32_t block_id_ : block_id_bits;
   uint32_t grid_index_ : grid_index_bits;  // end first 32 bits
