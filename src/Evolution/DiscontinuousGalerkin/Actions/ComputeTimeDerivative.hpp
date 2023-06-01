@@ -403,8 +403,8 @@ ComputeTimeDerivative<Dim, EvolutionSystem, DgStepChoosers, LocalTimeStepping>::
           Parallel::GlobalCache<Metavariables>& cache,
           const ArrayIndex& /*array_index*/, ActionList /*meta*/,
           const ParallelComponent* const /*meta*/) {  // NOLINT const
-  std::this_thread::sleep_for(
-      std::chrono::microseconds(db::get<::Tags::WaitTime>(box)));
+  // std::this_thread::sleep_for(
+  //     std::chrono::microseconds(db::get<::Tags::WaitTime>(box)));
 
   using variables_tag = typename EvolutionSystem::variables_tag;
   using dt_variables_tag = db::add_tag_prefix<::Tags::dt, variables_tag>;

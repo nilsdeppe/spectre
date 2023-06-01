@@ -50,37 +50,38 @@ bool functions_of_time_are_ready(
     const Component* /*meta*/, const double time,
     const std::array<std::string, N>& functions_to_check =
         std::array<std::string, 0>{}) {
-  const auto& proxy =
-      ::Parallel::get_parallel_component<Component>(cache)[array_index];
+  ERROR("Bad");
+  // const auto& proxy =
+  //     ::Parallel::get_parallel_component<Component>(cache)[array_index];
 
-  return Parallel::mutable_cache_item_is_ready<CacheTag>(
-      cache, [&functions_to_check, &proxy,
-              &time](const std::unordered_map<
-                     std::string,
-                     std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&
-                         functions_of_time) {
-        using ::operator<<;
-        ASSERT(alg::all_of(
-                   functions_to_check,
-                   [&functions_of_time](const std::string& function_to_check) {
-                     return functions_of_time.count(function_to_check) == 1;
-                   }),
-               "Not all functions to check ("
-                   << functions_to_check << ") are in the global cache ("
-                   << keys_of(functions_of_time) << ")");
-        for (const auto& [name, f_of_t] : functions_of_time) {
-          if ((not functions_to_check.empty()) and
-              alg::find(functions_to_check, name) == functions_to_check.end()) {
-            continue;
-          }
-          const double expiration_time = f_of_t->time_bounds()[1];
-          if (time > expiration_time) {
-            return std::unique_ptr<Parallel::Callback>(
-                new Parallel::PerformAlgorithmCallback(proxy));
-          }
-        }
-        return std::unique_ptr<Parallel::Callback>{};
-      });
+  // return Parallel::mutable_cache_item_is_ready<CacheTag>(
+  //     cache, [&functions_to_check, &proxy,
+  //             &time](const std::unordered_map<
+  //                    std::string,
+  //                    std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&
+  //                        functions_of_time) {
+  //       using ::operator<<;
+  //       ASSERT(alg::all_of(
+  //                  functions_to_check,
+  //                  [&functions_of_time](const std::string& function_to_check) {
+  //                    return functions_of_time.count(function_to_check) == 1;
+  //                  }),
+  //              "Not all functions to check ("
+  //                  << functions_to_check << ") are in the global cache ("
+  //                  << keys_of(functions_of_time) << ")");
+  //       for (const auto& [name, f_of_t] : functions_of_time) {
+  //         if ((not functions_to_check.empty()) and
+  //             alg::find(functions_to_check, name) == functions_to_check.end()) {
+  //           continue;
+  //         }
+  //         const double expiration_time = f_of_t->time_bounds()[1];
+  //         if (time > expiration_time) {
+  //           return std::unique_ptr<Parallel::Callback>(
+  //               new Parallel::PerformAlgorithmCallback(proxy));
+  //         }
+  //       }
+  //       return std::unique_ptr<Parallel::Callback>{};
+  //     });
 }
 
 namespace Actions {
@@ -100,9 +101,9 @@ struct CheckFunctionsOfTimeAreReady {
       Parallel::GlobalCache<Metavariables>& cache,
       const ArrayIndex& array_index, ActionList /*meta*/,
       const ParallelComponent* component) {
-    const bool ready =
-        functions_of_time_are_ready<domain::Tags::FunctionsOfTime>(
-            cache, array_index, component, db::get<::Tags::Time>(box));
+    const bool ready = true;
+    //     functions_of_time_are_ready<domain::Tags::FunctionsOfTime>(
+    //         cache, array_index, component, db::get<::Tags::Time>(box));
     return {ready ? Parallel::AlgorithmExecution::Continue
                   : Parallel::AlgorithmExecution::Retry,
             std::nullopt};

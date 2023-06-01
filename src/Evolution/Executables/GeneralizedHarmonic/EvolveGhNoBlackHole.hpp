@@ -19,6 +19,7 @@
 #include "Parallel/PhaseControl/PhaseControlTags.hpp"
 #include "Parallel/Protocols/RegistrationMetavariables.hpp"
 #include "PointwiseFunctions/AnalyticSolutions/GeneralRelativity/GaugeWave.hpp"
+#include "Time/Actions/SelfStartActions.hpp"
 #include "Utilities/Blas.hpp"
 #include "Utilities/ErrorHandling/Error.hpp"
 #include "Utilities/ErrorHandling/FloatingPointExceptions.hpp"
@@ -40,44 +41,39 @@ struct EvolutionMetavars : public GeneralizedHarmonicTemplateBase<VolumeDim> {
   using typename gh_base::step_actions;
   using typename gh_base::system;
 
-  // using gh_dg_element_array = DgElementArray<
-  //     EvolutionMetavars,
-  //     tmpl::flatten<tmpl::list<
-  //         Parallel::PhaseActions<Parallel::Phase::Initialization,
-  //                                initialization_actions>,
-  //         tmpl::conditional_t<
-  //             UseNumericalInitialData,
-  //             tmpl::list<
-  //                 Parallel::PhaseActions<
-  //                     Parallel::Phase::RegisterWithElementDataReader,
-  //                     tmpl::list<
-  //                         importers::Actions::RegisterWithElementDataReader,
-  //                         Parallel::Actions::TerminatePhase>>,
-  //                 Parallel::PhaseActions<
-  //                     Parallel::Phase::ImportInitialData,
-  //                     tmpl::list<
-  //                         GeneralizedHarmonic::Actions::ReadNumericInitialData<
-  //                             evolution::OptionTags::NumericInitialData>,
-  //                         GeneralizedHarmonic::Actions::SetNumericInitialData<
-  //                             evolution::OptionTags::NumericInitialData>,
-  //                         Parallel::Actions::TerminatePhase>>>,
-  //             tmpl::list<>>,
-  //         Parallel::PhaseActions<
-  //             Parallel::Phase::InitializeInitialDataDependentQuantities,
-  //             initialize_initial_data_dependent_quantities_actions>,
-  //         Parallel::PhaseActions<
-  //             Parallel::Phase::InitializeTimeStepperHistory,
-  //             SelfStart::self_start_procedure<step_actions, system>>,
-  //         Parallel::PhaseActions<Parallel::Phase::Register,
-  //                                tmpl::list<dg_registration_list,
-  //                                           Parallel::Actions::TerminatePhase>>,
-  //         Parallel::PhaseActions<
-  //             Parallel::Phase::Evolve,
-  //             tmpl::list<Actions::RunEventsAndTriggers, Actions::ChangeSlabSize,
-  //                        step_actions, Actions::AdvanceTime,
-  //                        PhaseControl::Actions::ExecutePhaseChange>>>>>;
+  using gh_dg_element_array_array = DgElementArray<
+      EvolutionMetavars,
+      tmpl::flatten<tmpl::list<
+          Parallel::PhaseActions<Parallel::Phase::Initialization,
+                                 initialization_actions>,
+          Parallel::PhaseActions<
+              Parallel::Phase::RegisterWithElementDataReader,
+              tmpl::list<importers::Actions::RegisterWithElementDataReader,
+                         Parallel::Actions::TerminatePhase>>,
+          Parallel::PhaseActions<
+              Parallel::Phase::ImportInitialData,
+              tmpl::list<
+                  gh::Actions::SetInitialData,
+                  tmpl::conditional_t<VolumeDim == 3,
+                                      gh::Actions::ReceiveNumericInitialData,
+                                      tmpl::list<>>,
+                  Parallel::Actions::TerminatePhase>>,
+          Parallel::PhaseActions<
+              Parallel::Phase::InitializeInitialDataDependentQuantities,
+              initialize_initial_data_dependent_quantities_actions>,
+          Parallel::PhaseActions<
+              Parallel::Phase::InitializeTimeStepperHistory,
+              SelfStart::self_start_procedure<step_actions, system>>,
+          Parallel::PhaseActions<Parallel::Phase::Register,
+                                 tmpl::list<dg_registration_list,
+                                            Parallel::Actions::TerminatePhase>>,
+          Parallel::PhaseActions<
+              Parallel::Phase::Evolve,
+              tmpl::list<Actions::RunEventsAndTriggers, Actions::ChangeSlabSize,
+                         step_actions, Actions::AdvanceTime,
+                         PhaseControl::Actions::ExecutePhaseChange>>>>>;
 
-  using gh_dg_element_array = Parallel::DgElementCollection<
+  using gh_dg_element_array_nodegroup = Parallel::DgElementCollection<
       VolumeDim, EvolutionMetavars,
       tmpl::list<
           Parallel::PhaseActions<Parallel::Phase::Initialization,
@@ -98,7 +94,8 @@ struct EvolutionMetavars : public GeneralizedHarmonicTemplateBase<VolumeDim> {
 
           Parallel::PhaseActions<
               Parallel::Phase::InitializeTimeStepperHistory,
-              SelfStart::self_start_procedure<step_actions, system>>,
+              tmpl::flatten<tmpl::list<
+                  SelfStart::self_start_procedure<step_actions, system>>>>,
 
           Parallel::PhaseActions<Parallel::Phase::Register,
                                  tmpl::list<dg_registration_list,
@@ -110,6 +107,8 @@ struct EvolutionMetavars : public GeneralizedHarmonicTemplateBase<VolumeDim> {
                          Actions::ChangeSlabSize, step_actions,
                          Actions::AdvanceTime,
                          PhaseControl::Actions::ExecutePhaseChange>>>>;
+
+  using gh_dg_element_array = gh_dg_element_array_nodegroup;
 
   struct registration
       : tt::ConformsTo<Parallel::protocols::RegistrationMetavariables> {

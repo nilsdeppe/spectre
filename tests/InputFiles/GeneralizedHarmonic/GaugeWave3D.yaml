@@ -13,7 +13,7 @@ ExpectedOutput:
 ---
 
 WaitTime: 0
-NumberOfThreads: 16
+# NumberOfThreads: 16
 
 ResourceInfo:
   AvoidGlobalProc0: false
@@ -22,10 +22,22 @@ ResourceInfo:
 Evolution:
   InitialTime: 0.0
   InitialTimeStep: 0.0001
+  InitialSlabSize: 0.001
   TimeStepper:
-    DormandPrince5:
-    # AdamsBashforth:
-    #   Order: 3
+    # DormandPrince5:
+    AdamsBashforth:
+      Order: 5
+  StepChoosers:
+    - Increase:
+        Factor: 2
+    - ElementSizeCfl:
+        SafetyFactor: 0.5
+    - ErrorControl:
+        AbsoluteTolerance: 1e-8
+        RelativeTolerance: 1e-6
+        MaxFactor: 2
+        MinFactor: 0.25
+        SafetyFactor: 0.95
 
 PhaseChangeAndTriggers:
   - Trigger:
@@ -44,15 +56,44 @@ InitialData: &InitialData
     Wavelength: 1.0
 
 DomainCreator:
-  Brick:
-    LowerBound: [0.0, 0.0, 0.0]
-    UpperBound: [1.0, 1.0, 1.0]
-    InitialRefinement: [2, 3, 3]
+  Sphere:
+    InnerRadius: 2.0
+    OuterRadius: 100.0
+    Interior:
+      ExciseWithBoundaryCondition:
+        DirichletAnalytic:
+          AnalyticPrescription: *InitialData
+      # FillWithSphericity: 0.
+    # InitialRefinement: 1
+    InitialRefinement:
+      Shell0: [1, 1, 1]
+      Shell1: [1, 1, 1]
+      Shell2: [1, 1, 1]
+      Shell3: [1, 1, 1]
     InitialGridPoints: [10, 10, 10]
-    TimeDependence: None
-    BoundaryConditionInX: Periodic
-    BoundaryConditionInY: Periodic
-    BoundaryConditionInZ: Periodic
+    RadialPartitioning: [4, 10, 40]
+    RadialDistribution: [Logarithmic, Logarithmic, Logarithmic, Logarithmic]
+    UseEquiangularMap: True
+    EquatorialCompression: None
+    WhichWedges: All
+    TimeDependentMaps: None
+    OuterBoundaryCondition:
+      # ConstraintPreservingBjorhus:
+      #     Type: ConstraintPreservingPhysical
+      DirichletAnalytic:
+        AnalyticPrescription: *InitialData
+  # Brick:
+  #   LowerBound: [0.0, 0.0, 0.0]
+  #   UpperBound: [1.0, 1.0, 1.0]
+  #   InitialRefinement: [0, 0, 0]
+  #   InitialGridPoints: [10, 10, 10]
+  #   TimeDependence: None
+  #   # BoundaryConditionInX: Periodic
+  #   BoundaryConditionInX:
+  #     DirichletAnalytic:
+  #       AnalyticPrescription: *InitialData
+  #   BoundaryConditionInY: Periodic
+  #   BoundaryConditionInZ: Periodic
 
 EvolutionSystem:
   GeneralizedHarmonic:
@@ -82,7 +123,7 @@ Filtering:
   ExpFilter0:
     Alpha: 36.0
     HalfPower: 128
-    Enable: true
+    Enable: false
     BlocksToFilter: All
 
 SpatialDiscretization:
@@ -96,7 +137,7 @@ EventsAndTriggers:
   - Trigger:
       Slabs:
         EvenlySpaced:
-          Interval: 2
+          Interval: 1
           Offset: 0
     Events:
       - ObserveNorms:
@@ -132,7 +173,7 @@ EventsAndTriggers:
   - Trigger:
       Slabs:
         Specified:
-          Values: [30]
+          Values: [5]
     Events:
       - Completion
 

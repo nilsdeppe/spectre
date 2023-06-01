@@ -110,7 +110,6 @@
 #include "Time/Actions/AdvanceTime.hpp"
 #include "Time/Actions/ChangeSlabSize.hpp"
 #include "Time/Actions/RecordTimeStepperData.hpp"
-#include "Time/Actions/SelfStartActions.hpp"
 #include "Time/Actions/UpdateU.hpp"
 #include "Time/StepChoosers/Cfl.hpp"
 #include "Time/StepChoosers/Constant.hpp"
@@ -131,6 +130,24 @@
 #include "Utilities/ProtocolHelpers.hpp"
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 #include "Utilities/TMPL.hpp"
+
+template <size_t N, size_t Dim>
+struct Print {
+  template <typename DbTags, typename... InboxTags, typename Metavariables,
+            typename ArrayIndex, typename ActionList,
+            typename ParallelComponent>
+  static Parallel::iterable_action_return_t apply(
+      db::DataBox<DbTags>& box,
+      const tuples::TaggedTuple<InboxTags...>& /*inboxes*/,
+      const Parallel::GlobalCache<Metavariables>& /*cache*/,
+      const ArrayIndex& /*array_index*/, const ActionList /*meta*/,
+      const ParallelComponent* const /*meta*/) {
+    Parallel::printf("%ld %s\n", N,
+                     db::get<domain::Tags::Element<Dim>>(box).id());
+    return {Parallel::AlgorithmExecution::Continue, std::nullopt};
+  }
+};
+
 
 /// \cond
 namespace Frame {
@@ -295,7 +312,7 @@ template <size_t VolumeDim>
 struct GeneralizedHarmonicTemplateBase {
   static constexpr size_t volume_dim = VolumeDim;
   using system = gh::System<volume_dim>;
-  static constexpr bool local_time_stepping = false;
+  static constexpr bool local_time_stepping = true;
 
   // NOLINTNEXTLINE(google-runtime-references)
   void pup(PUP::er& /*p*/) {}
@@ -352,12 +369,12 @@ struct GeneralizedHarmonicTemplateBase {
                   system, volume_dim, false>,
               Actions::RecordTimeStepperData<system>,
               evolution::Actions::RunEventsAndDenseTriggers<tmpl::list<>>,
-              Actions::UpdateU<system>,
-              dg::Actions::Filter<
-                  Filters::Exponential<0>,
-                  tmpl::list<gr::Tags::SpacetimeMetric<DataVector, volume_dim>,
-                             gh::Tags::Pi<DataVector, volume_dim>,
-                             gh::Tags::Phi<DataVector, volume_dim>>>>>>;
+              Actions::UpdateU<system>>>,
+      dg::Actions::Filter<
+          Filters::Exponential<0>,
+          tmpl::list<gr::Tags::SpacetimeMetric<DataVector, volume_dim>,
+                     gh::Tags::Pi<DataVector, volume_dim>,
+                     gh::Tags::Phi<DataVector, volume_dim>>>>;
 
   template <typename DerivedMetavars, bool UseControlSystems>
   using initialization_actions = tmpl::list<
