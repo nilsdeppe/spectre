@@ -183,7 +183,7 @@ bool receive_boundary_data_global_time_stepping(
             -> std::pair<typename NodeType::key_type,
                          typename NodeType::mapped_type> {
           if (std::get<1>(*inbox_ptr).load(std::memory_order_relaxed) <
-              2 * volume_dim) {
+              element.number_of_neighbors()) {
             return {};
           }
           unsigned int number_of_boundary_data_copied = 0;
@@ -298,12 +298,17 @@ bool receive_boundary_data_global_time_stepping(
           if (node.empty()) {
             return {};
           }
+          if (UNLIKELY(node.mapped().size() !=
+                         element.number_of_neighbors())) {
+            ERROR("Incorrect number of element neighbors");
+          }
           *local_have_all_data = true;
           // We only decrease the counter if we are done with the current time
           // and we only decrease it by the number of neighbors at the current
           // time.
           get<1>(*inbox_ptr)
-              .fetch_sub(2 * volume_dim, std::memory_order_acq_rel);
+              .fetch_sub(element.number_of_neighbors(),
+                         std::memory_order_acq_rel);
 
           return std::pair{std::move(node.key()), std::move(node.mapped())};
         },
@@ -599,7 +604,7 @@ bool receive_boundary_data_local_time_stepping(
                  evolution::dg::Tags::MortarNextTemporalId<volume_dim>,
                  evolution::dg::Tags::NeighborMesh<volume_dim>>(
           box,
-          [inbox, &needed_time](
+          [&inbox, &needed_time](
               const gsl::not_null<
                   std::unordered_map<Key,
                                      TimeSteppers::BoundaryHistory<

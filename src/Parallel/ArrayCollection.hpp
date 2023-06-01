@@ -372,7 +372,8 @@ void DgElementArrayMember<
           "correctly. The previous phase is: "
           << phase_ << " and the next phase is: " << next_phase
           << ", The termination flag is: " << get_terminate()
-          << ", and the halt flag is: " << halt_algorithm_until_next_phase_);
+          << ", and the halt flag is: " << halt_algorithm_until_next_phase_
+          << ' ' << element_id_);
     }
     // set terminate to true if there are no actions in this PDAL
     set_terminate(number_of_actions_in_phase(next_phase) == 0);
@@ -882,11 +883,11 @@ struct SendDataToElement {
       // exact minimum number of sends we need to do, but gets us close in most
       // cases. If we really wanted to we could also add the number of
       // directions that don't have external boundaries in our neighbors block.
-      if (count >=
-          (2 * Dim - element_to_execute_on.number_of_block_boundaries())) {
+      // if (count >=
+      //     (2 * Dim - element_to_execute_on.number_of_block_boundaries())) {
         Parallel::threaded_action<Parallel::Actions::ReceiveDataForElement<>>(
             my_proxy[node_of_element], element_to_execute_on);
-      }
+      // }
     } else {
       Parallel::threaded_action<Parallel::Actions::ReceiveDataForElement<>>(
           my_proxy[node_of_element], ReceiveTag{}, element_to_execute_on,
@@ -1179,6 +1180,10 @@ struct DgElementCollection : PassComponentThisPointer {
 
           Parallel::PhaseActions<Parallel::Phase::ImportInitialData,
                                  tmpl::list<Actions::StartPhaseOnNodegroup>>,
+
+          Parallel::PhaseActions<
+              Parallel::Phase::InitializeInitialDataDependentQuantities,
+              tmpl::list<Actions::StartPhaseOnNodegroup>>,
 
           Parallel::PhaseActions<Parallel::Phase::InitializeTimeStepperHistory,
                                  tmpl::list<Actions::StartPhaseOnNodegroup>>,
