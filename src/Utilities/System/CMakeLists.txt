@@ -10,6 +10,7 @@ spectre_target_sources(
   PRIVATE
   Abort.cpp
   AttachDebugger.cpp
+  CacheInfo.cpp
   Exit.cpp
   ParallelInfo.cpp
   Prefetch.cpp
@@ -21,6 +22,7 @@ spectre_target_headers(
   HEADERS
   Abort.hpp
   AttachDebugger.hpp
+  CacheInfo.hpp
   Exit.hpp
   ParallelInfo.hpp
   Prefetch.hpp
