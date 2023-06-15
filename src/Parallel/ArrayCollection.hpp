@@ -529,10 +529,11 @@ bool DgElementArrayMember<Dim, Metavariables,
   // We could probably fix this by being _extremely_ careful.
   //
   // TODO: do this for simple & threaded actions too?
-  db::mutate<Tags::InboxesLockPtr>(make_not_null(&box_),
-                                   [this](const auto inbox_lock_ptr) {
-                                     *inbox_lock_ptr = &(this->inbox_lock_);
-                                   });
+  db::mutate<Tags::InboxesLockPtr>(
+      [this](const auto inbox_lock_ptr) {
+        *inbox_lock_ptr = &(this->inbox_lock_);
+      },
+      make_not_null(&box_));
 
   const auto& [requested_execution, next_action_step] = ThisAction::apply(
       box_, inboxes_, *Parallel::local_branch(global_cache_proxy_),
@@ -562,11 +563,11 @@ bool DgElementArrayMember<Dim, Metavariables,
     default:  // LCOV_EXCL_LINE
       // LCOV_EXCL_START
       ERROR("No case for a Parallel::AlgorithmExecution with integral value "
-            << static_cast<std::underlying_type_t<AlgorithmExecution>>(
-                   requested_execution)
+            // << static_cast<std::underlying_type_t<AlgorithmExecution>>(
+            //        requested_execution)
             << "\n");
       // LCOV_EXCL_STOP
-  }
+  };
 }
 
 template <size_t Dim, typename Metavariables,
@@ -638,7 +639,6 @@ struct SetTerminateOnElement {
       std::lock_guard node_guard(*node_lock);
       return db::mutate<Tags::ElementCollectionBase,
                         Tags::NumberOfElementsTerminated>(
-          make_not_null(&box),
           [&cache, &my_element_id ](const auto element_collection_ptr,
                                     const auto num_terminated_ptr) -> auto& {
             try {
@@ -656,7 +656,8 @@ struct SetTerminateOnElement {
               ERROR("Could not find element with ID " << my_element_id
                                                       << " on node");
             }
-          });
+          },
+          make_not_null(&box));
     }
     ();
     // Note: since this is a local synchronous action running on the element
@@ -930,12 +931,13 @@ struct SpawnInitializeElementsInCollection {
                     const double /*unused_but_we_needed_to_reduce_something*/) {
     auto my_proxy = Parallel::get_parallel_component<ParallelComponent>(cache);
     db::mutate<Tags::ElementCollectionBase>(
-        make_not_null(&box), [&my_proxy](const auto element_collection_ptr) {
+        [&my_proxy](const auto element_collection_ptr) {
           for (auto& [element_id, element] : *element_collection_ptr) {
             Parallel::threaded_action<ReceiveDataForElement<true>>(my_proxy,
                                                                    element_id);
           }
-        });
+        },
+        make_not_null(&box));
   }
 };
 
@@ -1079,7 +1081,6 @@ struct InitializeElementCollection {  // TODO: CreateElementCollection
                Tags::ElementCollection<Dim, Metavariables, PhaseDepActionList,
                                        SimpleTagsFromOptions>,
                Tags::NumberOfElementsTerminated>(
-        make_not_null(&box),
         [&local_cache, &initialization_items, &my_elements, &node_of_elements,
          &node_lock, dist_object](
             const auto element_locations_ptr, const auto collection_ptr,
@@ -1111,20 +1112,22 @@ struct InitializeElementCollection {  // TODO: CreateElementCollection
               ++(*number_of_elements_terminated);
             }
           }
-        });
+        },
+        make_not_null(&box));
 
     const size_t number_of_cores_on_node =
         Parallel::procs_on_node<size_t>(my_node, local_cache);
     db::mutate<Tags::ElementsToEvaluate<Dim>>(
-        make_not_null(&box), [number_of_cores_on_node, dist_object](
-                                 const auto elements_to_evaluate_ptr) {
+        [number_of_cores_on_node,
+         dist_object](const auto elements_to_evaluate_ptr) {
           elements_to_evaluate_ptr->resize(number_of_cores_on_node);
           for (auto& elements_to_evaluate_on_core : *elements_to_evaluate_ptr) {
             elements_to_evaluate_on_core.reserve(max_num_evaluations);
           }
           dist_object->evil_ptr1 =
               static_cast<void*>(std::addressof((*elements_to_evaluate_ptr)));
-        });
+        },
+        make_not_null(&box));
 
     Parallel::contribute_to_reduction<SpawnInitializeElementsInCollection>(
         Parallel::ReductionData<

@@ -480,7 +480,6 @@ bool receive_boundary_data_local_time_stepping(
                                           BoundaryCorrectionAndGhostCellsInbox<
                                               volume_dim>::type>) {
     inbox = db::mutate<evolution::dg::Tags::BoundaryData<volume_dim>>(
-        box,
         [](const auto boundary_data_ptr, const auto inbox_ptr,
            const Element<volume_dim>& element) -> InboxMap* {
           unsigned int number_of_boundary_data_copied = 0;
@@ -592,6 +591,7 @@ bool receive_boundary_data_local_time_stepping(
 
           return boundary_data_ptr.get();
         },
+        box,
         make_not_null(
             &tuples::get<evolution::dg::Tags::
                              BoundaryCorrectionAndGhostCellsInbox<volume_dim>>(
@@ -608,7 +608,6 @@ bool receive_boundary_data_local_time_stepping(
                      volume_dim, typename dt_variables_tag::type>,
                  evolution::dg::Tags::MortarNextTemporalId<volume_dim>,
                  evolution::dg::Tags::NeighborMesh<volume_dim>>(
-          box,
           [&inbox, &needed_time](
               const gsl::not_null<
                   std::unordered_map<Key,
@@ -684,7 +683,7 @@ bool receive_boundary_data_local_time_stepping(
             }
             return true;
           },
-          db::get<::domain::Tags::Element<volume_dim>>(*box));
+          box, db::get<::domain::Tags::Element<volume_dim>>(*box));
 
   if (not have_all_intermediate_messages) {
     return false;
