@@ -123,7 +123,7 @@ void volume_terms(
 
   // For now just zero dt_vars. If this is a performance bottle neck we
   // can re-evaluate in the future.
-  dt_vars_ptr->initialize(mesh.number_of_grid_points(), 0.0);
+  dt_vars_ptr->initialize(mesh.number_of_grid_points());
 
   // Compute volume du/dt and fluxes
   if constexpr (std::is_base_of_v<evolution::PassVariables,

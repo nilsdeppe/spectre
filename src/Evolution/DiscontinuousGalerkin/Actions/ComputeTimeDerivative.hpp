@@ -743,12 +743,20 @@ void ComputeTimeDerivative<Dim, EvolutionSystem, DgStepChoosers,
       SendData data{};
 
       if (neighbor_count == total_neighbors) {
-        data = SendData{ghost_data_mesh,
-                        neighbor_boundary_data_on_mortar.first,
-                        std::move(ghost_and_subcell_data),
-                        {std::move(neighbor_boundary_data_on_mortar.second)},
-                        next_time_step_id,
-                        tci_decision};
+        // TODO: test std::move here
+        // data = std::move(
+        //     SendData{ghost_data_mesh,
+        //              neighbor_boundary_data_on_mortar.first,
+        //              std::move(ghost_and_subcell_data),
+        //              {std::move(neighbor_boundary_data_on_mortar.second)},
+        //              next_time_step_id,
+        //              tci_decision});
+        get<0>(data) = ghost_data_mesh;
+        get<1>(data) = neighbor_boundary_data_on_mortar.first;
+        get<2>(data) = std::move(ghost_and_subcell_data);
+        get<3>(data) = std::move(neighbor_boundary_data_on_mortar.second);
+        get<4>(data) = next_time_step_id;
+        get<5>(data) = tci_decision;
       } else {
         data = SendData{ghost_data_mesh,
                         neighbor_boundary_data_on_mortar.first,
