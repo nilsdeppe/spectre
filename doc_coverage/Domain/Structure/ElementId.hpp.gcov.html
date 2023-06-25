@@ -1,0 +1,346 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - 18097182aa3a9818e2b2063a0ed2a34000ca2ea5 - Domain/Structure/ElementId.hpp</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title"> SpECTRE Documentation Coverage Report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">Domain/Structure</a> - ElementId.hpp</td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+             <td class="headerItem">Commit:</td>
+             <td class="headerValue"><a target="_blank" href="https://github.com/sxs-collaboration/spectre/commit/18097182aa3a9818e2b2063a0ed2a34000ca2ea5">18097182aa3a9818e2b2063a0ed2a34000ca2ea5</a></td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">13</td>
+            <td class="headerCovTableEntry">44</td>
+            <td class="headerCovTableEntryLo">29.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2023-06-25 06:59:04</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span><span class="lineCov">          1 : // Distributed under the MIT License.</span></a>
+<a name="2"><span class="lineNum">       2 </span>            : // See LICENSE.txt for details.</a>
+<a name="3"><span class="lineNum">       3 </span>            : </a>
+<a name="4"><span class="lineNum">       4 </span>            : /// \file</a>
+<a name="5"><span class="lineNum">       5 </span>            : /// Defines class ElementId.</a>
+<a name="6"><span class="lineNum">       6 </span>            : </a>
+<a name="7"><span class="lineNum">       7 </span>            : #pragma once</a>
+<a name="8"><span class="lineNum">       8 </span>            : </a>
+<a name="9"><span class="lineNum">       9 </span>            : #include &lt;array&gt;</a>
+<a name="10"><span class="lineNum">      10 </span>            : #include &lt;cstddef&gt;</a>
+<a name="11"><span class="lineNum">      11 </span>            : #include &lt;functional&gt;</a>
+<a name="12"><span class="lineNum">      12 </span>            : #include &lt;iosfwd&gt;</a>
+<a name="13"><span class="lineNum">      13 </span>            : #include &lt;limits&gt;</a>
+<a name="14"><span class="lineNum">      14 </span>            : #include &lt;optional&gt;</a>
+<a name="15"><span class="lineNum">      15 </span>            : </a>
+<a name="16"><span class="lineNum">      16 </span>            : #include &quot;Domain/Structure/SegmentId.hpp&quot;</a>
+<a name="17"><span class="lineNum">      17 </span>            : #include &quot;Domain/Structure/Side.hpp&quot;</a>
+<a name="18"><span class="lineNum">      18 </span>            : #include &quot;Utilities/Algorithm.hpp&quot;</a>
+<a name="19"><span class="lineNum">      19 </span>            : #include &quot;Utilities/ErrorHandling/Assert.hpp&quot;</a>
+<a name="20"><span class="lineNum">      20 </span>            : #include &quot;Utilities/ErrorHandling/Error.hpp&quot;</a>
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;Utilities/MakeArray.hpp&quot;</a>
+<a name="22"><span class="lineNum">      22 </span>            : </a>
+<a name="23"><span class="lineNum">      23 </span>            : /// \cond</a>
+<a name="24"><span class="lineNum">      24 </span>            : namespace PUP {</a>
+<a name="25"><span class="lineNum">      25 </span>            : class er;</a>
+<a name="26"><span class="lineNum">      26 </span>            : }  // namespace PUP</a>
+<a name="27"><span class="lineNum">      27 </span>            : /// \endcond</a>
+<a name="28"><span class="lineNum">      28 </span>            : </a>
+<a name="29"><span class="lineNum">      29 </span>            : /*!</a>
+<a name="30"><span class="lineNum">      30 </span>            :  * \ingroup ComputationalDomainGroup</a>
+<a name="31"><span class="lineNum">      31 </span>            :  * \brief An ElementId uniquely labels an Element.</a>
+<a name="32"><span class="lineNum">      32 </span>            :  *</a>
+<a name="33"><span class="lineNum">      33 </span>            :  * It is constructed from the BlockId of the Block to which the Element belongs</a>
+<a name="34"><span class="lineNum">      34 </span>            :  * and the VolumeDim SegmentIds that label the segments of the Block that the</a>
+<a name="35"><span class="lineNum">      35 </span>            :  * Element covers. An optional `grid_index` identifies elements with the same</a>
+<a name="36"><span class="lineNum">      36 </span>            :  * BlockId and SegmentIds across multiple grids.</a>
+<a name="37"><span class="lineNum">      37 </span>            :  *</a>
+<a name="38"><span class="lineNum">      38 </span>            :  * \details</a>
+<a name="39"><span class="lineNum">      39 </span>            :  * The `ElementId` serves as an index that is compatible with Charm++ and</a>
+<a name="40"><span class="lineNum">      40 </span>            :  * therefore must adhere to the restrictions imposed by Charm++. These are:</a>
+<a name="41"><span class="lineNum">      41 </span>            :  * - `ElementId` must satisfy `std::is_pod`</a>
+<a name="42"><span class="lineNum">      42 </span>            :  * - `ElementId` must not be larger than the size of three `int`s, i.e.</a>
+<a name="43"><span class="lineNum">      43 </span>            :  *   `sizeof(ElementId) &lt;= 3 * sizeof(int)`</a>
+<a name="44"><span class="lineNum">      44 </span>            :  *</a>
+<a name="45"><span class="lineNum">      45 </span>            :  * The latter restriction can be relaxed with a special compilation flag to</a>
+<a name="46"><span class="lineNum">      46 </span>            :  * Charm++, but we have not yet needed more elements than can be accounted for</a>
+<a name="47"><span class="lineNum">      47 </span>            :  * by densely packing bits together. `SegmentId` is responsible for handling the</a>
+<a name="48"><span class="lineNum">      48 </span>            :  * low-level bit manipulations to create an index that satisfies the size</a>
+<a name="49"><span class="lineNum">      49 </span>            :  * constraints.</a>
+<a name="50"><span class="lineNum">      50 </span>            :  */</a>
+<a name="51"><span class="lineNum">      51 </span>            : template &lt;size_t VolumeDim&gt;</a>
+<a name="52"><span class="lineNum">      52 </span><span class="lineCov">          1 : class ElementId {</span></a>
+<a name="53"><span class="lineNum">      53 </span>            :  public:</a>
+<a name="54"><span class="lineNum">      54 </span><span class="lineNoCov">          0 :   static constexpr size_t block_id_bits = 24;</span></a>
+<a name="55"><span class="lineNum">      55 </span><span class="lineNoCov">          0 :   static constexpr size_t grid_index_bits = 8;</span></a>
+<a name="56"><span class="lineNum">      56 </span><span class="lineNoCov">          0 :   static constexpr size_t refinement_bits = 4;</span></a>
+<a name="57"><span class="lineNum">      57 </span><span class="lineNoCov">          0 :   static constexpr size_t max_refinement_level = 16;</span></a>
+<a name="58"><span class="lineNum">      58 </span>            :   // We need some padding to ensure bit fields align with type boundaries,</a>
+<a name="59"><span class="lineNum">      59 </span>            :   // otherwise the size of `ElementId` is too large.</a>
+<a name="60"><span class="lineNum">      60 </span><span class="lineNoCov">          0 :   static constexpr size_t padding = 4;</span></a>
+<a name="61"><span class="lineNum">      61 </span>            :   static_assert(block_id_bits + 3 * (refinement_bits + max_refinement_level) +</a>
+<a name="62"><span class="lineNum">      62 </span>            :                         grid_index_bits + padding ==</a>
+<a name="63"><span class="lineNum">      63 </span>            :                     3 * 8 * sizeof(int),</a>
+<a name="64"><span class="lineNum">      64 </span>            :                 &quot;Bit representation requires padding or is too large&quot;);</a>
+<a name="65"><span class="lineNum">      65 </span>            :   static_assert(two_to_the(refinement_bits) &gt;= max_refinement_level,</a>
+<a name="66"><span class="lineNum">      66 </span>            :                 &quot;Not enough bits to represent all refinement levels&quot;);</a>
+<a name="67"><span class="lineNum">      67 </span>            : </a>
+<a name="68"><span class="lineNum">      68 </span><span class="lineNoCov">          0 :   static constexpr size_t volume_dim = VolumeDim;</span></a>
+<a name="69"><span class="lineNum">      69 </span>            : </a>
+<a name="70"><span class="lineNum">      70 </span>            :   /// Default constructor needed for Charm++ serialization.</a>
+<a name="71"><span class="lineNum">      71 </span><span class="lineCov">          1 :   ElementId() = default;</span></a>
+<a name="72"><span class="lineNum">      72 </span><span class="lineNoCov">          0 :   ElementId(const ElementId&amp;) = default;</span></a>
+<a name="73"><span class="lineNum">      73 </span><span class="lineNoCov">          0 :   ElementId&amp; operator=(const ElementId&amp;) = default;</span></a>
+<a name="74"><span class="lineNum">      74 </span><span class="lineNoCov">          0 :   ElementId(ElementId&amp;&amp;) = default;</span></a>
+<a name="75"><span class="lineNum">      75 </span><span class="lineNoCov">          0 :   ElementId&amp; operator=(ElementId&amp;&amp;) = default;</span></a>
+<a name="76"><span class="lineNum">      76 </span><span class="lineNoCov">          0 :   ~ElementId() = default;</span></a>
+<a name="77"><span class="lineNum">      77 </span>            : </a>
+<a name="78"><span class="lineNum">      78 </span>            :   /// Create the ElementId of the root Element of a Block.</a>
+<a name="79"><span class="lineNum">      79 </span><span class="lineCov">          1 :   explicit ElementId(size_t block_id, size_t grid_index = 0);</span></a>
+<a name="80"><span class="lineNum">      80 </span>            : </a>
+<a name="81"><span class="lineNum">      81 </span>            :   /// Create an arbitrary ElementId.</a>
+<a name="82"><span class="lineNum">      82 </span><span class="lineCov">          1 :   ElementId(size_t block_id, std::array&lt;SegmentId, VolumeDim&gt; segment_ids,</span></a>
+<a name="83"><span class="lineNum">      83 </span>            :             size_t grid_index = 0);</a>
+<a name="84"><span class="lineNum">      84 </span>            : </a>
+<a name="85"><span class="lineNum">      85 </span>            :   /// Create an ElementId from its string representation (see `operator&lt;&lt;`).</a>
+<a name="86"><span class="lineNum">      86 </span><span class="lineCov">          1 :   ElementId(const std::string&amp; grid_name);</span></a>
+<a name="87"><span class="lineNum">      87 </span>            : </a>
+<a name="88"><span class="lineNum">      88 </span><span class="lineNoCov">          0 :   ElementId&lt;VolumeDim&gt; id_of_child(size_t dim, Side side) const;</span></a>
+<a name="89"><span class="lineNum">      89 </span>            : </a>
+<a name="90"><span class="lineNum">      90 </span><span class="lineNoCov">          0 :   ElementId&lt;VolumeDim&gt; id_of_parent(size_t dim) const;</span></a>
+<a name="91"><span class="lineNum">      91 </span>            : </a>
+<a name="92"><span class="lineNum">      92 </span><span class="lineNoCov">          0 :   size_t block_id() const { return block_id_; }</span></a>
+<a name="93"><span class="lineNum">      93 </span>            : </a>
+<a name="94"><span class="lineNum">      94 </span><span class="lineNoCov">          0 :   size_t grid_index() const { return grid_index_; }</span></a>
+<a name="95"><span class="lineNum">      95 </span>            : </a>
+<a name="96"><span class="lineNum">      96 </span><span class="lineNoCov">          0 :   std::array&lt;size_t, VolumeDim&gt; refinement_levels() const {</span></a>
+<a name="97"><span class="lineNum">      97 </span>            :     if constexpr (VolumeDim == 1) {</a>
+<a name="98"><span class="lineNum">      98 </span>            :       return {{refinement_level_xi_}};</a>
+<a name="99"><span class="lineNum">      99 </span>            :     } else if constexpr (VolumeDim == 2) {</a>
+<a name="100"><span class="lineNum">     100 </span>            :       return {{refinement_level_xi_, refinement_level_eta_}};</a>
+<a name="101"><span class="lineNum">     101 </span>            :     } else if constexpr (VolumeDim == 3) {</a>
+<a name="102"><span class="lineNum">     102 </span>            :       return {{refinement_level_xi_, refinement_level_eta_,</a>
+<a name="103"><span class="lineNum">     103 </span>            :                refinement_level_zeta_}};</a>
+<a name="104"><span class="lineNum">     104 </span>            :     }</a>
+<a name="105"><span class="lineNum">     105 </span>            :   }</a>
+<a name="106"><span class="lineNum">     106 </span>            : </a>
+<a name="107"><span class="lineNum">     107 </span><span class="lineNoCov">          0 :   std::array&lt;SegmentId, VolumeDim&gt; segment_ids() const {</span></a>
+<a name="108"><span class="lineNum">     108 </span>            :     if constexpr (VolumeDim == 1) {</a>
+<a name="109"><span class="lineNum">     109 </span>            :       return {{SegmentId{refinement_level_xi_, index_xi_}}};</a>
+<a name="110"><span class="lineNum">     110 </span>            :     } else if constexpr (VolumeDim == 2) {</a>
+<a name="111"><span class="lineNum">     111 </span>            :       return {{SegmentId{refinement_level_xi_, index_xi_},</a>
+<a name="112"><span class="lineNum">     112 </span>            :                SegmentId{refinement_level_eta_, index_eta_}}};</a>
+<a name="113"><span class="lineNum">     113 </span>            :     } else if constexpr (VolumeDim == 3) {</a>
+<a name="114"><span class="lineNum">     114 </span>            :       return {{SegmentId{refinement_level_xi_, index_xi_},</a>
+<a name="115"><span class="lineNum">     115 </span>            :                SegmentId{refinement_level_eta_, index_eta_},</a>
+<a name="116"><span class="lineNum">     116 </span>            :                SegmentId{refinement_level_zeta_, index_zeta_}}};</a>
+<a name="117"><span class="lineNum">     117 </span>            :     }</a>
+<a name="118"><span class="lineNum">     118 </span>            :   }</a>
+<a name="119"><span class="lineNum">     119 </span>            : </a>
+<a name="120"><span class="lineNum">     120 </span><span class="lineNoCov">          0 :   SegmentId segment_id(const size_t dim) const {</span></a>
+<a name="121"><span class="lineNum">     121 </span>            :     ASSERT(dim &lt; VolumeDim, &quot;Dimension must be smaller than &quot;</a>
+<a name="122"><span class="lineNum">     122 </span>            :                                 &lt;&lt; VolumeDim &lt;&lt; &quot;, but is: &quot; &lt;&lt; dim);</a>
+<a name="123"><span class="lineNum">     123 </span>            :     switch (dim) {</a>
+<a name="124"><span class="lineNum">     124 </span>            :       case 0:</a>
+<a name="125"><span class="lineNum">     125 </span>            :         return {refinement_level_xi_, index_xi_};</a>
+<a name="126"><span class="lineNum">     126 </span>            :       case 1:</a>
+<a name="127"><span class="lineNum">     127 </span>            :         return {refinement_level_eta_, index_eta_};</a>
+<a name="128"><span class="lineNum">     128 </span>            :       case 2:</a>
+<a name="129"><span class="lineNum">     129 </span>            :         return {refinement_level_zeta_, index_zeta_};</a>
+<a name="130"><span class="lineNum">     130 </span>            :       default:</a>
+<a name="131"><span class="lineNum">     131 </span>            :         ERROR(&quot;Invalid dimension: &quot; &lt;&lt; dim);</a>
+<a name="132"><span class="lineNum">     132 </span>            :     }</a>
+<a name="133"><span class="lineNum">     133 </span>            :   }</a>
+<a name="134"><span class="lineNum">     134 </span>            : </a>
+<a name="135"><span class="lineNum">     135 </span>            :   /// Returns an ElementId meant for identifying data on external boundaries,</a>
+<a name="136"><span class="lineNum">     136 </span>            :   /// which should never correspond to the Id of an actual element.</a>
+<a name="137"><span class="lineNum">     137 </span><span class="lineCov">          1 :   static ElementId&lt;VolumeDim&gt; external_boundary_id();</span></a>
+<a name="138"><span class="lineNum">     138 </span>            : </a>
+<a name="139"><span class="lineNum">     139 </span>            :  private:</a>
+<a name="140"><span class="lineNum">     140 </span><span class="lineNoCov">          0 :   uint32_t block_id_ : block_id_bits;</span></a>
+<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 :   uint32_t grid_index_ : grid_index_bits;  // end first 32 bits</span></a>
+<a name="142"><span class="lineNum">     142 </span><span class="lineNoCov">          0 :   uint32_t index_xi_ : max_refinement_level;</span></a>
+<a name="143"><span class="lineNum">     143 </span><span class="lineNoCov">          0 :   uint32_t index_eta_ : max_refinement_level;</span></a>
+<a name="144"><span class="lineNum">     144 </span><span class="lineNoCov">          0 :   uint32_t index_zeta_ : max_refinement_level;</span></a>
+<a name="145"><span class="lineNum">     145 </span><span class="lineNoCov">          0 :   uint32_t empty_ : padding;</span></a>
+<a name="146"><span class="lineNum">     146 </span><span class="lineNoCov">          0 :   uint32_t refinement_level_xi_ : refinement_bits;  // end second 32 bits</span></a>
+<a name="147"><span class="lineNum">     147 </span><span class="lineNoCov">          0 :   uint32_t refinement_level_eta_ : refinement_bits;</span></a>
+<a name="148"><span class="lineNum">     148 </span><span class="lineNoCov">          0 :   uint32_t refinement_level_zeta_ : refinement_bits;  // end third 32 bits</span></a>
+<a name="149"><span class="lineNum">     149 </span>            : };</a>
+<a name="150"><span class="lineNum">     150 </span>            : </a>
+<a name="151"><span class="lineNum">     151 </span>            : /// \cond</a>
+<a name="152"><span class="lineNum">     152 </span>            : // macro that generate the pup operator for SegmentId</a>
+<a name="153"><span class="lineNum">     153 </span>            : PUPbytes(ElementId&lt;1&gt;)      // NOLINT</a>
+<a name="154"><span class="lineNum">     154 </span>            :     PUPbytes(ElementId&lt;2&gt;)  // NOLINT</a>
+<a name="155"><span class="lineNum">     155 </span>            :     PUPbytes(ElementId&lt;3&gt;)  // NOLINT</a>
+<a name="156"><span class="lineNum">     156 </span>            :     /// \endcond</a>
+<a name="157"><span class="lineNum">     157 </span>            : </a>
+<a name="158"><span class="lineNum">     158 </span>            :     /// Output operator for ElementId.</a>
+<a name="159"><span class="lineNum">     159 </span>            :     template &lt;size_t VolumeDim&gt;</a>
+<a name="160"><span class="lineNum">     160 </span><span class="lineCov">          1 :     std::ostream&amp; operator&lt;&lt;(std::ostream&amp; os, const ElementId&lt;VolumeDim&gt;&amp; id);</span></a>
+<a name="161"><span class="lineNum">     161 </span>            : </a>
+<a name="162"><span class="lineNum">     162 </span>            : /// Equivalence operator for ElementId.</a>
+<a name="163"><span class="lineNum">     163 </span>            : template &lt;size_t VolumeDim&gt;</a>
+<a name="164"><span class="lineNum">     164 </span>            : bool operator==(const ElementId&lt;VolumeDim&gt;&amp; lhs,</a>
+<a name="165"><span class="lineNum">     165 </span>            :                 const ElementId&lt;VolumeDim&gt;&amp; rhs);</a>
+<a name="166"><span class="lineNum">     166 </span>            : </a>
+<a name="167"><span class="lineNum">     167 </span>            : /// Inequivalence operator for ElementId.</a>
+<a name="168"><span class="lineNum">     168 </span>            : template &lt;size_t VolumeDim&gt;</a>
+<a name="169"><span class="lineNum">     169 </span>            : bool operator!=(const ElementId&lt;VolumeDim&gt;&amp; lhs,</a>
+<a name="170"><span class="lineNum">     170 </span>            :                 const ElementId&lt;VolumeDim&gt;&amp; rhs);</a>
+<a name="171"><span class="lineNum">     171 </span>            : </a>
+<a name="172"><span class="lineNum">     172 </span>            : /// Define an ordering of element IDs first by grid index, then by block ID,</a>
+<a name="173"><span class="lineNum">     173 </span>            : /// then by segment ID in each dimension in turn. In each dimension, segment IDs</a>
+<a name="174"><span class="lineNum">     174 </span>            : /// are ordered first by refinement level (which will typically be the same when</a>
+<a name="175"><span class="lineNum">     175 </span>            : /// comparing two element IDs), and second by index. There's no particular</a>
+<a name="176"><span class="lineNum">     176 </span>            : /// reason for this choice of ordering. For applications such as distributing</a>
+<a name="177"><span class="lineNum">     177 </span>            : /// elements among cores, orderings such as defined by</a>
+<a name="178"><span class="lineNum">     178 </span>            : /// `domain::BlockZCurveProcDistribution` may be more appropriate.</a>
+<a name="179"><span class="lineNum">     179 </span>            : template &lt;size_t VolumeDim&gt;</a>
+<a name="180"><span class="lineNum">     180 </span><span class="lineCov">          1 : bool operator&lt;(const ElementId&lt;VolumeDim&gt;&amp; lhs,</span></a>
+<a name="181"><span class="lineNum">     181 </span>            :                const ElementId&lt;VolumeDim&gt;&amp; rhs);</a>
+<a name="182"><span class="lineNum">     182 </span>            : </a>
+<a name="183"><span class="lineNum">     183 </span>            : template &lt;size_t VolumeDim&gt;</a>
+<a name="184"><span class="lineNum">     184 </span><span class="lineNoCov">          0 : bool operator&gt;(const ElementId&lt;VolumeDim&gt;&amp; lhs,</span></a>
+<a name="185"><span class="lineNum">     185 </span>            :                const ElementId&lt;VolumeDim&gt;&amp; rhs) {</a>
+<a name="186"><span class="lineNum">     186 </span>            :   return rhs &lt; lhs;</a>
+<a name="187"><span class="lineNum">     187 </span>            : }</a>
+<a name="188"><span class="lineNum">     188 </span>            : template &lt;size_t VolumeDim&gt;</a>
+<a name="189"><span class="lineNum">     189 </span><span class="lineNoCov">          0 : bool operator&lt;=(const ElementId&lt;VolumeDim&gt;&amp; lhs,</span></a>
+<a name="190"><span class="lineNum">     190 </span>            :                 const ElementId&lt;VolumeDim&gt;&amp; rhs) {</a>
+<a name="191"><span class="lineNum">     191 </span>            :   return !(lhs &gt; rhs);</a>
+<a name="192"><span class="lineNum">     192 </span>            : }</a>
+<a name="193"><span class="lineNum">     193 </span>            : template &lt;size_t VolumeDim&gt;</a>
+<a name="194"><span class="lineNum">     194 </span><span class="lineNoCov">          0 : bool operator&gt;=(const ElementId&lt;VolumeDim&gt;&amp; lhs,</span></a>
+<a name="195"><span class="lineNum">     195 </span>            :                 const ElementId&lt;VolumeDim&gt;&amp; rhs) {</a>
+<a name="196"><span class="lineNum">     196 </span>            :   return !(lhs &lt; rhs);</a>
+<a name="197"><span class="lineNum">     197 </span>            : }</a>
+<a name="198"><span class="lineNum">     198 </span>            : </a>
+<a name="199"><span class="lineNum">     199 </span>            : /// @{</a>
+<a name="200"><span class="lineNum">     200 </span>            : /// \brief Returns a bool if the element is the zeroth element in the domain.</a>
+<a name="201"><span class="lineNum">     201 </span>            : ///</a>
+<a name="202"><span class="lineNum">     202 </span>            : /// \details An element is considered to be the zeroth element if its ElementId</a>
+<a name="203"><span class="lineNum">     203 </span>            : /// `id` has</a>
+<a name="204"><span class="lineNum">     204 </span>            : /// 1. id.block_id() == 0</a>
+<a name="205"><span class="lineNum">     205 </span>            : /// 2. All id.segment_ids() have SegmentId.index() == 0</a>
+<a name="206"><span class="lineNum">     206 </span>            : /// 3. If the argument `grid_index` is specified, id.grid_index() == grid_index.</a>
+<a name="207"><span class="lineNum">     207 </span>            : ///</a>
+<a name="208"><span class="lineNum">     208 </span>            : /// This means that the only element in a domain that this function will return</a>
+<a name="209"><span class="lineNum">     209 </span>            : /// `true` for is the element in the lower corner of Block0 of that domain. The</a>
+<a name="210"><span class="lineNum">     210 </span>            : /// `grid_index` will determine which domain is used for the comparison. During</a>
+<a name="211"><span class="lineNum">     211 </span>            : /// evolutions, only one domain will be active at a time so it doesn't make</a>
+<a name="212"><span class="lineNum">     212 </span>            : /// sense to compare the `grid_index`. However, during an elliptic solve</a>
+<a name="213"><span class="lineNum">     213 </span>            : /// when there are multiple grids, this `grid_index` is useful for specifying</a>
+<a name="214"><span class="lineNum">     214 </span>            : /// only one element over all domains.</a>
+<a name="215"><span class="lineNum">     215 </span>            : ///</a>
+<a name="216"><span class="lineNum">     216 </span>            : /// This function is useful if you need a unique element in the domain because</a>
+<a name="217"><span class="lineNum">     217 </span>            : /// only one element in the whole domain can be the zeroth element.</a>
+<a name="218"><span class="lineNum">     218 </span>            : ///</a>
+<a name="219"><span class="lineNum">     219 </span>            : /// \parblock</a>
+<a name="220"><span class="lineNum">     220 </span>            : /// \warning If you have multiple grids and you don't specify the `grid_index`</a>
+<a name="221"><span class="lineNum">     221 </span>            : /// argument, this function will return `true` for one element in every grid</a>
+<a name="222"><span class="lineNum">     222 </span>            : /// and thus can't be used to determine a unique element in a simulation; only a</a>
+<a name="223"><span class="lineNum">     223 </span>            : /// unique element in each grid.</a>
+<a name="224"><span class="lineNum">     224 </span>            : /// \endparblock</a>
+<a name="225"><span class="lineNum">     225 </span>            : /// \parblock</a>
+<a name="226"><span class="lineNum">     226 </span>            : /// \warning If the domain is re-gridded, a different ElementId may represent</a>
+<a name="227"><span class="lineNum">     227 </span>            : /// the zeroth element.</a>
+<a name="228"><span class="lineNum">     228 </span>            : /// \endparblock</a>
+<a name="229"><span class="lineNum">     229 </span>            : template &lt;size_t Dim&gt;</a>
+<a name="230"><span class="lineNum">     230 </span><span class="lineCov">          1 : bool is_zeroth_element(const ElementId&lt;Dim&gt;&amp; id,</span></a>
+<a name="231"><span class="lineNum">     231 </span>            :                        const std::optional&lt;size_t&gt;&amp; grid_index);</a>
+<a name="232"><span class="lineNum">     232 </span>            : </a>
+<a name="233"><span class="lineNum">     233 </span>            : // This overload is added (instead of adding a default value for grid_index)</a>
+<a name="234"><span class="lineNum">     234 </span>            : // in order to avoid adding DomainStructures as a dependency of Parallel</a>
+<a name="235"><span class="lineNum">     235 </span>            : // by using a forward declaration in Parallel/DistributedObject.hpp</a>
+<a name="236"><span class="lineNum">     236 </span>            : template &lt;size_t Dim&gt;</a>
+<a name="237"><span class="lineNum">     237 </span><span class="lineCov">          1 : bool is_zeroth_element(const ElementId&lt;Dim&gt;&amp; id);</span></a>
+<a name="238"><span class="lineNum">     238 </span>            : /// @}</a>
+<a name="239"><span class="lineNum">     239 </span>            : // ######################################################################</a>
+<a name="240"><span class="lineNum">     240 </span>            : // INLINE DEFINITIONS</a>
+<a name="241"><span class="lineNum">     241 </span>            : // ######################################################################</a>
+<a name="242"><span class="lineNum">     242 </span>            : </a>
+<a name="243"><span class="lineNum">     243 </span>            : template &lt;size_t VolumeDim&gt;</a>
+<a name="244"><span class="lineNum">     244 </span><span class="lineNoCov">          0 : size_t hash_value(const ElementId&lt;VolumeDim&gt;&amp; id);</span></a>
+<a name="245"><span class="lineNum">     245 </span>            : </a>
+<a name="246"><span class="lineNum">     246 </span>            : // clang-tidy: do not modify namespace std</a>
+<a name="247"><span class="lineNum">     247 </span>            : namespace std {  // NOLINT</a>
+<a name="248"><span class="lineNum">     248 </span>            : template &lt;size_t VolumeDim&gt;</a>
+<a name="249"><span class="lineNum">     249 </span>            : struct hash&lt;ElementId&lt;VolumeDim&gt;&gt; {</a>
+<a name="250"><span class="lineNum">     250 </span>            :   size_t operator()(const ElementId&lt;VolumeDim&gt;&amp; id) const;</a>
+<a name="251"><span class="lineNum">     251 </span>            : };</a>
+<a name="252"><span class="lineNum">     252 </span>            : }  // namespace std</a>
+<a name="253"><span class="lineNum">     253 </span>            : </a>
+<a name="254"><span class="lineNum">     254 </span>            : template &lt;size_t VolumeDim&gt;</a>
+<a name="255"><span class="lineNum">     255 </span><span class="lineCov">          1 : inline bool operator==(const ElementId&lt;VolumeDim&gt;&amp; lhs,</span></a>
+<a name="256"><span class="lineNum">     256 </span>            :                        const ElementId&lt;VolumeDim&gt;&amp; rhs) {</a>
+<a name="257"><span class="lineNum">     257 </span>            :   return lhs.block_id() == rhs.block_id() and</a>
+<a name="258"><span class="lineNum">     258 </span>            :          lhs.segment_ids() == rhs.segment_ids() and</a>
+<a name="259"><span class="lineNum">     259 </span>            :          lhs.grid_index() == rhs.grid_index();</a>
+<a name="260"><span class="lineNum">     260 </span>            : }</a>
+<a name="261"><span class="lineNum">     261 </span>            : </a>
+<a name="262"><span class="lineNum">     262 </span>            : template &lt;size_t VolumeDim&gt;</a>
+<a name="263"><span class="lineNum">     263 </span><span class="lineCov">          1 : inline bool operator!=(const ElementId&lt;VolumeDim&gt;&amp; lhs,</span></a>
+<a name="264"><span class="lineNum">     264 </span>            :                        const ElementId&lt;VolumeDim&gt;&amp; rhs) {</a>
+<a name="265"><span class="lineNum">     265 </span>            :   return not(lhs == rhs);</a>
+<a name="266"><span class="lineNum">     266 </span>            : }</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.14</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

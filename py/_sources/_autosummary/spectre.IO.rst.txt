@@ -1,0 +1,37 @@
+spectre.IO
+==========
+
+.. automodule:: spectre.IO
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.IO._Pybindings
+
+.. currentmodule:: spectre.IO
+
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   spectre.IO.H5
+
+

@@ -1,0 +1,37 @@
+spectre.tools.CharmSimplifyTraces
+=================================
+
+.. automodule:: spectre.tools.CharmSimplifyTraces
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      extract_first_template_parameter
+      generic_replacements
+      user_replacements
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.tools.CharmSimplifyTraces._Pybindings
+
+.. currentmodule:: spectre.tools.CharmSimplifyTraces
+
+
+
+

@@ -1,0 +1,29 @@
+spectre.PointwiseFunctions.AnalyticSolutions.RelativisticEuler
+==============================================================
+
+.. automodule:: spectre.PointwiseFunctions.AnalyticSolutions.RelativisticEuler
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.PointwiseFunctions.AnalyticSolutions.RelativisticEuler._Pybindings
+
+.. currentmodule:: spectre.PointwiseFunctions.AnalyticSolutions.RelativisticEuler
+
+
+
+

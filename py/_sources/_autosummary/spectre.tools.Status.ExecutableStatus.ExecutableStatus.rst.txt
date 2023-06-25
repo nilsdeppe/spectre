@@ -1,0 +1,31 @@
+spectre.tools.Status.ExecutableStatus.ExecutableStatus
+======================================================
+
+.. currentmodule:: spectre.tools.Status.ExecutableStatus
+
+.. autoclass:: ExecutableStatus
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ExecutableStatus.__init__
+      ~ExecutableStatus.format
+      ~ExecutableStatus.status
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ExecutableStatus.executable_name_patterns
+      ~ExecutableStatus.fields
+   
+   

@@ -1,0 +1,40 @@
+spectre.support
+===============
+
+.. automodule:: spectre.support
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.support._Pybindings
+
+.. currentmodule:: spectre.support
+
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   spectre.support.DirectoryStructure
+   spectre.support.Machines
+   spectre.support.Resubmit
+   spectre.support.Schedule
+
+

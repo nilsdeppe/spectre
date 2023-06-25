@@ -1,0 +1,29 @@
+spectre.DataStructures.Tensor.EagerMath
+=======================================
+
+.. automodule:: spectre.DataStructures.Tensor.EagerMath
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.DataStructures.Tensor.EagerMath._Pybindings
+
+.. currentmodule:: spectre.DataStructures.Tensor.EagerMath
+
+
+
+

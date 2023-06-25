@@ -1,0 +1,35 @@
+spectre.Visualization.GenerateXdmf
+==================================
+
+.. automodule:: spectre.Visualization.GenerateXdmf
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      generate_xdmf
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.Visualization.GenerateXdmf._Pybindings
+
+.. currentmodule:: spectre.Visualization.GenerateXdmf
+
+
+
+

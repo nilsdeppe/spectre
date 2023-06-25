@@ -1,0 +1,658 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - 18097182aa3a9818e2b2063a0ed2a34000ca2ea5 - Domain/CoordinateMaps/UniformCylindricalEndcap.hpp</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title"> SpECTRE Documentation Coverage Report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">Domain/CoordinateMaps</a> - UniformCylindricalEndcap.hpp</td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+             <td class="headerItem">Commit:</td>
+             <td class="headerValue"><a target="_blank" href="https://github.com/sxs-collaboration/spectre/commit/18097182aa3a9818e2b2063a0ed2a34000ca2ea5">18097182aa3a9818e2b2063a0ed2a34000ca2ea5</a></td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">4</td>
+            <td class="headerCovTableEntry">27</td>
+            <td class="headerCovTableEntryLo">14.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2023-06-25 06:59:04</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span><span class="lineCov">          1 : // Distributed under the MIT License.</span></a>
+<a name="2"><span class="lineNum">       2 </span>            : // See LICENSE.txt for details.</a>
+<a name="3"><span class="lineNum">       3 </span>            : </a>
+<a name="4"><span class="lineNum">       4 </span>            : /// \file</a>
+<a name="5"><span class="lineNum">       5 </span>            : /// Defines the class UniformCylindricalEndcap.</a>
+<a name="6"><span class="lineNum">       6 </span>            : </a>
+<a name="7"><span class="lineNum">       7 </span>            : #pragma once</a>
+<a name="8"><span class="lineNum">       8 </span>            : </a>
+<a name="9"><span class="lineNum">       9 </span>            : #include &lt;array&gt;</a>
+<a name="10"><span class="lineNum">      10 </span>            : #include &lt;cstddef&gt;</a>
+<a name="11"><span class="lineNum">      11 </span>            : #include &lt;limits&gt;</a>
+<a name="12"><span class="lineNum">      12 </span>            : #include &lt;optional&gt;</a>
+<a name="13"><span class="lineNum">      13 </span>            : </a>
+<a name="14"><span class="lineNum">      14 </span>            : #include &quot;DataStructures/Tensor/TypeAliases.hpp&quot;</a>
+<a name="15"><span class="lineNum">      15 </span>            : #include &quot;Utilities/TypeTraits/RemoveReferenceWrapper.hpp&quot;</a>
+<a name="16"><span class="lineNum">      16 </span>            : </a>
+<a name="17"><span class="lineNum">      17 </span>            : /// \cond</a>
+<a name="18"><span class="lineNum">      18 </span>            : namespace PUP {</a>
+<a name="19"><span class="lineNum">      19 </span>            : class er;</a>
+<a name="20"><span class="lineNum">      20 </span>            : }  // namespace PUP</a>
+<a name="21"><span class="lineNum">      21 </span>            : /// \endcond</a>
+<a name="22"><span class="lineNum">      22 </span>            : </a>
+<a name="23"><span class="lineNum">      23 </span>            : namespace domain::CoordinateMaps {</a>
+<a name="24"><span class="lineNum">      24 </span>            : </a>
+<a name="25"><span class="lineNum">      25 </span>            : /*!</a>
+<a name="26"><span class="lineNum">      26 </span>            :  * \ingroup CoordinateMapsGroup</a>
+<a name="27"><span class="lineNum">      27 </span>            :  *</a>
+<a name="28"><span class="lineNum">      28 </span>            :  * \brief Map from 3D unit right cylinder to a volume that connects</a>
+<a name="29"><span class="lineNum">      29 </span>            :  *  portions of two spherical surfaces.</a>
+<a name="30"><span class="lineNum">      30 </span>            :  *</a>
+<a name="31"><span class="lineNum">      31 </span>            :  * \image html UniformCylEndcap.svg &quot;A cylinder maps to the shaded region.&quot;</a>
+<a name="32"><span class="lineNum">      32 </span>            :  *</a>
+<a name="33"><span class="lineNum">      33 </span>            :  * \details Consider two spheres with centers \f$C_1\f$ and \f$C_2\f$,</a>
+<a name="34"><span class="lineNum">      34 </span>            :  * and radii \f$R_1\f$ and \f$R_2\f$. Let sphere 1 be intersected by a</a>
+<a name="35"><span class="lineNum">      35 </span>            :  * plane normal to the \f$z\f$ axis and located at \f$z = z_{\mathrm{P}1}\f$,</a>
+<a name="36"><span class="lineNum">      36 </span>            :  * and let sphere 2 be intersected by a plane normal to the \f$z\f$ axis and</a>
+<a name="37"><span class="lineNum">      37 </span>            :  * located at \f$z = z_{\mathrm{P}2}\f$.</a>
+<a name="38"><span class="lineNum">      38 </span>            :  *</a>
+<a name="39"><span class="lineNum">      39 </span>            :  * UniformCylindricalEndcap maps a 3D unit right cylinder (with coordinates</a>
+<a name="40"><span class="lineNum">      40 </span>            :  * \f$(\bar{x},\bar{y},\bar{z})\f$ such that \f$-1\leq\bar{z}\leq 1\f$</a>
+<a name="41"><span class="lineNum">      41 </span>            :  * and \f$\bar{x}^2+\bar{y}^2 \leq 1\f$) to the shaded area</a>
+<a name="42"><span class="lineNum">      42 </span>            :  * in the figure above (with coordinates \f$(x,y,z)\f$).  The &quot;bottom&quot;</a>
+<a name="43"><span class="lineNum">      43 </span>            :  * of the cylinder \f$\bar{z}=-1\f$ is mapped to the portion of sphere</a>
+<a name="44"><span class="lineNum">      44 </span>            :  * 1 that has \f$z \geq z_{\mathrm{P}1}\f$, and on this portion of the</a>
+<a name="45"><span class="lineNum">      45 </span>            :  * sphere the angular coordinate \f$\theta_1 = \acos((z-C_1^2)/R_1)\f$</a>
+<a name="46"><span class="lineNum">      46 </span>            :  * is uniform in \f$\bar{\rho} = \sqrt{\bar{x}^2+\bar{y}^2}\f$ and the angular</a>
+<a name="47"><span class="lineNum">      47 </span>            :  * coordinate \f$\phi_1 = \atan((y-C_1^1)/(x-C_1^0))\f$ is the same as</a>
+<a name="48"><span class="lineNum">      48 </span>            :  * \f$\phi = \atan(\bar{y}/\bar{x})\f$.</a>
+<a name="49"><span class="lineNum">      49 </span>            :  * Likewise, the &quot;top&quot; of the cylinder</a>
+<a name="50"><span class="lineNum">      50 </span>            :  * \f$\bar{z}=+1\f$ is mapped to the portion of sphere 2 that has</a>
+<a name="51"><span class="lineNum">      51 </span>            :  * \f$z \geq z_{\mathrm{P}2}\f$, and on this portion of the</a>
+<a name="52"><span class="lineNum">      52 </span>            :  * sphere the angular coordinate \f$\theta_2 = \acos((z-C_2^2)/R_2)\f$</a>
+<a name="53"><span class="lineNum">      53 </span>            :  * is uniform in \f$\bar\rho\f$ and the angular</a>
+<a name="54"><span class="lineNum">      54 </span>            :  * coordinate \f$\phi_2 = \atan((y-C_2^1)/(x-C_2^0))\f$ is the same as</a>
+<a name="55"><span class="lineNum">      55 </span>            :  * \f$\phi\f$.</a>
+<a name="56"><span class="lineNum">      56 </span>            :  *</a>
+<a name="57"><span class="lineNum">      57 </span>            :  * UniformCylindricalEndcap is different from CylindricalEndcap</a>
+<a name="58"><span class="lineNum">      58 </span>            :  * because of the distribution of points on the spheres, and because</a>
+<a name="59"><span class="lineNum">      59 </span>            :  * for UniformCylindricalEndcap the mapped portion of both Sphere 1</a>
+<a name="60"><span class="lineNum">      60 </span>            :  * and Sphere 2 are bounded by planes of constant \f$z\f$, whereas for</a>
+<a name="61"><span class="lineNum">      61 </span>            :  * CylindricalEndcap only one of the mapped portions is bounded by a</a>
+<a name="62"><span class="lineNum">      62 </span>            :  * plane (except for specially chosen map parameters).  Note that</a>
+<a name="63"><span class="lineNum">      63 </span>            :  * UniformCylindricalEndcap can be used to construct maps that connect</a>
+<a name="64"><span class="lineNum">      64 </span>            :  * an arbitrary number of nested spheres; this is not possible for</a>
+<a name="65"><span class="lineNum">      65 </span>            :  * CylindricalEndcap for more than 3 nested spheres because of this</a>
+<a name="66"><span class="lineNum">      66 </span>            :  * asymmetry between CylindricalEndcap's two spherical surfaces.</a>
+<a name="67"><span class="lineNum">      67 </span>            :  *</a>
+<a name="68"><span class="lineNum">      68 </span>            :  * UniformCylindricalEndcap is intended to be composed with `Wedge&lt;2&gt;` maps to</a>
+<a name="69"><span class="lineNum">      69 </span>            :  * construct a portion of a cylindrical domain for a binary system.</a>
+<a name="70"><span class="lineNum">      70 </span>            :  *</a>
+<a name="71"><span class="lineNum">      71 </span>            :  * UniformCylindricalEndcap can be used to construct a domain that is similar</a>
+<a name="72"><span class="lineNum">      72 </span>            :  * to, but not identical to, the one described briefly in the Appendix of</a>
+<a name="73"><span class="lineNum">      73 </span>            :  * \cite Buchman:2012dw.</a>
+<a name="74"><span class="lineNum">      74 </span>            :  * UniformCylindricalEndcap is used to construct the Blocks analogous to</a>
+<a name="75"><span class="lineNum">      75 </span>            :  * those labeled 'CA wedge', 'EA wedge', 'CB wedge', 'EE wedge',</a>
+<a name="76"><span class="lineNum">      76 </span>            :  * and 'EB wedge' in Figure 20 of that paper.</a>
+<a name="77"><span class="lineNum">      77 </span>            :  *</a>
+<a name="78"><span class="lineNum">      78 </span>            :  * UniformCylindricalEndcap provides the following functions:</a>
+<a name="79"><span class="lineNum">      79 </span>            :  *</a>
+<a name="80"><span class="lineNum">      80 </span>            :  * ### operator()</a>
+<a name="81"><span class="lineNum">      81 </span>            :  *</a>
+<a name="82"><span class="lineNum">      82 </span>            :  * `operator()` maps \f$(\bar{x},\bar{y},\bar{z})\f$ to \f$(x,y,z)\f$</a>
+<a name="83"><span class="lineNum">      83 </span>            :  * according to</a>
+<a name="84"><span class="lineNum">      84 </span>            :  *</a>
+<a name="85"><span class="lineNum">      85 </span>            :  * \f{align}</a>
+<a name="86"><span class="lineNum">      86 </span>            :  * x^0 &amp;= C_1^0+\lambda(C_2^0-C_1^0) +</a>
+<a name="87"><span class="lineNum">      87 </span>            :  *        \cos\phi\left(R_1\sin\theta_1 +</a>
+<a name="88"><span class="lineNum">      88 </span>            :  *        \lambda(R_2\sin\theta_2-R_1\sin\theta_1)\right), \label{eq:x0} \\</a>
+<a name="89"><span class="lineNum">      89 </span>            :  * x^1 &amp;= C_1^1+\lambda(C_2^1-C_1^1) +</a>
+<a name="90"><span class="lineNum">      90 </span>            :  *        \sin\phi\left(R_1\sin\theta_1 +</a>
+<a name="91"><span class="lineNum">      91 </span>            :  *        \lambda(R_2\sin\theta_2-R_1\sin\theta_1)\right), \label{eq:x1} \\</a>
+<a name="92"><span class="lineNum">      92 </span>            :  * x^2 &amp;= C_1^2+\lambda(C_2^2-C_1^2) +</a>
+<a name="93"><span class="lineNum">      93 </span>            :  *        R_1\cos\theta_1 +</a>
+<a name="94"><span class="lineNum">      94 </span>            :  *        \lambda(R_2\cos\theta_2-R_1\cos\theta_1) \label{eq:x2}.</a>
+<a name="95"><span class="lineNum">      95 </span>            :  * \f}</a>
+<a name="96"><span class="lineNum">      96 </span>            :  *</a>
+<a name="97"><span class="lineNum">      97 </span>            :  * Here</a>
+<a name="98"><span class="lineNum">      98 </span>            :  * \f{align}</a>
+<a name="99"><span class="lineNum">      99 </span>            :  * \lambda  &amp;= \frac{\bar{z}+1}{2},\label{eq:lambdafromzbar}\\</a>
+<a name="100"><span class="lineNum">     100 </span>            :  * \theta_1 &amp;= \bar{\rho} \theta_{1 \mathrm{max}},\label{eq:deftheta1}\\</a>
+<a name="101"><span class="lineNum">     101 </span>            :  * \theta_2 &amp;= \bar{\rho} \theta_{2 \mathrm{max}},\label{eq:deftheta2}\\</a>
+<a name="102"><span class="lineNum">     102 </span>            :  * \phi     &amp;= \atan(\bar{y}/\bar{x})\label{eq:defphi},</a>
+<a name="103"><span class="lineNum">     103 </span>            :  * \f}</a>
+<a name="104"><span class="lineNum">     104 </span>            :  * where \f$\theta_{1 \mathrm{max}}\f$ and \f$\theta_{2 \mathrm{max}}\f$</a>
+<a name="105"><span class="lineNum">     105 </span>            :  * are defined by</a>
+<a name="106"><span class="lineNum">     106 </span>            :  * \f{align}</a>
+<a name="107"><span class="lineNum">     107 </span>            :  *   \cos(\theta_{1\mathrm{max}}) &amp;= (z_{\mathrm{P}1}-C_1^2)/R_1,\\</a>
+<a name="108"><span class="lineNum">     108 </span>            :  *   \cos(\theta_{2\mathrm{max}}) &amp;= (z_{\mathrm{P}2}-C_2^2)/R_2,</a>
+<a name="109"><span class="lineNum">     109 </span>            :  * \f}</a>
+<a name="110"><span class="lineNum">     110 </span>            :  * and</a>
+<a name="111"><span class="lineNum">     111 </span>            :  * \f{align}</a>
+<a name="112"><span class="lineNum">     112 </span>            :  * \bar{\rho} &amp;= \sqrt{\bar{x}^2+\bar{y}^2}/\bar{R} \label{eq:defrhobar},</a>
+<a name="113"><span class="lineNum">     113 </span>            :  * \f}</a>
+<a name="114"><span class="lineNum">     114 </span>            :  * where \f$\bar{R}\f$ is the radius of the cylinder in barred</a>
+<a name="115"><span class="lineNum">     115 </span>            :  * coordinates, which is always unity.</a>
+<a name="116"><span class="lineNum">     116 </span>            :  *</a>
+<a name="117"><span class="lineNum">     117 </span>            :  * ### inverse</a>
+<a name="118"><span class="lineNum">     118 </span>            :  *</a>
+<a name="119"><span class="lineNum">     119 </span>            :  * Given \f$(x,y,z)\f$ we want to find \f$(\bar{x},\bar{y},\bar{z})\f$.</a>
+<a name="120"><span class="lineNum">     120 </span>            :  * From Eq. (\f$\ref{eq:x2}\f$) we can write \f$\lambda\f$ as a function</a>
+<a name="121"><span class="lineNum">     121 </span>            :  * of \f$\bar\rho\f$:</a>
+<a name="122"><span class="lineNum">     122 </span>            :  *</a>
+<a name="123"><span class="lineNum">     123 </span>            :  * \f{align}</a>
+<a name="124"><span class="lineNum">     124 </span>            :  * \lambda &amp;= \frac{x^2 - C_1^2 - R_1\cos\theta_1}</a>
+<a name="125"><span class="lineNum">     125 </span>            :  *                 {C_2^2-C_1^2 + R_2\cos\theta_2-R_1\cos\theta_1}</a>
+<a name="126"><span class="lineNum">     126 </span>            :  *                 \label{eq:lambda_from_rho}.</a>
+<a name="127"><span class="lineNum">     127 </span>            :  * \f}</a>
+<a name="128"><span class="lineNum">     128 </span>            :  *</a>
+<a name="129"><span class="lineNum">     129 </span>            :  * Then by eliminating \f$\phi\f$ from Eqs. (\f$\ref{eq:x0}\f$) and</a>
+<a name="130"><span class="lineNum">     130 </span>            :  * (\f$\ref{eq:x1}\f$) we find that \f$\bar{\rho}\f$ is the solution</a>
+<a name="131"><span class="lineNum">     131 </span>            :  * of \f$Q(\bar{\rho})=0\f$, where</a>
+<a name="132"><span class="lineNum">     132 </span>            :  *</a>
+<a name="133"><span class="lineNum">     133 </span>            :  * \f{align}</a>
+<a name="134"><span class="lineNum">     134 </span>            :  * Q(\bar{\rho}) &amp;= \left(x^0-C_1^0-\lambda(C_2^0-C_1^0)\right)^2+</a>
+<a name="135"><span class="lineNum">     135 </span>            :  *                  \left(x^1-C_1^1-\lambda(C_2^1-C_1^1)\right)^2-</a>
+<a name="136"><span class="lineNum">     136 </span>            :  *                  \left((1-\lambda)R_1\sin\theta_1 +</a>
+<a name="137"><span class="lineNum">     137 </span>            :  *                  \lambda R_2\sin\theta_2\right)^2.\label{eq:defQ}</a>
+<a name="138"><span class="lineNum">     138 </span>            :  * \f}</a>
+<a name="139"><span class="lineNum">     139 </span>            :  * Here \f$\lambda\f$, \f$\theta_1\f$, and \f$\theta_2\f$ are functions</a>
+<a name="140"><span class="lineNum">     140 </span>            :  * of \f$\bar{\rho}\f$ through Eqs. (\f$\ref{eq:lambda_from_rho}\f$),</a>
+<a name="141"><span class="lineNum">     141 </span>            :  * (\f$\ref{eq:deftheta1}\f$), and (\f$\ref{eq:deftheta2}\f$).</a>
+<a name="142"><span class="lineNum">     142 </span>            :  *</a>
+<a name="143"><span class="lineNum">     143 </span>            :  * We solve \f$Q(\bar{\rho})=0\f$ numerically; it is a one-dimensional</a>
+<a name="144"><span class="lineNum">     144 </span>            :  * root-finding problem.</a>
+<a name="145"><span class="lineNum">     145 </span>            :  *</a>
+<a name="146"><span class="lineNum">     146 </span>            :  * Once we have determined \f$\bar{\rho}\f$, we then obtain \f$\lambda\f$</a>
+<a name="147"><span class="lineNum">     147 </span>            :  * from Eq. (\f$\ref{eq:lambda_from_rho}\f$), and we obtain \f$\phi\f$ from</a>
+<a name="148"><span class="lineNum">     148 </span>            :  *</a>
+<a name="149"><span class="lineNum">     149 </span>            :  * \f{align}</a>
+<a name="150"><span class="lineNum">     150 </span>            :  *  \tan\phi &amp;=</a>
+<a name="151"><span class="lineNum">     151 </span>            :  *  \frac{x^1-C_1^1-\lambda(C_2^1-C_1^1)}{x^0-C_1^0-\lambda(C_2^0-C_1^0)}.</a>
+<a name="152"><span class="lineNum">     152 </span>            :  * \f}</a>
+<a name="153"><span class="lineNum">     153 </span>            :  *</a>
+<a name="154"><span class="lineNum">     154 </span>            :  * Then \f$\bar{z}\f$ is obtained from Eq. (\f$\ref{eq:lambdafromzbar}\f$)</a>
+<a name="155"><span class="lineNum">     155 </span>            :  * and \f$\bar{x}\f$ and \f$\bar{y}\f$ are obtained from</a>
+<a name="156"><span class="lineNum">     156 </span>            :  *</a>
+<a name="157"><span class="lineNum">     157 </span>            :  * \f{align}</a>
+<a name="158"><span class="lineNum">     158 </span>            :  *   \bar{x} &amp;= \bar{\rho}\bar{R}\cos\phi,\\</a>
+<a name="159"><span class="lineNum">     159 </span>            :  *   \bar{y} &amp;= \bar{\rho}\bar{R}\sin\phi.</a>
+<a name="160"><span class="lineNum">     160 </span>            :  * \f}</a>
+<a name="161"><span class="lineNum">     161 </span>            :  *</a>
+<a name="162"><span class="lineNum">     162 </span>            :  * #### Considerations when root-finding.</a>
+<a name="163"><span class="lineNum">     163 </span>            :  *</a>
+<a name="164"><span class="lineNum">     164 </span>            :  * We solve \f$Q(\bar{\rho})=0\f$ numerically for \f$\bar{\rho}\f$,</a>
+<a name="165"><span class="lineNum">     165 </span>            :  * where \f$Q(\bar{\rho})\f$ is given by Eq. (\f$\ref{eq:defQ}\f$).</a>
+<a name="166"><span class="lineNum">     166 </span>            :  *</a>
+<a name="167"><span class="lineNum">     167 </span>            :  * ##### min/max values of \f$\bar{\rho}\f$:</a>
+<a name="168"><span class="lineNum">     168 </span>            :  *</a>
+<a name="169"><span class="lineNum">     169 </span>            :  * Note that the root we care about must have</a>
+<a name="170"><span class="lineNum">     170 </span>            :  * \f$0\leq\lambda\leq 1\f$; therefore from Eq. (\f$\ref{eq:lambda_from_rho}\f$)</a>
+<a name="171"><span class="lineNum">     171 </span>            :  * we have</a>
+<a name="172"><span class="lineNum">     172 </span>            :  *</a>
+<a name="173"><span class="lineNum">     173 </span>            :  * \f{align}</a>
+<a name="174"><span class="lineNum">     174 </span>            :  *   \bar{\rho}_{\mathrm{min}} &amp;=</a>
+<a name="175"><span class="lineNum">     175 </span>            :  *      \left\{\begin{array}{ll}</a>
+<a name="176"><span class="lineNum">     176 </span>            :  *           0 &amp; \text{for } x^2-C_1^2 \geq R_1, \\</a>
+<a name="177"><span class="lineNum">     177 </span>            :  *           \displaystyle \frac{1}{\theta_{1 \mathrm{max}}}</a>
+<a name="178"><span class="lineNum">     178 </span>            :  *           \cos^{-1}\left(\frac{x^2-C_1^2}{R_1}\right) &amp; \text{otherwise}</a>
+<a name="179"><span class="lineNum">     179 </span>            :  *      \end{array}\right.\label{eq:rhobarmin}\\</a>
+<a name="180"><span class="lineNum">     180 </span>            :  *   \bar{\rho}_{\mathrm{max}} &amp;=</a>
+<a name="181"><span class="lineNum">     181 </span>            :  *      \left\{\begin{array}{ll}</a>
+<a name="182"><span class="lineNum">     182 </span>            :  *           1 &amp; \text{for } x^2-C_2^2 \leq R_2\cos\theta_{2 \mathrm{max}}, \\</a>
+<a name="183"><span class="lineNum">     183 </span>            :  *           \displaystyle \frac{1}{\theta_{2 \mathrm{max}}}</a>
+<a name="184"><span class="lineNum">     184 </span>            :  *           \cos^{-1}\left(\frac{x^2-C_2^2}{R_2}\right) &amp; \text{otherwise}</a>
+<a name="185"><span class="lineNum">     185 </span>            :  *      \end{array}\right.\label{eq:rhobarmax}</a>
+<a name="186"><span class="lineNum">     186 </span>            :  * \f}</a>
+<a name="187"><span class="lineNum">     187 </span>            :  *</a>
+<a name="188"><span class="lineNum">     188 </span>            :  * so we look for a root only between \f$\bar{\rho}_{\mathrm{min}}\f$</a>
+<a name="189"><span class="lineNum">     189 </span>            :  * and \f$\bar{\rho}_{\mathrm{max}}\f$.</a>
+<a name="190"><span class="lineNum">     190 </span>            :  *</a>
+<a name="191"><span class="lineNum">     191 </span>            :  * ##### Roots within roundoff of endpoints:</a>
+<a name="192"><span class="lineNum">     192 </span>            :  *</a>
+<a name="193"><span class="lineNum">     193 </span>            :  * Sometimes a root is within roundoff of \f$\bar{\rho}_{\mathrm{min}}\f$</a>
+<a name="194"><span class="lineNum">     194 </span>            :  * or \f$\bar{\rho}_{\mathrm{max}}\f$.  This tends to happen at points on the</a>
+<a name="195"><span class="lineNum">     195 </span>            :  * boundary of the mapped region. In this case, the root might</a>
+<a name="196"><span class="lineNum">     196 </span>            :  * not be bracketed by</a>
+<a name="197"><span class="lineNum">     197 </span>            :  * \f$[\bar{\rho}_{\mathrm{min}},\bar{\rho}_{\mathrm{max}}]\f$ if the root</a>
+<a name="198"><span class="lineNum">     198 </span>            :  * is slightly outside that interval.  If we find that</a>
+<a name="199"><span class="lineNum">     199 </span>            :  * \f$Q(\bar{\rho}_{\mathrm{min}})\f$ is near zero but has the wrong sign,</a>
+<a name="200"><span class="lineNum">     200 </span>            :  * then we slightly expand the interval as follows:</a>
+<a name="201"><span class="lineNum">     201 </span>            :  *</a>
+<a name="202"><span class="lineNum">     202 </span>            :  * \f{align}</a>
+<a name="203"><span class="lineNum">     203 </span>            :  *    \bar{\rho}_{\mathrm{min}} \to \bar{\rho}_{\mathrm{min}}</a>
+<a name="204"><span class="lineNum">     204 </span>            :  *  - 2 \frac{Q(\bar{\rho}_{\mathrm{min}})}{Q'(\bar{\rho}_{\mathrm{min}})},</a>
+<a name="205"><span class="lineNum">     205 </span>            :  * \f}</a>
+<a name="206"><span class="lineNum">     206 </span>            :  *</a>
+<a name="207"><span class="lineNum">     207 </span>            :  * where \f$Q'(\bar{\rho}_{\mathrm{min}})\f$ is the derivative of the function</a>
+<a name="208"><span class="lineNum">     208 </span>            :  * in Eq. (\f$\ref{eq:defQ}\f$). Note that without the factor of 2, this is</a>
+<a name="209"><span class="lineNum">     209 </span>            :  * a Newton-Raphson step; the factor of 2 is there to overcompensate so that</a>
+<a name="210"><span class="lineNum">     210 </span>            :  * the new \f$\bar{\rho}_{\mathrm{min}}\f$ brackets the root.</a>
+<a name="211"><span class="lineNum">     211 </span>            :  *</a>
+<a name="212"><span class="lineNum">     212 </span>            :  * Similarly, if it is found that \f$Q(\bar{\rho}_{\mathrm{max}})\f$</a>
+<a name="213"><span class="lineNum">     213 </span>            :  * is near zero but has the wrong sign so that the root is not</a>
+<a name="214"><span class="lineNum">     214 </span>            :  * bracketed, then the same formula is used to expand the interval</a>
+<a name="215"><span class="lineNum">     215 </span>            :  * near \f$\bar{\rho} = \bar{\rho}_{\mathrm{max}}\f$ to bracket the</a>
+<a name="216"><span class="lineNum">     216 </span>            :  * root.</a>
+<a name="217"><span class="lineNum">     217 </span>            :  *</a>
+<a name="218"><span class="lineNum">     218 </span>            :  * Note that by differentiating Eqs. (\f$\ref{eq:defQ}\f$) and</a>
+<a name="219"><span class="lineNum">     219 </span>            :  * (\f$\ref{eq:lambda_from_rho}\f$), one obtains</a>
+<a name="220"><span class="lineNum">     220 </span>            :  *</a>
+<a name="221"><span class="lineNum">     221 </span>            :  * \f{align}</a>
+<a name="222"><span class="lineNum">     222 </span>            :  * Q'(\bar{\rho}) =&amp; -2 \frac{d\lambda}{d\bar{\rho}}\left[</a>
+<a name="223"><span class="lineNum">     223 </span>            :  *      \left(x^0-C_1^0-\lambda(C_2^0-C_1^0)\right)(C_2^0-C_1^0)+</a>
+<a name="224"><span class="lineNum">     224 </span>            :  *      \left(x^1-C_1^1-\lambda(C_2^1-C_1^1)\right)(C_2^1-C_1^1)</a>
+<a name="225"><span class="lineNum">     225 </span>            :  *      \right]\nonumber \\</a>
+<a name="226"><span class="lineNum">     226 </span>            :  *     &amp;</a>
+<a name="227"><span class="lineNum">     227 </span>            :  *    -2 \left((1-\lambda)R_1\sin\theta_1 +</a>
+<a name="228"><span class="lineNum">     228 </span>            :  *                \lambda R_2\sin\theta_2\right)</a>
+<a name="229"><span class="lineNum">     229 </span>            :  *    \left[</a>
+<a name="230"><span class="lineNum">     230 </span>            :  *    \frac{d\lambda}{d\bar{\rho}} (R_2\sin\theta_2-R_1\sin\theta_1)</a>
+<a name="231"><span class="lineNum">     231 </span>            :  *    +(1-\lambda)R_1\theta_{1 \mathrm{max}}\cos\theta_1</a>
+<a name="232"><span class="lineNum">     232 </span>            :  *    +\lambda R_2\theta_{2 \mathrm{max}}\cos\theta_2</a>
+<a name="233"><span class="lineNum">     233 </span>            :  *    \right], \label{eq:defQderiv}</a>
+<a name="234"><span class="lineNum">     234 </span>            :  * \f}</a>
+<a name="235"><span class="lineNum">     235 </span>            :  *</a>
+<a name="236"><span class="lineNum">     236 </span>            :  * where</a>
+<a name="237"><span class="lineNum">     237 </span>            :  * \f{align}</a>
+<a name="238"><span class="lineNum">     238 </span>            :  *  \frac{d\lambda}{d\bar{\rho}} &amp;=</a>
+<a name="239"><span class="lineNum">     239 </span>            :  *  \frac{(1-\lambda)R_1\theta_{1 \mathrm{max}}\sin\theta_1</a>
+<a name="240"><span class="lineNum">     240 </span>            :  *          +\lambda R_2\theta_{2 \mathrm{max}}\sin\theta_2}</a>
+<a name="241"><span class="lineNum">     241 </span>            :  *       {C_2^2-C_1^2 + R_2\cos\theta_2-R_1\cos\theta_1}</a>
+<a name="242"><span class="lineNum">     242 </span>            :  *  \label{eq:dlambda_drhobar}.</a>
+<a name="243"><span class="lineNum">     243 </span>            :  * \f}</a>
+<a name="244"><span class="lineNum">     244 </span>            :  *</a>
+<a name="245"><span class="lineNum">     245 </span>            :  * ##### Roots within roundoff of \f$\bar{\rho}=0\f$ or \f$\bar{\rho}=1\f$:</a>
+<a name="246"><span class="lineNum">     246 </span>            :  *</a>
+<a name="247"><span class="lineNum">     247 </span>            :  * For some points on the boundary of the mapped domain, the root will</a>
+<a name="248"><span class="lineNum">     248 </span>            :  * be within roundoff of \f$\bar{\rho}=0\f$ or \f$\bar{\rho}=1\f$.</a>
+<a name="249"><span class="lineNum">     249 </span>            :  * Here it does not always make sense to expand the range of the map</a>
+<a name="250"><span class="lineNum">     250 </span>            :  * if the root fails (by roundoff) to be bracketed, as is done above.</a>
+<a name="251"><span class="lineNum">     251 </span>            :  * Furthermore, when \f$\bar{\rho}=0\f$ is a root it turns</a>
+<a name="252"><span class="lineNum">     252 </span>            :  * out that both \f$Q(\bar{\rho})=0\f$ and \f$Q'(\bar{\rho})=0\f$ for</a>
+<a name="253"><span class="lineNum">     253 </span>            :  * \f$\bar{\rho}=0\f$, so some root-finders (e.g. Newton-Raphson) have</a>
+<a name="254"><span class="lineNum">     254 </span>            :  * difficulty converging.  Therefore the cases where the root is</a>
+<a name="255"><span class="lineNum">     255 </span>            :  * within roundoff of \f$\bar{\rho}=0\f$ or \f$\bar{\rho}=1\f$ are</a>
+<a name="256"><span class="lineNum">     256 </span>            :  * treated separately.</a>
+<a name="257"><span class="lineNum">     257 </span>            :  *</a>
+<a name="258"><span class="lineNum">     258 </span>            :  * These cases are detected by comparing terms in the first-order</a>
+<a name="259"><span class="lineNum">     259 </span>            :  * power series of \f$Q(\bar{\rho})=0\f$ when expanded about</a>
+<a name="260"><span class="lineNum">     260 </span>            :  * \f$\bar{\rho}=0\f$ or \f$\bar{\rho}=1\f$.  When one of these cases is</a>
+<a name="261"><span class="lineNum">     261 </span>            :  * recognized, the root is returned as either \f$\bar{\rho}=0\f$ or</a>
+<a name="262"><span class="lineNum">     262 </span>            :  * \f$\bar{\rho}=1\f$.</a>
+<a name="263"><span class="lineNum">     263 </span>            :  *</a>
+<a name="264"><span class="lineNum">     264 </span>            :  * #### Quick rejection of points out of range of the map.</a>
+<a name="265"><span class="lineNum">     265 </span>            :  *</a>
+<a name="266"><span class="lineNum">     266 </span>            :  * It is expected that `inverse()` will often be passed points</a>
+<a name="267"><span class="lineNum">     267 </span>            :  * \f$(x,y,z)\f$ that are out of the range of the map; in this case</a>
+<a name="268"><span class="lineNum">     268 </span>            :  * `inverse()` returns a default-constructed</a>
+<a name="269"><span class="lineNum">     269 </span>            :  * `std::optional&lt;std::array&lt;double, 3&gt;&gt;`. To avoid the difficulty and</a>
+<a name="270"><span class="lineNum">     270 </span>            :  * expense of attempting to solve \f$Q(\bar{\rho})=0\f$ numerically</a>
+<a name="271"><span class="lineNum">     271 </span>            :  * for such points (and then having this solution fail), it is useful</a>
+<a name="272"><span class="lineNum">     272 </span>            :  * to quickly reject points \f$(x,y,z)\f$ that are outside the range</a>
+<a name="273"><span class="lineNum">     273 </span>            :  * of the map.</a>
+<a name="274"><span class="lineNum">     274 </span>            :  *</a>
+<a name="275"><span class="lineNum">     275 </span>            :  * Any point in the range of the map must be inside or on</a>
+<a name="276"><span class="lineNum">     276 </span>            :  * sphere 2, and it must be outside or on sphere 1, so the inverse map</a>
+<a name="277"><span class="lineNum">     277 </span>            :  * can immediately return a default-constructed</a>
+<a name="278"><span class="lineNum">     278 </span>            :  * `std::optional&lt;std::array&lt;double, 3&gt;&gt;` for a point that does not</a>
+<a name="279"><span class="lineNum">     279 </span>            :  * satisfy these conditions.</a>
+<a name="280"><span class="lineNum">     280 </span>            :  *</a>
+<a name="281"><span class="lineNum">     281 </span>            :  * Likewise, the inverse map can immediately reject any point with</a>
+<a name="282"><span class="lineNum">     282 </span>            :  * \f$z &lt; z_{\mathrm{P}1}\f$.</a>
+<a name="283"><span class="lineNum">     283 </span>            :  *</a>
+<a name="284"><span class="lineNum">     284 </span>            :  * Finally, consider the circle \f$S_1\f$ defining the intersection of sphere 1</a>
+<a name="285"><span class="lineNum">     285 </span>            :  * and the plane \f$z = z_{\mathrm{P}1}\f$; this circle has radius</a>
+<a name="286"><span class="lineNum">     286 </span>            :  * \f$r_1 = R_1 \sin\theta_{1\mathrm{max}}\f$.  Similarly, the circle</a>
+<a name="287"><span class="lineNum">     287 </span>            :  * \f$S_2\f$ defining the intersection of sphere 2 and the plane \f$z =</a>
+<a name="288"><span class="lineNum">     288 </span>            :  * z_{\mathrm{P}2}\f$ has radius \f$r_2 = R_2</a>
+<a name="289"><span class="lineNum">     289 </span>            :  * \sin\theta_{2\mathrm{max}}\f$.  Now consider the cone that passes</a>
+<a name="290"><span class="lineNum">     290 </span>            :  * through these two circles.  A point in the range of the map must be inside</a>
+<a name="291"><span class="lineNum">     291 </span>            :  * or on this cone. The cone can be defined parametrically as</a>
+<a name="292"><span class="lineNum">     292 </span>            :  *</a>
+<a name="293"><span class="lineNum">     293 </span>            :  * \f{align}</a>
+<a name="294"><span class="lineNum">     294 </span>            :  * x_c &amp;= C_1^0 + \tilde{\lambda}(C_2^0-C_1^0) +</a>
+<a name="295"><span class="lineNum">     295 </span>            :  *      \cos\varphi (r_1 + \tilde{\lambda} (r_2 -r_1)),\\</a>
+<a name="296"><span class="lineNum">     296 </span>            :  * y_c &amp;= C_1^1 + \tilde{\lambda}(C_2^1-C_1^1),+</a>
+<a name="297"><span class="lineNum">     297 </span>            :  *      \sin\varphi (r_1 + \tilde{\lambda} (r_2 -r_1)),\\</a>
+<a name="298"><span class="lineNum">     298 </span>            :  * z_c &amp;= C_1^2 + R_1 \cos\theta_{1\mathrm{max}} +</a>
+<a name="299"><span class="lineNum">     299 </span>            :  *        \tilde{\lambda}(C_2^2 + R_2 \cos\theta_{2\mathrm{max}} -</a>
+<a name="300"><span class="lineNum">     300 </span>            :  *        C_1^2 - R_1 \cos\theta_{1\mathrm{max}}),</a>
+<a name="301"><span class="lineNum">     301 </span>            :  * \f}</a>
+<a name="302"><span class="lineNum">     302 </span>            :  *</a>
+<a name="303"><span class="lineNum">     303 </span>            :  * where \f$(x_c,y_c,z_c)\f$ is a point on the cone, and the two</a>
+<a name="304"><span class="lineNum">     304 </span>            :  * parameters defining a point on the cone are the angle \f$\varphi\f$</a>
+<a name="305"><span class="lineNum">     305 </span>            :  * around the cone and the parameter \f$\tilde{\lambda}\f$, which is</a>
+<a name="306"><span class="lineNum">     306 </span>            :  * defined to be zero on \f$S_1\f$ and unity on \f$S_2\f$.</a>
+<a name="307"><span class="lineNum">     307 </span>            :  *</a>
+<a name="308"><span class="lineNum">     308 </span>            :  * Given an arbitrary point \f$(x, y, z)\f$, we can determine whether</a>
+<a name="309"><span class="lineNum">     309 </span>            :  * or not that point is inside the cone as follows.  First determine</a>
+<a name="310"><span class="lineNum">     310 </span>            :  *</a>
+<a name="311"><span class="lineNum">     311 </span>            :  * \f{align}</a>
+<a name="312"><span class="lineNum">     312 </span>            :  *  \tilde{\lambda} &amp;= \frac{z - C_1^2 - R_1 \cos\theta_{1\mathrm{max}}}</a>
+<a name="313"><span class="lineNum">     313 </span>            :  *   {C_2^2+ R_2 \cos\theta_{2\mathrm{max}}-</a>
+<a name="314"><span class="lineNum">     314 </span>            :  *   C_1^2- R_1 \cos\theta_{1\mathrm{max}}}, \\</a>
+<a name="315"><span class="lineNum">     315 </span>            :  *  \tilde{x} &amp;= x - C_1^0 - \tilde{\lambda} (C_2^0-C_1^0),\\</a>
+<a name="316"><span class="lineNum">     316 </span>            :  *  \tilde{y} &amp;= y - C_1^1 - \tilde{\lambda} (C_2^1-C_1^1).\\</a>
+<a name="317"><span class="lineNum">     317 </span>            :  * \f}</a>
+<a name="318"><span class="lineNum">     318 </span>            :  *</a>
+<a name="319"><span class="lineNum">     319 </span>            :  * Then the condition for the point to be inside or on the cone is</a>
+<a name="320"><span class="lineNum">     320 </span>            :  * \f{align}</a>
+<a name="321"><span class="lineNum">     321 </span>            :  * \sqrt{\tilde{x}^2+\tilde{y}^2} \le r_1 + (r_2-r_1)\tilde{\lambda}.</a>
+<a name="322"><span class="lineNum">     322 </span>            :  * \f}</a>
+<a name="323"><span class="lineNum">     323 </span>            :  *</a>
+<a name="324"><span class="lineNum">     324 </span>            :  * The inverse map can therefore reject any points that do</a>
+<a name="325"><span class="lineNum">     325 </span>            :  * not satisfy this criterion.</a>
+<a name="326"><span class="lineNum">     326 </span>            :  *</a>
+<a name="327"><span class="lineNum">     327 </span>            :  * ### jacobian</a>
+<a name="328"><span class="lineNum">     328 </span>            :  *</a>
+<a name="329"><span class="lineNum">     329 </span>            :  * One can rewrite Eqs.(\f$\ref{eq:x0}\f$) through (\f$\ref{eq:x2}\f$) as</a>
+<a name="330"><span class="lineNum">     330 </span>            :  *</a>
+<a name="331"><span class="lineNum">     331 </span>            :  * \f{align}</a>
+<a name="332"><span class="lineNum">     332 </span>            :  * x^0 &amp;= \frac{1}{2}\left((1-\bar{z})C_1^0+ (1+\bar{z})C_2^0\right) +</a>
+<a name="333"><span class="lineNum">     333 </span>            :  *        \frac{\bar{x}}{2}\left(</a>
+<a name="334"><span class="lineNum">     334 </span>            :  * (1-\bar{z}) R_1 S(\bar{\rho},\theta_{1 \mathrm{max}}) +</a>
+<a name="335"><span class="lineNum">     335 </span>            :  * (1+\bar{z}) R_2 S(\bar{\rho},\theta_{2 \mathrm{max}})</a>
+<a name="336"><span class="lineNum">     336 </span>            :  *     \right), \label{eq:x0alt} \\</a>
+<a name="337"><span class="lineNum">     337 </span>            :  * x^1 &amp;= \frac{1}{2}\left((1-\bar{z})C_1^1 + (1+\bar{z})C_2^1\right) +</a>
+<a name="338"><span class="lineNum">     338 </span>            :  *        \frac{\bar{y}}{2}\left(</a>
+<a name="339"><span class="lineNum">     339 </span>            :  * (1-\bar{z})R_1 S(\bar{\rho},\theta_{1 \mathrm{max}}) +</a>
+<a name="340"><span class="lineNum">     340 </span>            :  * (1+\bar{z})R_2 S(\bar{\rho},\theta_{2 \mathrm{max}})</a>
+<a name="341"><span class="lineNum">     341 </span>            :  *     \right), \label{eq:x1alt} \\</a>
+<a name="342"><span class="lineNum">     342 </span>            :  * x^2 &amp;= \frac{1}{2}\left((1-\bar{z})C_1^2 + (1+\bar{z})C_2^2\right) +</a>
+<a name="343"><span class="lineNum">     343 </span>            :  *        \left(</a>
+<a name="344"><span class="lineNum">     344 </span>            :  * (1-\bar{z})R_1 \cos\theta_1 +</a>
+<a name="345"><span class="lineNum">     345 </span>            :  * (1+\bar{z})R_2 \cos\theta_2</a>
+<a name="346"><span class="lineNum">     346 </span>            :  *     \right), \label{eq:x2alt} \\</a>
+<a name="347"><span class="lineNum">     347 </span>            :  * \f}</a>
+<a name="348"><span class="lineNum">     348 </span>            :  *</a>
+<a name="349"><span class="lineNum">     349 </span>            :  * where we have used Eq. (\f$\ref{eq:lambdafromzbar}\f$) to eliminate</a>
+<a name="350"><span class="lineNum">     350 </span>            :  * \f$\lambda\f$ in favor of \f$\bar{z}\f$, and where we have defined the</a>
+<a name="351"><span class="lineNum">     351 </span>            :  * function</a>
+<a name="352"><span class="lineNum">     352 </span>            :  *</a>
+<a name="353"><span class="lineNum">     353 </span>            :  * \f{align}</a>
+<a name="354"><span class="lineNum">     354 </span>            :  *   S(\bar{\rho},a) = \frac{\sin(\bar{\rho} a)}{\bar{\rho}}. \label{eq:Sdef}</a>
+<a name="355"><span class="lineNum">     355 </span>            :  * \f}</a>
+<a name="356"><span class="lineNum">     356 </span>            :  *</a>
+<a name="357"><span class="lineNum">     357 </span>            :  * Note that \f$S(\bar{\rho},a)\f$ is finite as \f$\bar{\rho}\f$</a>
+<a name="358"><span class="lineNum">     358 </span>            :  * approaches zero, and in the code we must take care that everything</a>
+<a name="359"><span class="lineNum">     359 </span>            :  * remains well-behaved in that limit.</a>
+<a name="360"><span class="lineNum">     360 </span>            :  *</a>
+<a name="361"><span class="lineNum">     361 </span>            :  * Then differentiating Eqs. (\f$\ref{eq:x0alt}\f$) and (\f$\ref{eq:x1alt}\f$)</a>
+<a name="362"><span class="lineNum">     362 </span>            :  * with respect to \f$\bar{x}\f$ and \f$\bar{y}\f$, taking into account the</a>
+<a name="363"><span class="lineNum">     363 </span>            :  * dependence of \f$\bar{\rho}\f$ on \f$\bar{x}\f$ and \f$\bar{y}\f$ from Eq.</a>
+<a name="364"><span class="lineNum">     364 </span>            :  * (\f$\ref{eq:defrhobar}\f$), we find:</a>
+<a name="365"><span class="lineNum">     365 </span>            :  *</a>
+<a name="366"><span class="lineNum">     366 </span>            :  * \f{align}</a>
+<a name="367"><span class="lineNum">     367 </span>            :  * \frac{\partial x^0}{\partial \bar{x}} &amp;=</a>
+<a name="368"><span class="lineNum">     368 </span>            :  * \frac{1}{2}\left(</a>
+<a name="369"><span class="lineNum">     369 </span>            :  *       (1-\bar{z}) R_1 S(\bar{\rho},\theta_{1 \mathrm{max}}) +</a>
+<a name="370"><span class="lineNum">     370 </span>            :  *       (1+\bar{z}) R_2 S(\bar{\rho},\theta_{2 \mathrm{max}})</a>
+<a name="371"><span class="lineNum">     371 </span>            :  *       \right) +</a>
+<a name="372"><span class="lineNum">     372 </span>            :  * \frac{\bar{x}^2}{2\bar{\rho}} \left[</a>
+<a name="373"><span class="lineNum">     373 </span>            :  *           (1-\bar{z}) R_1 S'(\bar{\rho},\theta_{1 \mathrm{max}}) +</a>
+<a name="374"><span class="lineNum">     374 </span>            :  *           (1+\bar{z}) R_2 S'(\bar{\rho},\theta_{2 \mathrm{max}})</a>
+<a name="375"><span class="lineNum">     375 </span>            :  *           \right], \\</a>
+<a name="376"><span class="lineNum">     376 </span>            :  * \frac{\partial x^1}{\partial \bar{y}} &amp;=</a>
+<a name="377"><span class="lineNum">     377 </span>            :  * \frac{1}{2}\left(</a>
+<a name="378"><span class="lineNum">     378 </span>            :  *       (1-\bar{z}) R_1 S(\bar{\rho},\theta_{1 \mathrm{max}}) +</a>
+<a name="379"><span class="lineNum">     379 </span>            :  *       (1+\bar{z}) R_2 S(\bar{\rho},\theta_{2 \mathrm{max}})</a>
+<a name="380"><span class="lineNum">     380 </span>            :  *       \right) +</a>
+<a name="381"><span class="lineNum">     381 </span>            :  * \frac{\bar{y}^2}{2\bar{\rho}} \left[</a>
+<a name="382"><span class="lineNum">     382 </span>            :  *           (1-\bar{z}) R_1 S'(\bar{\rho},\theta_{1 \mathrm{max}}) +</a>
+<a name="383"><span class="lineNum">     383 </span>            :  *           (1+\bar{z}) R_2 S'(\bar{\rho},\theta_{2 \mathrm{max}})</a>
+<a name="384"><span class="lineNum">     384 </span>            :  *           \right], \\</a>
+<a name="385"><span class="lineNum">     385 </span>            :  * \frac{\partial x^0}{\partial \bar{y}} &amp;=</a>
+<a name="386"><span class="lineNum">     386 </span>            :  * \frac{\bar{x}\bar{y}}{2\bar{\rho}}\left[</a>
+<a name="387"><span class="lineNum">     387 </span>            :  *           (1-\bar{z}) R_1 S'(\bar{\rho},\theta_{1 \mathrm{max}}) +</a>
+<a name="388"><span class="lineNum">     388 </span>            :  *           (1+\bar{z}) R_2 S'(\bar{\rho},\theta_{2 \mathrm{max}})</a>
+<a name="389"><span class="lineNum">     389 </span>            :  *           \right], \\</a>
+<a name="390"><span class="lineNum">     390 </span>            :  * \frac{\partial x^1}{\partial \bar{x}} &amp;=</a>
+<a name="391"><span class="lineNum">     391 </span>            :  * \frac{\partial x^0}{\partial \bar{y}},</a>
+<a name="392"><span class="lineNum">     392 </span>            :  * \f}</a>
+<a name="393"><span class="lineNum">     393 </span>            :  *</a>
+<a name="394"><span class="lineNum">     394 </span>            :  * where \f$S'(\bar{\rho},a)\f$ means the derivative of \f$S(\bar{\rho},a)\f$</a>
+<a name="395"><span class="lineNum">     395 </span>            :  * with respect to \f$\bar\rho\f$.  Note that \f$S'(\bar{\rho},a)/\bar{\rho}\f$</a>
+<a name="396"><span class="lineNum">     396 </span>            :  * approaches a constant value as \f$\bar{\rho}\f$ approaches zero.</a>
+<a name="397"><span class="lineNum">     397 </span>            :  *</a>
+<a name="398"><span class="lineNum">     398 </span>            :  * Differentiating Eq. (\f$\ref{eq:x2alt}\f$) with respect to</a>
+<a name="399"><span class="lineNum">     399 </span>            :  * \f$\bar{x}\f$ and \f$\bar{y}\f$ we find</a>
+<a name="400"><span class="lineNum">     400 </span>            :  *</a>
+<a name="401"><span class="lineNum">     401 </span>            :  * \f{align}</a>
+<a name="402"><span class="lineNum">     402 </span>            :  * \frac{\partial x^2}{\partial \bar{x}} &amp;=</a>
+<a name="403"><span class="lineNum">     403 </span>            :  * - \frac{\bar{x}}{2}\left[</a>
+<a name="404"><span class="lineNum">     404 </span>            :  *        (1-\bar{z}) R_1 \theta_{1 \mathrm{max}}</a>
+<a name="405"><span class="lineNum">     405 </span>            :  *                S(\bar{\rho},\theta_{1 \mathrm{max}}) +</a>
+<a name="406"><span class="lineNum">     406 </span>            :  *        (1+\bar{z}) R_2 \theta_{2 \mathrm{max}}</a>
+<a name="407"><span class="lineNum">     407 </span>            :  *                S(\bar{\rho},\theta_{2 \mathrm{max}})-</a>
+<a name="408"><span class="lineNum">     408 </span>            :  *                    \right],\\</a>
+<a name="409"><span class="lineNum">     409 </span>            :  * \frac{\partial x^2}{\partial \bar{y}} &amp;=</a>
+<a name="410"><span class="lineNum">     410 </span>            :  * - \frac{\bar{y}}{2}\left[</a>
+<a name="411"><span class="lineNum">     411 </span>            :  *        (1-\bar{z}) R_1 \theta_{1 \mathrm{max}}</a>
+<a name="412"><span class="lineNum">     412 </span>            :  *                S(\bar{\rho},\theta_{1 \mathrm{max}}) +</a>
+<a name="413"><span class="lineNum">     413 </span>            :  *        (1+\bar{z}) R_2 \theta_{2 \mathrm{max}}</a>
+<a name="414"><span class="lineNum">     414 </span>            :  *                S(\bar{\rho},\theta_{2 \mathrm{max}})-</a>
+<a name="415"><span class="lineNum">     415 </span>            :  *                    \right].</a>
+<a name="416"><span class="lineNum">     416 </span>            :  * \f}</a>
+<a name="417"><span class="lineNum">     417 </span>            :  *</a>
+<a name="418"><span class="lineNum">     418 </span>            :  * Differentiating Eqs. (\f$\ref{eq:x0alt}\f$) through (\f$\ref{eq:x2alt}\f$)</a>
+<a name="419"><span class="lineNum">     419 </span>            :  * with respect to \f$\bar{z}\f$ yields</a>
+<a name="420"><span class="lineNum">     420 </span>            :  *</a>
+<a name="421"><span class="lineNum">     421 </span>            :  * \f{align}</a>
+<a name="422"><span class="lineNum">     422 </span>            :  * \frac{\partial x^0}{\partial \bar{z}} &amp;=</a>
+<a name="423"><span class="lineNum">     423 </span>            :  * \frac{1}{2}\left[</a>
+<a name="424"><span class="lineNum">     424 </span>            :  *  C_2^0-C_1^0 +</a>
+<a name="425"><span class="lineNum">     425 </span>            :  *        \bar{x}\left(R_2 S(\bar{\rho},\theta_{2 \mathrm{max}}) -</a>
+<a name="426"><span class="lineNum">     426 </span>            :  *        R_1 S(\bar{\rho},\theta_{1 \mathrm{max}})\right)</a>
+<a name="427"><span class="lineNum">     427 </span>            :  * \right],\\</a>
+<a name="428"><span class="lineNum">     428 </span>            :  * \frac{\partial x^1}{\partial \bar{z}} &amp;=</a>
+<a name="429"><span class="lineNum">     429 </span>            :  * \frac{1}{2}\left[</a>
+<a name="430"><span class="lineNum">     430 </span>            :  *  C_2^1-C_1^1 +</a>
+<a name="431"><span class="lineNum">     431 </span>            :  *        \bar{y}\left(R_2 S(\bar{\rho},\theta_{2 \mathrm{max}}) -</a>
+<a name="432"><span class="lineNum">     432 </span>            :  *        R_1 S(\bar{\rho},\theta_{1 \mathrm{max}})\right)</a>
+<a name="433"><span class="lineNum">     433 </span>            :  * \right],\\</a>
+<a name="434"><span class="lineNum">     434 </span>            :  * \frac{\partial x^2}{\partial \bar{z}} &amp;=</a>
+<a name="435"><span class="lineNum">     435 </span>            :  * \frac{1}{2}\left(</a>
+<a name="436"><span class="lineNum">     436 </span>            :  *  C_2^2-C_1^2 + R_2\cos\theta_2 - R_1\cos\theta_1</a>
+<a name="437"><span class="lineNum">     437 </span>            :  * \right).</a>
+<a name="438"><span class="lineNum">     438 </span>            :  * \f}</a>
+<a name="439"><span class="lineNum">     439 </span>            :  *</a>
+<a name="440"><span class="lineNum">     440 </span>            :  * ### inv_jacobian</a>
+<a name="441"><span class="lineNum">     441 </span>            :  *</a>
+<a name="442"><span class="lineNum">     442 </span>            :  * The inverse Jacobian is computed by numerically inverting the</a>
+<a name="443"><span class="lineNum">     443 </span>            :  * Jacobian.</a>
+<a name="444"><span class="lineNum">     444 </span>            :  *</a>
+<a name="445"><span class="lineNum">     445 </span>            :  * ### Restrictions on map parameters</a>
+<a name="446"><span class="lineNum">     446 </span>            :  *</a>
+<a name="447"><span class="lineNum">     447 </span>            :  * We demand that Sphere 1 is fully contained inside Sphere 2, and</a>
+<a name="448"><span class="lineNum">     448 </span>            :  * that the two spheres have at least some small separation between</a>
+<a name="449"><span class="lineNum">     449 </span>            :  * them. In particular, we demand that</a>
+<a name="450"><span class="lineNum">     450 </span>            :  * - \f$0.98 R_2 &gt;= R_1 + |C_1-C_2|\f$</a>
+<a name="451"><span class="lineNum">     451 </span>            :  *</a>
+<a name="452"><span class="lineNum">     452 </span>            :  * where 0.98 is a safety factor. It is possible to construct a valid</a>
+<a name="453"><span class="lineNum">     453 </span>            :  * map without this assumption, but the assumption simplifies the</a>
+<a name="454"><span class="lineNum">     454 </span>            :  * code, and the expected use cases obey this restriction.</a>
+<a name="455"><span class="lineNum">     455 </span>            :  *</a>
+<a name="456"><span class="lineNum">     456 </span>            :  * We also demand that \f$z_{\mathrm{P}1} &lt;= z_{\mathrm{P}2} -0.04 R_2\f$, and</a>
+<a name="457"><span class="lineNum">     457 </span>            :  * that the z planes in the above figures lie above the centers of the</a>
+<a name="458"><span class="lineNum">     458 </span>            :  * corresponding spheres and are not too close to the centers or edges of</a>
+<a name="459"><span class="lineNum">     459 </span>            :  * those spheres; specificially, we demand that</a>
+<a name="460"><span class="lineNum">     460 </span>            :  * - \f$ 0.075\pi &lt; \theta_{1 \mathrm{max}} &lt; 0.45\pi\f$</a>
+<a name="461"><span class="lineNum">     461 </span>            :  * - \f$ 0.075\pi &lt; \theta_{2 \mathrm{max}} &lt; 0.45\pi\f$</a>
+<a name="462"><span class="lineNum">     462 </span>            :  *</a>
+<a name="463"><span class="lineNum">     463 </span>            :  * Here 0.075 and 0.45 are safety factors. These restrictions are not</a>
+<a name="464"><span class="lineNum">     464 </span>            :  * strictly necessary but are made for simplicity and to ensure the</a>
+<a name="465"><span class="lineNum">     465 </span>            :  * accuracy of the inverse map (the inverse map becomes less accurate if</a>
+<a name="466"><span class="lineNum">     466 </span>            :  * the map parameters are extreme).</a>
+<a name="467"><span class="lineNum">     467 </span>            :  *</a>
+<a name="468"><span class="lineNum">     468 </span>            :  * Consider the line segment \f$L\f$ that connects a point on the</a>
+<a name="469"><span class="lineNum">     469 </span>            :  * circle \f$S_1\f$ (the circle formed by the intersection of sphere 1</a>
+<a name="470"><span class="lineNum">     470 </span>            :  * and the plane \f$z=z_{\mathrm{P}1}\f$) with the center of the</a>
+<a name="471"><span class="lineNum">     471 </span>            :  * circle \f$S_1\f$.  Consider another line segment \f$L'\f$ that</a>
+<a name="472"><span class="lineNum">     472 </span>            :  * connects the same point on the circle \f$S_1\f$ with the</a>
+<a name="473"><span class="lineNum">     473 </span>            :  * corresponding point on the circle \f$S_2\f$ (the circle formed by</a>
+<a name="474"><span class="lineNum">     474 </span>            :  * the intersection of sphere 2 and the plane</a>
+<a name="475"><span class="lineNum">     475 </span>            :  * \f$z=z_{\mathrm{P}2}\f$). Now consider the angle between \f$L\f$</a>
+<a name="476"><span class="lineNum">     476 </span>            :  * and \f$L'\f$, as measured from the interior of sphere 1, and Let</a>
+<a name="477"><span class="lineNum">     477 </span>            :  * \f$\alpha\f$ be the minimum value of this angle over the circle.</a>
+<a name="478"><span class="lineNum">     478 </span>            :  * \f$\alpha\f$ is shown in the figure above. If</a>
+<a name="479"><span class="lineNum">     479 </span>            :  * \f$\alpha &lt; \theta_{1 \mathrm{max}}\f$, then the line segment \f$L'\f$</a>
+<a name="480"><span class="lineNum">     480 </span>            :  * intersects the mapped portion of sphere 1 twice, so the map is</a>
+<a name="481"><span class="lineNum">     481 </span>            :  * multiply valued.  Similarly, if \f$\alpha &lt; \theta_{2 \mathrm{max}}\f$,</a>
+<a name="482"><span class="lineNum">     482 </span>            :  * then the line segment \f$L'\f$ intersects the mapped portion of</a>
+<a name="483"><span class="lineNum">     483 </span>            :  * sphere 2 twice, and again the map is multiply valued.  Therefore we</a>
+<a name="484"><span class="lineNum">     484 </span>            :  * demand that the map parameters are such that</a>
+<a name="485"><span class="lineNum">     485 </span>            :  * - \f$\alpha &gt; 1.1 \theta_{1 \mathrm{max}}\f$</a>
+<a name="486"><span class="lineNum">     486 </span>            :  * - \f$\alpha &gt; 1.1 \theta_{2 \mathrm{max}}\f$</a>
+<a name="487"><span class="lineNum">     487 </span>            :  *</a>
+<a name="488"><span class="lineNum">     488 </span>            :  * where 1.1 is a safety factor.</a>
+<a name="489"><span class="lineNum">     489 </span>            :  *</a>
+<a name="490"><span class="lineNum">     490 </span>            :  * The condition on \f$\alpha\f$ is guaranteed to provide an</a>
+<a name="491"><span class="lineNum">     491 </span>            :  * invertible map if \f$C_1^0=C_2^0\f$ and \f$C_1^1=C_2^1\f$.</a>
+<a name="492"><span class="lineNum">     492 </span>            :  * However, for \f$C_1^0 \neq C_2^0\f$ or \f$C_1^1\neq C_2^1\f$, even</a>
+<a name="493"><span class="lineNum">     493 </span>            :  * if the \f$\alpha\f$ condition is satisfied, it is possible for two</a>
+<a name="494"><span class="lineNum">     494 </span>            :  * lines of constant \f$(\bar{x},\bar{y})\f$ (each line has different</a>
+<a name="495"><span class="lineNum">     495 </span>            :  * values of \f$(\bar{x},\bar{y})\f$) to pass through the same point</a>
+<a name="496"><span class="lineNum">     496 </span>            :  * \f$(x,y,z)\f$ if those lines are not coplanar.  This condition is</a>
+<a name="497"><span class="lineNum">     497 </span>            :  * difficult to check analytically, so we check it numerically.  We</a>
+<a name="498"><span class="lineNum">     498 </span>            :  * have found empirically that if \f$Q(\bar{\rho})\f$ from</a>
+<a name="499"><span class="lineNum">     499 </span>            :  * Eq. (\f$\ref{eq:defQ}\f$) has only a single root between</a>
+<a name="500"><span class="lineNum">     500 </span>            :  * \f$\bar{\rho}_{\mathrm{min}}\f$ and \f$\bar{\rho}_{\mathrm{max}}\f$</a>
+<a name="501"><span class="lineNum">     501 </span>            :  * for all points \f$(x,y,z)\f$ on the surface of sphere 1 with</a>
+<a name="502"><span class="lineNum">     502 </span>            :  * \f$z\geq z_{\mathrm{P}1}\f$ and with \f$(x-C_1^0)/(y-C_1^1) =</a>
+<a name="503"><span class="lineNum">     503 </span>            :  * (C_1^0-C_2^0)/(C_1^1-C_2^1)\f$, then the map is single-valued</a>
+<a name="504"><span class="lineNum">     504 </span>            :  * everywhere.  We cannot numerically check every point in this</a>
+<a name="505"><span class="lineNum">     505 </span>            :  * one-parameter family of points, but we demand that this condition</a>
+<a name="506"><span class="lineNum">     506 </span>            :  * is satisfied for a reasonably large number of points in this</a>
+<a name="507"><span class="lineNum">     507 </span>            :  * family.  This check is not very expensive since it is done only</a>
+<a name="508"><span class="lineNum">     508 </span>            :  * once, in the constructor.</a>
+<a name="509"><span class="lineNum">     509 </span>            :  *</a>
+<a name="510"><span class="lineNum">     510 </span>            :  */</a>
+<a name="511"><span class="lineNum">     511 </span><span class="lineCov">          1 : class UniformCylindricalEndcap {</span></a>
+<a name="512"><span class="lineNum">     512 </span>            :  public:</a>
+<a name="513"><span class="lineNum">     513 </span><span class="lineNoCov">          0 :   static constexpr size_t dim = 3;</span></a>
+<a name="514"><span class="lineNum">     514 </span><span class="lineNoCov">          0 :   UniformCylindricalEndcap(const std::array&lt;double, 3&gt;&amp; center_one,</span></a>
+<a name="515"><span class="lineNum">     515 </span>            :                            const std::array&lt;double, 3&gt;&amp; center_two,</a>
+<a name="516"><span class="lineNum">     516 </span>            :                            double radius_one, double radius_two,</a>
+<a name="517"><span class="lineNum">     517 </span>            :                            double z_plane_one, double z_plane_two);</a>
+<a name="518"><span class="lineNum">     518 </span><span class="lineNoCov">          0 :   UniformCylindricalEndcap() = default;</span></a>
+<a name="519"><span class="lineNum">     519 </span><span class="lineNoCov">          0 :   ~UniformCylindricalEndcap() = default;</span></a>
+<a name="520"><span class="lineNum">     520 </span><span class="lineNoCov">          0 :   UniformCylindricalEndcap(UniformCylindricalEndcap&amp;&amp;) = default;</span></a>
+<a name="521"><span class="lineNum">     521 </span><span class="lineNoCov">          0 :   UniformCylindricalEndcap(const UniformCylindricalEndcap&amp;) = default;</span></a>
+<a name="522"><span class="lineNum">     522 </span><span class="lineNoCov">          0 :   UniformCylindricalEndcap&amp; operator=(const UniformCylindricalEndcap&amp;) =</span></a>
+<a name="523"><span class="lineNum">     523 </span>            :       default;</a>
+<a name="524"><span class="lineNum">     524 </span><span class="lineNoCov">          0 :   UniformCylindricalEndcap&amp; operator=(UniformCylindricalEndcap&amp;&amp;) = default;</span></a>
+<a name="525"><span class="lineNum">     525 </span>            : </a>
+<a name="526"><span class="lineNum">     526 </span>            :   template &lt;typename T&gt;</a>
+<a name="527"><span class="lineNum">     527 </span><span class="lineNoCov">          0 :   std::array&lt;tt::remove_cvref_wrap_t&lt;T&gt;, 3&gt; operator()(</span></a>
+<a name="528"><span class="lineNum">     528 </span>            :       const std::array&lt;T, 3&gt;&amp; source_coords) const;</a>
+<a name="529"><span class="lineNum">     529 </span>            : </a>
+<a name="530"><span class="lineNum">     530 </span>            :   /// The inverse function is only callable with doubles because the inverse</a>
+<a name="531"><span class="lineNum">     531 </span>            :   /// might fail if called for a point out of range, and it is unclear</a>
+<a name="532"><span class="lineNum">     532 </span>            :   /// what should happen if the inverse were to succeed for some points in a</a>
+<a name="533"><span class="lineNum">     533 </span>            :   /// DataVector but fail for other points.</a>
+<a name="534"><span class="lineNum">     534 </span><span class="lineCov">          1 :   std::optional&lt;std::array&lt;double, 3&gt;&gt; inverse(</span></a>
+<a name="535"><span class="lineNum">     535 </span>            :       const std::array&lt;double, 3&gt;&amp; target_coords) const;</a>
+<a name="536"><span class="lineNum">     536 </span>            : </a>
+<a name="537"><span class="lineNum">     537 </span>            :   template &lt;typename T&gt;</a>
+<a name="538"><span class="lineNum">     538 </span><span class="lineNoCov">          0 :   tnsr::Ij&lt;tt::remove_cvref_wrap_t&lt;T&gt;, 3, Frame::NoFrame&gt; jacobian(</span></a>
+<a name="539"><span class="lineNum">     539 </span>            :       const std::array&lt;T, 3&gt;&amp; source_coords) const;</a>
+<a name="540"><span class="lineNum">     540 </span>            : </a>
+<a name="541"><span class="lineNum">     541 </span>            :   template &lt;typename T&gt;</a>
+<a name="542"><span class="lineNum">     542 </span><span class="lineNoCov">          0 :   tnsr::Ij&lt;tt::remove_cvref_wrap_t&lt;T&gt;, 3, Frame::NoFrame&gt; inv_jacobian(</span></a>
+<a name="543"><span class="lineNum">     543 </span>            :       const std::array&lt;T, 3&gt;&amp; source_coords) const;</a>
+<a name="544"><span class="lineNum">     544 </span>            : </a>
+<a name="545"><span class="lineNum">     545 </span>            :   // clang-tidy: google runtime references</a>
+<a name="546"><span class="lineNum">     546 </span><span class="lineNoCov">          0 :   void pup(PUP::er&amp; p);  // NOLINT</span></a>
+<a name="547"><span class="lineNum">     547 </span>            : </a>
+<a name="548"><span class="lineNum">     548 </span><span class="lineNoCov">          0 :   static bool is_identity() { return false; }</span></a>
+<a name="549"><span class="lineNum">     549 </span>            : </a>
+<a name="550"><span class="lineNum">     550 </span>            :  private:</a>
+<a name="551"><span class="lineNum">     551 </span><span class="lineNoCov">          0 :   friend bool operator==(const UniformCylindricalEndcap&amp; lhs,</span></a>
+<a name="552"><span class="lineNum">     552 </span>            :                          const UniformCylindricalEndcap&amp; rhs);</a>
+<a name="553"><span class="lineNum">     553 </span><span class="lineNoCov">          0 :   std::array&lt;double, 3&gt; center_one_{};</span></a>
+<a name="554"><span class="lineNum">     554 </span><span class="lineNoCov">          0 :   std::array&lt;double, 3&gt; center_two_{};</span></a>
+<a name="555"><span class="lineNum">     555 </span><span class="lineNoCov">          0 :   double radius_one_{std::numeric_limits&lt;double&gt;::signaling_NaN()};</span></a>
+<a name="556"><span class="lineNum">     556 </span><span class="lineNoCov">          0 :   double radius_two_{std::numeric_limits&lt;double&gt;::signaling_NaN()};</span></a>
+<a name="557"><span class="lineNum">     557 </span><span class="lineNoCov">          0 :   double z_plane_one_{std::numeric_limits&lt;double&gt;::signaling_NaN()};</span></a>
+<a name="558"><span class="lineNum">     558 </span><span class="lineNoCov">          0 :   double z_plane_two_{std::numeric_limits&lt;double&gt;::signaling_NaN()};</span></a>
+<a name="559"><span class="lineNum">     559 </span><span class="lineNoCov">          0 :   double theta_max_one_{std::numeric_limits&lt;double&gt;::signaling_NaN()};</span></a>
+<a name="560"><span class="lineNum">     560 </span><span class="lineNoCov">          0 :   double theta_max_two_{std::numeric_limits&lt;double&gt;::signaling_NaN()};</span></a>
+<a name="561"><span class="lineNum">     561 </span>            : };</a>
+<a name="562"><span class="lineNum">     562 </span>            : </a>
+<a name="563"><span class="lineNum">     563 </span><span class="lineNoCov">          0 : bool operator!=(const UniformCylindricalEndcap&amp; lhs,</span></a>
+<a name="564"><span class="lineNum">     564 </span>            :                 const UniformCylindricalEndcap&amp; rhs);</a>
+<a name="565"><span class="lineNum">     565 </span>            : </a>
+<a name="566"><span class="lineNum">     566 </span>            : /// Given parameters for UniformCylindricalEndcap, returns whether</a>
+<a name="567"><span class="lineNum">     567 </span>            : /// the map is invertible for target points on sphere_one.</a>
+<a name="568"><span class="lineNum">     568 </span>            : ///</a>
+<a name="569"><span class="lineNum">     569 </span>            : /// `is_uniform_cylindrical_endcap_invertible_on_sphere_one` is</a>
+<a name="570"><span class="lineNum">     570 </span>            : /// publicly visible because it is useful for unit tests that need to</a>
+<a name="571"><span class="lineNum">     571 </span>            : /// choose valid parameters to pass into the map.</a>
+<a name="572"><span class="lineNum">     572 </span><span class="lineCov">          1 : bool is_uniform_cylindrical_endcap_invertible_on_sphere_one(</span></a>
+<a name="573"><span class="lineNum">     573 </span>            :     const std::array&lt;double, 3&gt;&amp; center_one,</a>
+<a name="574"><span class="lineNum">     574 </span>            :     const std::array&lt;double, 3&gt;&amp; center_two, const double radius_one,</a>
+<a name="575"><span class="lineNum">     575 </span>            :     const double radius_two, const double theta_max_one,</a>
+<a name="576"><span class="lineNum">     576 </span>            :     const double theta_max_two);</a>
+<a name="577"><span class="lineNum">     577 </span>            : </a>
+<a name="578"><span class="lineNum">     578 </span>            : }  // namespace domain::CoordinateMaps</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.14</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

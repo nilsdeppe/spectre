@@ -1,0 +1,249 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - 18097182aa3a9818e2b2063a0ed2a34000ca2ea5 - ParallelAlgorithms/Actions/MemoryMonitor/ContributeMemoryData.hpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title"> SpECTRE Documentation Coverage Report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html">top level</a> - <a href="index.html">ParallelAlgorithms/Actions/MemoryMonitor</a> - ContributeMemoryData.hpp</td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+             <td class="headerItem">Commit:</td>
+             <td class="headerValue"><a target="_blank" href="https://github.com/sxs-collaboration/spectre/commit/18097182aa3a9818e2b2063a0ed2a34000ca2ea5">18097182aa3a9818e2b2063a0ed2a34000ca2ea5</a></td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">1</td>
+            <td class="headerCovTableEntry">3</td>
+            <td class="headerCovTableEntryLo">33.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2023-06-25 06:59:04</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span><span class="lineNoCov">          0 : // Distributed under the MIT License.</span></a>
+<a name="2"><span class="lineNum">       2 </span>            : // See LICENSE.txt for details.</a>
+<a name="3"><span class="lineNum">       3 </span>            : </a>
+<a name="4"><span class="lineNum">       4 </span>            : #pragma once</a>
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<a name="6"><span class="lineNum">       6 </span>            : #include &lt;numeric&gt;</a>
+<a name="7"><span class="lineNum">       7 </span>            : #include &lt;string&gt;</a>
+<a name="8"><span class="lineNum">       8 </span>            : #include &lt;tuple&gt;</a>
+<a name="9"><span class="lineNum">       9 </span>            : #include &lt;utility&gt;</a>
+<a name="10"><span class="lineNum">      10 </span>            : </a>
+<a name="11"><span class="lineNum">      11 </span>            : #include &quot;DataStructures/DataBox/DataBox.hpp&quot;</a>
+<a name="12"><span class="lineNum">      12 </span>            : #include &quot;IO/Observer/ObserverComponent.hpp&quot;</a>
+<a name="13"><span class="lineNum">      13 </span>            : #include &quot;IO/Observer/ReductionActions.hpp&quot;</a>
+<a name="14"><span class="lineNum">      14 </span>            : #include &quot;Parallel/GlobalCache.hpp&quot;</a>
+<a name="15"><span class="lineNum">      15 </span>            : #include &quot;Parallel/Info.hpp&quot;</a>
+<a name="16"><span class="lineNum">      16 </span>            : #include &quot;Parallel/Invoke.hpp&quot;</a>
+<a name="17"><span class="lineNum">      17 </span>            : #include &quot;Parallel/Local.hpp&quot;</a>
+<a name="18"><span class="lineNum">      18 </span>            : #include &quot;Parallel/MemoryMonitor/MemoryMonitor.hpp&quot;</a>
+<a name="19"><span class="lineNum">      19 </span>            : #include &quot;Parallel/MemoryMonitor/Tags.hpp&quot;</a>
+<a name="20"><span class="lineNum">      20 </span>            : #include &quot;Utilities/ErrorHandling/Assert.hpp&quot;</a>
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;Utilities/GetOutput.hpp&quot;</a>
+<a name="22"><span class="lineNum">      22 </span>            : #include &quot;Utilities/Gsl.hpp&quot;</a>
+<a name="23"><span class="lineNum">      23 </span>            : #include &quot;Utilities/Serialization/Serialize.hpp&quot;</a>
+<a name="24"><span class="lineNum">      24 </span>            : </a>
+<a name="25"><span class="lineNum">      25 </span>            : namespace mem_monitor {</a>
+<a name="26"><span class="lineNum">      26 </span>            : /*!</a>
+<a name="27"><span class="lineNum">      27 </span>            :  * \brief Simple action meant to be run on the MemoryMonitor component that</a>
+<a name="28"><span class="lineNum">      28 </span>            :  * collects sizes from Groups and Nodegroups.</a>
+<a name="29"><span class="lineNum">      29 </span>            :  *</a>
+<a name="30"><span class="lineNum">      30 </span>            :  * \details This action collects the sizes of all the local branches of a group</a>
+<a name="31"><span class="lineNum">      31 </span>            :  * or nodegroup component, computes the total memory usage on a node for each,</a>
+<a name="32"><span class="lineNum">      32 </span>            :  * then writes it to disk. For groups, the proc with the maximum memory usage is</a>
+<a name="33"><span class="lineNum">      33 </span>            :  * also reported along with the size on the proc.</a>
+<a name="34"><span class="lineNum">      34 </span>            :  *</a>
+<a name="35"><span class="lineNum">      35 </span>            :  * The columns in the dat file for a nodegroup when running on 3 nodes will be</a>
+<a name="36"><span class="lineNum">      36 </span>            :  *</a>
+<a name="37"><span class="lineNum">      37 </span>            :  * - %Time</a>
+<a name="38"><span class="lineNum">      38 </span>            :  * - Size on node 0 (MB)</a>
+<a name="39"><span class="lineNum">      39 </span>            :  * - Size on node 1 (MB)</a>
+<a name="40"><span class="lineNum">      40 </span>            :  * - Size on node 2 (MB)</a>
+<a name="41"><span class="lineNum">      41 </span>            :  * - Average size per node (MB)</a>
+<a name="42"><span class="lineNum">      42 </span>            :  *</a>
+<a name="43"><span class="lineNum">      43 </span>            :  * The columns in the dat file for a group when running on 3 nodes will be</a>
+<a name="44"><span class="lineNum">      44 </span>            :  *</a>
+<a name="45"><span class="lineNum">      45 </span>            :  * - %Time</a>
+<a name="46"><span class="lineNum">      46 </span>            :  * - Size on node 0 (MB)</a>
+<a name="47"><span class="lineNum">      47 </span>            :  * - Size on node 1 (MB)</a>
+<a name="48"><span class="lineNum">      48 </span>            :  * - Size on node 2 (MB)</a>
+<a name="49"><span class="lineNum">      49 </span>            :  * - Proc of max size</a>
+<a name="50"><span class="lineNum">      50 </span>            :  * - Size on proc of max size (MB)</a>
+<a name="51"><span class="lineNum">      51 </span>            :  * - Average size per node (MB)</a>
+<a name="52"><span class="lineNum">      52 </span>            :  *</a>
+<a name="53"><span class="lineNum">      53 </span>            :  * The dat file will be placed in the `/MemoryMonitors/` group in the reduction</a>
+<a name="54"><span class="lineNum">      54 </span>            :  * file. The name of the dat file is the `pretty_type::name` of the component.</a>
+<a name="55"><span class="lineNum">      55 </span>            :  */</a>
+<a name="56"><span class="lineNum">      56 </span>            : template &lt;typename ContributingComponent&gt;</a>
+<a name="57"><span class="lineNum">      57 </span><span class="lineCov">          1 : struct ContributeMemoryData {</span></a>
+<a name="58"><span class="lineNum">      58 </span>            :   template &lt;typename ParallelComponent, typename DbTags, typename Metavariables,</a>
+<a name="59"><span class="lineNum">      59 </span>            :             typename ArrayIndex&gt;</a>
+<a name="60"><span class="lineNum">      60 </span><span class="lineNoCov">          0 :   static void apply(db::DataBox&lt;DbTags&gt;&amp; box,</span></a>
+<a name="61"><span class="lineNum">      61 </span>            :                     Parallel::GlobalCache&lt;Metavariables&gt;&amp; cache,</a>
+<a name="62"><span class="lineNum">      62 </span>            :                     const ArrayIndex&amp; /*array_index*/, const double time,</a>
+<a name="63"><span class="lineNum">      63 </span>            :                     const int node_or_proc, const double size_in_megabytes) {</a>
+<a name="64"><span class="lineNum">      64 </span>            :     static_assert(Parallel::is_group_v&lt;ContributingComponent&gt; or</a>
+<a name="65"><span class="lineNum">      65 </span>            :                   Parallel::is_nodegroup_v&lt;ContributingComponent&gt;);</a>
+<a name="66"><span class="lineNum">      66 </span>            : </a>
+<a name="67"><span class="lineNum">      67 </span>            :     using tag = Tags::MemoryHolder;</a>
+<a name="68"><span class="lineNum">      68 </span>            :     db::mutate&lt;tag&gt;(</a>
+<a name="69"><span class="lineNum">      69 </span>            :         [&amp;cache, &amp;time, &amp;node_or_proc, &amp;size_in_megabytes](</a>
+<a name="70"><span class="lineNum">      70 </span>            :             const gsl::not_null&lt;std::unordered_map&lt;</a>
+<a name="71"><span class="lineNum">      71 </span>            :                 std::string,</a>
+<a name="72"><span class="lineNum">      72 </span>            :                 std::unordered_map&lt;double, std::unordered_map&lt;int, double&gt;&gt;&gt;*&gt;</a>
+<a name="73"><span class="lineNum">      73 </span>            :                 memory_holder_all) {</a>
+<a name="74"><span class="lineNum">      74 </span>            :           auto memory_holder_pair = memory_holder_all-&gt;try_emplace(</a>
+<a name="75"><span class="lineNum">      75 </span>            :               pretty_type::name&lt;ContributingComponent&gt;());</a>
+<a name="76"><span class="lineNum">      76 </span>            :           auto&amp; memory_holder = (*memory_holder_pair.first).second;</a>
+<a name="77"><span class="lineNum">      77 </span>            : </a>
+<a name="78"><span class="lineNum">      78 </span>            :           memory_holder.try_emplace(time);</a>
+<a name="79"><span class="lineNum">      79 </span>            :           memory_holder.at(time)[node_or_proc] = size_in_megabytes;</a>
+<a name="80"><span class="lineNum">      80 </span>            : </a>
+<a name="81"><span class="lineNum">      81 </span>            :           // If we have received data for every node/proc at a given</a>
+<a name="82"><span class="lineNum">      82 </span>            :           // time, get all the data, write it to disk, then remove the current</a>
+<a name="83"><span class="lineNum">      83 </span>            :           // time from the stored times as it's no longer needed</a>
+<a name="84"><span class="lineNum">      84 </span>            : </a>
+<a name="85"><span class="lineNum">      85 </span>            :           auto&amp; mem_monitor_proxy =</a>
+<a name="86"><span class="lineNum">      86 </span>            :               Parallel::get_parallel_component&lt;MemoryMonitor&lt;Metavariables&gt;&gt;(</a>
+<a name="87"><span class="lineNum">      87 </span>            :                   cache);</a>
+<a name="88"><span class="lineNum">      88 </span>            : </a>
+<a name="89"><span class="lineNum">      89 </span>            :           constexpr bool is_group = Parallel::is_group_v&lt;ContributingComponent&gt;;</a>
+<a name="90"><span class="lineNum">      90 </span>            : </a>
+<a name="91"><span class="lineNum">      91 </span>            :           const size_t num_nodes = Parallel::number_of_nodes&lt;size_t&gt;(</a>
+<a name="92"><span class="lineNum">      92 </span>            :               *Parallel::local(mem_monitor_proxy));</a>
+<a name="93"><span class="lineNum">      93 </span>            :           const size_t num_procs = Parallel::number_of_procs&lt;size_t&gt;(</a>
+<a name="94"><span class="lineNum">      94 </span>            :               *Parallel::local(mem_monitor_proxy));</a>
+<a name="95"><span class="lineNum">      95 </span>            :           const size_t expected_number = is_group ? num_procs : num_nodes;</a>
+<a name="96"><span class="lineNum">      96 </span>            :           ASSERT(memory_holder.at(time).size() &lt;= expected_number,</a>
+<a name="97"><span class="lineNum">      97 </span>            :                  &quot;ContributeMemoryData received more data than it was &quot;</a>
+<a name="98"><span class="lineNum">      98 </span>            :                  &quot;expecting. Was expecting &quot;</a>
+<a name="99"><span class="lineNum">      99 </span>            :                      &lt;&lt; expected_number &lt;&lt; &quot; calls but instead got &quot;</a>
+<a name="100"><span class="lineNum">     100 </span>            :                      &lt;&lt; memory_holder.at(time).size());</a>
+<a name="101"><span class="lineNum">     101 </span>            :           if (memory_holder.at(time).size() == expected_number) {</a>
+<a name="102"><span class="lineNum">     102 </span>            :             // First column is always time</a>
+<a name="103"><span class="lineNum">     103 </span>            :             std::vector&lt;double&gt; data_to_append{time};</a>
+<a name="104"><span class="lineNum">     104 </span>            :             std::vector&lt;std::string&gt; legend{{&quot;Time&quot;}};</a>
+<a name="105"><span class="lineNum">     105 </span>            : </a>
+<a name="106"><span class="lineNum">     106 </span>            :             // Append a column for each node, and keep track of cumulative</a>
+<a name="107"><span class="lineNum">     107 </span>            :             // total. If we have proc data (from groups) do an additional loop</a>
+<a name="108"><span class="lineNum">     108 </span>            :             // over the procs to get the total on that node and get the proc</a>
+<a name="109"><span class="lineNum">     109 </span>            :             // of the maximum memory usage</a>
+<a name="110"><span class="lineNum">     110 </span>            :             double avg_size_per_node = 0.0;</a>
+<a name="111"><span class="lineNum">     111 </span>            :             double max_usage_on_proc = -std::numeric_limits&lt;double&gt;::max();</a>
+<a name="112"><span class="lineNum">     112 </span>            :             int proc_of_max = 0;</a>
+<a name="113"><span class="lineNum">     113 </span>            :             for (size_t node = 0; node &lt; num_nodes; node++) {</a>
+<a name="114"><span class="lineNum">     114 </span>            :               double size_on_node = 0.0;</a>
+<a name="115"><span class="lineNum">     115 </span>            :               if (not is_group) {</a>
+<a name="116"><span class="lineNum">     116 </span>            :                 size_on_node = memory_holder.at(time).at(node);</a>
+<a name="117"><span class="lineNum">     117 </span>            :               } else {</a>
+<a name="118"><span class="lineNum">     118 </span>            :                 const int first_proc = Parallel::first_proc_on_node&lt;int&gt;(</a>
+<a name="119"><span class="lineNum">     119 </span>            :                     node, *Parallel::local(mem_monitor_proxy));</a>
+<a name="120"><span class="lineNum">     120 </span>            :                 const int procs_on_node = Parallel::procs_on_node&lt;int&gt;(</a>
+<a name="121"><span class="lineNum">     121 </span>            :                     node, *Parallel::local(mem_monitor_proxy));</a>
+<a name="122"><span class="lineNum">     122 </span>            :                 const int last_proc = first_proc + procs_on_node;</a>
+<a name="123"><span class="lineNum">     123 </span>            :                 for (int proc = first_proc; proc &lt; last_proc; proc++) {</a>
+<a name="124"><span class="lineNum">     124 </span>            :                   size_on_node += memory_holder.at(time).at(proc);</a>
+<a name="125"><span class="lineNum">     125 </span>            :                   if (memory_holder.at(time).at(proc) &gt; max_usage_on_proc) {</a>
+<a name="126"><span class="lineNum">     126 </span>            :                     max_usage_on_proc = memory_holder.at(time).at(proc);</a>
+<a name="127"><span class="lineNum">     127 </span>            :                     proc_of_max = proc;</a>
+<a name="128"><span class="lineNum">     128 </span>            :                   }</a>
+<a name="129"><span class="lineNum">     129 </span>            :                 }</a>
+<a name="130"><span class="lineNum">     130 </span>            :               }</a>
+<a name="131"><span class="lineNum">     131 </span>            : </a>
+<a name="132"><span class="lineNum">     132 </span>            :               data_to_append.push_back(size_on_node);</a>
+<a name="133"><span class="lineNum">     133 </span>            :               avg_size_per_node += size_on_node;</a>
+<a name="134"><span class="lineNum">     134 </span>            :               legend.emplace_back(&quot;Size on node &quot; + get_output(node) + &quot; (MB)&quot;);</a>
+<a name="135"><span class="lineNum">     135 </span>            :             }</a>
+<a name="136"><span class="lineNum">     136 </span>            : </a>
+<a name="137"><span class="lineNum">     137 </span>            :             // If we have proc data, write the proc with the maximum usage to</a>
+<a name="138"><span class="lineNum">     138 </span>            :             // disk along with how much memory it's using</a>
+<a name="139"><span class="lineNum">     139 </span>            :             if (is_group) {</a>
+<a name="140"><span class="lineNum">     140 </span>            :               data_to_append.push_back(static_cast&lt;double&gt;(proc_of_max));</a>
+<a name="141"><span class="lineNum">     141 </span>            :               data_to_append.push_back(max_usage_on_proc);</a>
+<a name="142"><span class="lineNum">     142 </span>            :               legend.emplace_back(&quot;Proc of max size&quot;);</a>
+<a name="143"><span class="lineNum">     143 </span>            :               legend.emplace_back(&quot;Size on proc of max size (MB)&quot;);</a>
+<a name="144"><span class="lineNum">     144 </span>            :             }</a>
+<a name="145"><span class="lineNum">     145 </span>            : </a>
+<a name="146"><span class="lineNum">     146 </span>            :             avg_size_per_node /= static_cast&lt;double&gt;(num_nodes);</a>
+<a name="147"><span class="lineNum">     147 </span>            : </a>
+<a name="148"><span class="lineNum">     148 </span>            :             // Last column is average over all nodes</a>
+<a name="149"><span class="lineNum">     149 </span>            :             data_to_append.push_back(avg_size_per_node);</a>
+<a name="150"><span class="lineNum">     150 </span>            :             legend.emplace_back(&quot;Average size per node (MB)&quot;);</a>
+<a name="151"><span class="lineNum">     151 </span>            : </a>
+<a name="152"><span class="lineNum">     152 </span>            :             auto&amp; observer_writer_proxy = Parallel::get_parallel_component&lt;</a>
+<a name="153"><span class="lineNum">     153 </span>            :                 observers::ObserverWriter&lt;Metavariables&gt;&gt;(cache);</a>
+<a name="154"><span class="lineNum">     154 </span>            : </a>
+<a name="155"><span class="lineNum">     155 </span>            :             Parallel::threaded_action&lt;</a>
+<a name="156"><span class="lineNum">     156 </span>            :                 observers::ThreadedActions::WriteReductionDataRow&gt;(</a>
+<a name="157"><span class="lineNum">     157 </span>            :                 // Node 0 is always the writer</a>
+<a name="158"><span class="lineNum">     158 </span>            :                 observer_writer_proxy[0], subfile_name&lt;ContributingComponent&gt;(),</a>
+<a name="159"><span class="lineNum">     159 </span>            :                 legend, std::make_tuple(data_to_append));</a>
+<a name="160"><span class="lineNum">     160 </span>            : </a>
+<a name="161"><span class="lineNum">     161 </span>            :             // Clean up finished time</a>
+<a name="162"><span class="lineNum">     162 </span>            :             auto finished_time_iter = memory_holder.find(time);</a>
+<a name="163"><span class="lineNum">     163 </span>            :             memory_holder.erase(finished_time_iter);</a>
+<a name="164"><span class="lineNum">     164 </span>            :           }</a>
+<a name="165"><span class="lineNum">     165 </span>            :         },</a>
+<a name="166"><span class="lineNum">     166 </span>            :         make_not_null(&amp;box));</a>
+<a name="167"><span class="lineNum">     167 </span>            :   }</a>
+<a name="168"><span class="lineNum">     168 </span>            : };</a>
+<a name="169"><span class="lineNum">     169 </span>            : }  // namespace mem_monitor</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.14</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

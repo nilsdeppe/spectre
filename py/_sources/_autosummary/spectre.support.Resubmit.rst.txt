@@ -1,0 +1,35 @@
+spectre.support.Resubmit
+========================
+
+.. automodule:: spectre.support.Resubmit
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      resubmit
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.support.Resubmit._Pybindings
+
+.. currentmodule:: spectre.support.Resubmit
+
+
+
+

@@ -1,0 +1,37 @@
+spectre.IO.H5.ExtractDatFromH5
+==============================
+
+.. automodule:: spectre.IO.H5.ExtractDatFromH5
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      extract_dat_files
+      get_all_dat_files
+      write_dat_data
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.IO.H5.ExtractDatFromH5._Pybindings
+
+.. currentmodule:: spectre.IO.H5.ExtractDatFromH5
+
+
+
+

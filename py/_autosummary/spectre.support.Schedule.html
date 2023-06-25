@@ -1,0 +1,558 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="spectre.tools" href="spectre.tools.html" /><link rel="prev" title="spectre.support.Resubmit" href="spectre.support.Resubmit.html" />
+
+    <!-- Generated with Sphinx 7.0.1 and Furo 2023.05.20 -->
+        <title>spectre.support.Schedule - SpECTRE Python interface documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">SpECTRE Python interface  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  
+  <span class="sidebar-brand-text">SpECTRE Python interface  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul>
+<li class="toctree-l1"><a class="reference external" href="https://spectre-code.org/spectre_using_python.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://spectre-code.org">C++ documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python modules</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="spectre.html">spectre</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of spectre</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="spectre.DataStructures.html">spectre.DataStructures</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of spectre.DataStructures</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="spectre.DataStructures.Tensor.html">spectre.DataStructures.Tensor</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of spectre.DataStructures.Tensor</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="spectre.DataStructures.Tensor.EagerMath.html">spectre.DataStructures.Tensor.EagerMath</a></li>
+<li class="toctree-l4"><a class="reference internal" href="spectre.DataStructures.Tensor.Frame.html">spectre.DataStructures.Tensor.Frame</a></li>
+<li class="toctree-l4"><a class="reference internal" href="spectre.DataStructures.Tensor.tnsr.html">spectre.DataStructures.Tensor.tnsr</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="spectre.Domain.html">spectre.Domain</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of spectre.Domain</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Domain.CoordinateMaps.html">spectre.Domain.CoordinateMaps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Domain.Creators.html">spectre.Domain.Creators</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="spectre.IO.html">spectre.IO</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of spectre.IO</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="spectre.IO.H5.html">spectre.IO.H5</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of spectre.IO.H5</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="spectre.IO.H5.DeleteSubfiles.html">spectre.IO.H5.DeleteSubfiles</a></li>
+<li class="toctree-l4"><a class="reference internal" href="spectre.IO.H5.ExtractDatFromH5.html">spectre.IO.H5.ExtractDatFromH5</a></li>
+<li class="toctree-l4"><a class="reference internal" href="spectre.IO.H5.ExtractInputSourceYamlFromH5.html">spectre.IO.H5.ExtractInputSourceYamlFromH5</a></li>
+<li class="toctree-l4"><a class="reference internal" href="spectre.IO.H5.IterElements.html">spectre.IO.H5.IterElements</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="spectre.Informer.html">spectre.Informer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spectre.Interpolation.html">spectre.Interpolation</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="spectre.NumericalAlgorithms.html">spectre.NumericalAlgorithms</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of spectre.NumericalAlgorithms</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="spectre.NumericalAlgorithms.LinearOperators.html">spectre.NumericalAlgorithms.LinearOperators</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="spectre.PointwiseFunctions.html">spectre.PointwiseFunctions</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of spectre.PointwiseFunctions</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="spectre.PointwiseFunctions.AnalyticSolutions.html">spectre.PointwiseFunctions.AnalyticSolutions</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of spectre.PointwiseFunctions.AnalyticSolutions</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="spectre.PointwiseFunctions.AnalyticSolutions.RelativisticEuler.html">spectre.PointwiseFunctions.AnalyticSolutions.RelativisticEuler</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="spectre.PointwiseFunctions.GeneralRelativity.html">spectre.PointwiseFunctions.GeneralRelativity</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of spectre.PointwiseFunctions.GeneralRelativity</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="spectre.PointwiseFunctions.GeneralRelativity.GeneralizedHarmonic.html">spectre.PointwiseFunctions.GeneralRelativity.GeneralizedHarmonic</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="spectre.PointwiseFunctions.Hydro.html">spectre.PointwiseFunctions.Hydro</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of spectre.PointwiseFunctions.Hydro</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="spectre.PointwiseFunctions.Hydro.EquationsOfState.html">spectre.PointwiseFunctions.Hydro.EquationsOfState</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.PointwiseFunctions.Punctures.html">spectre.PointwiseFunctions.Punctures</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="spectre.Spectral.html">spectre.Spectral</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="spectre.Visualization.html">spectre.Visualization</a><input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><div class="visually-hidden">Toggle navigation of spectre.Visualization</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Visualization.GenerateXdmf.html">spectre.Visualization.GenerateXdmf</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Visualization.InterpolateToCoords.html">spectre.Visualization.InterpolateToCoords</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Visualization.InterpolateToMesh.html">spectre.Visualization.InterpolateToMesh</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Visualization.PlotDatFile.html">spectre.Visualization.PlotDatFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Visualization.PlotPowerMonitors.html">spectre.Visualization.PlotPowerMonitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Visualization.ReadH5.html">spectre.Visualization.ReadH5</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Visualization.ReadInputFile.html">spectre.Visualization.ReadInputFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Visualization.Render1D.html">spectre.Visualization.Render1D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Visualization.TransformVolumeData.html">spectre.Visualization.TransformVolumeData</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current has-children"><a class="reference internal" href="spectre.support.html">spectre.support</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><div class="visually-hidden">Toggle navigation of spectre.support</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="spectre.support.DirectoryStructure.html">spectre.support.DirectoryStructure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.support.Machines.html">spectre.support.Machines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.support.Resubmit.html">spectre.support.Resubmit</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">spectre.support.Schedule</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="spectre.tools.html">spectre.tools</a><input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><div class="visually-hidden">Toggle navigation of spectre.tools</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="spectre.tools.CharmSimplifyTraces.html">spectre.tools.CharmSimplifyTraces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.tools.CleanOutput.html">spectre.tools.CleanOutput</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="spectre.tools.Status.html">spectre.tools.Status</a><input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><div class="visually-hidden">Toggle navigation of spectre.tools.Status</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="spectre.tools.Status.ExecutableStatus.html">spectre.tools.Status.ExecutableStatus</a><input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><div class="visually-hidden">Toggle navigation of spectre.tools.Status.ExecutableStatus</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="spectre.tools.Status.ExecutableStatus.EvolveGhBinaryBlackHole.html">spectre.tools.Status.ExecutableStatus.EvolveGhBinaryBlackHole</a></li>
+<li class="toctree-l5"><a class="reference internal" href="spectre.tools.Status.ExecutableStatus.EvolveGhSingleBlackHole.html">spectre.tools.Status.ExecutableStatus.EvolveGhSingleBlackHole</a></li>
+<li class="toctree-l5"><a class="reference internal" href="spectre.tools.Status.ExecutableStatus.ExecutableStatus.html">spectre.tools.Status.ExecutableStatus.ExecutableStatus</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="spectre.tools.Status.Status.html">spectre.tools.Status.Status</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.tools.ValidateInputFile.html">spectre.tools.ValidateInputFile</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="module-spectre.support.Schedule">
+<span id="spectre-support-schedule"></span><h1>spectre.support.Schedule<a class="headerlink" href="#module-spectre.support.Schedule" title="Permalink to this heading">#</a></h1>
+<p class="rubric">Functions</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spectre.support.Schedule.schedule" title="spectre.support.Schedule.schedule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">schedule</span></code></a>(input_file_template, scheduler[, ...])</p></td>
+<td><p>Schedule executable runs with an input file</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py function">
+<dt class="sig sig-object py" id="spectre.support.Schedule.schedule">
+<span class="sig-prename descclassname"><span class="pre">spectre.support.Schedule.</span></span><span class="sig-name descname"><span class="pre">schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_file_template</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scheduler</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">executable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">segments_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy_executable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">job_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">submit_script_template</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_checkpoint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="spectre.support.DirectoryStructure.html#spectre.support.DirectoryStructure.Checkpoint" title="spectre.support.DirectoryStructure.Checkpoint"><span class="pre">Checkpoint</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_file_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">submit_script_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Submit.sh'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_file_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'spectre.out'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_file_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'SubmitContext.yaml'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">submit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clean_output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">CompletedProcess</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#spectre.support.Schedule.schedule" title="Permalink to this definition">#</a></dt>
+<dd><p>Schedule executable runs with an input file</p>
+<p>Configures the input file, submit script, etc. to the ‘run_dir’, and then
+invokes the ‘scheduler’ to submit the run (typically “sbatch”). You can also
+bypass the scheduler and run the executable directly by setting the
+‘scheduler’ to ‘None’.</p>
+<p># Selecting the executable</p>
+<p>Specify either a path to the executable, or just its name if it’s in the
+‘PATH’. If unspecified, the ‘Executable’ listed in the input file metadata
+is used.</p>
+<p>By default, the executable and submit scripts will be copied to the segments
+directory to support resubmissions (see below). See the ‘copy_executable’
+argument docs for details on controlling this behavior.</p>
+<p># Segments and run directories</p>
+<p>You can set either the ‘run_dir’ or the ‘segments_dir’ to specify where the
+executable will run (but not both). If you specify a ‘run_dir’, the
+executable will run in it directly. If you specify a ‘segments_dir’, a new
+segment will be created and used as the ‘run_dir’. Segments are named with
+incrementing integers and continue the run from the previous segment. For
+example, the following is a typical ‘segments_dir’:</p>
+<p>
+<a href="#id1"><span class="problematic" id="id2">``</span></a><a href="#id3"><span class="problematic" id="id4">`</span></a>sh
+# Copy of the executable
+MyExecutable
+# Copy of the submit script template (base and machine-specific)
+SubmitTemplateBase.sh
+SubmitTemplate.sh
+# One segment per day
+Segment_0000/</p>
+<blockquote>
+<div><p>InputFile.yaml
+Submit.sh
+Output.h5
+# Occasional checkpoints, and a checkpoint before termination
+Checkpoints/</p>
+<blockquote>
+<div><p>Checkpoint_0000/
+Checkpoint_0001/…</p>
+</div></blockquote>
+</div></blockquote>
+<p># Next segment continues from last checkpoint of previous segment
+Segment_0001/…
+<a href="#id5"><span class="problematic" id="id6">``</span></a><a href="#id7"><span class="problematic" id="id8">`</span></a></p>
+<p>You can omit the ‘run_dir’ if the current working directory already contains
+the input file.</p>
+<p># Placeholders</p>
+<p>The input file, submit script, ‘run_dir’, ‘segments_dir’, and ‘job_name’ can
+have placeholders like ‘{{ num_nodes }}’. They must conform to the
+[Jinja template format](<a class="reference external" href="https://jinja.palletsprojects.com/en/3.0.x/templates/">https://jinja.palletsprojects.com/en/3.0.x/templates/</a>).
+The placeholders are resolved in the following stages.
+The following parameters are available as placeholders:</p>
+<ol class="arabic simple">
+<li><p>‘job_name’ (if specified):</p></li>
+</ol>
+<dl class="simple">
+<dt></dt><dd><ul class="simple">
+<li><p>All arguments to this function, including all additional ‘<a href="#id9"><span class="problematic" id="id10">**</span></a>kwargs’.
+For example, the additional ‘<a href="#id11"><span class="problematic" id="id12">**</span></a>kwargs’ can include parameters
+controlling resolution in the input file.</p></li>
+<li><p>‘executable_name’: Just the name of the executable (basename of the
+‘executable’ path).</p></li>
+</ul>
+</dd>
+</dl>
+<ol class="arabic simple" start="2">
+<li><p>‘run_dir’ and ‘segments_dir’:</p></li>
+</ol>
+<dl class="simple">
+<dt></dt><dd><ul class="simple">
+<li><p>All parameters from the previous stage.</p></li>
+<li><p>‘job_name’: Either the resolved ‘job_name’ from the previous stage, or
+the ‘executable_name’ if unspecified.</p></li>
+</ul>
+</dd>
+</dl>
+<ol class="arabic simple" start="3">
+<li><p>Input file &amp; submit script:</p></li>
+</ol>
+<dl class="simple">
+<dt></dt><dd><ul class="simple">
+<li><p>All parameters from the previous stages.</p></li>
+<li><p>‘run_dir’: Absolute path to the ‘run_dir’.</p></li>
+<li><p>‘segments_dir’: Absolute path to the ‘segments_dir’, or ‘None’ if no
+segments directory is available.</p></li>
+<li><p>‘input_file’: Relative path to the configured input file (in the
+‘run_dir’).</p></li>
+<li><p>‘out_file’: Absolute path to the log file (in the ‘run_dir’).</p></li>
+<li><p>‘spectre_cli’: Absolute path to the SpECTRE CLI.</p></li>
+<li><p>Typical additional parameters used in submit scripts are ‘queue’ and
+‘time_limit’.</p></li>
+</ul>
+</dd>
+</dl>
+<p>The parameters used to render the submit script are stored in a context file
+(named ‘context_file_name’) in the ‘run_dir’ to support resubmissions. The
+context file is used by ‘spectre.support.resubmit’ to schedule the next
+segment using the same parameters.</p>
+<p># Scheduling multiple runs</p>
+<p>You can pass ranges of parameters to the ‘<a href="#id13"><span class="problematic" id="id14">**</span></a>kwargs’ of this function to
+schedule multiple runs using the same input file template. For example, you
+can do an h-convergence test by using a placeholder for the refinement level
+in your input file:</p>
+<p>
+<code class="docutils literal notranslate"><span class="pre">`yaml</span>
+<span class="pre">#</span> <span class="pre">In</span> <span class="pre">the</span> <span class="pre">domain</span> <span class="pre">creator:</span>
+<span class="pre">InitialRefinement:</span> <span class="pre">{{</span> <span class="pre">lev</span> <span class="pre">}}</span>
+<span class="pre">`</span></code></p>
+<p>When a parameter in ‘<a href="#id15"><span class="problematic" id="id16">**</span></a>kwargs’ is an iterable, the ‘schedule’ function will
+recurse for every element in the iterable. For example, you can schedule
+multiple runs for a convergence test like this:</p>
+<p>
+<a href="#id17"><span class="problematic" id="id18">``</span></a><a href="#id19"><span class="problematic" id="id20">`</span></a>py
+schedule(</p>
+<blockquote>
+<div><p>run_dir=”Lev{{ lev }}”,
+# …
+lev=range(1, 3))</p>
+</div></blockquote>
+<p><a href="#id21"><span class="problematic" id="id22">``</span></a><a href="#id23"><span class="problematic" id="id24">`</span></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_file_template</strong> – Path to an input file. It will be copied to the
+‘run_dir’. It can be a Jinja template (see above).</p></li>
+<li><p><strong>scheduler</strong> – ‘None’ to run the executable directly, or a scheduler such as
+“sbatch” to submit the run to a queue.</p></li>
+<li><p><strong>executable</strong> – Path or name of the executable to run. If unspecified, use the
+‘Executable’ set in the input file metadata.</p></li>
+<li><p><strong>run_dir</strong> – The directory to which input file, submit script, etc. are
+copied, and relative to which the executable will run.
+Can be a Jinja template (see above).</p></li>
+<li><p><strong>segments_dir</strong> – The directory in which a new segment is created as the
+‘run_dir’. Mutually exclusive with ‘run_dir’.
+Can be a Jinja template (see above).</p></li>
+<li><p><strong>copy_executable</strong> – <p>Copy the executable to the run or segments directory.
+By default (when set to ‘None’):</p>
+<blockquote>
+<div><ul>
+<li><p>If ‘–run-dir’ / ‘-o’ is set, don’t copy.</p></li>
+<li><p>If ‘–segments-dir’ / ‘-O’ is set, copy to segments directory to
+support resubmission.</p></li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>When set to ‘True’:</dt><dd><ul>
+<li><p>If ‘–run-dir’ / ‘-o’ is set, copy to the run directory.</p></li>
+<li><p>If ‘–segments-dir’ / ‘-O’ is set, copy to segments directory to
+support resubmission. Still don’t copy to individual segments.</p></li>
+</ul>
+</dd>
+</dl>
+<p>When set to ‘False’: Never copy.</p>
+</p></li>
+<li><p><strong>job_name</strong> – Optional. A string describing the job.
+Can be a Jinja template (see above). (Default: executable name)</p></li>
+<li><p><strong>submit_script_template</strong> – Optional only when ‘scheduler’ is ‘None’. Path to
+a submit script. It will be copied to the ‘run_dir’.
+Can be a Jinja template (see above).</p></li>
+<li><p><strong>from_checkpoint</strong> – Optional. Path to a checkpoint directory.</p></li>
+<li><p><strong>input_file_name</strong> – Optional. Filename of the input file in the ‘run_dir’.
+(Default: basename of the ‘input_file_template’)</p></li>
+<li><p><strong>submit_script_name</strong> – Optional. Filename of the submit script. (Default:
+“Submit.sh”)</p></li>
+<li><p><strong>out_file_name</strong> – Optional. Name of the log file. (Default:
+“spectre.out”)</p></li>
+<li><p><strong>context_file_name</strong> – Optional. Name of the file that stores the context
+for resubmissions in the <cite>run_dir</cite>. Used by <cite>spectre.support.resubmit</cite>.
+(Default: “SubmitContext.yaml”)</p></li>
+<li><p><strong>submit</strong> – Optional. If ‘True’, automatically submit jobs using the
+‘scheduler’. If ‘False’, skip the job submission. If ‘None’, prompt for
+confirmation before submitting.</p></li>
+<li><p><strong>clean_output</strong> – Optional. When ‘True’, use
+‘spectre.tools.CleanOutput.clean_output’ to clean up existing output
+files in the ‘run_dir’ before scheduling the run. (Default: ‘False’)</p></li>
+<li><p><strong>force</strong> – Optional. When ‘True’, overwrite input file and submit script
+in the ‘run_dir’ instead of raising an error when they already exist.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Returns: The ‘subprocess.CompletedProcess’ representing either the process</dt><dd><p>that scheduled the run, or the process that ran the executable if
+‘scheduler’ is ‘None’. Returns ‘None’ if no or multiple runs were
+scheduled.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="spectre.tools.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">spectre.tools</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="spectre.support.Resubmit.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">spectre.support.Resubmit</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2017-2023, SXS Collaboration
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">spectre.support.Schedule</a><ul>
+<li><a class="reference internal" href="#spectre.support.Schedule.schedule"><code class="docutils literal notranslate"><span class="pre">schedule()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/scripts/furo.js"></script>
+    </body>
+</html>

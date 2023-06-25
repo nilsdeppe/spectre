@@ -1,0 +1,934 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - 18097182aa3a9818e2b2063a0ed2a34000ca2ea5 - PointwiseFunctions/AnalyticSolutions/GeneralRelativity/SphericalKerrSchild.hpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title"> SpECTRE Documentation Coverage Report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html">top level</a> - <a href="index.html">PointwiseFunctions/AnalyticSolutions/GeneralRelativity</a> - SphericalKerrSchild.hpp</td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+             <td class="headerItem">Commit:</td>
+             <td class="headerValue"><a target="_blank" href="https://github.com/sxs-collaboration/spectre/commit/18097182aa3a9818e2b2063a0ed2a34000ca2ea5">18097182aa3a9818e2b2063a0ed2a34000ca2ea5</a></td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">130</td>
+            <td class="headerCovTableEntryLo">1.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2023-06-25 06:59:04</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span><span class="lineNoCov">          0 : // Distributed under the MIT License.</span></a>
+<a name="2"><span class="lineNum">       2 </span>            : // See LICENSE.txt for details.</a>
+<a name="3"><span class="lineNum">       3 </span>            : </a>
+<a name="4"><span class="lineNum">       4 </span>            : #pragma once</a>
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<a name="6"><span class="lineNum">       6 </span>            : #include &lt;algorithm&gt;</a>
+<a name="7"><span class="lineNum">       7 </span>            : #include &lt;array&gt;</a>
+<a name="8"><span class="lineNum">       8 </span>            : #include &lt;cstddef&gt;</a>
+<a name="9"><span class="lineNum">       9 </span>            : #include &lt;pup.h&gt;</a>
+<a name="10"><span class="lineNum">      10 </span>            : </a>
+<a name="11"><span class="lineNum">      11 </span>            : #include &quot;DataStructures/CachedTempBuffer.hpp&quot;</a>
+<a name="12"><span class="lineNum">      12 </span>            : #include &quot;DataStructures/Tags/TempTensor.hpp&quot;</a>
+<a name="13"><span class="lineNum">      13 </span>            : #include &quot;DataStructures/Tensor/TypeAliases.hpp&quot;</a>
+<a name="14"><span class="lineNum">      14 </span>            : #include &quot;NumericalAlgorithms/LinearOperators/PartialDerivatives.hpp&quot;</a>
+<a name="15"><span class="lineNum">      15 </span>            : #include &quot;Options/Context.hpp&quot;</a>
+<a name="16"><span class="lineNum">      16 </span>            : #include &quot;Options/String.hpp&quot;</a>
+<a name="17"><span class="lineNum">      17 </span>            : #include &quot;PointwiseFunctions/AnalyticSolutions/AnalyticSolution.hpp&quot;</a>
+<a name="18"><span class="lineNum">      18 </span>            : #include &quot;PointwiseFunctions/AnalyticSolutions/GeneralRelativity/Solutions.hpp&quot;</a>
+<a name="19"><span class="lineNum">      19 </span>            : #include &quot;PointwiseFunctions/GeneralRelativity/TagsDeclarations.hpp&quot;</a>
+<a name="20"><span class="lineNum">      20 </span>            : #include &quot;Utilities/ContainerHelpers.hpp&quot;</a>
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;Utilities/ForceInline.hpp&quot;</a>
+<a name="22"><span class="lineNum">      22 </span>            : #include &quot;Utilities/MakeArray.hpp&quot;</a>
+<a name="23"><span class="lineNum">      23 </span>            : #include &quot;Utilities/TMPL.hpp&quot;</a>
+<a name="24"><span class="lineNum">      24 </span>            : #include &quot;Utilities/TaggedTuple.hpp&quot;</a>
+<a name="25"><span class="lineNum">      25 </span>            : </a>
+<a name="26"><span class="lineNum">      26 </span>            : /// \cond</a>
+<a name="27"><span class="lineNum">      27 </span>            : namespace Tags {</a>
+<a name="28"><span class="lineNum">      28 </span>            : template &lt;typename Tag&gt;</a>
+<a name="29"><span class="lineNum">      29 </span>            : struct dt;</a>
+<a name="30"><span class="lineNum">      30 </span>            : }  // namespace Tags</a>
+<a name="31"><span class="lineNum">      31 </span>            : namespace gsl {</a>
+<a name="32"><span class="lineNum">      32 </span>            : template &lt;class T&gt;</a>
+<a name="33"><span class="lineNum">      33 </span>            : class not_null;</a>
+<a name="34"><span class="lineNum">      34 </span>            : }  // namespace gsl</a>
+<a name="35"><span class="lineNum">      35 </span>            : /// \endcond</a>
+<a name="36"><span class="lineNum">      36 </span>            : </a>
+<a name="37"><span class="lineNum">      37 </span>            : namespace gr {</a>
+<a name="38"><span class="lineNum">      38 </span>            : namespace Solutions {</a>
+<a name="39"><span class="lineNum">      39 </span>            : </a>
+<a name="40"><span class="lineNum">      40 </span>            : /*!</a>
+<a name="41"><span class="lineNum">      41 </span>            :  * \brief Kerr black hole in Spherical Kerr-Schild coordinates</a>
+<a name="42"><span class="lineNum">      42 </span>            :  *</a>
+<a name="43"><span class="lineNum">      43 </span>            :  * ## Introduction</a>
+<a name="44"><span class="lineNum">      44 </span>            :  *</a>
+<a name="45"><span class="lineNum">      45 </span>            :  * Given a Kerr-Schild (KS) black hole system, we denote the coordinate system</a>
+<a name="46"><span class="lineNum">      46 </span>            :  * using \f$\{t,x,y,z\}\f$. In the transformed system, Spherical Kerr-Schild</a>
+<a name="47"><span class="lineNum">      47 </span>            :  * (Spherical KS), we denote the coordinate system using</a>
+<a name="48"><span class="lineNum">      48 </span>            :  * \f$\{t,\bar{x},\bar{y},\bar{z}\}\f$. Further, when considering indexed</a>
+<a name="49"><span class="lineNum">      49 </span>            :  * objects, we will use Greek and Latin indices with the standard convention</a>
+<a name="50"><span class="lineNum">      50 </span>            :  * \f$(\mu=0,1,2,3\f$ and \f$i=1,2,3\f$ respectively), but we will use a bar to</a>
+<a name="51"><span class="lineNum">      51 </span>            :  * denote that a given index is in reference to the Spherical KS coordinate</a>
+<a name="52"><span class="lineNum">      52 </span>            :  * system (i.e. \f$i\f$ vs. \f$\bar{\imath}\f$ and \f$\mu\f$ vs.</a>
+<a name="53"><span class="lineNum">      53 </span>            :  * \f$\bar{\mu}\f$).</a>
+<a name="54"><span class="lineNum">      54 </span>            :  *</a>
+<a name="55"><span class="lineNum">      55 </span>            :  * ## Spin in the z direction</a>
+<a name="56"><span class="lineNum">      56 </span>            :  *</a>
+<a name="57"><span class="lineNum">      57 </span>            :  * ### The Transformation</a>
+<a name="58"><span class="lineNum">      58 </span>            :  *</a>
+<a name="59"><span class="lineNum">      59 </span>            :  * The Boyer-Lindquist radius for KS with its spin in the \f$z\f$ direction is</a>
+<a name="60"><span class="lineNum">      60 </span>            :  * defined by</a>
+<a name="61"><span class="lineNum">      61 </span>            :  *</a>
+<a name="62"><span class="lineNum">      62 </span>            :  * \f{align}{</a>
+<a name="63"><span class="lineNum">      63 </span>            :  *    \frac{x^2 + y^2}{r^2 + a^2} + \frac{z^2}{r^2} = 1,</a>
+<a name="64"><span class="lineNum">      64 </span>            :  * \f}</a>
+<a name="65"><span class="lineNum">      65 </span>            :  *</a>
+<a name="66"><span class="lineNum">      66 </span>            :  * or equivalently,</a>
+<a name="67"><span class="lineNum">      67 </span>            :  *</a>
+<a name="68"><span class="lineNum">      68 </span>            :  * \f{align}{</a>
+<a name="69"><span class="lineNum">      69 </span>            :  *    r^2 &amp;= \frac{1}{2}\left(x^2+y^2+z^2-a^2\right) +</a>
+<a name="70"><span class="lineNum">      70 </span>            :  *    \left(\frac{1}{4}\left(x^2+y^2+z^2-a^2\right)^2 + a^2z^2\right)^{1/2}.</a>
+<a name="71"><span class="lineNum">      71 </span>            :  * \f}</a>
+<a name="72"><span class="lineNum">      72 </span>            :  *</a>
+<a name="73"><span class="lineNum">      73 </span>            :  * The Spherical KS coordinates</a>
+<a name="74"><span class="lineNum">      74 </span>            :  *</a>
+<a name="75"><span class="lineNum">      75 </span>            :  * \f{align}{</a>
+<a name="76"><span class="lineNum">      76 </span>            :  *    \vec{\bar{x}} = x^{\bar{\imath}} = x_{\bar{\imath}} =</a>
+<a name="77"><span class="lineNum">      77 </span>            :  *    (\bar{x},\bar{y},\bar{z}),</a>
+<a name="78"><span class="lineNum">      78 </span>            :  * \f}</a>
+<a name="79"><span class="lineNum">      79 </span>            :  *</a>
+<a name="80"><span class="lineNum">      80 </span>            :  * and KS coordinates</a>
+<a name="81"><span class="lineNum">      81 </span>            :  *</a>
+<a name="82"><span class="lineNum">      82 </span>            :  * \f{align}{</a>
+<a name="83"><span class="lineNum">      83 </span>            :  *    \vec{x} = x^{i} = x_{i} = (x,y,z),</a>
+<a name="84"><span class="lineNum">      84 </span>            :  * \f}</a>
+<a name="85"><span class="lineNum">      85 </span>            :  *</a>
+<a name="86"><span class="lineNum">      86 </span>            :  * are related by</a>
+<a name="87"><span class="lineNum">      87 </span>            :  *</a>
+<a name="88"><span class="lineNum">      88 </span>            :  * \f{align}{</a>
+<a name="89"><span class="lineNum">      89 </span>            :  *    \left(\frac{\bar{x}}{r},\frac{\bar{y}}{r},\frac{\bar{z}}{r}\right) \equiv</a>
+<a name="90"><span class="lineNum">      90 </span>            :  *    \left(\frac{x}{\rho},\frac{y}{\rho},\frac{z}{r}\right),</a>
+<a name="91"><span class="lineNum">      91 </span>            :  * \f}</a>
+<a name="92"><span class="lineNum">      92 </span>            :  *</a>
+<a name="93"><span class="lineNum">      93 </span>            :  * where we have defined</a>
+<a name="94"><span class="lineNum">      94 </span>            :  *</a>
+<a name="95"><span class="lineNum">      95 </span>            :  * \f{align}{</a>
+<a name="96"><span class="lineNum">      96 </span>            :  *   \rho \equiv r^2 + a^2. \label{eq:rho}</a>
+<a name="97"><span class="lineNum">      97 </span>            :  * \f}</a>
+<a name="98"><span class="lineNum">      98 </span>            :  *</a>
+<a name="99"><span class="lineNum">      99 </span>            :  * Therefore, we have that \f$r\f$ satisfies the equation for a sphere in</a>
+<a name="100"><span class="lineNum">     100 </span>            :  * Spherical KS</a>
+<a name="101"><span class="lineNum">     101 </span>            :  *</a>
+<a name="102"><span class="lineNum">     102 </span>            :  * \f{align}{</a>
+<a name="103"><span class="lineNum">     103 </span>            :  *    r^2 = \vec{\bar{x}}\cdot\vec{\bar{x}} = \bar{x}^2 + \bar{y}^2 +</a>
+<a name="104"><span class="lineNum">     104 </span>            :  *    \bar{z}^2.</a>
+<a name="105"><span class="lineNum">     105 </span>            :  * \f}</a>
+<a name="106"><span class="lineNum">     106 </span>            :  *</a>
+<a name="107"><span class="lineNum">     107 </span>            :  * It is clear to see that the Spherical KS radius coincides with the</a>
+<a name="108"><span class="lineNum">     108 </span>            :  * Boyer-Lindquist radius.</a>
+<a name="109"><span class="lineNum">     109 </span>            :  *</a>
+<a name="110"><span class="lineNum">     110 </span>            :  * ## Spin in an Arbitrary Direction</a>
+<a name="111"><span class="lineNum">     111 </span>            :  *</a>
+<a name="112"><span class="lineNum">     112 </span>            :  * Given that the remaining important quantities take forms that are easily</a>
+<a name="113"><span class="lineNum">     113 </span>            :  * specialized to the \f$z\f$ spin case, we instead focus on the general case</a>
+<a name="114"><span class="lineNum">     114 </span>            :  * for brevity.</a>
+<a name="115"><span class="lineNum">     115 </span>            :  *</a>
+<a name="116"><span class="lineNum">     116 </span>            :  * ### The Transformation</a>
+<a name="117"><span class="lineNum">     117 </span>            :  *</a>
+<a name="118"><span class="lineNum">     118 </span>            :  * The Boyer-Lindquist radius for KS with spin in an arbitrary direction is</a>
+<a name="119"><span class="lineNum">     119 </span>            :  * defined by</a>
+<a name="120"><span class="lineNum">     120 </span>            :  *</a>
+<a name="121"><span class="lineNum">     121 </span>            :  * \f{align}{</a>
+<a name="122"><span class="lineNum">     122 </span>            :  *    r^2 = \frac{1}{2}\left(\vec{x}\cdot\vec{x}-a^2\right) +</a>
+<a name="123"><span class="lineNum">     123 </span>            :  *    \left(\frac{1}{4}\left(\vec{x}\cdot\vec{x}-a^2\right)^2 +</a>
+<a name="124"><span class="lineNum">     124 </span>            :  *    \left(\vec{a}\cdot\vec{x}\right)^2\right)^{1/2}.</a>
+<a name="125"><span class="lineNum">     125 </span>            :  * \f}</a>
+<a name="126"><span class="lineNum">     126 </span>            :  *</a>
+<a name="127"><span class="lineNum">     127 </span>            :  * Then, defining two transformation matrices \f$Q^{\bar{\imath}}{}_{j}\f$ and</a>
+<a name="128"><span class="lineNum">     128 </span>            :  * \f$P^{j}{}_{\bar{\imath}}\f$ as</a>
+<a name="129"><span class="lineNum">     129 </span>            :  *</a>
+<a name="130"><span class="lineNum">     130 </span>            :  * \f{align}{</a>
+<a name="131"><span class="lineNum">     131 </span>            :  *    Q^{\bar{\imath}}{}_{j} &amp;= \frac{r}{\rho}\delta^{\bar{\imath}}{}_{j} +</a>
+<a name="132"><span class="lineNum">     132 </span>            :  *    \frac{1}{(\rho + r)\rho}a^{\bar{\imath}}a_{j}, \\</a>
+<a name="133"><span class="lineNum">     133 </span>            :  *    P^{j}{}_{\bar{\imath}} &amp;= \frac{\rho}{r}\delta^{j}{}_{\bar{\imath}} -</a>
+<a name="134"><span class="lineNum">     134 </span>            :  *    \frac{1}{(\rho + r)r}a^{j}a_{\bar{\imath}},</a>
+<a name="135"><span class="lineNum">     135 </span>            :  * \f}</a>
+<a name="136"><span class="lineNum">     136 </span>            :  *</a>
+<a name="137"><span class="lineNum">     137 </span>            :  * where the definition of \f$\rho\f$ is identical to Eq. \f$(\ref{eq:rho})\f$,</a>
+<a name="138"><span class="lineNum">     138 </span>            :  * such that</a>
+<a name="139"><span class="lineNum">     139 </span>            :  *</a>
+<a name="140"><span class="lineNum">     140 </span>            :  * \f{align}{</a>
+<a name="141"><span class="lineNum">     141 </span>            :  *   Q^{\bar{\imath}}{}_{j}x^{j} &amp;= x^{\bar{\imath}}, \\</a>
+<a name="142"><span class="lineNum">     142 </span>            :  *   P^{j}{}_{\bar{\imath}}x^{\bar{\imath}} &amp;= x^{j}.</a>
+<a name="143"><span class="lineNum">     143 </span>            :  * \f}</a>
+<a name="144"><span class="lineNum">     144 </span>            :  *</a>
+<a name="145"><span class="lineNum">     145 </span>            :  * We again recover that \f$r\f$ satisfies the equation for a sphere in</a>
+<a name="146"><span class="lineNum">     146 </span>            :  * Spherical KS</a>
+<a name="147"><span class="lineNum">     147 </span>            :  *</a>
+<a name="148"><span class="lineNum">     148 </span>            :  * \f{align}{</a>
+<a name="149"><span class="lineNum">     149 </span>            :  *   r^2 = \vec{\bar{x}}\cdot\vec{\bar{x}} = \bar{x}^2+\bar{y}^2+\bar{z}^2,</a>
+<a name="150"><span class="lineNum">     150 </span>            :  * \f}</a>
+<a name="151"><span class="lineNum">     151 </span>            :  *</a>
+<a name="152"><span class="lineNum">     152 </span>            :  * and we also have that</a>
+<a name="153"><span class="lineNum">     153 </span>            :  *</a>
+<a name="154"><span class="lineNum">     154 </span>            :  * \f{align}{</a>
+<a name="155"><span class="lineNum">     155 </span>            :  *   \vec{a}\cdot\vec{\bar{x}} = \vec{a}\cdot\vec{x}.</a>
+<a name="156"><span class="lineNum">     156 </span>            :  * \f}</a>
+<a name="157"><span class="lineNum">     157 </span>            :  *</a>
+<a name="158"><span class="lineNum">     158 </span>            :  * Note that \f$Q^{\bar{\imath}}{}_{ j}\f$ and \f$P^{j}{}_{\bar{\imath}}\f$</a>
+<a name="159"><span class="lineNum">     159 </span>            :  * satisfy</a>
+<a name="160"><span class="lineNum">     160 </span>            :  *</a>
+<a name="161"><span class="lineNum">     161 </span>            :  * \f{align}{</a>
+<a name="162"><span class="lineNum">     162 </span>            :  *   P^{i}{}_{\bar{\jmath}}\,Q^{\bar{\jmath}}{}_{ k} = \delta^{i}{}_{ k}.</a>
+<a name="163"><span class="lineNum">     163 </span>            :  * \f}</a>
+<a name="164"><span class="lineNum">     164 </span>            :  *</a>
+<a name="165"><span class="lineNum">     165 </span>            :  * The Jacobian is then given by</a>
+<a name="166"><span class="lineNum">     166 </span>            :  *</a>
+<a name="167"><span class="lineNum">     167 </span>            :  * \f{align}{</a>
+<a name="168"><span class="lineNum">     168 </span>            :  *   T^{i}{}_{\bar{\jmath}} = \partial_{\bar{\jmath}}\,x^{i} =</a>
+<a name="169"><span class="lineNum">     169 </span>            :  *   \frac{\partial x^i}{\partial x^{\bar{\jmath}}},</a>
+<a name="170"><span class="lineNum">     170 </span>            :  * \f}</a>
+<a name="171"><span class="lineNum">     171 </span>            :  *</a>
+<a name="172"><span class="lineNum">     172 </span>            :  * while its inverse is given by</a>
+<a name="173"><span class="lineNum">     173 </span>            :  *</a>
+<a name="174"><span class="lineNum">     174 </span>            :  * \f{align}{</a>
+<a name="175"><span class="lineNum">     175 </span>            :  *   S^{\bar{\jmath}}{}_{ i} = \partial_{i}\,x^{\bar{\jmath}} =</a>
+<a name="176"><span class="lineNum">     176 </span>            :  *   \frac{\partial x^{\bar{\jmath}}}{\partial x^i},</a>
+<a name="177"><span class="lineNum">     177 </span>            :  * \f}</a>
+<a name="178"><span class="lineNum">     178 </span>            :  *</a>
+<a name="179"><span class="lineNum">     179 </span>            :  * which in turn satisfies</a>
+<a name="180"><span class="lineNum">     180 </span>            :  *</a>
+<a name="181"><span class="lineNum">     181 </span>            :  * \f{align}{</a>
+<a name="182"><span class="lineNum">     182 </span>            :  *   T^{i}{}_{\bar{\jmath}}\,S^{\bar{\jmath}}{}_{ k} &amp;= \delta^i_{\; k}.</a>
+<a name="183"><span class="lineNum">     183 </span>            :  * \f}</a>
+<a name="184"><span class="lineNum">     184 </span>            :  *</a>
+<a name="185"><span class="lineNum">     185 </span>            :  * ### The Metric</a>
+<a name="186"><span class="lineNum">     186 </span>            :  *</a>
+<a name="187"><span class="lineNum">     187 </span>            :  * A KS coordinate system is defined by</a>
+<a name="188"><span class="lineNum">     188 </span>            :  *</a>
+<a name="189"><span class="lineNum">     189 </span>            :  * \f{align}{</a>
+<a name="190"><span class="lineNum">     190 </span>            :  *   g_{\mu\nu} = \eta_{\mu\nu} + 2Hl_{\mu}l_{\nu},</a>
+<a name="191"><span class="lineNum">     191 </span>            :  * \f}</a>
+<a name="192"><span class="lineNum">     192 </span>            :  *</a>
+<a name="193"><span class="lineNum">     193 </span>            :  * where \f$H\f$ is a scalar function of the coordinates, \f$\eta_{\mu\nu}\f$ is</a>
+<a name="194"><span class="lineNum">     194 </span>            :  * the Minkowski metric, and \f$l^\mu\f$ is a null vector. Note that the inverse</a>
+<a name="195"><span class="lineNum">     195 </span>            :  * of the spacetime metric is given by</a>
+<a name="196"><span class="lineNum">     196 </span>            :  *</a>
+<a name="197"><span class="lineNum">     197 </span>            :  * \f{align}{</a>
+<a name="198"><span class="lineNum">     198 </span>            :  *   g^{\mu\nu} = \eta^{\mu\nu} - 2Hl^{\mu}l^{\nu}.</a>
+<a name="199"><span class="lineNum">     199 </span>            :  * \f}</a>
+<a name="200"><span class="lineNum">     200 </span>            :  *</a>
+<a name="201"><span class="lineNum">     201 </span>            :  * The scalar function \f$H\f$ takes the form</a>
+<a name="202"><span class="lineNum">     202 </span>            :  *</a>
+<a name="203"><span class="lineNum">     203 </span>            :  * \f{align}{</a>
+<a name="204"><span class="lineNum">     204 </span>            :  *   H = \frac{Mr^3}{r^4 + \left(\vec{a}\cdot\vec{x}\right)^{2}},</a>
+<a name="205"><span class="lineNum">     205 </span>            :  * \f}</a>
+<a name="206"><span class="lineNum">     206 </span>            :  *</a>
+<a name="207"><span class="lineNum">     207 </span>            :  * where \f$M\f$ is the mass, while the spatial part of the null vector takes</a>
+<a name="208"><span class="lineNum">     208 </span>            :  * the form</a>
+<a name="209"><span class="lineNum">     209 </span>            :  *</a>
+<a name="210"><span class="lineNum">     210 </span>            :  * \f{align}{</a>
+<a name="211"><span class="lineNum">     211 </span>            :  *   l_{i} = l^{i} = \frac{r\vec{x} - \vec{a}\times\vec{x} +</a>
+<a name="212"><span class="lineNum">     212 </span>            :  *   \frac{(\vec{a}\cdot\vec{x})\vec{a}}{r}}{\rho^2}.</a>
+<a name="213"><span class="lineNum">     213 </span>            :  * \f}</a>
+<a name="214"><span class="lineNum">     214 </span>            :  *</a>
+<a name="215"><span class="lineNum">     215 </span>            :  * Note that the full spacetime form of the null vector is</a>
+<a name="216"><span class="lineNum">     216 </span>            :  *</a>
+<a name="217"><span class="lineNum">     217 </span>            :  * \f{align}{</a>
+<a name="218"><span class="lineNum">     218 </span>            :  *   l_{\mu} &amp;= (-1,l_{i}), &amp; l^{\mu} &amp;= (1,l^{i}).</a>
+<a name="219"><span class="lineNum">     219 </span>            :  * \f}</a>
+<a name="220"><span class="lineNum">     220 </span>            :  *</a>
+<a name="221"><span class="lineNum">     221 </span>            :  * Transforming the KS spatial metric then yields the following Spherical KS</a>
+<a name="222"><span class="lineNum">     222 </span>            :  * spatial metric</a>
+<a name="223"><span class="lineNum">     223 </span>            :  *</a>
+<a name="224"><span class="lineNum">     224 </span>            :  * \f{align}{</a>
+<a name="225"><span class="lineNum">     225 </span>            :  *   \gamma_{\bar{\imath}\bar{\jmath}} &amp;=</a>
+<a name="226"><span class="lineNum">     226 </span>            :  *   \gamma_{mn}T^{m}{}_{\bar{\imath}}\,T^{n}{}_{\bar{\jmath}}, \nonumber \\</a>
+<a name="227"><span class="lineNum">     227 </span>            :  *   &amp;= \eta_{mn}T^{m}{}_{\bar{\imath}}\,T^{n}{}_{\bar{\jmath}} +</a>
+<a name="228"><span class="lineNum">     228 </span>            :  *   2Hl_{m}l_{n}T^{m}{}_{\bar{\imath}}\,T^{n}{}_{\bar{\jmath}}, \nonumber \\</a>
+<a name="229"><span class="lineNum">     229 </span>            :  *   &amp;= \eta_{\bar{\imath}\bar{\jmath}} + 2Hl_{\bar{\imath}}l_{\bar{\jmath}}.</a>
+<a name="230"><span class="lineNum">     230 </span>            :  * \f}</a>
+<a name="231"><span class="lineNum">     231 </span>            :  *</a>
+<a name="232"><span class="lineNum">     232 </span>            :  * The transformed spacetime Minkowski metric is given by</a>
+<a name="233"><span class="lineNum">     233 </span>            :  *</a>
+<a name="234"><span class="lineNum">     234 </span>            :  * \f{align}{</a>
+<a name="235"><span class="lineNum">     235 </span>            :  *   \eta_{\bar{\mu}\bar{\nu}} = (-1)\otimes\eta_{\bar{\imath}\bar{\jmath}},</a>
+<a name="236"><span class="lineNum">     236 </span>            :  * \f}</a>
+<a name="237"><span class="lineNum">     237 </span>            :  *</a>
+<a name="238"><span class="lineNum">     238 </span>            :  * and the transformed spacetime null vector is given by</a>
+<a name="239"><span class="lineNum">     239 </span>            :  *</a>
+<a name="240"><span class="lineNum">     240 </span>            :  * \f{align}{</a>
+<a name="241"><span class="lineNum">     241 </span>            :  *   l_{\bar{\mu}} &amp;= (-1,l_{\bar{\imath}}), &amp;</a>
+<a name="242"><span class="lineNum">     242 </span>            :  *   l^{\bar{\mu}} &amp;= (1,l^{\bar{\imath}}).</a>
+<a name="243"><span class="lineNum">     243 </span>            :  * \f}</a>
+<a name="244"><span class="lineNum">     244 </span>            :  *</a>
+<a name="245"><span class="lineNum">     245 </span>            :  * Therefore, the Spherical KS spacetime metric is</a>
+<a name="246"><span class="lineNum">     246 </span>            :  *</a>
+<a name="247"><span class="lineNum">     247 </span>            :  * \f{align}{</a>
+<a name="248"><span class="lineNum">     248 </span>            :  *   g_{\bar{\mu}\bar{\nu}} = \eta_{\bar{\mu}\bar{\nu}} +</a>
+<a name="249"><span class="lineNum">     249 </span>            :  *   2Hl_{\bar{\mu}}l_{\bar{\nu}}.</a>
+<a name="250"><span class="lineNum">     250 </span>            :  * \f}</a>
+<a name="251"><span class="lineNum">     251 </span>            :  *</a>
+<a name="252"><span class="lineNum">     252 </span>            :  * Further, we have that the lapse in Spherical KS is given by</a>
+<a name="253"><span class="lineNum">     253 </span>            :  *</a>
+<a name="254"><span class="lineNum">     254 </span>            :  * \f{align}{</a>
+<a name="255"><span class="lineNum">     255 </span>            :  *   \alpha = \left(1 + 2H\right)^{-1/2},</a>
+<a name="256"><span class="lineNum">     256 </span>            :  * \f}</a>
+<a name="257"><span class="lineNum">     257 </span>            :  *</a>
+<a name="258"><span class="lineNum">     258 </span>            :  * and the shift in Spherical KS by</a>
+<a name="259"><span class="lineNum">     259 </span>            :  *</a>
+<a name="260"><span class="lineNum">     260 </span>            :  * \f{align}{</a>
+<a name="261"><span class="lineNum">     261 </span>            :  *   \beta^{\bar{\imath}} &amp;= -\frac{2Hl^{t}l^{\bar{\imath}}}{1 + 2Hl^{t}l^{t}} =</a>
+<a name="262"><span class="lineNum">     262 </span>            :  *   -2H\alpha^{2}l^{t}l^{\bar{\imath}}, &amp; \beta_{\bar{\imath}} &amp;=</a>
+<a name="263"><span class="lineNum">     263 </span>            :  *  -2Hl_{t}l_{\bar{\imath}}.</a>
+<a name="264"><span class="lineNum">     264 </span>            :  * \f}</a>
+<a name="265"><span class="lineNum">     265 </span>            :  *</a>
+<a name="266"><span class="lineNum">     266 </span>            :  * ### Derivatives</a>
+<a name="267"><span class="lineNum">     267 </span>            :  *</a>
+<a name="268"><span class="lineNum">     268 </span>            :  * The derivatives of the preceding quantities are</a>
+<a name="269"><span class="lineNum">     269 </span>            :  *</a>
+<a name="270"><span class="lineNum">     270 </span>            :  * \f{align}{</a>
+<a name="271"><span class="lineNum">     271 </span>            :  *   \frac{\partial r}{\partial x^{i}} &amp;= \frac{r^{2}x_{i} +</a>
+<a name="272"><span class="lineNum">     272 </span>            :  *   \left(\vec{a}\cdot\vec{x}\right)a_{i}}{rs}, \\</a>
+<a name="273"><span class="lineNum">     273 </span>            :  *   \partial_{\bar{\imath}}H &amp;= HT^{m}{}_{\bar{\imath}}</a>
+<a name="274"><span class="lineNum">     274 </span>            :  *   \left[\frac{3}{r}\frac{\partial r}{\partial x^{m}} -</a>
+<a name="275"><span class="lineNum">     275 </span>            :  *   \frac{4r^{3}\frac{\partial r}{\partial x^{m}} +</a>
+<a name="276"><span class="lineNum">     276 </span>            :  *   2\left(\vec{a}\cdot\vec{x}\right)a_{m}}{r^{4} +</a>
+<a name="277"><span class="lineNum">     277 </span>            :  *   \left(\vec{a}\cdot\vec{x}\right)^{2}}\right], \\</a>
+<a name="278"><span class="lineNum">     278 </span>            :  *   \partial_{\bar{\jmath}}l^{\bar{\imath}} &amp;=</a>
+<a name="279"><span class="lineNum">     279 </span>            :  *   \partial_{\bar{\jmath}}\left(l_{k}T^{k}{}_{\bar{\imath}}\right),</a>
+<a name="280"><span class="lineNum">     280 </span>            :  *   \nonumber \\</a>
+<a name="281"><span class="lineNum">     281 </span>            :  *   &amp;= T^{k}{}_{\bar{\imath}}T^{m}{}_{\bar{\jmath}}\frac{1}{\rho^{2}}</a>
+<a name="282"><span class="lineNum">     282 </span>            :  *   \left[\left(x_{k} - 2rl_{k} -</a>
+<a name="283"><span class="lineNum">     283 </span>            :  *   \frac{\left(\vec{a}\cdot\vec{x}\right)a_{k}}{r^{2}}\right)</a>
+<a name="284"><span class="lineNum">     284 </span>            :  *   \frac{\partial r}{\partial x^{m}} + r\delta_{km} + \frac{a_{k}a_{m}}{r} +</a>
+<a name="285"><span class="lineNum">     285 </span>            :  *   \epsilon^{kmn}a_{n}\right] +</a>
+<a name="286"><span class="lineNum">     286 </span>            :  *   l_{k}\partial_{\bar{\jmath}}T^{k}{}_{\bar{\imath}}, \\</a>
+<a name="287"><span class="lineNum">     287 </span>            :  *   \partial_{\bar{k}}\gamma_{\bar{\imath}\bar{\jmath}} &amp;=</a>
+<a name="288"><span class="lineNum">     288 </span>            :  *   2l_{\bar{\imath}}l_{\bar{\jmath}}\partial_{\bar{k}}H +</a>
+<a name="289"><span class="lineNum">     289 </span>            :  *   4Hl_{(\bar{\imath}}\partial_{\bar{k}}l_{\bar{\jmath})} +</a>
+<a name="290"><span class="lineNum">     290 </span>            :  *   T^{m}{}_{\bar{\jmath}}\partial_{\bar{k}}T^{m}{}_{\bar{\imath}} +</a>
+<a name="291"><span class="lineNum">     291 </span>            :  *   T^{m}{}_{\bar{\imath}}\partial_{\bar{k}}T^{m}{}_{\bar{\jmath}}, \\</a>
+<a name="292"><span class="lineNum">     292 </span>            :  *   \partial_{\bar{k}}\alpha &amp;= -\left(1+2H\right)^{-3/2}\partial_{\bar{k}}H =</a>
+<a name="293"><span class="lineNum">     293 </span>            :  *   -\alpha^{3}\partial_{\bar{k}}H, \\</a>
+<a name="294"><span class="lineNum">     294 </span>            :  *   \partial_{\bar{k}}\beta^{i} &amp;=</a>
+<a name="295"><span class="lineNum">     295 </span>            :  *   2\alpha^{2}\left[l^{\bar{\imath}}\partial_{\bar{k}}H +</a>
+<a name="296"><span class="lineNum">     296 </span>            :  *   H\left(S^{\bar{\imath}}{}_{j}S^{\bar{m}}{}_{n}</a>
+<a name="297"><span class="lineNum">     297 </span>            :  *   \delta_{nj}\partial_{\bar{k}}l_{\bar{m}} +</a>
+<a name="298"><span class="lineNum">     298 </span>            :  *   S^{\bar{\imath}}{}_{j}l_{\bar{m}}\partial_{\bar{k}}S^{\bar{m}}{}_{n}</a>
+<a name="299"><span class="lineNum">     299 </span>            :  *   \delta_{nj} + S^{\bar{m}}{}_{n}\delta_{nj}l_{\bar{m}}</a>
+<a name="300"><span class="lineNum">     300 </span>            :  *   \partial_{\bar{k}}S^{\bar{\imath}}{}_{j}\right)\right] -</a>
+<a name="301"><span class="lineNum">     301 </span>            :  *   4Hl^{\bar{\imath}}\alpha^{4}\partial_{\bar{k}}H,</a>
+<a name="302"><span class="lineNum">     302 </span>            :  * \f}</a>
+<a name="303"><span class="lineNum">     303 </span>            :  *</a>
+<a name="304"><span class="lineNum">     304 </span>            :  * where we have defined \f$s\f$ as</a>
+<a name="305"><span class="lineNum">     305 </span>            :  *</a>
+<a name="306"><span class="lineNum">     306 </span>            :  * \f{align}{</a>
+<a name="307"><span class="lineNum">     307 </span>            :  *   s &amp;\equiv r^{2} + \frac{\left(\vec{a}\cdot\vec{x}\right)^{2}}{r^{2}}.</a>
+<a name="308"><span class="lineNum">     308 </span>            :  *   \label{eq: s_number}</a>
+<a name="309"><span class="lineNum">     309 </span>            :  * \f}</a>
+<a name="310"><span class="lineNum">     310 </span>            :  *</a>
+<a name="311"><span class="lineNum">     311 </span>            :  * ## Code</a>
+<a name="312"><span class="lineNum">     312 </span>            :  *</a>
+<a name="313"><span class="lineNum">     313 </span>            :  * While the previous sections described the relevant physical quantities, the</a>
+<a name="314"><span class="lineNum">     314 </span>            :  * actual files make use of internally defined objects to ease the computation</a>
+<a name="315"><span class="lineNum">     315 </span>            :  * of the Jacobian, the inverse Jacobian, and their corresponding derivatives.</a>
+<a name="316"><span class="lineNum">     316 </span>            :  * Therefore, we now list these intermediary objects as well as how they</a>
+<a name="317"><span class="lineNum">     317 </span>            :  * construct the aforementioned physical quantities with the appropriate</a>
+<a name="318"><span class="lineNum">     318 </span>            :  * definition found in the code (all for arbitrary spin).</a>
+<a name="319"><span class="lineNum">     319 </span>            :  *</a>
+<a name="320"><span class="lineNum">     320 </span>            :  * ### Helper Matrices</a>
+<a name="321"><span class="lineNum">     321 </span>            :  *</a>
+<a name="322"><span class="lineNum">     322 </span>            :  * The intermediary objects used to define the various Jacobian objects, the</a>
+<a name="323"><span class="lineNum">     323 </span>            :  * so-called &quot;helper matrices&quot;, are defined below.</a>
+<a name="324"><span class="lineNum">     324 </span>            :  *</a>
+<a name="325"><span class="lineNum">     325 </span>            :  * \f{align}{</a>
+<a name="326"><span class="lineNum">     326 </span>            :  *   F^{i}{}_{\bar{k}} &amp;\equiv</a>
+<a name="327"><span class="lineNum">     327 </span>            :  *   -\frac{1}{\rho r^{3}}\left(a^{2}\delta^{i}{}_{\bar{k}} -</a>
+<a name="328"><span class="lineNum">     328 </span>            :  *   a^{i}a_{\bar{k}}\right), \\</a>
+<a name="329"><span class="lineNum">     329 </span>            :  *   \left(G_1\right)^{\bar{\imath}}{}_{ \bar{m}} &amp;\equiv</a>
+<a name="330"><span class="lineNum">     330 </span>            :  *   \frac{1}{\rho^{2}r}\left(a^{2}\delta^{\bar{\imath}}{}_{\bar{m}} -</a>
+<a name="331"><span class="lineNum">     331 </span>            :  *   a^{\bar{\imath}}a_{\bar{m}}\right), \\</a>
+<a name="332"><span class="lineNum">     332 </span>            :  *   \left(G_2\right)^{\bar{n}}{}_{ j} &amp;\equiv</a>
+<a name="333"><span class="lineNum">     333 </span>            :  *   \frac{\rho^{2}}{sr}Q^{\bar{n}}{}_{j}, \\</a>
+<a name="334"><span class="lineNum">     334 </span>            :  *   D^{i}{}_{\bar{m}} &amp;\equiv</a>
+<a name="335"><span class="lineNum">     335 </span>            :  *   \frac{1}{\rho^{3}r}\left(a^{2}\delta^{i}{}_{\bar{m}} -</a>
+<a name="336"><span class="lineNum">     336 </span>            :  *   a^{i}a_{\bar{m}}\right), \\</a>
+<a name="337"><span class="lineNum">     337 </span>            :  *   C^{i}{}_{\bar{m}} &amp;\equiv D^{i}{}_{\bar{m}} - 3F^{i}{}_{\bar{m}} =</a>
+<a name="338"><span class="lineNum">     338 </span>            :  *   \frac{1}{\rho r}\left(\frac{1}{\rho^{2}} +</a>
+<a name="339"><span class="lineNum">     339 </span>            :  *   \frac{3}{r^{2}}\right)\left(a^{2}\delta^{i}{}_{\bar{m}} -</a>
+<a name="340"><span class="lineNum">     340 </span>            :  *   a^{i}a_{\bar{m}}\right), \\</a>
+<a name="341"><span class="lineNum">     341 </span>            :  *   \left(E_1\right)^{i}{}_{\bar{m}} &amp;\equiv</a>
+<a name="342"><span class="lineNum">     342 </span>            :  *   -\frac{1}{\rho^{2}}\left(\frac{1}{r^{2}} +</a>
+<a name="343"><span class="lineNum">     343 </span>            :  *   \frac{2}{\rho^{2}}\right)\left(a^{2}\delta^{i}{}_{\bar{m}} -</a>
+<a name="344"><span class="lineNum">     344 </span>            :  *   a^{i}a_{\bar{m}}\right), \nonumber \\</a>
+<a name="345"><span class="lineNum">     345 </span>            :  *   &amp;= -\frac{\left(\rho^{2} +</a>
+<a name="346"><span class="lineNum">     346 </span>            :  *   2r^{2}\right)}{r^{2}\rho^{4}}\left(a^{2}\delta^{i}{}_{\bar{m}} -</a>
+<a name="347"><span class="lineNum">     347 </span>            :  *   a^{i}a_{\bar{m}}\right), \\</a>
+<a name="348"><span class="lineNum">     348 </span>            :  *   \left(E_2\right)^{\bar{n}}{}_{ j} &amp;\equiv \left[-\frac{a^{2}}{\rho^{2}r} -</a>
+<a name="349"><span class="lineNum">     349 </span>            :  *   \frac{2}{s}\left(r - \frac{\left(\vec{a}\cdot\vec{x}\right)^{2}}{r^{3}}</a>
+<a name="350"><span class="lineNum">     350 </span>            :  *   \right)\right]\cdot\left(G_2\right)^{\bar{n}}{}_{ j} +</a>
+<a name="351"><span class="lineNum">     351 </span>            :  *   \frac{1}{s}P^{\bar{n}}{}_{ j},</a>
+<a name="352"><span class="lineNum">     352 </span>            :  * \f}</a>
+<a name="353"><span class="lineNum">     353 </span>            :  *</a>
+<a name="354"><span class="lineNum">     354 </span>            :  * where \f$s\f$ is defined identically to Eq. \f$(\ref{eq: s_number})\f$.</a>
+<a name="355"><span class="lineNum">     355 </span>            :  *</a>
+<a name="356"><span class="lineNum">     356 </span>            :  * ### Physical Quantities</a>
+<a name="357"><span class="lineNum">     357 </span>            :  *</a>
+<a name="358"><span class="lineNum">     358 </span>            :  * Below are the definitions for how we construct the Jacobian, inverse</a>
+<a name="359"><span class="lineNum">     359 </span>            :  * Jacobian, derivative of the Jacobian, and derivative of the inverse Jacobian</a>
+<a name="360"><span class="lineNum">     360 </span>            :  * in the code using the helper matrices.</a>
+<a name="361"><span class="lineNum">     361 </span>            :  *</a>
+<a name="362"><span class="lineNum">     362 </span>            :  * \f{align}{</a>
+<a name="363"><span class="lineNum">     363 </span>            :  *   T^{i}{}_{\bar{\jmath}} &amp;= P^{i}{}_{\bar{\jmath}} +</a>
+<a name="364"><span class="lineNum">     364 </span>            :  *   F^{i}{}_{\bar{k}}x^{\bar{k}}x_{\bar{\jmath}}, \\</a>
+<a name="365"><span class="lineNum">     365 </span>            :  *   S^{\bar{\imath}}{}_{ j} &amp;= Q^{\bar{\imath}}{}_{ j} +</a>
+<a name="366"><span class="lineNum">     366 </span>            :  *   \left(G_1\right)^{\bar{\imath}}{}_{\bar{m}}x^{\bar{m}}x_{\bar{n}}</a>
+<a name="367"><span class="lineNum">     367 </span>            :  *   \left(G_2\right)^{\bar{n}}{}_{ j}, \\</a>
+<a name="368"><span class="lineNum">     368 </span>            :  *   \partial_{\bar{k}}T^{i}{}_{\bar{\jmath}} &amp;=</a>
+<a name="369"><span class="lineNum">     369 </span>            :  *   F^{i}{}_{\bar{\jmath}}x_{\bar{k}} + F^{i}{}_{\bar{k}}x_{\bar{\jmath}} +</a>
+<a name="370"><span class="lineNum">     370 </span>            :  *   F^{i}{}_{\bar{m}}x^{\bar{m}}\delta_{jk} +</a>
+<a name="371"><span class="lineNum">     371 </span>            :  *   C^{i}{}_{\bar{m}}\frac{x_{\bar{k}}x^{\bar{m}}x_{\bar{\jmath}}}{r^{2}}, \\</a>
+<a name="372"><span class="lineNum">     372 </span>            :  *   \partial_{\bar{k}}S^{\;\bar{\imath}}{}_{ j} &amp;=</a>
+<a name="373"><span class="lineNum">     373 </span>            :  *   D^{\bar{\imath}}{}_{j}x_{\bar{k}} +</a>
+<a name="374"><span class="lineNum">     374 </span>            :  *   \left(G_1\right)^{\bar{\imath}}{}_{\bar{k}}x_{\bar{n}}</a>
+<a name="375"><span class="lineNum">     375 </span>            :  *   \left(G_2\right)^{\bar{n}}{}_{j} +</a>
+<a name="376"><span class="lineNum">     376 </span>            :  *   \left(G_1\right)^{\bar{\imath}}{}_{\bar{m}}x^{\bar{m}}</a>
+<a name="377"><span class="lineNum">     377 </span>            :  *   \left(G_2\right)^{\bar{n}}{}_{j}\delta_{\bar{n}\bar{k}} \nonumber \\</a>
+<a name="378"><span class="lineNum">     378 </span>            :  *   &amp;\quad +</a>
+<a name="379"><span class="lineNum">     379 </span>            :  *   \left(E_1\right)^{i}{}_{\bar{m}}\frac{x_{\bar{k}}x^{\bar{m}}x_{\bar{n}}}{r}</a>
+<a name="380"><span class="lineNum">     380 </span>            :  *   \left(G_2\right)^{\bar{n}}{}_{j} +</a>
+<a name="381"><span class="lineNum">     381 </span>            :  *   \left(G_1\right)^{\bar{i}}{}_{\bar{m}}</a>
+<a name="382"><span class="lineNum">     382 </span>            :  *   \frac{x_{\bar{k}}x^{\bar{m}}x_{\bar{n}}}{r}\left(E_2\right)^{\bar{n}}{}_{j}</a>
+<a name="383"><span class="lineNum">     383 </span>            :  *   - \left(G_1\right)^{\bar{\imath}}{}_{\bar{m}}x^{\bar{m}}x_{\bar{n}}</a>
+<a name="384"><span class="lineNum">     384 </span>            :  *   \left(G_2\right)^{\bar{n}}{}_{j}</a>
+<a name="385"><span class="lineNum">     385 </span>            :  *   \frac{2\left(\vec{a}\cdot\vec{x}\right)}{sr^{2}}a_{\bar{k}}.</a>
+<a name="386"><span class="lineNum">     386 </span>            :  * \f}</a>
+<a name="387"><span class="lineNum">     387 </span>            :  */</a>
+<a name="388"><span class="lineNum">     388 </span><span class="lineCov">          1 : class SphericalKerrSchild : public AnalyticSolution&lt;3_st&gt;,</span></a>
+<a name="389"><span class="lineNum">     389 </span>            :                             public MarkAsAnalyticSolution {</a>
+<a name="390"><span class="lineNum">     390 </span>            :  public:</a>
+<a name="391"><span class="lineNum">     391 </span><span class="lineNoCov">          0 :   struct Mass {</span></a>
+<a name="392"><span class="lineNum">     392 </span><span class="lineNoCov">          0 :     using type = double;</span></a>
+<a name="393"><span class="lineNum">     393 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = {&quot;Mass of the black hole&quot;};</span></a>
+<a name="394"><span class="lineNum">     394 </span><span class="lineNoCov">          0 :     static type lower_bound() { return 0.; }</span></a>
+<a name="395"><span class="lineNum">     395 </span>            :   };</a>
+<a name="396"><span class="lineNum">     396 </span><span class="lineNoCov">          0 :   struct Spin {</span></a>
+<a name="397"><span class="lineNum">     397 </span><span class="lineNoCov">          0 :     using type = std::array&lt;double, volume_dim&gt;;</span></a>
+<a name="398"><span class="lineNum">     398 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = {</span></a>
+<a name="399"><span class="lineNum">     399 </span>            :         &quot;The [x,y,z] dimensionless spin of the black hole&quot;};</a>
+<a name="400"><span class="lineNum">     400 </span>            :   };</a>
+<a name="401"><span class="lineNum">     401 </span><span class="lineNoCov">          0 :   struct Center {</span></a>
+<a name="402"><span class="lineNum">     402 </span><span class="lineNoCov">          0 :     using type = std::array&lt;double, volume_dim&gt;;</span></a>
+<a name="403"><span class="lineNum">     403 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = {</span></a>
+<a name="404"><span class="lineNum">     404 </span>            :         &quot;The [x,y,z] center of the black hole&quot;};</a>
+<a name="405"><span class="lineNum">     405 </span>            :   };</a>
+<a name="406"><span class="lineNum">     406 </span><span class="lineNoCov">          0 :   using options = tmpl::list&lt;Mass, Spin, Center&gt;;</span></a>
+<a name="407"><span class="lineNum">     407 </span><span class="lineNoCov">          0 :   static constexpr Options::String help{</span></a>
+<a name="408"><span class="lineNum">     408 </span>            :       &quot;Black hole in Spherical Kerr-Schild coordinates&quot;};</a>
+<a name="409"><span class="lineNum">     409 </span>            : </a>
+<a name="410"><span class="lineNum">     410 </span>            :   template &lt;typename DataType, typename Frame = Frame::Inertial&gt;</a>
+<a name="411"><span class="lineNum">     411 </span><span class="lineNoCov">          0 :   using tags = tmpl::flatten&lt;tmpl::list&lt;</span></a>
+<a name="412"><span class="lineNum">     412 </span>            :       AnalyticSolution&lt;3_st&gt;::tags&lt;DataType, Frame&gt;,</a>
+<a name="413"><span class="lineNum">     413 </span>            :       gr::Tags::DerivDetSpatialMetric&lt;DataType, 3, Frame&gt;,</a>
+<a name="414"><span class="lineNum">     414 </span>            :       gr::Tags::TraceExtrinsicCurvature&lt;DataType&gt;,</a>
+<a name="415"><span class="lineNum">     415 </span>            :       gr::Tags::SpatialChristoffelFirstKind&lt;DataType, 3, Frame&gt;,</a>
+<a name="416"><span class="lineNum">     416 </span>            :       gr::Tags::SpatialChristoffelSecondKind&lt;DataType, 3, Frame&gt;,</a>
+<a name="417"><span class="lineNum">     417 </span>            :       gr::Tags::TraceSpatialChristoffelSecondKind&lt;DataType, 3, Frame&gt;&gt;&gt;;</a>
+<a name="418"><span class="lineNum">     418 </span>            : </a>
+<a name="419"><span class="lineNum">     419 </span><span class="lineNoCov">          0 :   SphericalKerrSchild(double mass, Spin::type dimensionless_spin,</span></a>
+<a name="420"><span class="lineNum">     420 </span>            :                       Center::type center,</a>
+<a name="421"><span class="lineNum">     421 </span>            :                       const Options::Context&amp; context = {});</a>
+<a name="422"><span class="lineNum">     422 </span>            : </a>
+<a name="423"><span class="lineNum">     423 </span><span class="lineNoCov">          0 :   explicit SphericalKerrSchild(CkMigrateMessage* /*unused*/);</span></a>
+<a name="424"><span class="lineNum">     424 </span>            : </a>
+<a name="425"><span class="lineNum">     425 </span><span class="lineNoCov">          0 :   SphericalKerrSchild() = default;</span></a>
+<a name="426"><span class="lineNum">     426 </span><span class="lineNoCov">          0 :   SphericalKerrSchild(const SphericalKerrSchild&amp; /*rhs*/) = default;</span></a>
+<a name="427"><span class="lineNum">     427 </span><span class="lineNoCov">          0 :   SphericalKerrSchild&amp; operator=(const SphericalKerrSchild&amp; /*rhs*/) = default;</span></a>
+<a name="428"><span class="lineNum">     428 </span><span class="lineNoCov">          0 :   SphericalKerrSchild(SphericalKerrSchild&amp;&amp; /*rhs*/) = default;</span></a>
+<a name="429"><span class="lineNum">     429 </span><span class="lineNoCov">          0 :   SphericalKerrSchild&amp; operator=(SphericalKerrSchild&amp;&amp; /*rhs*/) = default;</span></a>
+<a name="430"><span class="lineNum">     430 </span><span class="lineNoCov">          0 :   ~SphericalKerrSchild() = default;</span></a>
+<a name="431"><span class="lineNum">     431 </span>            : </a>
+<a name="432"><span class="lineNum">     432 </span>            :   template &lt;typename DataType, typename Frame, typename... Tags&gt;</a>
+<a name="433"><span class="lineNum">     433 </span><span class="lineNoCov">          0 :   tuples::TaggedTuple&lt;Tags...&gt; variables(</span></a>
+<a name="434"><span class="lineNum">     434 </span>            :       const tnsr::I&lt;DataType, volume_dim, Frame&gt;&amp; x, double /*t*/,</a>
+<a name="435"><span class="lineNum">     435 </span>            :       tmpl::list&lt;Tags...&gt; /*meta*/) const {</a>
+<a name="436"><span class="lineNum">     436 </span>            :     static_assert(</a>
+<a name="437"><span class="lineNum">     437 </span>            :         tmpl2::flat_all_v&lt;</a>
+<a name="438"><span class="lineNum">     438 </span>            :             tmpl::list_contains_v&lt;tags&lt;DataType, Frame&gt;, Tags&gt;...&gt;,</a>
+<a name="439"><span class="lineNum">     439 </span>            :         &quot;At least one of the requested tags is not supported. The requested &quot;</a>
+<a name="440"><span class="lineNum">     440 </span>            :         &quot;tags are listed as template parameters of the `variables` function.&quot;);</a>
+<a name="441"><span class="lineNum">     441 </span>            :     IntermediateVars&lt;DataType, Frame&gt; cache(get_size(*x.begin()));</a>
+<a name="442"><span class="lineNum">     442 </span>            :     IntermediateComputer&lt;DataType, Frame&gt; computer(*this, x);</a>
+<a name="443"><span class="lineNum">     443 </span>            :     return {cache.get_var(computer, Tags{})...};</a>
+<a name="444"><span class="lineNum">     444 </span>            :   }</a>
+<a name="445"><span class="lineNum">     445 </span>            : </a>
+<a name="446"><span class="lineNum">     446 </span>            :   // NOLINTNEXTLINE(google-runtime-references)</a>
+<a name="447"><span class="lineNum">     447 </span><span class="lineNoCov">          0 :   void pup(PUP::er&amp; p);</span></a>
+<a name="448"><span class="lineNum">     448 </span>            : </a>
+<a name="449"><span class="lineNum">     449 </span><span class="lineNoCov">          0 :   SPECTRE_ALWAYS_INLINE double mass() const { return mass_; }</span></a>
+<a name="450"><span class="lineNum">     450 </span><span class="lineNoCov">          0 :   SPECTRE_ALWAYS_INLINE const std::array&lt;double, volume_dim&gt;&amp; center() const {</span></a>
+<a name="451"><span class="lineNum">     451 </span>            :     return center_;</a>
+<a name="452"><span class="lineNum">     452 </span>            :   }</a>
+<a name="453"><span class="lineNum">     453 </span>            :   SPECTRE_ALWAYS_INLINE const std::array&lt;double, volume_dim&gt;&amp;</a>
+<a name="454"><span class="lineNum">     454 </span><span class="lineNoCov">          0 :   dimensionless_spin() const {</span></a>
+<a name="455"><span class="lineNum">     455 </span>            :     return dimensionless_spin_;</a>
+<a name="456"><span class="lineNum">     456 </span>            :   }</a>
+<a name="457"><span class="lineNum">     457 </span>            : </a>
+<a name="458"><span class="lineNum">     458 </span><span class="lineNoCov">          0 :   struct internal_tags {</span></a>
+<a name="459"><span class="lineNum">     459 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="460"><span class="lineNum">     460 </span><span class="lineNoCov">          0 :     using x_minus_center = ::Tags::TempI&lt;0, 3, Frame, DataType&gt;;</span></a>
+<a name="461"><span class="lineNum">     461 </span>            :     template &lt;typename DataType&gt;</a>
+<a name="462"><span class="lineNum">     462 </span><span class="lineNoCov">          0 :     using r_squared = ::Tags::TempScalar&lt;1, DataType&gt;;</span></a>
+<a name="463"><span class="lineNum">     463 </span>            :     template &lt;typename DataType&gt;</a>
+<a name="464"><span class="lineNum">     464 </span><span class="lineNoCov">          0 :     using r = ::Tags::TempScalar&lt;2, DataType&gt;;</span></a>
+<a name="465"><span class="lineNum">     465 </span>            :     template &lt;typename DataType&gt;</a>
+<a name="466"><span class="lineNum">     466 </span><span class="lineNoCov">          0 :     using rho = ::Tags::TempScalar&lt;3, DataType&gt;;</span></a>
+<a name="467"><span class="lineNum">     467 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="468"><span class="lineNum">     468 </span><span class="lineNoCov">          0 :     using helper_matrix_F = ::Tags::TempIj&lt;4, 3, Frame, DataType&gt;;</span></a>
+<a name="469"><span class="lineNum">     469 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="470"><span class="lineNum">     470 </span><span class="lineNoCov">          0 :     using transformation_matrix_P = ::Tags::TempIj&lt;5, 3, Frame, DataType&gt;;</span></a>
+<a name="471"><span class="lineNum">     471 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="472"><span class="lineNum">     472 </span><span class="lineNoCov">          0 :     using jacobian = ::Tags::TempIj&lt;6, 3, Frame, DataType&gt;;</span></a>
+<a name="473"><span class="lineNum">     473 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="474"><span class="lineNum">     474 </span><span class="lineNoCov">          0 :     using helper_matrix_D = ::Tags::TempIj&lt;7, 3, Frame, DataType&gt;;</span></a>
+<a name="475"><span class="lineNum">     475 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="476"><span class="lineNum">     476 </span><span class="lineNoCov">          0 :     using helper_matrix_C = ::Tags::TempIj&lt;8, 3, Frame, DataType&gt;;</span></a>
+<a name="477"><span class="lineNum">     477 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="478"><span class="lineNum">     478 </span><span class="lineNoCov">          0 :     using deriv_jacobian = ::Tags::TempiJk&lt;9, 3, Frame, DataType&gt;;</span></a>
+<a name="479"><span class="lineNum">     479 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="480"><span class="lineNum">     480 </span><span class="lineNoCov">          0 :     using transformation_matrix_Q = ::Tags::TempIj&lt;10, 3, Frame, DataType&gt;;</span></a>
+<a name="481"><span class="lineNum">     481 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="482"><span class="lineNum">     482 </span><span class="lineNoCov">          0 :     using helper_matrix_G1 = ::Tags::TempIj&lt;11, 3, Frame, DataType&gt;;</span></a>
+<a name="483"><span class="lineNum">     483 </span>            :     template &lt;typename DataType&gt;</a>
+<a name="484"><span class="lineNum">     484 </span><span class="lineNoCov">          0 :     using a_dot_x = ::Tags::TempScalar&lt;12, DataType&gt;;</span></a>
+<a name="485"><span class="lineNum">     485 </span>            :     template &lt;typename DataType&gt;</a>
+<a name="486"><span class="lineNum">     486 </span><span class="lineNoCov">          0 :     using s_number = ::Tags::TempScalar&lt;13, DataType&gt;;</span></a>
+<a name="487"><span class="lineNum">     487 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="488"><span class="lineNum">     488 </span><span class="lineNoCov">          0 :     using helper_matrix_G2 = ::Tags::TempIj&lt;14, 3, Frame, DataType&gt;;</span></a>
+<a name="489"><span class="lineNum">     489 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="490"><span class="lineNum">     490 </span><span class="lineNoCov">          0 :     using G1_dot_x = ::Tags::TempI&lt;15, 3, Frame, DataType&gt;;</span></a>
+<a name="491"><span class="lineNum">     491 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="492"><span class="lineNum">     492 </span><span class="lineNoCov">          0 :     using G2_dot_x = ::Tags::Tempi&lt;16, 3, Frame, DataType&gt;;</span></a>
+<a name="493"><span class="lineNum">     493 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="494"><span class="lineNum">     494 </span><span class="lineNoCov">          0 :     using inv_jacobian = ::Tags::TempIj&lt;17, 3, Frame, DataType&gt;;</span></a>
+<a name="495"><span class="lineNum">     495 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="496"><span class="lineNum">     496 </span><span class="lineNoCov">          0 :     using helper_matrix_E1 = ::Tags::TempIj&lt;18, 3, Frame, DataType&gt;;</span></a>
+<a name="497"><span class="lineNum">     497 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="498"><span class="lineNum">     498 </span><span class="lineNoCov">          0 :     using helper_matrix_E2 = ::Tags::TempIj&lt;19, 3, Frame, DataType&gt;;</span></a>
+<a name="499"><span class="lineNum">     499 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="500"><span class="lineNum">     500 </span><span class="lineNoCov">          0 :     using deriv_inv_jacobian = ::Tags::TempiJk&lt;20, 3, Frame, DataType&gt;;</span></a>
+<a name="501"><span class="lineNum">     501 </span>            :     template &lt;typename DataType&gt;</a>
+<a name="502"><span class="lineNum">     502 </span><span class="lineNoCov">          0 :     using H = ::Tags::TempScalar&lt;21, DataType&gt;;</span></a>
+<a name="503"><span class="lineNum">     503 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="504"><span class="lineNum">     504 </span><span class="lineNoCov">          0 :     using kerr_schild_x = ::Tags::TempI&lt;22, 3, Frame, DataType&gt;;</span></a>
+<a name="505"><span class="lineNum">     505 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="506"><span class="lineNum">     506 </span><span class="lineNoCov">          0 :     using a_cross_x = ::Tags::TempI&lt;23, 3, Frame, DataType&gt;;</span></a>
+<a name="507"><span class="lineNum">     507 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="508"><span class="lineNum">     508 </span><span class="lineNoCov">          0 :     using kerr_schild_l = ::Tags::TempI&lt;24, 3, Frame, DataType&gt;;</span></a>
+<a name="509"><span class="lineNum">     509 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="510"><span class="lineNum">     510 </span><span class="lineNoCov">          0 :     using l_lower = ::Tags::Tempi&lt;25, 4, Frame, DataType&gt;;</span></a>
+<a name="511"><span class="lineNum">     511 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="512"><span class="lineNum">     512 </span><span class="lineNoCov">          0 :     using l_upper = ::Tags::TempI&lt;26, 4, Frame, DataType&gt;;</span></a>
+<a name="513"><span class="lineNum">     513 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="514"><span class="lineNum">     514 </span><span class="lineNoCov">          0 :     using deriv_r = ::Tags::TempI&lt;27, 3, Frame, DataType&gt;;</span></a>
+<a name="515"><span class="lineNum">     515 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="516"><span class="lineNum">     516 </span><span class="lineNoCov">          0 :     using deriv_H = ::Tags::TempI&lt;28, 4, Frame, DataType&gt;;</span></a>
+<a name="517"><span class="lineNum">     517 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="518"><span class="lineNum">     518 </span><span class="lineNoCov">          0 :     using kerr_schild_deriv_l = ::Tags::Tempij&lt;29, 4, Frame, DataType&gt;;</span></a>
+<a name="519"><span class="lineNum">     519 </span>            :     template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="520"><span class="lineNum">     520 </span><span class="lineNoCov">          0 :     using deriv_l = ::Tags::Tempij&lt;30, 4, Frame, DataType&gt;;</span></a>
+<a name="521"><span class="lineNum">     521 </span>            :     template &lt;typename DataType&gt;</a>
+<a name="522"><span class="lineNum">     522 </span><span class="lineNoCov">          0 :     using lapse_squared = ::Tags::TempScalar&lt;31, DataType&gt;;</span></a>
+<a name="523"><span class="lineNum">     523 </span>            :     template &lt;typename DataType&gt;</a>
+<a name="524"><span class="lineNum">     524 </span><span class="lineNoCov">          0 :     using deriv_lapse_multiplier = ::Tags::TempScalar&lt;32, DataType&gt;;</span></a>
+<a name="525"><span class="lineNum">     525 </span>            :     template &lt;typename DataType&gt;</a>
+<a name="526"><span class="lineNum">     526 </span><span class="lineNoCov">          0 :     using shift_multiplier = ::Tags::TempScalar&lt;33, DataType&gt;;</span></a>
+<a name="527"><span class="lineNum">     527 </span>            :   };</a>
+<a name="528"><span class="lineNum">     528 </span>            : </a>
+<a name="529"><span class="lineNum">     529 </span>            :   template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="530"><span class="lineNum">     530 </span><span class="lineNoCov">          0 :   using CachedBuffer = CachedTempBuffer&lt;</span></a>
+<a name="531"><span class="lineNum">     531 </span>            :       internal_tags::x_minus_center&lt;DataType, Frame&gt;,</a>
+<a name="532"><span class="lineNum">     532 </span>            :       internal_tags::r_squared&lt;DataType&gt;, internal_tags::r&lt;DataType&gt;,</a>
+<a name="533"><span class="lineNum">     533 </span>            :       internal_tags::rho&lt;DataType&gt;,</a>
+<a name="534"><span class="lineNum">     534 </span>            :       internal_tags::helper_matrix_F&lt;DataType, Frame&gt;,</a>
+<a name="535"><span class="lineNum">     535 </span>            :       internal_tags::transformation_matrix_P&lt;DataType, Frame&gt;,</a>
+<a name="536"><span class="lineNum">     536 </span>            :       internal_tags::jacobian&lt;DataType, Frame&gt;,</a>
+<a name="537"><span class="lineNum">     537 </span>            :       internal_tags::helper_matrix_D&lt;DataType, Frame&gt;,</a>
+<a name="538"><span class="lineNum">     538 </span>            :       internal_tags::helper_matrix_C&lt;DataType, Frame&gt;,</a>
+<a name="539"><span class="lineNum">     539 </span>            :       internal_tags::deriv_jacobian&lt;DataType, Frame&gt;,</a>
+<a name="540"><span class="lineNum">     540 </span>            :       internal_tags::transformation_matrix_Q&lt;DataType, Frame&gt;,</a>
+<a name="541"><span class="lineNum">     541 </span>            :       internal_tags::helper_matrix_G1&lt;DataType, Frame&gt;,</a>
+<a name="542"><span class="lineNum">     542 </span>            :       internal_tags::a_dot_x&lt;DataType&gt;, internal_tags::s_number&lt;DataType&gt;,</a>
+<a name="543"><span class="lineNum">     543 </span>            :       internal_tags::helper_matrix_G2&lt;DataType, Frame&gt;,</a>
+<a name="544"><span class="lineNum">     544 </span>            :       internal_tags::G1_dot_x&lt;DataType, Frame&gt;,</a>
+<a name="545"><span class="lineNum">     545 </span>            :       internal_tags::G2_dot_x&lt;DataType, Frame&gt;,</a>
+<a name="546"><span class="lineNum">     546 </span>            :       internal_tags::inv_jacobian&lt;DataType, Frame&gt;,</a>
+<a name="547"><span class="lineNum">     547 </span>            :       internal_tags::helper_matrix_E1&lt;DataType, Frame&gt;,</a>
+<a name="548"><span class="lineNum">     548 </span>            :       internal_tags::helper_matrix_E2&lt;DataType, Frame&gt;,</a>
+<a name="549"><span class="lineNum">     549 </span>            :       internal_tags::deriv_inv_jacobian&lt;DataType, Frame&gt;,</a>
+<a name="550"><span class="lineNum">     550 </span>            :       internal_tags::H&lt;DataType&gt;, internal_tags::kerr_schild_x&lt;DataType, Frame&gt;,</a>
+<a name="551"><span class="lineNum">     551 </span>            :       internal_tags::a_cross_x&lt;DataType, Frame&gt;,</a>
+<a name="552"><span class="lineNum">     552 </span>            :       internal_tags::kerr_schild_l&lt;DataType, Frame&gt;,</a>
+<a name="553"><span class="lineNum">     553 </span>            :       internal_tags::l_lower&lt;DataType, Frame&gt;,</a>
+<a name="554"><span class="lineNum">     554 </span>            :       internal_tags::l_upper&lt;DataType, Frame&gt;,</a>
+<a name="555"><span class="lineNum">     555 </span>            :       internal_tags::deriv_r&lt;DataType, Frame&gt;,</a>
+<a name="556"><span class="lineNum">     556 </span>            :       internal_tags::deriv_H&lt;DataType, Frame&gt;,</a>
+<a name="557"><span class="lineNum">     557 </span>            :       internal_tags::kerr_schild_deriv_l&lt;DataType, Frame&gt;,</a>
+<a name="558"><span class="lineNum">     558 </span>            :       internal_tags::deriv_l&lt;DataType, Frame&gt;,</a>
+<a name="559"><span class="lineNum">     559 </span>            :       internal_tags::lapse_squared&lt;DataType&gt;, gr::Tags::Lapse&lt;DataType&gt;,</a>
+<a name="560"><span class="lineNum">     560 </span>            :       internal_tags::deriv_lapse_multiplier&lt;DataType&gt;,</a>
+<a name="561"><span class="lineNum">     561 </span>            :       internal_tags::shift_multiplier&lt;DataType&gt;,</a>
+<a name="562"><span class="lineNum">     562 </span>            :       gr::Tags::Shift&lt;DataType, 3, Frame&gt;, DerivShift&lt;DataType, Frame&gt;,</a>
+<a name="563"><span class="lineNum">     563 </span>            :       gr::Tags::SpatialMetric&lt;DataType, 3, Frame&gt;,</a>
+<a name="564"><span class="lineNum">     564 </span>            :       DerivSpatialMetric&lt;DataType, Frame&gt;,</a>
+<a name="565"><span class="lineNum">     565 </span>            :       ::Tags::dt&lt;gr::Tags::SpatialMetric&lt;DataType, 3, Frame&gt;&gt;,</a>
+<a name="566"><span class="lineNum">     566 </span>            :       gr::Tags::ExtrinsicCurvature&lt;DataType, 3, Frame&gt;,</a>
+<a name="567"><span class="lineNum">     567 </span>            :       gr::Tags::InverseSpatialMetric&lt;DataType, 3, Frame&gt;,</a>
+<a name="568"><span class="lineNum">     568 </span>            :       gr::Tags::SpatialChristoffelFirstKind&lt;DataType, 3, Frame&gt;,</a>
+<a name="569"><span class="lineNum">     569 </span>            :       gr::Tags::SpatialChristoffelSecondKind&lt;DataType, 3, Frame&gt;&gt;;</a>
+<a name="570"><span class="lineNum">     570 </span>            : </a>
+<a name="571"><span class="lineNum">     571 </span>            :   template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="572"><span class="lineNum">     572 </span><span class="lineNoCov">          0 :   class IntermediateComputer {</span></a>
+<a name="573"><span class="lineNum">     573 </span>            :    public:</a>
+<a name="574"><span class="lineNum">     574 </span><span class="lineNoCov">          0 :     using CachedBuffer = SphericalKerrSchild::CachedBuffer&lt;DataType, Frame&gt;;</span></a>
+<a name="575"><span class="lineNum">     575 </span>            : </a>
+<a name="576"><span class="lineNum">     576 </span><span class="lineNoCov">          0 :     IntermediateComputer(const SphericalKerrSchild&amp; solution,</span></a>
+<a name="577"><span class="lineNum">     577 </span>            :                          const tnsr::I&lt;DataType, 3, Frame&gt;&amp; x);</a>
+<a name="578"><span class="lineNum">     578 </span>            : </a>
+<a name="579"><span class="lineNum">     579 </span>            :     // spin_a_and_squared(const SphericalKerrSchild&amp; solution);</a>
+<a name="580"><span class="lineNum">     580 </span>            : </a>
+<a name="581"><span class="lineNum">     581 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="582"><span class="lineNum">     582 </span>            :         const gsl::not_null&lt;tnsr::I&lt;DataType, 3, Frame&gt;*&gt; x_minus_center,</a>
+<a name="583"><span class="lineNum">     583 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; /*cache*/,</a>
+<a name="584"><span class="lineNum">     584 </span>            :         internal_tags::x_minus_center&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="585"><span class="lineNum">     585 </span>            : </a>
+<a name="586"><span class="lineNum">     586 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;Scalar&lt;DataType&gt;*&gt; r_squared,</span></a>
+<a name="587"><span class="lineNum">     587 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="588"><span class="lineNum">     588 </span>            :                     internal_tags::r_squared&lt;DataType&gt; /*meta*/) const;</a>
+<a name="589"><span class="lineNum">     589 </span>            : </a>
+<a name="590"><span class="lineNum">     590 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;Scalar&lt;DataType&gt;*&gt; r,</span></a>
+<a name="591"><span class="lineNum">     591 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="592"><span class="lineNum">     592 </span>            :                     internal_tags::r&lt;DataType&gt; /*meta*/) const;</a>
+<a name="593"><span class="lineNum">     593 </span>            : </a>
+<a name="594"><span class="lineNum">     594 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;Scalar&lt;DataType&gt;*&gt; rho,</span></a>
+<a name="595"><span class="lineNum">     595 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="596"><span class="lineNum">     596 </span>            :                     internal_tags::rho&lt;DataType&gt; /*meta*/) const;</a>
+<a name="597"><span class="lineNum">     597 </span>            : </a>
+<a name="598"><span class="lineNum">     598 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="599"><span class="lineNum">     599 </span>            :         const gsl::not_null&lt;tnsr::Ij&lt;DataType, 3, Frame&gt;*&gt; helper_matrix_F,</a>
+<a name="600"><span class="lineNum">     600 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="601"><span class="lineNum">     601 </span>            :         internal_tags::helper_matrix_F&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="602"><span class="lineNum">     602 </span>            : </a>
+<a name="603"><span class="lineNum">     603 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="604"><span class="lineNum">     604 </span>            :         const gsl::not_null&lt;tnsr::Ij&lt;DataType, 3, Frame&gt;*&gt;</a>
+<a name="605"><span class="lineNum">     605 </span>            :             transformation_matrix_P,</a>
+<a name="606"><span class="lineNum">     606 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="607"><span class="lineNum">     607 </span>            :         internal_tags::transformation_matrix_P&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="608"><span class="lineNum">     608 </span>            : </a>
+<a name="609"><span class="lineNum">     609 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;tnsr::Ij&lt;DataType, 3, Frame&gt;*&gt; jacobian,</span></a>
+<a name="610"><span class="lineNum">     610 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="611"><span class="lineNum">     611 </span>            :                     internal_tags::jacobian&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="612"><span class="lineNum">     612 </span>            : </a>
+<a name="613"><span class="lineNum">     613 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="614"><span class="lineNum">     614 </span>            :         const gsl::not_null&lt;tnsr::Ij&lt;DataType, 3, Frame&gt;*&gt; helper_matrix_D,</a>
+<a name="615"><span class="lineNum">     615 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="616"><span class="lineNum">     616 </span>            :         internal_tags::helper_matrix_D&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="617"><span class="lineNum">     617 </span>            : </a>
+<a name="618"><span class="lineNum">     618 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="619"><span class="lineNum">     619 </span>            :         const gsl::not_null&lt;tnsr::Ij&lt;DataType, 3, Frame&gt;*&gt; helper_matrix_C,</a>
+<a name="620"><span class="lineNum">     620 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="621"><span class="lineNum">     621 </span>            :         internal_tags::helper_matrix_C&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="622"><span class="lineNum">     622 </span>            : </a>
+<a name="623"><span class="lineNum">     623 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="624"><span class="lineNum">     624 </span>            :         const gsl::not_null&lt;tnsr::iJk&lt;DataType, 3, Frame&gt;*&gt; deriv_jacobian,</a>
+<a name="625"><span class="lineNum">     625 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="626"><span class="lineNum">     626 </span>            :         internal_tags::deriv_jacobian&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="627"><span class="lineNum">     627 </span>            : </a>
+<a name="628"><span class="lineNum">     628 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="629"><span class="lineNum">     629 </span>            :         const gsl::not_null&lt;tnsr::Ij&lt;DataType, 3, Frame&gt;*&gt;</a>
+<a name="630"><span class="lineNum">     630 </span>            :             transformation_matrix_Q,</a>
+<a name="631"><span class="lineNum">     631 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="632"><span class="lineNum">     632 </span>            :         internal_tags::transformation_matrix_Q&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="633"><span class="lineNum">     633 </span>            : </a>
+<a name="634"><span class="lineNum">     634 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="635"><span class="lineNum">     635 </span>            :         const gsl::not_null&lt;tnsr::Ij&lt;DataType, 3, Frame&gt;*&gt; helper_matrix_G1,</a>
+<a name="636"><span class="lineNum">     636 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="637"><span class="lineNum">     637 </span>            :         internal_tags::helper_matrix_G1&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="638"><span class="lineNum">     638 </span>            : </a>
+<a name="639"><span class="lineNum">     639 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;Scalar&lt;DataType&gt;*&gt; a_dot_x,</span></a>
+<a name="640"><span class="lineNum">     640 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="641"><span class="lineNum">     641 </span>            :                     internal_tags::a_dot_x&lt;DataType&gt; /*meta*/) const;</a>
+<a name="642"><span class="lineNum">     642 </span>            : </a>
+<a name="643"><span class="lineNum">     643 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;Scalar&lt;DataType&gt;*&gt; s_number,</span></a>
+<a name="644"><span class="lineNum">     644 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="645"><span class="lineNum">     645 </span>            :                     internal_tags::s_number&lt;DataType&gt; /*meta*/) const;</a>
+<a name="646"><span class="lineNum">     646 </span>            : </a>
+<a name="647"><span class="lineNum">     647 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="648"><span class="lineNum">     648 </span>            :         const gsl::not_null&lt;tnsr::Ij&lt;DataType, 3, Frame&gt;*&gt; helper_matrix_G2,</a>
+<a name="649"><span class="lineNum">     649 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="650"><span class="lineNum">     650 </span>            :         internal_tags::helper_matrix_G2&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="651"><span class="lineNum">     651 </span>            : </a>
+<a name="652"><span class="lineNum">     652 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;tnsr::I&lt;DataType, 3, Frame&gt;*&gt; G1_dot_x,</span></a>
+<a name="653"><span class="lineNum">     653 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="654"><span class="lineNum">     654 </span>            :                     internal_tags::G1_dot_x&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="655"><span class="lineNum">     655 </span>            : </a>
+<a name="656"><span class="lineNum">     656 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;tnsr::i&lt;DataType, 3, Frame&gt;*&gt; G2_dot_x,</span></a>
+<a name="657"><span class="lineNum">     657 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="658"><span class="lineNum">     658 </span>            :                     internal_tags::G2_dot_x&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="659"><span class="lineNum">     659 </span>            : </a>
+<a name="660"><span class="lineNum">     660 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="661"><span class="lineNum">     661 </span>            :         const gsl::not_null&lt;tnsr::Ij&lt;DataType, 3, Frame&gt;*&gt; inv_jacobian,</a>
+<a name="662"><span class="lineNum">     662 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="663"><span class="lineNum">     663 </span>            :         internal_tags::inv_jacobian&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="664"><span class="lineNum">     664 </span>            : </a>
+<a name="665"><span class="lineNum">     665 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="666"><span class="lineNum">     666 </span>            :         const gsl::not_null&lt;tnsr::Ij&lt;DataType, 3, Frame&gt;*&gt; helper_matrix_E1,</a>
+<a name="667"><span class="lineNum">     667 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="668"><span class="lineNum">     668 </span>            :         internal_tags::helper_matrix_E1&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="669"><span class="lineNum">     669 </span>            : </a>
+<a name="670"><span class="lineNum">     670 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="671"><span class="lineNum">     671 </span>            :         const gsl::not_null&lt;tnsr::Ij&lt;DataType, 3, Frame&gt;*&gt; helper_matrix_E2,</a>
+<a name="672"><span class="lineNum">     672 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="673"><span class="lineNum">     673 </span>            :         internal_tags::helper_matrix_E2&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="674"><span class="lineNum">     674 </span>            : </a>
+<a name="675"><span class="lineNum">     675 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="676"><span class="lineNum">     676 </span>            :         const gsl::not_null&lt;tnsr::iJk&lt;DataType, 3, Frame&gt;*&gt; deriv_inv_jacobian,</a>
+<a name="677"><span class="lineNum">     677 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="678"><span class="lineNum">     678 </span>            :         internal_tags::deriv_inv_jacobian&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="679"><span class="lineNum">     679 </span>            : </a>
+<a name="680"><span class="lineNum">     680 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;Scalar&lt;DataType&gt;*&gt; H,</span></a>
+<a name="681"><span class="lineNum">     681 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="682"><span class="lineNum">     682 </span>            :                     internal_tags::H&lt;DataType&gt; /*meta*/) const;</a>
+<a name="683"><span class="lineNum">     683 </span>            : </a>
+<a name="684"><span class="lineNum">     684 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="685"><span class="lineNum">     685 </span>            :         const gsl::not_null&lt;tnsr::I&lt;DataType, 3, Frame&gt;*&gt; kerr_schild_x,</a>
+<a name="686"><span class="lineNum">     686 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; /*cache*/,</a>
+<a name="687"><span class="lineNum">     687 </span>            :         internal_tags::kerr_schild_x&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="688"><span class="lineNum">     688 </span>            : </a>
+<a name="689"><span class="lineNum">     689 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;tnsr::I&lt;DataType, 3, Frame&gt;*&gt; a_cross_x,</span></a>
+<a name="690"><span class="lineNum">     690 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="691"><span class="lineNum">     691 </span>            :                     internal_tags::a_cross_x&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="692"><span class="lineNum">     692 </span>            : </a>
+<a name="693"><span class="lineNum">     693 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="694"><span class="lineNum">     694 </span>            :         const gsl::not_null&lt;tnsr::I&lt;DataType, 3, Frame&gt;*&gt; kerr_schild_l,</a>
+<a name="695"><span class="lineNum">     695 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="696"><span class="lineNum">     696 </span>            :         internal_tags::kerr_schild_l&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="697"><span class="lineNum">     697 </span>            : </a>
+<a name="698"><span class="lineNum">     698 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;tnsr::i&lt;DataType, 4, Frame&gt;*&gt; l_lower,</span></a>
+<a name="699"><span class="lineNum">     699 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="700"><span class="lineNum">     700 </span>            :                     internal_tags::l_lower&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="701"><span class="lineNum">     701 </span>            : </a>
+<a name="702"><span class="lineNum">     702 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;tnsr::I&lt;DataType, 4, Frame&gt;*&gt; l_upper,</span></a>
+<a name="703"><span class="lineNum">     703 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="704"><span class="lineNum">     704 </span>            :                     internal_tags::l_upper&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="705"><span class="lineNum">     705 </span>            : </a>
+<a name="706"><span class="lineNum">     706 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;tnsr::I&lt;DataType, 3, Frame&gt;*&gt; deriv_r,</span></a>
+<a name="707"><span class="lineNum">     707 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="708"><span class="lineNum">     708 </span>            :                     internal_tags::deriv_r&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="709"><span class="lineNum">     709 </span>            : </a>
+<a name="710"><span class="lineNum">     710 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;tnsr::I&lt;DataType, 4, Frame&gt;*&gt; deriv_H,</span></a>
+<a name="711"><span class="lineNum">     711 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="712"><span class="lineNum">     712 </span>            :                     internal_tags::deriv_H&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="713"><span class="lineNum">     713 </span>            : </a>
+<a name="714"><span class="lineNum">     714 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="715"><span class="lineNum">     715 </span>            :         const gsl::not_null&lt;tnsr::ij&lt;DataType, 4, Frame&gt;*&gt; kerr_schild_deriv_l,</a>
+<a name="716"><span class="lineNum">     716 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="717"><span class="lineNum">     717 </span>            :         internal_tags::kerr_schild_deriv_l&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="718"><span class="lineNum">     718 </span>            : </a>
+<a name="719"><span class="lineNum">     719 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;tnsr::ij&lt;DataType, 4, Frame&gt;*&gt; deriv_l,</span></a>
+<a name="720"><span class="lineNum">     720 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="721"><span class="lineNum">     721 </span>            :                     internal_tags::deriv_l&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="722"><span class="lineNum">     722 </span>            : </a>
+<a name="723"><span class="lineNum">     723 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;Scalar&lt;DataType&gt;*&gt; lapse_squared,</span></a>
+<a name="724"><span class="lineNum">     724 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="725"><span class="lineNum">     725 </span>            :                     internal_tags::lapse_squared&lt;DataType&gt; /*meta*/) const;</a>
+<a name="726"><span class="lineNum">     726 </span>            : </a>
+<a name="727"><span class="lineNum">     727 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;Scalar&lt;DataType&gt;*&gt; lapse,</span></a>
+<a name="728"><span class="lineNum">     728 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="729"><span class="lineNum">     729 </span>            :                     gr::Tags::Lapse&lt;DataType&gt; /*meta*/) const;</a>
+<a name="730"><span class="lineNum">     730 </span>            : </a>
+<a name="731"><span class="lineNum">     731 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="732"><span class="lineNum">     732 </span>            :         const gsl::not_null&lt;Scalar&lt;DataType&gt;*&gt; deriv_lapse_multiplier,</a>
+<a name="733"><span class="lineNum">     733 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="734"><span class="lineNum">     734 </span>            :         internal_tags::deriv_lapse_multiplier&lt;DataType&gt; /*meta*/) const;</a>
+<a name="735"><span class="lineNum">     735 </span>            : </a>
+<a name="736"><span class="lineNum">     736 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;Scalar&lt;DataType&gt;*&gt; shift_multiplier,</span></a>
+<a name="737"><span class="lineNum">     737 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="738"><span class="lineNum">     738 </span>            :                     internal_tags::shift_multiplier&lt;DataType&gt; /*meta*/) const;</a>
+<a name="739"><span class="lineNum">     739 </span>            : </a>
+<a name="740"><span class="lineNum">     740 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;tnsr::I&lt;DataType, 3, Frame&gt;*&gt; shift,</span></a>
+<a name="741"><span class="lineNum">     741 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="742"><span class="lineNum">     742 </span>            :                     gr::Tags::Shift&lt;DataType, 3, Frame&gt; /*meta*/) const;</a>
+<a name="743"><span class="lineNum">     743 </span>            : </a>
+<a name="744"><span class="lineNum">     744 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="745"><span class="lineNum">     745 </span>            :         const gsl::not_null&lt;tnsr::iJ&lt;DataType, 3, Frame&gt;*&gt; deriv_shift,</a>
+<a name="746"><span class="lineNum">     746 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="747"><span class="lineNum">     747 </span>            :         DerivShift&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="748"><span class="lineNum">     748 </span>            : </a>
+<a name="749"><span class="lineNum">     749 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="750"><span class="lineNum">     750 </span>            :         const gsl::not_null&lt;tnsr::ii&lt;DataType, 3, Frame&gt;*&gt; spatial_metric,</a>
+<a name="751"><span class="lineNum">     751 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="752"><span class="lineNum">     752 </span>            :         gr::Tags::SpatialMetric&lt;DataType, 3, Frame&gt; /*meta*/) const;</a>
+<a name="753"><span class="lineNum">     753 </span>            : </a>
+<a name="754"><span class="lineNum">     754 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="755"><span class="lineNum">     755 </span>            :         const gsl::not_null&lt;tnsr::II&lt;DataType, 3, Frame&gt;*&gt;</a>
+<a name="756"><span class="lineNum">     756 </span>            :             inverse_spatial_metric,</a>
+<a name="757"><span class="lineNum">     757 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="758"><span class="lineNum">     758 </span>            :         gr::Tags::InverseSpatialMetric&lt;DataType, 3, Frame&gt; /*meta*/) const;</a>
+<a name="759"><span class="lineNum">     759 </span>            : </a>
+<a name="760"><span class="lineNum">     760 </span><span class="lineNoCov">          0 :     void operator()(const gsl::not_null&lt;tnsr::ijj&lt;DataType, 3, Frame&gt;*&gt;</span></a>
+<a name="761"><span class="lineNum">     761 </span>            :                         deriv_spatial_metric,</a>
+<a name="762"><span class="lineNum">     762 </span>            :                     const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="763"><span class="lineNum">     763 </span>            :                     DerivSpatialMetric&lt;DataType, Frame&gt; /*meta*/) const;</a>
+<a name="764"><span class="lineNum">     764 </span>            : </a>
+<a name="765"><span class="lineNum">     765 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="766"><span class="lineNum">     766 </span>            :         const gsl::not_null&lt;tnsr::ii&lt;DataType, 3, Frame&gt;*&gt; dt_spatial_metric,</a>
+<a name="767"><span class="lineNum">     767 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="768"><span class="lineNum">     768 </span>            :         ::Tags::dt&lt;gr::Tags::SpatialMetric&lt;DataType, 3, Frame&gt;&gt; /*meta*/) const;</a>
+<a name="769"><span class="lineNum">     769 </span>            : </a>
+<a name="770"><span class="lineNum">     770 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="771"><span class="lineNum">     771 </span>            :         const gsl::not_null&lt;tnsr::ii&lt;DataType, 3, Frame&gt;*&gt; extrinsic_curvature,</a>
+<a name="772"><span class="lineNum">     772 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="773"><span class="lineNum">     773 </span>            :         gr::Tags::ExtrinsicCurvature&lt;DataType, 3, Frame&gt; /*meta*/) const;</a>
+<a name="774"><span class="lineNum">     774 </span>            : </a>
+<a name="775"><span class="lineNum">     775 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="776"><span class="lineNum">     776 </span>            :         const gsl::not_null&lt;tnsr::ijj&lt;DataType, 3, Frame&gt;*&gt;</a>
+<a name="777"><span class="lineNum">     777 </span>            :             christoffel_first_kind,</a>
+<a name="778"><span class="lineNum">     778 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="779"><span class="lineNum">     779 </span>            :         gr::Tags::SpatialChristoffelFirstKind&lt;DataType, 3, Frame&gt; /*meta*/)</a>
+<a name="780"><span class="lineNum">     780 </span>            :         const;</a>
+<a name="781"><span class="lineNum">     781 </span>            : </a>
+<a name="782"><span class="lineNum">     782 </span><span class="lineNoCov">          0 :     void operator()(</span></a>
+<a name="783"><span class="lineNum">     783 </span>            :         const gsl::not_null&lt;tnsr::Ijj&lt;DataType, 3, Frame&gt;*&gt;</a>
+<a name="784"><span class="lineNum">     784 </span>            :             christoffel_second_kind,</a>
+<a name="785"><span class="lineNum">     785 </span>            :         const gsl::not_null&lt;CachedBuffer*&gt; cache,</a>
+<a name="786"><span class="lineNum">     786 </span>            :         gr::Tags::SpatialChristoffelSecondKind&lt;DataType, 3, Frame&gt; /*meta*/)</a>
+<a name="787"><span class="lineNum">     787 </span>            :         const;</a>
+<a name="788"><span class="lineNum">     788 </span>            : </a>
+<a name="789"><span class="lineNum">     789 </span>            :    private:</a>
+<a name="790"><span class="lineNum">     790 </span><span class="lineNoCov">          0 :     const SphericalKerrSchild&amp; solution_;</span></a>
+<a name="791"><span class="lineNum">     791 </span><span class="lineNoCov">          0 :     const tnsr::I&lt;DataType, 3, Frame&gt;&amp; x_;</span></a>
+<a name="792"><span class="lineNum">     792 </span>            :     // Here null_vector_0 is simply -1, but if you have a boosted solution,</a>
+<a name="793"><span class="lineNum">     793 </span>            :     // then null_vector_0 can be something different, so we leave it coded</a>
+<a name="794"><span class="lineNum">     794 </span>            :     // in instead of eliminating it.</a>
+<a name="795"><span class="lineNum">     795 </span><span class="lineNoCov">          0 :     static constexpr double null_vector_0_ = -1.0;</span></a>
+<a name="796"><span class="lineNum">     796 </span>            :   };</a>
+<a name="797"><span class="lineNum">     797 </span>            : </a>
+<a name="798"><span class="lineNum">     798 </span>            :   template &lt;typename DataType, typename Frame = ::Frame::Inertial&gt;</a>
+<a name="799"><span class="lineNum">     799 </span><span class="lineNoCov">          0 :   class IntermediateVars : public CachedBuffer&lt;DataType, Frame&gt; {</span></a>
+<a name="800"><span class="lineNum">     800 </span>            :    public:</a>
+<a name="801"><span class="lineNum">     801 </span><span class="lineNoCov">          0 :     using CachedBuffer = SphericalKerrSchild::CachedBuffer&lt;DataType, Frame&gt;;</span></a>
+<a name="802"><span class="lineNum">     802 </span>            :     using CachedBuffer::CachedBuffer;</a>
+<a name="803"><span class="lineNum">     803 </span><span class="lineCov">          1 :     using CachedBuffer::get_var;</span></a>
+<a name="804"><span class="lineNum">     804 </span>            : </a>
+<a name="805"><span class="lineNum">     805 </span><span class="lineNoCov">          0 :     tnsr::i&lt;DataType, 3, Frame&gt; get_var(</span></a>
+<a name="806"><span class="lineNum">     806 </span>            :         const IntermediateComputer&lt;DataType, Frame&gt;&amp; computer,</a>
+<a name="807"><span class="lineNum">     807 </span>            :         DerivLapse&lt;DataType, Frame&gt; /*meta*/);</a>
+<a name="808"><span class="lineNum">     808 </span>            : </a>
+<a name="809"><span class="lineNum">     809 </span><span class="lineNoCov">          0 :     Scalar&lt;DataType&gt; get_var(</span></a>
+<a name="810"><span class="lineNum">     810 </span>            :         const IntermediateComputer&lt;DataType, Frame&gt;&amp; computer,</a>
+<a name="811"><span class="lineNum">     811 </span>            :         ::Tags::dt&lt;gr::Tags::Lapse&lt;DataType&gt;&gt; /*meta*/);</a>
+<a name="812"><span class="lineNum">     812 </span>            : </a>
+<a name="813"><span class="lineNum">     813 </span><span class="lineNoCov">          0 :     tnsr::I&lt;DataType, 3, Frame&gt; get_var(</span></a>
+<a name="814"><span class="lineNum">     814 </span>            :         const IntermediateComputer&lt;DataType, Frame&gt;&amp; computer,</a>
+<a name="815"><span class="lineNum">     815 </span>            :         ::Tags::dt&lt;gr::Tags::Shift&lt;DataType, 3, Frame&gt;&gt; /*meta*/);</a>
+<a name="816"><span class="lineNum">     816 </span>            : </a>
+<a name="817"><span class="lineNum">     817 </span><span class="lineNoCov">          0 :     Scalar&lt;DataType&gt; get_var(</span></a>
+<a name="818"><span class="lineNum">     818 </span>            :         const IntermediateComputer&lt;DataType, Frame&gt;&amp; computer,</a>
+<a name="819"><span class="lineNum">     819 </span>            :         gr::Tags::SqrtDetSpatialMetric&lt;DataType&gt; /*meta*/);</a>
+<a name="820"><span class="lineNum">     820 </span>            : </a>
+<a name="821"><span class="lineNum">     821 </span><span class="lineNoCov">          0 :     tnsr::i&lt;DataType, 3, Frame&gt; get_var(</span></a>
+<a name="822"><span class="lineNum">     822 </span>            :         const IntermediateComputer&lt;DataType, Frame&gt;&amp; computer,</a>
+<a name="823"><span class="lineNum">     823 </span>            :         gr::Tags::DerivDetSpatialMetric&lt;DataType, 3, Frame&gt; /*meta*/);</a>
+<a name="824"><span class="lineNum">     824 </span>            : </a>
+<a name="825"><span class="lineNum">     825 </span><span class="lineNoCov">          0 :     Scalar&lt;DataType&gt; get_var(</span></a>
+<a name="826"><span class="lineNum">     826 </span>            :         const IntermediateComputer&lt;DataType, Frame&gt;&amp; computer,</a>
+<a name="827"><span class="lineNum">     827 </span>            :         gr::Tags::TraceExtrinsicCurvature&lt;DataType&gt; /*meta*/);</a>
+<a name="828"><span class="lineNum">     828 </span>            : </a>
+<a name="829"><span class="lineNum">     829 </span><span class="lineNoCov">          0 :     tnsr::I&lt;DataType, 3, Frame&gt; get_var(</span></a>
+<a name="830"><span class="lineNum">     830 </span>            :         const IntermediateComputer&lt;DataType, Frame&gt;&amp; computer,</a>
+<a name="831"><span class="lineNum">     831 </span>            :         gr::Tags::TraceSpatialChristoffelSecondKind&lt;DataType, 3,</a>
+<a name="832"><span class="lineNum">     832 </span>            :                                                     Frame&gt; /*meta*/);</a>
+<a name="833"><span class="lineNum">     833 </span>            : </a>
+<a name="834"><span class="lineNum">     834 </span>            :    private:</a>
+<a name="835"><span class="lineNum">     835 </span>            :     // Here null_vector_0 is simply -1, but if you have a boosted solution,</a>
+<a name="836"><span class="lineNum">     836 </span>            :     // then null_vector_0 can be something different, so we leave it coded</a>
+<a name="837"><span class="lineNum">     837 </span>            :     // in instead of eliminating it.</a>
+<a name="838"><span class="lineNum">     838 </span><span class="lineNoCov">          0 :     static constexpr double null_vector_0_ = -1.0;</span></a>
+<a name="839"><span class="lineNum">     839 </span>            :   };</a>
+<a name="840"><span class="lineNum">     840 </span>            : </a>
+<a name="841"><span class="lineNum">     841 </span>            :  private:</a>
+<a name="842"><span class="lineNum">     842 </span><span class="lineNoCov">          0 :   double mass_{std::numeric_limits&lt;double&gt;::signaling_NaN()};</span></a>
+<a name="843"><span class="lineNum">     843 </span><span class="lineNoCov">          0 :   std::array&lt;double, volume_dim&gt; dimensionless_spin_ =</span></a>
+<a name="844"><span class="lineNum">     844 </span>            :       make_array&lt;volume_dim&gt;(std::numeric_limits&lt;double&gt;::signaling_NaN());</a>
+<a name="845"><span class="lineNum">     845 </span><span class="lineNoCov">          0 :   std::array&lt;double, volume_dim&gt; center_ =</span></a>
+<a name="846"><span class="lineNum">     846 </span>            :       make_array&lt;volume_dim&gt;(std::numeric_limits&lt;double&gt;::signaling_NaN());</a>
+<a name="847"><span class="lineNum">     847 </span>            : };</a>
+<a name="848"><span class="lineNum">     848 </span>            : </a>
+<a name="849"><span class="lineNum">     849 </span><span class="lineNoCov">          0 : bool operator==(const SphericalKerrSchild&amp; lhs, const SphericalKerrSchild&amp; rhs);</span></a>
+<a name="850"><span class="lineNum">     850 </span>            : </a>
+<a name="851"><span class="lineNum">     851 </span><span class="lineNoCov">          0 : bool operator!=(const SphericalKerrSchild&amp; lhs, const SphericalKerrSchild&amp; rhs);</span></a>
+<a name="852"><span class="lineNum">     852 </span>            : </a>
+<a name="853"><span class="lineNum">     853 </span>            : }  // namespace Solutions</a>
+<a name="854"><span class="lineNum">     854 </span>            : }  // namespace gr</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.14</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

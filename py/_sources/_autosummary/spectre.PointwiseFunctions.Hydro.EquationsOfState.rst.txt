@@ -1,0 +1,29 @@
+spectre.PointwiseFunctions.Hydro.EquationsOfState
+=================================================
+
+.. automodule:: spectre.PointwiseFunctions.Hydro.EquationsOfState
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.PointwiseFunctions.Hydro.EquationsOfState._Pybindings
+
+.. currentmodule:: spectre.PointwiseFunctions.Hydro.EquationsOfState
+
+
+
+

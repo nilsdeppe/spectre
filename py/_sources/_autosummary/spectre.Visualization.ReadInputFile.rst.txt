@@ -1,0 +1,36 @@
+spectre.Visualization.ReadInputFile
+===================================
+
+.. automodule:: spectre.Visualization.ReadInputFile
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      find_event
+      find_phase_change
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.Visualization.ReadInputFile._Pybindings
+
+.. currentmodule:: spectre.Visualization.ReadInputFile
+
+
+
+

@@ -1,0 +1,47 @@
+spectre.support.Machines
+========================
+
+.. automodule:: spectre.support.Machines
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      this_machine
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Machine
+   
+   
+
+   
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      UnknownMachineError
+   
+   
+
+
+.. automodule:: spectre.support.Machines._Pybindings
+
+.. currentmodule:: spectre.support.Machines
+
+
+
+

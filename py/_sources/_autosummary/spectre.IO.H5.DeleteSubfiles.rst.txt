@@ -1,0 +1,29 @@
+spectre.IO.H5.DeleteSubfiles
+============================
+
+.. automodule:: spectre.IO.H5.DeleteSubfiles
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.IO.H5.DeleteSubfiles._Pybindings
+
+.. currentmodule:: spectre.IO.H5.DeleteSubfiles
+
+
+
+

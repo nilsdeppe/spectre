@@ -1,0 +1,29 @@
+spectre.Informer
+================
+
+.. automodule:: spectre.Informer
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.Informer._Pybindings
+
+.. currentmodule:: spectre.Informer
+
+
+
+

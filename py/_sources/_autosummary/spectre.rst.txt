@@ -1,0 +1,47 @@
+﻿spectre
+=======
+
+.. automodule:: spectre
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre._Pybindings
+
+.. currentmodule:: spectre
+
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   spectre.DataStructures
+   spectre.Domain
+   spectre.IO
+   spectre.Informer
+   spectre.Interpolation
+   spectre.NumericalAlgorithms
+   spectre.PointwiseFunctions
+   spectre.Spectral
+   spectre.Visualization
+   spectre.support
+   spectre.tools
+
+

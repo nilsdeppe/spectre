@@ -1,0 +1,29 @@
+spectre.DataStructures.Tensor.tnsr
+==================================
+
+.. automodule:: spectre.DataStructures.Tensor.tnsr
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.DataStructures.Tensor.tnsr._Pybindings
+
+.. currentmodule:: spectre.DataStructures.Tensor.tnsr
+
+
+
+

@@ -1,0 +1,37 @@
+spectre.Visualization.ReadH5
+============================
+
+.. automodule:: spectre.Visualization.ReadH5
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      available_subfiles
+      select_observation
+      to_dataframe
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.Visualization.ReadH5._Pybindings
+
+.. currentmodule:: spectre.Visualization.ReadH5
+
+
+
+

@@ -1,0 +1,40 @@
+spectre.IO.H5
+=============
+
+.. automodule:: spectre.IO.H5
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.IO.H5._Pybindings
+
+.. currentmodule:: spectre.IO.H5
+
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   spectre.IO.H5.DeleteSubfiles
+   spectre.IO.H5.ExtractDatFromH5
+   spectre.IO.H5.ExtractInputSourceYamlFromH5
+   spectre.IO.H5.IterElements
+
+

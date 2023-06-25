@@ -1,0 +1,41 @@
+spectre.tools.CleanOutput
+=========================
+
+.. automodule:: spectre.tools.CleanOutput
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      clean_output
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      MissingExpectedOutputError
+   
+   
+
+
+.. automodule:: spectre.tools.CleanOutput._Pybindings
+
+.. currentmodule:: spectre.tools.CleanOutput
+
+
+
+

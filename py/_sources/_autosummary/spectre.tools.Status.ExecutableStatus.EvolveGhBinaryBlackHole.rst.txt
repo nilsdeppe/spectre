@@ -1,0 +1,32 @@
+spectre.tools.Status.ExecutableStatus.EvolveGhBinaryBlackHole
+=============================================================
+
+.. currentmodule:: spectre.tools.Status.ExecutableStatus
+
+.. autoclass:: EvolveGhBinaryBlackHole
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~EvolveGhBinaryBlackHole.__init__
+      ~EvolveGhBinaryBlackHole.format
+      ~EvolveGhBinaryBlackHole.status
+      ~EvolveGhBinaryBlackHole.time_status
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~EvolveGhBinaryBlackHole.executable_name_patterns
+      ~EvolveGhBinaryBlackHole.fields
+   
+   

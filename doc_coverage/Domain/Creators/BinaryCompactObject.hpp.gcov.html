@@ -1,0 +1,620 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - 18097182aa3a9818e2b2063a0ed2a34000ca2ea5 - Domain/Creators/BinaryCompactObject.hpp</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title"> SpECTRE Documentation Coverage Report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">Domain/Creators</a> - BinaryCompactObject.hpp</td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+             <td class="headerItem">Commit:</td>
+             <td class="headerValue"><a target="_blank" href="https://github.com/sxs-collaboration/spectre/commit/18097182aa3a9818e2b2063a0ed2a34000ca2ea5">18097182aa3a9818e2b2063a0ed2a34000ca2ea5</a></td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntry">153</td>
+            <td class="headerCovTableEntryLo">6.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2023-06-25 06:59:04</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span><span class="lineNoCov">          0 : // Distributed under the MIT License.</span></a>
+<a name="2"><span class="lineNum">       2 </span>            : // See LICENSE.txt for details.</a>
+<a name="3"><span class="lineNum">       3 </span>            : </a>
+<a name="4"><span class="lineNum">       4 </span>            : #pragma once</a>
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<a name="6"><span class="lineNum">       6 </span>            : #include &lt;array&gt;</a>
+<a name="7"><span class="lineNum">       7 </span>            : #include &lt;cstddef&gt;</a>
+<a name="8"><span class="lineNum">       8 </span>            : #include &lt;limits&gt;</a>
+<a name="9"><span class="lineNum">       9 </span>            : #include &lt;memory&gt;</a>
+<a name="10"><span class="lineNum">      10 </span>            : #include &lt;optional&gt;</a>
+<a name="11"><span class="lineNum">      11 </span>            : #include &lt;string&gt;</a>
+<a name="12"><span class="lineNum">      12 </span>            : #include &lt;type_traits&gt;</a>
+<a name="13"><span class="lineNum">      13 </span>            : #include &lt;unordered_map&gt;</a>
+<a name="14"><span class="lineNum">      14 </span>            : #include &lt;unordered_set&gt;</a>
+<a name="15"><span class="lineNum">      15 </span>            : #include &lt;variant&gt;</a>
+<a name="16"><span class="lineNum">      16 </span>            : #include &lt;vector&gt;</a>
+<a name="17"><span class="lineNum">      17 </span>            : </a>
+<a name="18"><span class="lineNum">      18 </span>            : #include &quot;Domain/BoundaryConditions/BoundaryCondition.hpp&quot;</a>
+<a name="19"><span class="lineNum">      19 </span>            : #include &quot;Domain/BoundaryConditions/GetBoundaryConditionsBase.hpp&quot;</a>
+<a name="20"><span class="lineNum">      20 </span>            : #include &quot;Domain/CoordinateMaps/CoordinateMap.hpp&quot;</a>
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;Domain/CoordinateMaps/Distribution.hpp&quot;</a>
+<a name="22"><span class="lineNum">      22 </span>            : #include &quot;Domain/Creators/BinaryCompactObjectHelpers.hpp&quot;</a>
+<a name="23"><span class="lineNum">      23 </span>            : #include &quot;Domain/Creators/DomainCreator.hpp&quot;</a>
+<a name="24"><span class="lineNum">      24 </span>            : #include &quot;Domain/Domain.hpp&quot;</a>
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;Domain/Structure/DirectionMap.hpp&quot;</a>
+<a name="26"><span class="lineNum">      26 </span>            : #include &quot;Options/Auto.hpp&quot;</a>
+<a name="27"><span class="lineNum">      27 </span>            : #include &quot;Options/Context.hpp&quot;</a>
+<a name="28"><span class="lineNum">      28 </span>            : #include &quot;Options/String.hpp&quot;</a>
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;Utilities/ErrorHandling/Assert.hpp&quot;</a>
+<a name="30"><span class="lineNum">      30 </span>            : #include &quot;Utilities/TMPL.hpp&quot;</a>
+<a name="31"><span class="lineNum">      31 </span>            : </a>
+<a name="32"><span class="lineNum">      32 </span>            : /// \cond</a>
+<a name="33"><span class="lineNum">      33 </span>            : namespace domain {</a>
+<a name="34"><span class="lineNum">      34 </span>            : namespace CoordinateMaps {</a>
+<a name="35"><span class="lineNum">      35 </span>            : class Affine;</a>
+<a name="36"><span class="lineNum">      36 </span>            : class Equiangular;</a>
+<a name="37"><span class="lineNum">      37 </span>            : template &lt;size_t VolumeDim&gt;</a>
+<a name="38"><span class="lineNum">      38 </span>            : class Identity;</a>
+<a name="39"><span class="lineNum">      39 </span>            : template &lt;typename Map1, typename Map2&gt;</a>
+<a name="40"><span class="lineNum">      40 </span>            : class ProductOf2Maps;</a>
+<a name="41"><span class="lineNum">      41 </span>            : template &lt;typename Map1, typename Map2, typename Map3&gt;</a>
+<a name="42"><span class="lineNum">      42 </span>            : class ProductOf3Maps;</a>
+<a name="43"><span class="lineNum">      43 </span>            : template &lt;size_t Dim&gt;</a>
+<a name="44"><span class="lineNum">      44 </span>            : class Wedge;</a>
+<a name="45"><span class="lineNum">      45 </span>            : template &lt;size_t VolumeDim&gt;</a>
+<a name="46"><span class="lineNum">      46 </span>            : class DiscreteRotation;</a>
+<a name="47"><span class="lineNum">      47 </span>            : class Frustum;</a>
+<a name="48"><span class="lineNum">      48 </span>            : }  // namespace CoordinateMaps</a>
+<a name="49"><span class="lineNum">      49 </span>            : </a>
+<a name="50"><span class="lineNum">      50 </span>            : template &lt;typename SourceFrame, typename TargetFrame, typename... Maps&gt;</a>
+<a name="51"><span class="lineNum">      51 </span>            : class CoordinateMap;</a>
+<a name="52"><span class="lineNum">      52 </span>            : </a>
+<a name="53"><span class="lineNum">      53 </span>            : namespace FunctionsOfTime {</a>
+<a name="54"><span class="lineNum">      54 </span>            : class FunctionOfTime;</a>
+<a name="55"><span class="lineNum">      55 </span>            : }  // namespace FunctionsOfTime</a>
+<a name="56"><span class="lineNum">      56 </span>            : }  // namespace domain</a>
+<a name="57"><span class="lineNum">      57 </span>            : </a>
+<a name="58"><span class="lineNum">      58 </span>            : namespace Frame {</a>
+<a name="59"><span class="lineNum">      59 </span>            : struct Grid;</a>
+<a name="60"><span class="lineNum">      60 </span>            : struct Distorted;</a>
+<a name="61"><span class="lineNum">      61 </span>            : struct Inertial;</a>
+<a name="62"><span class="lineNum">      62 </span>            : struct BlockLogical;</a>
+<a name="63"><span class="lineNum">      63 </span>            : }  // namespace Frame</a>
+<a name="64"><span class="lineNum">      64 </span>            : /// \endcond</a>
+<a name="65"><span class="lineNum">      65 </span>            : </a>
+<a name="66"><span class="lineNum">      66 </span>            : namespace domain {</a>
+<a name="67"><span class="lineNum">      67 </span>            : namespace creators {</a>
+<a name="68"><span class="lineNum">      68 </span>            : </a>
+<a name="69"><span class="lineNum">      69 </span>            : /*!</a>
+<a name="70"><span class="lineNum">      70 </span>            :  * \ingroup ComputationalDomainGroup</a>
+<a name="71"><span class="lineNum">      71 </span>            :  *</a>
+<a name="72"><span class="lineNum">      72 </span>            :  * \brief A general domain for two compact objects.</a>
+<a name="73"><span class="lineNum">      73 </span>            :  *</a>
+<a name="74"><span class="lineNum">      74 </span>            :  * \image html binary_compact_object_domain.png &quot;A BHNS domain.&quot;</a>
+<a name="75"><span class="lineNum">      75 </span>            :  *</a>
+<a name="76"><span class="lineNum">      76 </span>            :  * Creates a 3D Domain that represents a binary compact object solution. The</a>
+<a name="77"><span class="lineNum">      77 </span>            :  * Domain consists of 4 or 5 nested layers of blocks; these layers are, working</a>
+<a name="78"><span class="lineNum">      78 </span>            :  * from the interior toward the exterior:</a>
+<a name="79"><span class="lineNum">      79 </span>            :  *</a>
+<a name="80"><span class="lineNum">      80 </span>            :  * - **Object A/B interior**: (optional) The block at the center of each</a>
+<a name="81"><span class="lineNum">      81 </span>            :  *   compact object, if not excised. If present, this block is a cube. If</a>
+<a name="82"><span class="lineNum">      82 </span>            :  *   excised, the hole left by its absence is spherical.</a>
+<a name="83"><span class="lineNum">      83 </span>            :  * - **Object A/B shell**: The 6 blocks that resolve each individual compact</a>
+<a name="84"><span class="lineNum">      84 </span>            :  *   object. This layer has a spherical outer boundary - if the corresponding</a>
+<a name="85"><span class="lineNum">      85 </span>            :  *   interior block exists, then the layer is a cube-to-sphere transition; if</a>
+<a name="86"><span class="lineNum">      86 </span>            :  *   the interior block is excised, then the layer is a spherical shell.</a>
+<a name="87"><span class="lineNum">      87 </span>            :  * - **Object A/B cube**: The 6 blocks that surround each object with a cube.</a>
+<a name="88"><span class="lineNum">      88 </span>            :  *   Around each compact object, this layer transitions from a sphere to a cube.</a>
+<a name="89"><span class="lineNum">      89 </span>            :  * - **Envelope**: The 10 blocks that transition from the two inner cubes to a</a>
+<a name="90"><span class="lineNum">      90 </span>            :  *   sphere centered at the origin.</a>
+<a name="91"><span class="lineNum">      91 </span>            :  * - **Outer shell**: The 10 blocks that form an outer shell centered at the</a>
+<a name="92"><span class="lineNum">      92 </span>            :  *   origin, consisting of 2 endcap Wedges on the +x and -x axes, and 8 half</a>
+<a name="93"><span class="lineNum">      93 </span>            :  *   Wedges along the yz plane. This layer is spherical, so a logarithmic map</a>
+<a name="94"><span class="lineNum">      94 </span>            :  *   can optionally be used in this layer. This allows the domain to extend to</a>
+<a name="95"><span class="lineNum">      95 </span>            :  *   large radial distances from the compact objects. This layer can be</a>
+<a name="96"><span class="lineNum">      96 </span>            :  *   h-refined radially, creating a layer of multiple concentric spherical</a>
+<a name="97"><span class="lineNum">      97 </span>            :  *   shells.</a>
+<a name="98"><span class="lineNum">      98 </span>            :  *</a>
+<a name="99"><span class="lineNum">      99 </span>            :  * \par Notes:</a>
+<a name="100"><span class="lineNum">     100 </span>            :  *</a>
+<a name="101"><span class="lineNum">     101 </span>            :  * - Object A is located to the right of the origin (along the positive x-axis)</a>
+<a name="102"><span class="lineNum">     102 </span>            :  *   and Object B is located to the left of the origin.</a>
+<a name="103"><span class="lineNum">     103 </span>            :  * - &quot;Cutting plane&quot; refers to the plane along which the domain divides into two</a>
+<a name="104"><span class="lineNum">     104 </span>            :  *   hemispheres. The cutting plane always intersects the x-axis at the origin.</a>
+<a name="105"><span class="lineNum">     105 </span>            :  * - The x-coordinate locations of the two objects should be chosen such that</a>
+<a name="106"><span class="lineNum">     106 </span>            :  *   the center of mass is located at x=0.</a>
+<a name="107"><span class="lineNum">     107 </span>            :  * -  Alternatively, one can replace the inner shell and cube blocks of each</a>
+<a name="108"><span class="lineNum">     108 </span>            :  *    object with a single cartesian cube. This is less efficient, but allows</a>
+<a name="109"><span class="lineNum">     109 </span>            :  *    testing of methods only coded on cartesian grids.</a>
+<a name="110"><span class="lineNum">     110 </span>            :  *</a>
+<a name="111"><span class="lineNum">     111 </span>            :  * \par Time dependence:</a>
+<a name="112"><span class="lineNum">     112 </span>            :  * When using this domain, the metavariables struct can contain a struct named</a>
+<a name="113"><span class="lineNum">     113 </span>            :  * `domain` that conforms to `domain::protocols::Metavariables`. If</a>
+<a name="114"><span class="lineNum">     114 </span>            :  * `domain::enable_time_dependent_maps` is either set to `false` or not</a>
+<a name="115"><span class="lineNum">     115 </span>            :  * specified in the metavariables, then this domain will be time-independent. If</a>
+<a name="116"><span class="lineNum">     116 </span>            :  * `domain::enable_time_dependent_maps` is set to `true`, then this domain also</a>
+<a name="117"><span class="lineNum">     117 </span>            :  * includes a time-dependent map, along with additional options (and a</a>
+<a name="118"><span class="lineNum">     118 </span>            :  * corresponding constructor) for initializing the time-dependent map. These</a>
+<a name="119"><span class="lineNum">     119 </span>            :  * options include the `InitialTime` which specifies the initial time for the</a>
+<a name="120"><span class="lineNum">     120 </span>            :  * FunctionsOfTime controlling the map. The following time-dependent maps are</a>
+<a name="121"><span class="lineNum">     121 </span>            :  * applied:</a>
+<a name="122"><span class="lineNum">     122 </span>            :  *</a>
+<a name="123"><span class="lineNum">     123 </span>            :  * - A `CubicScale` expansion and a `Rotation` applied to all blocks from the</a>
+<a name="124"><span class="lineNum">     124 </span>            :  *   Grid to the Inertial frame. However, if there is a size map in the block</a>
+<a name="125"><span class="lineNum">     125 </span>            :  *   (defined below), then the expansion and rotation maps go from the Distorted</a>
+<a name="126"><span class="lineNum">     126 </span>            :  *   to the Inertial frame.</a>
+<a name="127"><span class="lineNum">     127 </span>            :  * - If an object is excised, then the corresponding shell has a</a>
+<a name="128"><span class="lineNum">     128 </span>            :  *   `SphericalCompression` size map. The size map goes from the Grid to the</a>
+<a name="129"><span class="lineNum">     129 </span>            :  *   Distorted frame. We will also add a shape map here.</a>
+<a name="130"><span class="lineNum">     130 </span>            :  */</a>
+<a name="131"><span class="lineNum">     131 </span><span class="lineCov">          1 : class BinaryCompactObject : public DomainCreator&lt;3&gt; {</span></a>
+<a name="132"><span class="lineNum">     132 </span>            :  private:</a>
+<a name="133"><span class="lineNum">     133 </span>            :   // Time-independent maps</a>
+<a name="134"><span class="lineNum">     134 </span><span class="lineNoCov">          0 :   using Affine = CoordinateMaps::Affine;</span></a>
+<a name="135"><span class="lineNum">     135 </span><span class="lineNoCov">          0 :   using Affine3D = CoordinateMaps::ProductOf3Maps&lt;Affine, Affine, Affine&gt;;</span></a>
+<a name="136"><span class="lineNum">     136 </span><span class="lineNoCov">          0 :   using Identity2D = CoordinateMaps::Identity&lt;2&gt;;</span></a>
+<a name="137"><span class="lineNum">     137 </span><span class="lineNoCov">          0 :   using Translation = CoordinateMaps::ProductOf2Maps&lt;Affine, Identity2D&gt;;</span></a>
+<a name="138"><span class="lineNum">     138 </span><span class="lineNoCov">          0 :   using Equiangular = CoordinateMaps::Equiangular;</span></a>
+<a name="139"><span class="lineNum">     139 </span><span class="lineNoCov">          0 :   using Equiangular3D =</span></a>
+<a name="140"><span class="lineNum">     140 </span>            :       CoordinateMaps::ProductOf3Maps&lt;Equiangular, Equiangular, Equiangular&gt;;</a>
+<a name="141"><span class="lineNum">     141 </span>            : </a>
+<a name="142"><span class="lineNum">     142 </span>            :  public:</a>
+<a name="143"><span class="lineNum">     143 </span><span class="lineNoCov">          0 :   using maps_list = tmpl::flatten&lt;tmpl::list&lt;</span></a>
+<a name="144"><span class="lineNum">     144 </span>            :       domain::CoordinateMap&lt;Frame::BlockLogical, Frame::Inertial, Affine3D&gt;,</a>
+<a name="145"><span class="lineNum">     145 </span>            :       domain::CoordinateMap&lt;Frame::BlockLogical, Frame::Inertial,</a>
+<a name="146"><span class="lineNum">     146 </span>            :                             Equiangular3D&gt;,</a>
+<a name="147"><span class="lineNum">     147 </span>            :       domain::CoordinateMap&lt;Frame::BlockLogical, Frame::Inertial, Affine3D,</a>
+<a name="148"><span class="lineNum">     148 </span>            :                             Translation&gt;,</a>
+<a name="149"><span class="lineNum">     149 </span>            :       domain::CoordinateMap&lt;Frame::BlockLogical, Frame::Inertial,</a>
+<a name="150"><span class="lineNum">     150 </span>            :                             CoordinateMaps::DiscreteRotation&lt;3&gt;, Affine3D&gt;,</a>
+<a name="151"><span class="lineNum">     151 </span>            :       domain::CoordinateMap&lt;Frame::BlockLogical, Frame::Inertial,</a>
+<a name="152"><span class="lineNum">     152 </span>            :                             Equiangular3D&gt;,</a>
+<a name="153"><span class="lineNum">     153 </span>            :       domain::CoordinateMap&lt;Frame::BlockLogical, Frame::Inertial, Equiangular3D,</a>
+<a name="154"><span class="lineNum">     154 </span>            :                             Translation&gt;,</a>
+<a name="155"><span class="lineNum">     155 </span>            :       domain::CoordinateMap&lt;Frame::BlockLogical, Frame::Inertial,</a>
+<a name="156"><span class="lineNum">     156 </span>            :                             CoordinateMaps::Frustum&gt;,</a>
+<a name="157"><span class="lineNum">     157 </span>            :       domain::CoordinateMap&lt;Frame::BlockLogical, Frame::Inertial,</a>
+<a name="158"><span class="lineNum">     158 </span>            :                             CoordinateMaps::Wedge&lt;3&gt;&gt;,</a>
+<a name="159"><span class="lineNum">     159 </span>            :       domain::CoordinateMap&lt;Frame::BlockLogical, Frame::Inertial,</a>
+<a name="160"><span class="lineNum">     160 </span>            :                             CoordinateMaps::Wedge&lt;3&gt;, Translation&gt;,</a>
+<a name="161"><span class="lineNum">     161 </span>            :       bco::TimeDependentMapOptions::maps_list&gt;&gt;;</a>
+<a name="162"><span class="lineNum">     162 </span>            : </a>
+<a name="163"><span class="lineNum">     163 </span>            :   /// Options for an excision region in the domain</a>
+<a name="164"><span class="lineNum">     164 </span><span class="lineCov">          1 :   struct Excision {</span></a>
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = {</span></a>
+<a name="166"><span class="lineNum">     166 </span>            :         &quot;Excise the interior of the object, leaving a spherical hole in its &quot;</a>
+<a name="167"><span class="lineNum">     167 </span>            :         &quot;absence.&quot;};</a>
+<a name="168"><span class="lineNum">     168 </span>            :     template &lt;typename BoundaryConditionsBase&gt;</a>
+<a name="169"><span class="lineNum">     169 </span><span class="lineNoCov">          0 :     struct BoundaryCondition {</span></a>
+<a name="170"><span class="lineNum">     170 </span><span class="lineNoCov">          0 :       static std::string name() { return &quot;ExciseWithBoundaryCondition&quot;; }</span></a>
+<a name="171"><span class="lineNum">     171 </span><span class="lineNoCov">          0 :       using type = std::unique_ptr&lt;BoundaryConditionsBase&gt;;</span></a>
+<a name="172"><span class="lineNum">     172 </span><span class="lineNoCov">          0 :       static constexpr Options::String help = {</span></a>
+<a name="173"><span class="lineNum">     173 </span>            :           &quot;The boundary condition to impose on the excision surface.&quot;};</a>
+<a name="174"><span class="lineNum">     174 </span>            :     };</a>
+<a name="175"><span class="lineNum">     175 </span>            :     template &lt;typename Metavariables&gt;</a>
+<a name="176"><span class="lineNum">     176 </span><span class="lineNoCov">          0 :     using options = tmpl::list&lt;BoundaryCondition&lt;</span></a>
+<a name="177"><span class="lineNum">     177 </span>            :         domain::BoundaryConditions::get_boundary_conditions_base&lt;</a>
+<a name="178"><span class="lineNum">     178 </span>            :             typename Metavariables::system&gt;&gt;&gt;;</a>
+<a name="179"><span class="lineNum">     179 </span>            :     std::unique_ptr&lt;domain::BoundaryConditions::BoundaryCondition&gt;</a>
+<a name="180"><span class="lineNum">     180 </span><span class="lineNoCov">          0 :         boundary_condition;</span></a>
+<a name="181"><span class="lineNum">     181 </span>            :   };</a>
+<a name="182"><span class="lineNum">     182 </span>            : </a>
+<a name="183"><span class="lineNum">     183 </span>            :   /// Options for one of the two objects in the binary domain</a>
+<a name="184"><span class="lineNum">     184 </span><span class="lineCov">          1 :   struct Object {</span></a>
+<a name="185"><span class="lineNum">     185 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = {</span></a>
+<a name="186"><span class="lineNum">     186 </span>            :         &quot;Options for an object in a binary domain.&quot;};</a>
+<a name="187"><span class="lineNum">     187 </span><span class="lineNoCov">          0 :     struct InnerRadius {</span></a>
+<a name="188"><span class="lineNum">     188 </span><span class="lineNoCov">          0 :       using type = double;</span></a>
+<a name="189"><span class="lineNum">     189 </span><span class="lineNoCov">          0 :       static constexpr Options::String help = {</span></a>
+<a name="190"><span class="lineNum">     190 </span>            :           &quot;Inner coordinate radius of Layer 1.&quot;};</a>
+<a name="191"><span class="lineNum">     191 </span><span class="lineNoCov">          0 :       static double lower_bound() { return 0.; }</span></a>
+<a name="192"><span class="lineNum">     192 </span>            :     };</a>
+<a name="193"><span class="lineNum">     193 </span><span class="lineNoCov">          0 :     struct OuterRadius {</span></a>
+<a name="194"><span class="lineNum">     194 </span><span class="lineNoCov">          0 :       using type = double;</span></a>
+<a name="195"><span class="lineNum">     195 </span><span class="lineNoCov">          0 :       static constexpr Options::String help = {</span></a>
+<a name="196"><span class="lineNum">     196 </span>            :           &quot;Outer coordinate radius of Layer 1&quot;};</a>
+<a name="197"><span class="lineNum">     197 </span><span class="lineNoCov">          0 :       static double lower_bound() { return 0.; }</span></a>
+<a name="198"><span class="lineNum">     198 </span>            :     };</a>
+<a name="199"><span class="lineNum">     199 </span><span class="lineNoCov">          0 :     struct XCoord {</span></a>
+<a name="200"><span class="lineNum">     200 </span><span class="lineNoCov">          0 :       using type = double;</span></a>
+<a name="201"><span class="lineNum">     201 </span><span class="lineNoCov">          0 :       static constexpr Options::String help = {&quot;x-coordinate of center.&quot;};</span></a>
+<a name="202"><span class="lineNum">     202 </span>            :     };</a>
+<a name="203"><span class="lineNum">     203 </span><span class="lineNoCov">          0 :     struct Interior {</span></a>
+<a name="204"><span class="lineNum">     204 </span><span class="lineNoCov">          0 :       using type = Options::Auto&lt;Excision&gt;;</span></a>
+<a name="205"><span class="lineNum">     205 </span><span class="lineNoCov">          0 :       static constexpr Options::String help = {</span></a>
+<a name="206"><span class="lineNum">     206 </span>            :           &quot;Specify 'ExciseWithBoundaryCondition' and a boundary condition to &quot;</a>
+<a name="207"><span class="lineNum">     207 </span>            :           &quot;excise Layer 0, leaving a spherical hole in its absence, or set to &quot;</a>
+<a name="208"><span class="lineNum">     208 </span>            :           &quot;'Auto' to fill the interior.&quot;};</a>
+<a name="209"><span class="lineNum">     209 </span>            :     };</a>
+<a name="210"><span class="lineNum">     210 </span><span class="lineNoCov">          0 :     struct ExciseInterior {</span></a>
+<a name="211"><span class="lineNum">     211 </span><span class="lineNoCov">          0 :       using type = bool;</span></a>
+<a name="212"><span class="lineNum">     212 </span><span class="lineNoCov">          0 :       static constexpr Options::String help = {</span></a>
+<a name="213"><span class="lineNum">     213 </span>            :           &quot;Excise Layer 0, leaving a spherical hole in its absence.&quot;};</a>
+<a name="214"><span class="lineNum">     214 </span>            :     };</a>
+<a name="215"><span class="lineNum">     215 </span><span class="lineNoCov">          0 :     struct UseLogarithmicMap {</span></a>
+<a name="216"><span class="lineNum">     216 </span><span class="lineNoCov">          0 :       using type = bool;</span></a>
+<a name="217"><span class="lineNum">     217 </span><span class="lineNoCov">          0 :       static constexpr Options::String help = {</span></a>
+<a name="218"><span class="lineNum">     218 </span>            :           &quot;Use a logarithmically spaced radial grid in the part of Layer 1 &quot;</a>
+<a name="219"><span class="lineNum">     219 </span>            :           &quot;enveloping the object (requires the interior is excised)&quot;};</a>
+<a name="220"><span class="lineNum">     220 </span>            :     };</a>
+<a name="221"><span class="lineNum">     221 </span>            :     template &lt;typename Metavariables&gt;</a>
+<a name="222"><span class="lineNum">     222 </span><span class="lineNoCov">          0 :     using options = tmpl::list&lt;</span></a>
+<a name="223"><span class="lineNum">     223 </span>            :         InnerRadius, OuterRadius, XCoord,</a>
+<a name="224"><span class="lineNum">     224 </span>            :         tmpl::conditional_t&lt;</a>
+<a name="225"><span class="lineNum">     225 </span>            :             domain::BoundaryConditions::has_boundary_conditions_base_v&lt;</a>
+<a name="226"><span class="lineNum">     226 </span>            :                 typename Metavariables::system&gt;,</a>
+<a name="227"><span class="lineNum">     227 </span>            :             Interior, ExciseInterior&gt;,</a>
+<a name="228"><span class="lineNum">     228 </span>            :         UseLogarithmicMap&gt;;</a>
+<a name="229"><span class="lineNum">     229 </span><span class="lineNoCov">          0 :     Object() = default;</span></a>
+<a name="230"><span class="lineNum">     230 </span><span class="lineNoCov">          0 :     Object(double local_inner_radius, double local_outer_radius,</span></a>
+<a name="231"><span class="lineNum">     231 </span>            :            double local_x_coord, std::optional&lt;Excision&gt; interior,</a>
+<a name="232"><span class="lineNum">     232 </span>            :            bool local_use_logarithmic_map)</a>
+<a name="233"><span class="lineNum">     233 </span>            :         : inner_radius(local_inner_radius),</a>
+<a name="234"><span class="lineNum">     234 </span>            :           outer_radius(local_outer_radius),</a>
+<a name="235"><span class="lineNum">     235 </span>            :           x_coord(local_x_coord),</a>
+<a name="236"><span class="lineNum">     236 </span>            :           inner_boundary_condition(</a>
+<a name="237"><span class="lineNum">     237 </span>            :               interior.has_value()</a>
+<a name="238"><span class="lineNum">     238 </span>            :                   ? std::make_optional(std::move(interior-&gt;boundary_condition))</a>
+<a name="239"><span class="lineNum">     239 </span>            :                   : std::nullopt),</a>
+<a name="240"><span class="lineNum">     240 </span>            :           use_logarithmic_map(local_use_logarithmic_map) {}</a>
+<a name="241"><span class="lineNum">     241 </span><span class="lineNoCov">          0 :     Object(double local_inner_radius, double local_outer_radius,</span></a>
+<a name="242"><span class="lineNum">     242 </span>            :            double local_x_coord, bool local_excise_interior,</a>
+<a name="243"><span class="lineNum">     243 </span>            :            bool local_use_logarithmic_map)</a>
+<a name="244"><span class="lineNum">     244 </span>            :         : inner_radius(local_inner_radius),</a>
+<a name="245"><span class="lineNum">     245 </span>            :           outer_radius(local_outer_radius),</a>
+<a name="246"><span class="lineNum">     246 </span>            :           x_coord(local_x_coord),</a>
+<a name="247"><span class="lineNum">     247 </span>            :           inner_boundary_condition(</a>
+<a name="248"><span class="lineNum">     248 </span>            :               local_excise_interior</a>
+<a name="249"><span class="lineNum">     249 </span>            :                   ? std::optional&lt;std::unique_ptr&lt;</a>
+<a name="250"><span class="lineNum">     250 </span>            :                         domain::BoundaryConditions::BoundaryCondition&gt;&gt;{nullptr}</a>
+<a name="251"><span class="lineNum">     251 </span>            :                   : std::nullopt),</a>
+<a name="252"><span class="lineNum">     252 </span>            :           use_logarithmic_map(local_use_logarithmic_map) {}</a>
+<a name="253"><span class="lineNum">     253 </span>            : </a>
+<a name="254"><span class="lineNum">     254 </span>            :     /// Whether or not the object should be excised from the domain, leaving a</a>
+<a name="255"><span class="lineNum">     255 </span>            :     /// spherical hole. When this is true, `inner_boundary_condition` is</a>
+<a name="256"><span class="lineNum">     256 </span>            :     /// guaranteed to hold a value (though it might be a `nullptr` if we are not</a>
+<a name="257"><span class="lineNum">     257 </span>            :     /// working with boundary conditions).</a>
+<a name="258"><span class="lineNum">     258 </span><span class="lineCov">          1 :     bool is_excised() const;</span></a>
+<a name="259"><span class="lineNum">     259 </span>            : </a>
+<a name="260"><span class="lineNum">     260 </span><span class="lineNoCov">          0 :     double inner_radius;</span></a>
+<a name="261"><span class="lineNum">     261 </span><span class="lineNoCov">          0 :     double outer_radius;</span></a>
+<a name="262"><span class="lineNum">     262 </span><span class="lineNoCov">          0 :     double x_coord;</span></a>
+<a name="263"><span class="lineNum">     263 </span>            :     std::optional&lt;</a>
+<a name="264"><span class="lineNum">     264 </span>            :         std::unique_ptr&lt;domain::BoundaryConditions::BoundaryCondition&gt;&gt;</a>
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 :         inner_boundary_condition;</span></a>
+<a name="266"><span class="lineNum">     266 </span><span class="lineNoCov">          0 :     bool use_logarithmic_map;</span></a>
+<a name="267"><span class="lineNum">     267 </span>            :   };</a>
+<a name="268"><span class="lineNum">     268 </span>            : </a>
+<a name="269"><span class="lineNum">     269 </span>            :   // Simpler version of an object: a single cube centered on (xCoord,0,0)</a>
+<a name="270"><span class="lineNum">     270 </span><span class="lineNoCov">          0 :   struct CartesianCubeAtXCoord {</span></a>
+<a name="271"><span class="lineNum">     271 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = {</span></a>
+<a name="272"><span class="lineNum">     272 </span>            :         &quot;Options to set a single cube at a location on the x-axis&quot;};</a>
+<a name="273"><span class="lineNum">     273 </span><span class="lineNoCov">          0 :     struct XCoord {</span></a>
+<a name="274"><span class="lineNum">     274 </span><span class="lineNoCov">          0 :       static std::string name() { return &quot;CartesianCubeAtXCoord&quot;; }</span></a>
+<a name="275"><span class="lineNum">     275 </span><span class="lineNoCov">          0 :       using type = double;</span></a>
+<a name="276"><span class="lineNum">     276 </span><span class="lineNoCov">          0 :       static constexpr Options::String help = {&quot;x-coordinate of center.&quot;};</span></a>
+<a name="277"><span class="lineNum">     277 </span>            :     };</a>
+<a name="278"><span class="lineNum">     278 </span><span class="lineNoCov">          0 :     using options = tmpl::list&lt;XCoord&gt;;</span></a>
+<a name="279"><span class="lineNum">     279 </span><span class="lineNoCov">          0 :     bool is_excised() const { return false; }</span></a>
+<a name="280"><span class="lineNum">     280 </span><span class="lineNoCov">          0 :     double x_coord;</span></a>
+<a name="281"><span class="lineNum">     281 </span>            :   };</a>
+<a name="282"><span class="lineNum">     282 </span>            : </a>
+<a name="283"><span class="lineNum">     283 </span><span class="lineNoCov">          0 :   struct ObjectA {</span></a>
+<a name="284"><span class="lineNum">     284 </span><span class="lineNoCov">          0 :     using type = std::variant&lt;Object, CartesianCubeAtXCoord&gt;;</span></a>
+<a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = {</span></a>
+<a name="286"><span class="lineNum">     286 </span>            :         &quot;Options for the object to the right of the origin (along the positive &quot;</a>
+<a name="287"><span class="lineNum">     287 </span>            :         &quot;x-axis).&quot;};</a>
+<a name="288"><span class="lineNum">     288 </span>            :   };</a>
+<a name="289"><span class="lineNum">     289 </span>            : </a>
+<a name="290"><span class="lineNum">     290 </span><span class="lineNoCov">          0 :   struct ObjectB {</span></a>
+<a name="291"><span class="lineNum">     291 </span><span class="lineNoCov">          0 :     using type = std::variant&lt;Object, CartesianCubeAtXCoord&gt;;</span></a>
+<a name="292"><span class="lineNum">     292 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = {</span></a>
+<a name="293"><span class="lineNum">     293 </span>            :         &quot;Options for the object to the left of the origin (along the negative &quot;</a>
+<a name="294"><span class="lineNum">     294 </span>            :         &quot;x-axis).&quot;};</a>
+<a name="295"><span class="lineNum">     295 </span>            :   };</a>
+<a name="296"><span class="lineNum">     296 </span>            : </a>
+<a name="297"><span class="lineNum">     297 </span><span class="lineNoCov">          0 :   struct Envelope {</span></a>
+<a name="298"><span class="lineNum">     298 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = {</span></a>
+<a name="299"><span class="lineNum">     299 </span>            :         &quot;Options for the sphere enveloping the two objects.&quot;};</a>
+<a name="300"><span class="lineNum">     300 </span>            :   };</a>
+<a name="301"><span class="lineNum">     301 </span>            : </a>
+<a name="302"><span class="lineNum">     302 </span><span class="lineNoCov">          0 :   struct EnvelopeRadius {</span></a>
+<a name="303"><span class="lineNum">     303 </span><span class="lineNoCov">          0 :     using group = Envelope;</span></a>
+<a name="304"><span class="lineNum">     304 </span><span class="lineNoCov">          0 :     static std::string name() { return &quot;Radius&quot;; }</span></a>
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 :     using type = double;</span></a>
+<a name="306"><span class="lineNum">     306 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = {</span></a>
+<a name="307"><span class="lineNum">     307 </span>            :         &quot;Radius of the sphere enveloping the two objects.&quot;};</a>
+<a name="308"><span class="lineNum">     308 </span>            :   };</a>
+<a name="309"><span class="lineNum">     309 </span>            : </a>
+<a name="310"><span class="lineNum">     310 </span><span class="lineNoCov">          0 :   struct OuterShell {</span></a>
+<a name="311"><span class="lineNum">     311 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = {</span></a>
+<a name="312"><span class="lineNum">     312 </span>            :         &quot;Options for the outer spherical shell.&quot;};</a>
+<a name="313"><span class="lineNum">     313 </span>            :   };</a>
+<a name="314"><span class="lineNum">     314 </span>            : </a>
+<a name="315"><span class="lineNum">     315 </span><span class="lineNoCov">          0 :   struct OuterRadius {</span></a>
+<a name="316"><span class="lineNum">     316 </span><span class="lineNoCov">          0 :     using group = OuterShell;</span></a>
+<a name="317"><span class="lineNum">     317 </span><span class="lineNoCov">          0 :     static std::string name() { return &quot;Radius&quot;; }</span></a>
+<a name="318"><span class="lineNum">     318 </span><span class="lineNoCov">          0 :     using type = double;</span></a>
+<a name="319"><span class="lineNum">     319 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = {&quot;Radius of the entire domain.&quot;};</span></a>
+<a name="320"><span class="lineNum">     320 </span>            :   };</a>
+<a name="321"><span class="lineNum">     321 </span>            : </a>
+<a name="322"><span class="lineNum">     322 </span><span class="lineNoCov">          0 :   struct OpeningAngle {</span></a>
+<a name="323"><span class="lineNum">     323 </span><span class="lineNoCov">          0 :     using group = OuterShell;</span></a>
+<a name="324"><span class="lineNum">     324 </span><span class="lineNoCov">          0 :     static std::string name() { return &quot;OpeningAngle&quot;; }</span></a>
+<a name="325"><span class="lineNum">     325 </span><span class="lineNoCov">          0 :     using type = double;</span></a>
+<a name="326"><span class="lineNum">     326 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = {</span></a>
+<a name="327"><span class="lineNum">     327 </span>            :         &quot;The combined opening angle of the two half wedges of the outer shell&quot;</a>
+<a name="328"><span class="lineNum">     328 </span>            :         &quot; in degrees. A value of 120.0 partitions the x-y and x-z slices of the&quot;</a>
+<a name="329"><span class="lineNum">     329 </span>            :         &quot; outer shell into six Blocks of equal angular size.&quot;};</a>
+<a name="330"><span class="lineNum">     330 </span>            :   };</a>
+<a name="331"><span class="lineNum">     331 </span>            : </a>
+<a name="332"><span class="lineNum">     332 </span><span class="lineNoCov">          0 :   struct InitialRefinement {</span></a>
+<a name="333"><span class="lineNum">     333 </span><span class="lineNoCov">          0 :     using type =</span></a>
+<a name="334"><span class="lineNum">     334 </span>            :         std::variant&lt;size_t, std::array&lt;size_t, 3&gt;,</a>
+<a name="335"><span class="lineNum">     335 </span>            :                      std::vector&lt;std::array&lt;size_t, 3&gt;&gt;,</a>
+<a name="336"><span class="lineNum">     336 </span>            :                      std::unordered_map&lt;std::string, std::array&lt;size_t, 3&gt;&gt;&gt;;</a>
+<a name="337"><span class="lineNum">     337 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = {</span></a>
+<a name="338"><span class="lineNum">     338 </span>            :         &quot;Initial refinement level in each block of the domain. See main help &quot;</a>
+<a name="339"><span class="lineNum">     339 </span>            :         &quot;text for details.&quot;};</a>
+<a name="340"><span class="lineNum">     340 </span>            :   };</a>
+<a name="341"><span class="lineNum">     341 </span>            : </a>
+<a name="342"><span class="lineNum">     342 </span><span class="lineNoCov">          0 :   struct InitialGridPoints {</span></a>
+<a name="343"><span class="lineNum">     343 </span><span class="lineNoCov">          0 :     using type =</span></a>
+<a name="344"><span class="lineNum">     344 </span>            :         std::variant&lt;size_t, std::array&lt;size_t, 3&gt;,</a>
+<a name="345"><span class="lineNum">     345 </span>            :                      std::vector&lt;std::array&lt;size_t, 3&gt;&gt;,</a>
+<a name="346"><span class="lineNum">     346 </span>            :                      std::unordered_map&lt;std::string, std::array&lt;size_t, 3&gt;&gt;&gt;;</a>
+<a name="347"><span class="lineNum">     347 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = {</span></a>
+<a name="348"><span class="lineNum">     348 </span>            :         &quot;Initial number of grid points in the elements of each block of the &quot;</a>
+<a name="349"><span class="lineNum">     349 </span>            :         &quot;domain. See main help text for details.&quot;};</a>
+<a name="350"><span class="lineNum">     350 </span>            :   };</a>
+<a name="351"><span class="lineNum">     351 </span>            : </a>
+<a name="352"><span class="lineNum">     352 </span><span class="lineNoCov">          0 :   struct UseEquiangularMap {</span></a>
+<a name="353"><span class="lineNum">     353 </span><span class="lineNoCov">          0 :     using type = bool;</span></a>
+<a name="354"><span class="lineNum">     354 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = {</span></a>
+<a name="355"><span class="lineNum">     355 </span>            :         &quot;Distribute grid points equiangularly.&quot;};</a>
+<a name="356"><span class="lineNum">     356 </span><span class="lineNoCov">          0 :     static bool suggested_value() { return true; }</span></a>
+<a name="357"><span class="lineNum">     357 </span>            :   };</a>
+<a name="358"><span class="lineNum">     358 </span>            : </a>
+<a name="359"><span class="lineNum">     359 </span><span class="lineNoCov">          0 :   struct UseProjectiveMap {</span></a>
+<a name="360"><span class="lineNum">     360 </span><span class="lineNoCov">          0 :     using group = Envelope;</span></a>
+<a name="361"><span class="lineNum">     361 </span><span class="lineNoCov">          0 :     using type = bool;</span></a>
+<a name="362"><span class="lineNum">     362 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = {</span></a>
+<a name="363"><span class="lineNum">     363 </span>            :         &quot;Use projective scaling on the frustums in the envelope.&quot;};</a>
+<a name="364"><span class="lineNum">     364 </span>            :   };</a>
+<a name="365"><span class="lineNum">     365 </span>            : </a>
+<a name="366"><span class="lineNum">     366 </span><span class="lineNoCov">          0 :   struct RadialDistributionOuterShell {</span></a>
+<a name="367"><span class="lineNum">     367 </span><span class="lineNoCov">          0 :     using group = OuterShell;</span></a>
+<a name="368"><span class="lineNum">     368 </span><span class="lineNoCov">          0 :     static std::string name() { return &quot;RadialDistribution&quot;; }</span></a>
+<a name="369"><span class="lineNum">     369 </span><span class="lineNoCov">          0 :     using type = CoordinateMaps::Distribution;</span></a>
+<a name="370"><span class="lineNum">     370 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = {</span></a>
+<a name="371"><span class="lineNum">     371 </span>            :         &quot;The distribution of radial grid points in Layer 5, the outer &quot;</a>
+<a name="372"><span class="lineNum">     372 </span>            :         &quot;spherical shell that covers the wave zone.&quot;};</a>
+<a name="373"><span class="lineNum">     373 </span>            :   };</a>
+<a name="374"><span class="lineNum">     374 </span>            : </a>
+<a name="375"><span class="lineNum">     375 </span>            :   template &lt;typename BoundaryConditionsBase&gt;</a>
+<a name="376"><span class="lineNum">     376 </span><span class="lineNoCov">          0 :   struct OuterBoundaryCondition {</span></a>
+<a name="377"><span class="lineNum">     377 </span><span class="lineNoCov">          0 :     using group = OuterShell;</span></a>
+<a name="378"><span class="lineNum">     378 </span><span class="lineNoCov">          0 :     static std::string name() { return &quot;BoundaryCondition&quot;; }</span></a>
+<a name="379"><span class="lineNum">     379 </span><span class="lineNoCov">          0 :     static constexpr Options::String help =</span></a>
+<a name="380"><span class="lineNum">     380 </span>            :         &quot;Options for the outer boundary conditions.&quot;;</a>
+<a name="381"><span class="lineNum">     381 </span><span class="lineNoCov">          0 :     using type = std::unique_ptr&lt;BoundaryConditionsBase&gt;;</span></a>
+<a name="382"><span class="lineNum">     382 </span>            :   };</a>
+<a name="383"><span class="lineNum">     383 </span>            : </a>
+<a name="384"><span class="lineNum">     384 </span>            :   // This is for optional time dependent maps</a>
+<a name="385"><span class="lineNum">     385 </span><span class="lineNoCov">          0 :   struct TimeDependentMaps {</span></a>
+<a name="386"><span class="lineNum">     386 </span><span class="lineNoCov">          0 :     using type = bco::TimeDependentMapOptions;</span></a>
+<a name="387"><span class="lineNum">     387 </span><span class="lineNoCov">          0 :     static constexpr Options::String help = bco::TimeDependentMapOptions::help;</span></a>
+<a name="388"><span class="lineNum">     388 </span>            :   };</a>
+<a name="389"><span class="lineNum">     389 </span>            : </a>
+<a name="390"><span class="lineNum">     390 </span>            :   template &lt;typename Metavariables&gt;</a>
+<a name="391"><span class="lineNum">     391 </span><span class="lineNoCov">          0 :   using time_independent_options = tmpl::append&lt;</span></a>
+<a name="392"><span class="lineNum">     392 </span>            :       tmpl::list&lt;ObjectA, ObjectB, EnvelopeRadius, OuterRadius,</a>
+<a name="393"><span class="lineNum">     393 </span>            :                  InitialRefinement, InitialGridPoints, UseEquiangularMap,</a>
+<a name="394"><span class="lineNum">     394 </span>            :                  UseProjectiveMap, RadialDistributionOuterShell, OpeningAngle&gt;,</a>
+<a name="395"><span class="lineNum">     395 </span>            :       tmpl::conditional_t&lt;</a>
+<a name="396"><span class="lineNum">     396 </span>            :           domain::BoundaryConditions::has_boundary_conditions_base_v&lt;</a>
+<a name="397"><span class="lineNum">     397 </span>            :               typename Metavariables::system&gt;,</a>
+<a name="398"><span class="lineNum">     398 </span>            :           tmpl::list&lt;OuterBoundaryCondition&lt;</a>
+<a name="399"><span class="lineNum">     399 </span>            :               domain::BoundaryConditions::get_boundary_conditions_base&lt;</a>
+<a name="400"><span class="lineNum">     400 </span>            :                   typename Metavariables::system&gt;&gt;&gt;,</a>
+<a name="401"><span class="lineNum">     401 </span>            :           tmpl::list&lt;&gt;&gt;&gt;;</a>
+<a name="402"><span class="lineNum">     402 </span>            : </a>
+<a name="403"><span class="lineNum">     403 </span>            :   template &lt;typename Metavariables&gt;</a>
+<a name="404"><span class="lineNum">     404 </span><span class="lineNoCov">          0 :   using options = tmpl::conditional_t&lt;</span></a>
+<a name="405"><span class="lineNum">     405 </span>            :       domain::creators::bco::enable_time_dependent_maps_v&lt;Metavariables&gt;,</a>
+<a name="406"><span class="lineNum">     406 </span>            :       tmpl::push_front&lt;time_independent_options&lt;Metavariables&gt;,</a>
+<a name="407"><span class="lineNum">     407 </span>            :                        TimeDependentMaps&gt;,</a>
+<a name="408"><span class="lineNum">     408 </span>            :       time_independent_options&lt;Metavariables&gt;&gt;;</a>
+<a name="409"><span class="lineNum">     409 </span>            : </a>
+<a name="410"><span class="lineNum">     410 </span><span class="lineNoCov">          0 :   static constexpr Options::String help{</span></a>
+<a name="411"><span class="lineNum">     411 </span>            :       &quot;A general domain for two compact objects. Each object is represented by &quot;</a>
+<a name="412"><span class="lineNum">     412 </span>            :       &quot;a cube along the x-axis. Object A is located on the right and Object B &quot;</a>
+<a name="413"><span class="lineNum">     413 </span>            :       &quot;is located on the left. Their locations should be chosen such that &quot;</a>
+<a name="414"><span class="lineNum">     414 </span>            :       &quot;their center of mass is located at the origin.&quot;</a>
+<a name="415"><span class="lineNum">     415 </span>            :       &quot;The interior of each object can have a spherical excision to &quot;</a>
+<a name="416"><span class="lineNum">     416 </span>            :       &quot;represent a black hole.&quot;</a>
+<a name="417"><span class="lineNum">     417 </span>            :       &quot;\n&quot;</a>
+<a name="418"><span class="lineNum">     418 </span>            :       &quot;The two objects are enveloped by a sphere centered at the origin, &quot;</a>
+<a name="419"><span class="lineNum">     419 </span>            :       &quot;and by an outer shell that can transition to large outer radii.&quot;</a>
+<a name="420"><span class="lineNum">     420 </span>            :       &quot;\n&quot;</a>
+<a name="421"><span class="lineNum">     421 </span>            :       &quot;Both the InitialRefinement and the InitialGridPoints can be one of &quot;</a>
+<a name="422"><span class="lineNum">     422 </span>            :       &quot;the following:\n&quot;</a>
+<a name="423"><span class="lineNum">     423 </span>            :       &quot;  - A single number: Uniform refinement in all blocks and &quot;</a>
+<a name="424"><span class="lineNum">     424 </span>            :       &quot;dimensions\n&quot;</a>
+<a name="425"><span class="lineNum">     425 </span>            :       &quot;  - Three numbers: Refinement in [polar, azimuthal, radial] direction &quot;</a>
+<a name="426"><span class="lineNum">     426 </span>            :       &quot;in all blocks\n&quot;</a>
+<a name="427"><span class="lineNum">     427 </span>            :       &quot;  - A map from block names or groups to three numbers: Per-block &quot;</a>
+<a name="428"><span class="lineNum">     428 </span>            :       &quot;refinement in [polar, azimuthal, radial] direction\n&quot;</a>
+<a name="429"><span class="lineNum">     429 </span>            :       &quot;  - A list, with [polar, azimuthal, radial] refinement for each block\n&quot;</a>
+<a name="430"><span class="lineNum">     430 </span>            :       &quot;\n&quot;</a>
+<a name="431"><span class="lineNum">     431 </span>            :       &quot;If time-dependent maps are enabled, the domain can rotate around the &quot;</a>
+<a name="432"><span class="lineNum">     432 </span>            :       &quot;z-axis and expand/compress radially. The two objects can also have a &quot;</a>
+<a name="433"><span class="lineNum">     433 </span>            :       &quot;spherical compression (size map), and we will add a spherical &quot;</a>
+<a name="434"><span class="lineNum">     434 </span>            :       &quot;distortion (shape map).&quot;};</a>
+<a name="435"><span class="lineNum">     435 </span>            : </a>
+<a name="436"><span class="lineNum">     436 </span>            :   // Constructor for time-independent version of the domain</a>
+<a name="437"><span class="lineNum">     437 </span>            :   // (i.e., for when</a>
+<a name="438"><span class="lineNum">     438 </span>            :   // Metavariables::domain::enable_time_dependent_maps == false or</a>
+<a name="439"><span class="lineNum">     439 </span>            :   // when the metavariables do not define</a>
+<a name="440"><span class="lineNum">     440 </span>            :   // Metavariables::domain::enable_time_dependent_maps)</a>
+<a name="441"><span class="lineNum">     441 </span><span class="lineNoCov">          0 :   BinaryCompactObject(</span></a>
+<a name="442"><span class="lineNum">     442 </span>            :       typename ObjectA::type object_A, typename ObjectB::type object_B,</a>
+<a name="443"><span class="lineNum">     443 </span>            :       double envelope_radius, double outer_radius,</a>
+<a name="444"><span class="lineNum">     444 </span>            :       const typename InitialRefinement::type&amp; initial_refinement,</a>
+<a name="445"><span class="lineNum">     445 </span>            :       const typename InitialGridPoints::type&amp; initial_number_of_grid_points,</a>
+<a name="446"><span class="lineNum">     446 </span>            :       bool use_equiangular_map = true, bool use_projective_map = true,</a>
+<a name="447"><span class="lineNum">     447 </span>            :       CoordinateMaps::Distribution radial_distribution_outer_shell =</a>
+<a name="448"><span class="lineNum">     448 </span>            :           CoordinateMaps::Distribution::Linear,</a>
+<a name="449"><span class="lineNum">     449 </span>            :       double opening_angle_in_degrees = 90.0,</a>
+<a name="450"><span class="lineNum">     450 </span>            :       std::unique_ptr&lt;domain::BoundaryConditions::BoundaryCondition&gt;</a>
+<a name="451"><span class="lineNum">     451 </span>            :           outer_boundary_condition = nullptr,</a>
+<a name="452"><span class="lineNum">     452 </span>            :       const Options::Context&amp; context = {});</a>
+<a name="453"><span class="lineNum">     453 </span>            : </a>
+<a name="454"><span class="lineNum">     454 </span>            :   // Constructor for time-dependent version of the domain</a>
+<a name="455"><span class="lineNum">     455 </span>            :   // (i.e., for when</a>
+<a name="456"><span class="lineNum">     456 </span>            :   // Metavariables::domain::enable_time_dependent_maps == true),</a>
+<a name="457"><span class="lineNum">     457 </span>            :   // with an additional parameter</a>
+<a name="458"><span class="lineNum">     458 </span><span class="lineNoCov">          0 :   BinaryCompactObject(</span></a>
+<a name="459"><span class="lineNum">     459 </span>            :       bco::TimeDependentMapOptions time_dependent_options,</a>
+<a name="460"><span class="lineNum">     460 </span>            :       typename ObjectA::type object_A, typename ObjectB::type object_B,</a>
+<a name="461"><span class="lineNum">     461 </span>            :       double envelope_radius, double outer_radius,</a>
+<a name="462"><span class="lineNum">     462 </span>            :       const typename InitialRefinement::type&amp; initial_refinement,</a>
+<a name="463"><span class="lineNum">     463 </span>            :       const typename InitialGridPoints::type&amp; initial_number_of_grid_points,</a>
+<a name="464"><span class="lineNum">     464 </span>            :       bool use_equiangular_map = true, bool use_projective_map = true,</a>
+<a name="465"><span class="lineNum">     465 </span>            :       CoordinateMaps::Distribution radial_distribution_outer_shell =</a>
+<a name="466"><span class="lineNum">     466 </span>            :           CoordinateMaps::Distribution::Linear,</a>
+<a name="467"><span class="lineNum">     467 </span>            :       double opening_angle_in_degrees = 90.0,</a>
+<a name="468"><span class="lineNum">     468 </span>            :       std::unique_ptr&lt;domain::BoundaryConditions::BoundaryCondition&gt;</a>
+<a name="469"><span class="lineNum">     469 </span>            :           outer_boundary_condition = nullptr,</a>
+<a name="470"><span class="lineNum">     470 </span>            :       const Options::Context&amp; context = {});</a>
+<a name="471"><span class="lineNum">     471 </span>            : </a>
+<a name="472"><span class="lineNum">     472 </span><span class="lineNoCov">          0 :   BinaryCompactObject() = default;</span></a>
+<a name="473"><span class="lineNum">     473 </span><span class="lineNoCov">          0 :   BinaryCompactObject(const BinaryCompactObject&amp;) = delete;</span></a>
+<a name="474"><span class="lineNum">     474 </span><span class="lineNoCov">          0 :   BinaryCompactObject(BinaryCompactObject&amp;&amp;) = default;</span></a>
+<a name="475"><span class="lineNum">     475 </span><span class="lineNoCov">          0 :   BinaryCompactObject&amp; operator=(const BinaryCompactObject&amp;) = delete;</span></a>
+<a name="476"><span class="lineNum">     476 </span><span class="lineNoCov">          0 :   BinaryCompactObject&amp; operator=(BinaryCompactObject&amp;&amp;) = default;</span></a>
+<a name="477"><span class="lineNum">     477 </span><span class="lineNoCov">          0 :   ~BinaryCompactObject() override = default;</span></a>
+<a name="478"><span class="lineNum">     478 </span>            : </a>
+<a name="479"><span class="lineNum">     479 </span><span class="lineNoCov">          0 :   Domain&lt;3&gt; create_domain() const override;</span></a>
+<a name="480"><span class="lineNum">     480 </span>            : </a>
+<a name="481"><span class="lineNum">     481 </span>            :   std::vector&lt;DirectionMap&lt;</a>
+<a name="482"><span class="lineNum">     482 </span>            :       3, std::unique_ptr&lt;domain::BoundaryConditions::BoundaryCondition&gt;&gt;&gt;</a>
+<a name="483"><span class="lineNum">     483 </span><span class="lineCov">          1 :   external_boundary_conditions() const override;</span></a>
+<a name="484"><span class="lineNum">     484 </span>            : </a>
+<a name="485"><span class="lineNum">     485 </span><span class="lineCov">          1 :   std::vector&lt;std::array&lt;size_t, 3&gt;&gt; initial_extents() const override {</span></a>
+<a name="486"><span class="lineNum">     486 </span>            :     return initial_number_of_grid_points_;</a>
+<a name="487"><span class="lineNum">     487 </span>            :   }</a>
+<a name="488"><span class="lineNum">     488 </span>            : </a>
+<a name="489"><span class="lineNum">     489 </span><span class="lineCov">          1 :   std::vector&lt;std::array&lt;size_t, 3&gt;&gt; initial_refinement_levels()</span></a>
+<a name="490"><span class="lineNum">     490 </span>            :       const override {</a>
+<a name="491"><span class="lineNum">     491 </span>            :     return initial_refinement_;</a>
+<a name="492"><span class="lineNum">     492 </span>            :   }</a>
+<a name="493"><span class="lineNum">     493 </span>            : </a>
+<a name="494"><span class="lineNum">     494 </span><span class="lineCov">          1 :   std::vector&lt;std::string&gt; block_names() const override { return block_names_; }</span></a>
+<a name="495"><span class="lineNum">     495 </span>            : </a>
+<a name="496"><span class="lineNum">     496 </span>            :   std::unordered_map&lt;std::string, std::unordered_set&lt;std::string&gt;&gt;</a>
+<a name="497"><span class="lineNum">     497 </span><span class="lineCov">          1 :   block_groups() const override {</span></a>
+<a name="498"><span class="lineNum">     498 </span>            :     return block_groups_;</a>
+<a name="499"><span class="lineNum">     499 </span>            :   }</a>
+<a name="500"><span class="lineNum">     500 </span>            : </a>
+<a name="501"><span class="lineNum">     501 </span><span class="lineCov">          1 :   auto functions_of_time(const std::unordered_map&lt;std::string, double&gt;&amp;</span></a>
+<a name="502"><span class="lineNum">     502 </span>            :                              initial_expiration_times = {}) const</a>
+<a name="503"><span class="lineNum">     503 </span>            :       -&gt; std::unordered_map&lt;</a>
+<a name="504"><span class="lineNum">     504 </span>            :           std::string,</a>
+<a name="505"><span class="lineNum">     505 </span>            :           std::unique_ptr&lt;domain::FunctionsOfTime::FunctionOfTime&gt;&gt; override;</a>
+<a name="506"><span class="lineNum">     506 </span>            : </a>
+<a name="507"><span class="lineNum">     507 </span>            :  private:</a>
+<a name="508"><span class="lineNum">     508 </span><span class="lineNoCov">          0 :   typename ObjectA::type object_A_{};</span></a>
+<a name="509"><span class="lineNum">     509 </span><span class="lineNoCov">          0 :   typename ObjectB::type object_B_{};</span></a>
+<a name="510"><span class="lineNum">     510 </span><span class="lineNoCov">          0 :   double envelope_radius_ = std::numeric_limits&lt;double&gt;::signaling_NaN();</span></a>
+<a name="511"><span class="lineNum">     511 </span><span class="lineNoCov">          0 :   double outer_radius_ = std::numeric_limits&lt;double&gt;::signaling_NaN();</span></a>
+<a name="512"><span class="lineNum">     512 </span><span class="lineNoCov">          0 :   std::vector&lt;std::array&lt;size_t, 3&gt;&gt; initial_refinement_{};</span></a>
+<a name="513"><span class="lineNum">     513 </span><span class="lineNoCov">          0 :   std::vector&lt;std::array&lt;size_t, 3&gt;&gt; initial_number_of_grid_points_{};</span></a>
+<a name="514"><span class="lineNum">     514 </span><span class="lineNoCov">          0 :   bool use_equiangular_map_ = true;</span></a>
+<a name="515"><span class="lineNum">     515 </span><span class="lineNoCov">          0 :   bool use_projective_map_ = true;</span></a>
+<a name="516"><span class="lineNum">     516 </span><span class="lineNoCov">          0 :   CoordinateMaps::Distribution radial_distribution_outer_shell_ =</span></a>
+<a name="517"><span class="lineNum">     517 </span>            :       CoordinateMaps::Distribution::Linear;</a>
+<a name="518"><span class="lineNum">     518 </span><span class="lineNoCov">          0 :   double projective_scale_factor_{};</span></a>
+<a name="519"><span class="lineNum">     519 </span><span class="lineNoCov">          0 :   double translation_{};</span></a>
+<a name="520"><span class="lineNum">     520 </span><span class="lineNoCov">          0 :   double length_inner_cube_{};</span></a>
+<a name="521"><span class="lineNum">     521 </span><span class="lineNoCov">          0 :   double length_outer_cube_{};</span></a>
+<a name="522"><span class="lineNum">     522 </span><span class="lineNoCov">          0 :   size_t number_of_blocks_{};</span></a>
+<a name="523"><span class="lineNum">     523 </span>            :   std::unique_ptr&lt;domain::BoundaryConditions::BoundaryCondition&gt;</a>
+<a name="524"><span class="lineNum">     524 </span><span class="lineNoCov">          0 :       outer_boundary_condition_;</span></a>
+<a name="525"><span class="lineNum">     525 </span><span class="lineNoCov">          0 :   std::vector&lt;std::string&gt; block_names_{};</span></a>
+<a name="526"><span class="lineNum">     526 </span>            :   std::unordered_map&lt;std::string, std::unordered_set&lt;std::string&gt;&gt;</a>
+<a name="527"><span class="lineNum">     527 </span><span class="lineNoCov">          0 :       block_groups_{};</span></a>
+<a name="528"><span class="lineNum">     528 </span>            : </a>
+<a name="529"><span class="lineNum">     529 </span>            :   // Variables to handle std::variant on Object A and B</a>
+<a name="530"><span class="lineNum">     530 </span><span class="lineNoCov">          0 :   double x_coord_a_{};</span></a>
+<a name="531"><span class="lineNum">     531 </span><span class="lineNoCov">          0 :   double x_coord_b_{};</span></a>
+<a name="532"><span class="lineNum">     532 </span><span class="lineNoCov">          0 :   bool is_excised_a_ = false;</span></a>
+<a name="533"><span class="lineNum">     533 </span><span class="lineNoCov">          0 :   bool is_excised_b_ = false;</span></a>
+<a name="534"><span class="lineNum">     534 </span><span class="lineNoCov">          0 :   bool use_single_block_a_ = false;</span></a>
+<a name="535"><span class="lineNum">     535 </span><span class="lineNoCov">          0 :   bool use_single_block_b_ = false;</span></a>
+<a name="536"><span class="lineNum">     536 </span><span class="lineNoCov">          0 :   std::optional&lt;bco::TimeDependentMapOptions&gt; time_dependent_options_{};</span></a>
+<a name="537"><span class="lineNum">     537 </span><span class="lineNoCov">          0 :   double opening_angle_ = std::numeric_limits&lt;double&gt;::signaling_NaN();</span></a>
+<a name="538"><span class="lineNum">     538 </span>            : };</a>
+<a name="539"><span class="lineNum">     539 </span>            : }  // namespace creators</a>
+<a name="540"><span class="lineNum">     540 </span>            : }  // namespace domain</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.14</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

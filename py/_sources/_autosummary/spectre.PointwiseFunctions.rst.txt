@@ -1,0 +1,40 @@
+spectre.PointwiseFunctions
+==========================
+
+.. automodule:: spectre.PointwiseFunctions
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.PointwiseFunctions._Pybindings
+
+.. currentmodule:: spectre.PointwiseFunctions
+
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   spectre.PointwiseFunctions.AnalyticSolutions
+   spectre.PointwiseFunctions.GeneralRelativity
+   spectre.PointwiseFunctions.Hydro
+   spectre.PointwiseFunctions.Punctures
+
+

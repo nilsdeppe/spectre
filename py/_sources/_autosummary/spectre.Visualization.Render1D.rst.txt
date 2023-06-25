@@ -1,0 +1,36 @@
+spectre.Visualization.Render1D
+==============================
+
+.. automodule:: spectre.Visualization.Render1D
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      get_bounds
+      plot_element
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.Visualization.Render1D._Pybindings
+
+.. currentmodule:: spectre.Visualization.Render1D
+
+
+
+

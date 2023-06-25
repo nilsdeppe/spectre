@@ -1,0 +1,37 @@
+spectre.DataStructures
+======================
+
+.. automodule:: spectre.DataStructures
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.DataStructures._Pybindings
+
+.. currentmodule:: spectre.DataStructures
+
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   spectre.DataStructures.Tensor
+
+

@@ -1,0 +1,46 @@
+spectre.DataStructures.Tensor
+=============================
+
+.. automodule:: spectre.DataStructures.Tensor
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      JacobianMeta
+      TensorMeta
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.DataStructures.Tensor._Pybindings
+
+.. currentmodule:: spectre.DataStructures.Tensor
+
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   spectre.DataStructures.Tensor.EagerMath
+   spectre.DataStructures.Tensor.Frame
+   spectre.DataStructures.Tensor.tnsr
+
+

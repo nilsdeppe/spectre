@@ -1,0 +1,26 @@
+spectre.DataStructures.Tensor.Frame
+===================================
+
+.. currentmodule:: spectre.DataStructures.Tensor
+
+.. autoclass:: Frame
+
+   
+   .. automethod:: __init__
+
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Frame.BlockLogical
+      ~Frame.ElementLogical
+      ~Frame.Grid
+      ~Frame.Inertial
+      ~Frame.Distorted
+   
+   

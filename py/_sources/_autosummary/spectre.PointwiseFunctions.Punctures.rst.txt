@@ -1,0 +1,29 @@
+spectre.PointwiseFunctions.Punctures
+====================================
+
+.. automodule:: spectre.PointwiseFunctions.Punctures
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.PointwiseFunctions.Punctures._Pybindings
+
+.. currentmodule:: spectre.PointwiseFunctions.Punctures
+
+
+
+

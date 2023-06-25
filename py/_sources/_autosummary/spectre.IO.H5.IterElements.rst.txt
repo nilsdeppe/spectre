@@ -1,0 +1,43 @@
+spectre.IO.H5.IterElements
+==========================
+
+.. automodule:: spectre.IO.H5.IterElements
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      include_element
+      iter_elements
+      stripped_element_name
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Element
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.IO.H5.IterElements._Pybindings
+
+.. currentmodule:: spectre.IO.H5.IterElements
+
+
+
+

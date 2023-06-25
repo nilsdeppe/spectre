@@ -1,0 +1,37 @@
+spectre.PointwiseFunctions.AnalyticSolutions
+============================================
+
+.. automodule:: spectre.PointwiseFunctions.AnalyticSolutions
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.PointwiseFunctions.AnalyticSolutions._Pybindings
+
+.. currentmodule:: spectre.PointwiseFunctions.AnalyticSolutions
+
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   spectre.PointwiseFunctions.AnalyticSolutions.RelativisticEuler
+
+

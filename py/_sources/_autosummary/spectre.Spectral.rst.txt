@@ -1,0 +1,29 @@
+spectre.Spectral
+================
+
+.. automodule:: spectre.Spectral
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.Spectral._Pybindings
+
+.. currentmodule:: spectre.Spectral
+
+
+
+

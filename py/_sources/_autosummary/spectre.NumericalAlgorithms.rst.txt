@@ -1,0 +1,37 @@
+spectre.NumericalAlgorithms
+===========================
+
+.. automodule:: spectre.NumericalAlgorithms
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.NumericalAlgorithms._Pybindings
+
+.. currentmodule:: spectre.NumericalAlgorithms
+
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   spectre.NumericalAlgorithms.LinearOperators
+
+

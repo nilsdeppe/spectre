@@ -1,0 +1,642 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - 18097182aa3a9818e2b2063a0ed2a34000ca2ea5 - NumericalAlgorithms/FiniteDifference/HighOrderFluxCorrection.hpp</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title"> SpECTRE Documentation Coverage Report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">NumericalAlgorithms/FiniteDifference</a> - HighOrderFluxCorrection.hpp</td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+             <td class="headerItem">Commit:</td>
+             <td class="headerValue"><a target="_blank" href="https://github.com/sxs-collaboration/spectre/commit/18097182aa3a9818e2b2063a0ed2a34000ca2ea5">18097182aa3a9818e2b2063a0ed2a34000ca2ea5</a></td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">4</td>
+            <td class="headerCovTableEntry">5</td>
+            <td class="headerCovTableEntryMed">80.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2023-06-25 06:59:04</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span><span class="lineNoCov">          0 : // Distributed under the MIT License.</span></a>
+<a name="2"><span class="lineNum">       2 </span>            : // See LICENSE.txt for details.</a>
+<a name="3"><span class="lineNum">       3 </span>            : </a>
+<a name="4"><span class="lineNum">       4 </span>            : #pragma once</a>
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<a name="6"><span class="lineNum">       6 </span>            : #include &lt;array&gt;</a>
+<a name="7"><span class="lineNum">       7 </span>            : #include &lt;boost/functional/hash.hpp&gt;</a>
+<a name="8"><span class="lineNum">       8 </span>            : #include &lt;cstddef&gt;</a>
+<a name="9"><span class="lineNum">       9 </span>            : #include &lt;iterator&gt;</a>
+<a name="10"><span class="lineNum">      10 </span>            : #include &lt;limits&gt;</a>
+<a name="11"><span class="lineNum">      11 </span>            : #include &lt;type_traits&gt;</a>
+<a name="12"><span class="lineNum">      12 </span>            : #include &lt;utility&gt;</a>
+<a name="13"><span class="lineNum">      13 </span>            : </a>
+<a name="14"><span class="lineNum">      14 </span>            : #include &quot;DataStructures/DataBox/Prefixes.hpp&quot;</a>
+<a name="15"><span class="lineNum">      15 </span>            : #include &quot;DataStructures/DataVector.hpp&quot;</a>
+<a name="16"><span class="lineNum">      16 </span>            : #include &quot;DataStructures/FixedHashMap.hpp&quot;</a>
+<a name="17"><span class="lineNum">      17 </span>            : #include &quot;DataStructures/Index.hpp&quot;</a>
+<a name="18"><span class="lineNum">      18 </span>            : #include &quot;DataStructures/Tensor/Tensor.hpp&quot;</a>
+<a name="19"><span class="lineNum">      19 </span>            : #include &quot;DataStructures/Variables.hpp&quot;</a>
+<a name="20"><span class="lineNum">      20 </span>            : #include &quot;Domain/Structure/Direction.hpp&quot;</a>
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;Domain/Structure/DirectionMap.hpp&quot;</a>
+<a name="22"><span class="lineNum">      22 </span>            : #include &quot;Domain/Structure/ElementId.hpp&quot;</a>
+<a name="23"><span class="lineNum">      23 </span>            : #include &quot;Domain/Structure/MaxNumberOfNeighbors.hpp&quot;</a>
+<a name="24"><span class="lineNum">      24 </span>            : #include &quot;Evolution/DgSubcell/GhostData.hpp&quot;</a>
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;NumericalAlgorithms/FiniteDifference/DerivativeOrder.hpp&quot;</a>
+<a name="26"><span class="lineNum">      26 </span>            : #include &quot;NumericalAlgorithms/Spectral/Mesh.hpp&quot;</a>
+<a name="27"><span class="lineNum">      27 </span>            : #include &quot;Utilities/Algorithm.hpp&quot;</a>
+<a name="28"><span class="lineNum">      28 </span>            : #include &quot;Utilities/ErrorHandling/Error.hpp&quot;</a>
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;Utilities/Gsl.hpp&quot;</a>
+<a name="30"><span class="lineNum">      30 </span>            : #include &quot;Utilities/OptionalHelpers.hpp&quot;</a>
+<a name="31"><span class="lineNum">      31 </span>            : #include &quot;Utilities/TMPL.hpp&quot;</a>
+<a name="32"><span class="lineNum">      32 </span>            : </a>
+<a name="33"><span class="lineNum">      33 </span>            : namespace fd {</a>
+<a name="34"><span class="lineNum">      34 </span>            : /// @{</a>
+<a name="35"><span class="lineNum">      35 </span>            : /*!</a>
+<a name="36"><span class="lineNum">      36 </span>            :  * \brief Computes a high-order boundary correction $G$ at the FD interface.</a>
+<a name="37"><span class="lineNum">      37 </span>            :  *</a>
+<a name="38"><span class="lineNum">      38 </span>            :  * The correction to the second-order boundary correction is given by</a>
+<a name="39"><span class="lineNum">      39 </span>            :  *</a>
+<a name="40"><span class="lineNum">      40 </span>            :  * \f{align*}{</a>
+<a name="41"><span class="lineNum">      41 </span>            :  *  G=G^{(2)}-G^{(4)}+G^{(6)}-G^{(8)}+G^{(10)},</a>
+<a name="42"><span class="lineNum">      42 </span>            :  * \f}</a>
+<a name="43"><span class="lineNum">      43 </span>            :  *</a>
+<a name="44"><span class="lineNum">      44 </span>            :  * where</a>
+<a name="45"><span class="lineNum">      45 </span>            :  *</a>
+<a name="46"><span class="lineNum">      46 </span>            :  *\f{align*}{</a>
+<a name="47"><span class="lineNum">      47 </span>            :  * G^{(4)}_{j+1/2}&amp;=\frac{1}{6}\left(G_j -2 G^{(2)} +</a>
+<a name="48"><span class="lineNum">      48 </span>            :  *                         G_{j+1}\right), \\</a>
+<a name="49"><span class="lineNum">      49 </span>            :  * G^{(6)}_{j+1/2}&amp;=\frac{1}{180}\left(G_{j-1} - 9 G_j + 16 G^{(2)}</a>
+<a name="50"><span class="lineNum">      50 </span>            :  *                         -9 G_{j+1} + G_{j+2}\right), \\</a>
+<a name="51"><span class="lineNum">      51 </span>            :  * G^{(8)}_{j+1/2}&amp;=\frac{1}{2100}\left(G_{j-2} - \frac{25}{3} G_{j-1}</a>
+<a name="52"><span class="lineNum">      52 </span>            :  *                         + 50 G_j - \frac{256}{3} G^{(2)} + 50 G_{j+1}</a>
+<a name="53"><span class="lineNum">      53 </span>            :  *                         - \frac{25}{3} G_{j+2} +G_{j+3}\right), \\</a>
+<a name="54"><span class="lineNum">      54 </span>            :  * G^{(10)}_{j+1/2}&amp;=\frac{1}{17640}</a>
+<a name="55"><span class="lineNum">      55 </span>            :  *                         \left(G_{j-3} - \frac{49}{5} G_{j-2}</a>
+<a name="56"><span class="lineNum">      56 </span>            :  *                     + 49 G_{j-1} - 245 G_j + \frac{2048}{5} G^{(2)}\right.</a>
+<a name="57"><span class="lineNum">      57 </span>            :  *                         \nonumber \\</a>
+<a name="58"><span class="lineNum">      58 </span>            :  *                       &amp;\left.- 245 G_{j+1}+ 49 G_{j+2} - \frac{49}{5} G_{j+3}</a>
+<a name="59"><span class="lineNum">      59 </span>            :  *                         + G_{j+4}\right),</a>
+<a name="60"><span class="lineNum">      60 </span>            :  * \f}</a>
+<a name="61"><span class="lineNum">      61 </span>            :  *</a>
+<a name="62"><span class="lineNum">      62 </span>            :  * where</a>
+<a name="63"><span class="lineNum">      63 </span>            :  *</a>
+<a name="64"><span class="lineNum">      64 </span>            :  * \f{align*}{</a>
+<a name="65"><span class="lineNum">      65 </span>            :  *  G_{j} &amp;= F^i_j n_i^{j+1/2}, \\</a>
+<a name="66"><span class="lineNum">      66 </span>            :  *  G_{j\pm1} &amp;= F^i_{j\pm1} n_i^{j+1/2}, \\</a>
+<a name="67"><span class="lineNum">      67 </span>            :  *  G_{j\pm2} &amp;= F^i_{j\pm2} n_i^{j+1/2}, \\</a>
+<a name="68"><span class="lineNum">      68 </span>            :  *  G_{j\pm3} &amp;= F^i_{j\pm3} n_i^{j+1/2}, \\</a>
+<a name="69"><span class="lineNum">      69 </span>            :  *  G_{j\pm4} &amp;= F^i_{j\pm4} n_i^{j+1/2}.</a>
+<a name="70"><span class="lineNum">      70 </span>            :  * \f}</a>
+<a name="71"><span class="lineNum">      71 </span>            :  *</a>
+<a name="72"><span class="lineNum">      72 </span>            :  * This is a generalization of the correction presented in \cite CHEN2016604.</a>
+<a name="73"><span class="lineNum">      73 </span>            :  *</a>
+<a name="74"><span class="lineNum">      74 </span>            :  * This high-order flux can be fed into a flux limiter, e.g. to guarantee</a>
+<a name="75"><span class="lineNum">      75 </span>            :  * positivity.</a>
+<a name="76"><span class="lineNum">      76 </span>            :  *</a>
+<a name="77"><span class="lineNum">      77 </span>            :  * \note This implementation should be profiled and optimized.</a>
+<a name="78"><span class="lineNum">      78 </span>            :  *</a>
+<a name="79"><span class="lineNum">      79 </span>            :  * \warning This documentation is for the general case. In the restricted</a>
+<a name="80"><span class="lineNum">      80 </span>            :  * Cartesian case we use the cell-centered flux as opposed to `G^{(4)}`, which</a>
+<a name="81"><span class="lineNum">      81 </span>            :  * differs by a minus sign. This amounts to a minus sign change in front of the</a>
+<a name="82"><span class="lineNum">      82 </span>            :  * $G^{(k)}$ terms in computing $G$ for $k&gt;2$, and also a sign change in front</a>
+<a name="83"><span class="lineNum">      83 </span>            :  * of $G^{(2)}$ in all $G^{(k)}$ for $k&gt;2$.</a>
+<a name="84"><span class="lineNum">      84 </span>            :  */</a>
+<a name="85"><span class="lineNum">      85 </span>            : template &lt;DerivativeOrder DerivOrder, size_t Dim, typename... EvolvedVarsTags&gt;</a>
+<a name="86"><span class="lineNum">      86 </span><span class="lineCov">          1 : void cartesian_high_order_fluxes_using_nodes(</span></a>
+<a name="87"><span class="lineNum">      87 </span>            :     const gsl::not_null&lt;</a>
+<a name="88"><span class="lineNum">      88 </span>            :         std::array&lt;Variables&lt;tmpl::list&lt;EvolvedVarsTags...&gt;&gt;, Dim&gt;*&gt;</a>
+<a name="89"><span class="lineNum">      89 </span>            :         high_order_boundary_corrections_in_logical_direction,</a>
+<a name="90"><span class="lineNum">      90 </span>            : </a>
+<a name="91"><span class="lineNum">      91 </span>            :     const std::array&lt;Variables&lt;tmpl::list&lt;EvolvedVarsTags...&gt;&gt;, Dim&gt;&amp;</a>
+<a name="92"><span class="lineNum">      92 </span>            :         second_order_boundary_corrections_in_logical_direction,</a>
+<a name="93"><span class="lineNum">      93 </span>            :     const Variables&lt;tmpl::list&lt;</a>
+<a name="94"><span class="lineNum">      94 </span>            :         ::Tags::Flux&lt;EvolvedVarsTags, tmpl::size_t&lt;Dim&gt;, Frame::Inertial&gt;...&gt;&gt;&amp;</a>
+<a name="95"><span class="lineNum">      95 </span>            :         cell_centered_inertial_flux,</a>
+<a name="96"><span class="lineNum">      96 </span>            :     const DirectionMap&lt;</a>
+<a name="97"><span class="lineNum">      97 </span>            :         Dim, Variables&lt;tmpl::list&lt;::Tags::Flux&lt;</a>
+<a name="98"><span class="lineNum">      98 </span>            :                  EvolvedVarsTags, tmpl::size_t&lt;Dim&gt;, Frame::Inertial&gt;...&gt;&gt;&gt;&amp;</a>
+<a name="99"><span class="lineNum">      99 </span>            :         ghost_cell_inertial_flux,</a>
+<a name="100"><span class="lineNum">     100 </span>            :     const Mesh&lt;Dim&gt;&amp; subcell_mesh, const size_t number_of_ghost_cells,</a>
+<a name="101"><span class="lineNum">     101 </span>            :     [[maybe_unused]] const std::array&lt;gsl::span&lt;std::uint8_t&gt;, Dim&gt;&amp;</a>
+<a name="102"><span class="lineNum">     102 </span>            :         reconstruction_order = {}) {</a>
+<a name="103"><span class="lineNum">     103 </span>            :   using std::min;</a>
+<a name="104"><span class="lineNum">     104 </span>            :   constexpr int max_correction_order = 10;</a>
+<a name="105"><span class="lineNum">     105 </span>            :   static_assert(static_cast&lt;int&gt;(DerivOrder) &lt;= max_correction_order);</a>
+<a name="106"><span class="lineNum">     106 </span>            :   constexpr size_t stencil_size = static_cast&lt;int&gt;(DerivOrder) &lt; 0</a>
+<a name="107"><span class="lineNum">     107 </span>            :                                       ? 8</a>
+<a name="108"><span class="lineNum">     108 </span>            :                                       : (static_cast&lt;size_t&gt;(DerivOrder) - 2);</a>
+<a name="109"><span class="lineNum">     109 </span>            :   const size_t correction_width =</a>
+<a name="110"><span class="lineNum">     110 </span>            :       min(static_cast&lt;size_t&gt;(DerivOrder) / 2 - 1,</a>
+<a name="111"><span class="lineNum">     111 </span>            :           min(number_of_ghost_cells, stencil_size / 2));</a>
+<a name="112"><span class="lineNum">     112 </span>            :   ASSERT(correction_width &lt;= number_of_ghost_cells,</a>
+<a name="113"><span class="lineNum">     113 </span>            :          &quot;The width of the derivative correction (&quot;</a>
+<a name="114"><span class="lineNum">     114 </span>            :              &lt;&lt; correction_width</a>
+<a name="115"><span class="lineNum">     115 </span>            :              &lt;&lt; &quot;) must be less than or equal to the number of ghost cells &quot;</a>
+<a name="116"><span class="lineNum">     116 </span>            :              &lt;&lt; number_of_ghost_cells);</a>
+<a name="117"><span class="lineNum">     117 </span>            :   ASSERT(alg::all_of(reconstruction_order,</a>
+<a name="118"><span class="lineNum">     118 </span>            :                      [](const auto&amp; t) { return not t.empty(); }) or</a>
+<a name="119"><span class="lineNum">     119 </span>            :              static_cast&lt;int&gt;(DerivOrder) &gt; 0,</a>
+<a name="120"><span class="lineNum">     120 </span>            :          &quot;For adaptive derivative orders the reconstruction_order must be set&quot;);</a>
+<a name="121"><span class="lineNum">     121 </span>            :   for (size_t dim = 0; dim &lt; Dim; ++dim) {</a>
+<a name="122"><span class="lineNum">     122 </span>            :     gsl::at(*high_order_boundary_corrections_in_logical_direction, dim)</a>
+<a name="123"><span class="lineNum">     123 </span>            :         .initialize(</a>
+<a name="124"><span class="lineNum">     124 </span>            :             gsl::at(second_order_boundary_corrections_in_logical_direction, dim)</a>
+<a name="125"><span class="lineNum">     125 </span>            :                 .number_of_grid_points());</a>
+<a name="126"><span class="lineNum">     126 </span>            :   }</a>
+<a name="127"><span class="lineNum">     127 </span>            : </a>
+<a name="128"><span class="lineNum">     128 </span>            :   // Reconstruction order is always first-varying fastest since we don't</a>
+<a name="129"><span class="lineNum">     129 </span>            :   // transpose that back to {x,y,z} ordering.</a>
+<a name="130"><span class="lineNum">     130 </span>            :   Index&lt;Dim&gt; reconstruction_extents = subcell_mesh.extents();</a>
+<a name="131"><span class="lineNum">     131 </span>            :   reconstruction_extents[0] += 2;</a>
+<a name="132"><span class="lineNum">     132 </span>            : </a>
+<a name="133"><span class="lineNum">     133 </span>            :   const auto impl = [&amp;cell_centered_inertial_flux, &amp;ghost_cell_inertial_flux,</a>
+<a name="134"><span class="lineNum">     134 </span>            :                      &amp;high_order_boundary_corrections_in_logical_direction,</a>
+<a name="135"><span class="lineNum">     135 </span>            :                      number_of_ghost_cells,</a>
+<a name="136"><span class="lineNum">     136 </span>            :                      &amp;second_order_boundary_corrections_in_logical_direction,</a>
+<a name="137"><span class="lineNum">     137 </span>            :                      &amp;subcell_mesh, &amp;correction_width, &amp;reconstruction_order,</a>
+<a name="138"><span class="lineNum">     138 </span>            :                      &amp;reconstruction_extents](auto tag_v, auto dim_v) {</a>
+<a name="139"><span class="lineNum">     139 </span>            :     (void)reconstruction_extents;</a>
+<a name="140"><span class="lineNum">     140 </span>            :     using tag = decltype(tag_v);</a>
+<a name="141"><span class="lineNum">     141 </span>            :     constexpr size_t dim = decltype(dim_v)::value;</a>
+<a name="142"><span class="lineNum">     142 </span>            : </a>
+<a name="143"><span class="lineNum">     143 </span>            :     auto&amp; high_order_var_correction =</a>
+<a name="144"><span class="lineNum">     144 </span>            :         get&lt;tag&gt;((*high_order_boundary_corrections_in_logical_direction)[dim]);</a>
+<a name="145"><span class="lineNum">     145 </span>            :     const auto&amp; second_order_var_correction =</a>
+<a name="146"><span class="lineNum">     146 </span>            :         get&lt;tag&gt;(second_order_boundary_corrections_in_logical_direction[dim]);</a>
+<a name="147"><span class="lineNum">     147 </span>            :     const auto&amp; recons_order = reconstruction_order[dim];</a>
+<a name="148"><span class="lineNum">     148 </span>            :     const auto&amp; cell_centered_flux =</a>
+<a name="149"><span class="lineNum">     149 </span>            :         get&lt;::Tags::Flux&lt;tag, tmpl::size_t&lt;Dim&gt;, Frame::Inertial&gt;&gt;(</a>
+<a name="150"><span class="lineNum">     150 </span>            :             cell_centered_inertial_flux);</a>
+<a name="151"><span class="lineNum">     151 </span>            :     const auto&amp; lower_neighbor_cell_centered_flux =</a>
+<a name="152"><span class="lineNum">     152 </span>            :         get&lt;::Tags::Flux&lt;tag, tmpl::size_t&lt;Dim&gt;, Frame::Inertial&gt;&gt;(</a>
+<a name="153"><span class="lineNum">     153 </span>            :             ghost_cell_inertial_flux.at(Direction&lt;Dim&gt;{dim, Side::Lower}));</a>
+<a name="154"><span class="lineNum">     154 </span>            :     const auto&amp; upper_neighbor_cell_centered_flux =</a>
+<a name="155"><span class="lineNum">     155 </span>            :         get&lt;::Tags::Flux&lt;tag, tmpl::size_t&lt;Dim&gt;, Frame::Inertial&gt;&gt;(</a>
+<a name="156"><span class="lineNum">     156 </span>            :             ghost_cell_inertial_flux.at(Direction&lt;Dim&gt;{dim, Side::Upper}));</a>
+<a name="157"><span class="lineNum">     157 </span>            :     using FluxTensor = std::decay_t&lt;decltype(cell_centered_flux)&gt;;</a>
+<a name="158"><span class="lineNum">     158 </span>            :     const auto&amp; subcell_extents = subcell_mesh.extents();</a>
+<a name="159"><span class="lineNum">     159 </span>            :     auto subcell_face_extents = subcell_extents;</a>
+<a name="160"><span class="lineNum">     160 </span>            :     ++subcell_face_extents[dim];</a>
+<a name="161"><span class="lineNum">     161 </span>            :     auto neighbor_extents = subcell_extents;</a>
+<a name="162"><span class="lineNum">     162 </span>            :     neighbor_extents[dim] = number_of_ghost_cells;</a>
+<a name="163"><span class="lineNum">     163 </span>            :     const size_t number_of_components = second_order_var_correction.size();</a>
+<a name="164"><span class="lineNum">     164 </span>            :     for (size_t storage_index = 0; storage_index &lt; number_of_components;</a>
+<a name="165"><span class="lineNum">     165 </span>            :          ++storage_index) {</a>
+<a name="166"><span class="lineNum">     166 </span>            :       const auto flux_multi_index = prepend(</a>
+<a name="167"><span class="lineNum">     167 </span>            :           second_order_var_correction.get_tensor_index(storage_index), dim);</a>
+<a name="168"><span class="lineNum">     168 </span>            :       const size_t flux_storage_index =</a>
+<a name="169"><span class="lineNum">     169 </span>            :           FluxTensor::get_storage_index(flux_multi_index);</a>
+<a name="170"><span class="lineNum">     170 </span>            :       // Loop over each face</a>
+<a name="171"><span class="lineNum">     171 </span>            :       for (size_t k = 0; k &lt; (Dim == 3 ? subcell_face_extents[2] : 1); ++k) {</a>
+<a name="172"><span class="lineNum">     172 </span>            :         for (size_t j = 0; j &lt; (Dim &gt;= 2 ? subcell_face_extents[1] : 1); ++j) {</a>
+<a name="173"><span class="lineNum">     173 </span>            :           for (size_t i = 0; i &lt; subcell_face_extents[0]; ++i) {</a>
+<a name="174"><span class="lineNum">     174 </span>            :             const Index&lt;Dim&gt; face_index = [i, j, k]() -&gt; Index&lt;Dim&gt; {</a>
+<a name="175"><span class="lineNum">     175 </span>            :               if constexpr (Dim == 3) {</a>
+<a name="176"><span class="lineNum">     176 </span>            :                 return Index&lt;Dim&gt;{i, j, k};</a>
+<a name="177"><span class="lineNum">     177 </span>            :               } else if constexpr (Dim == 2) {</a>
+<a name="178"><span class="lineNum">     178 </span>            :                 (void)k;</a>
+<a name="179"><span class="lineNum">     179 </span>            :                 return Index&lt;Dim&gt;{i, j};</a>
+<a name="180"><span class="lineNum">     180 </span>            :               } else {</a>
+<a name="181"><span class="lineNum">     181 </span>            :                 (void)k, (void)j;</a>
+<a name="182"><span class="lineNum">     182 </span>            :                 return Index&lt;Dim&gt;{i};</a>
+<a name="183"><span class="lineNum">     183 </span>            :               }</a>
+<a name="184"><span class="lineNum">     184 </span>            :             }();</a>
+<a name="185"><span class="lineNum">     185 </span>            :             const size_t face_storage_index =</a>
+<a name="186"><span class="lineNum">     186 </span>            :                 collapsed_index(face_index, subcell_face_extents);</a>
+<a name="187"><span class="lineNum">     187 </span>            :             Index&lt;Dim&gt; neighbor_index{};</a>
+<a name="188"><span class="lineNum">     188 </span>            :             for (size_t l = 0; l &lt; Dim; ++l) {</a>
+<a name="189"><span class="lineNum">     189 </span>            :               if (l != dim) {</a>
+<a name="190"><span class="lineNum">     190 </span>            :                 neighbor_index[l] = face_index[l];</a>
+<a name="191"><span class="lineNum">     191 </span>            :               }</a>
+<a name="192"><span class="lineNum">     192 </span>            :             }</a>
+<a name="193"><span class="lineNum">     193 </span>            : </a>
+<a name="194"><span class="lineNum">     194 </span>            :             double&amp; correction =</a>
+<a name="195"><span class="lineNum">     195 </span>            :                 high_order_var_correction[storage_index][face_storage_index] =</a>
+<a name="196"><span class="lineNum">     196 </span>            :                     0.0;</a>
+<a name="197"><span class="lineNum">     197 </span>            : </a>
+<a name="198"><span class="lineNum">     198 </span>            :             std::array&lt;double, stencil_size&gt; cell_centered_fluxes_for_stencil{};</a>
+<a name="199"><span class="lineNum">     199 </span>            :             // fill if we have to retrieve from lower neighbor</a>
+<a name="200"><span class="lineNum">     200 </span>            :             size_t stencil_index = 0;</a>
+<a name="201"><span class="lineNum">     201 </span>            :             for (int grid_index = static_cast&lt;int&gt;(face_index[dim]) -</a>
+<a name="202"><span class="lineNum">     202 </span>            :                                   static_cast&lt;int&gt;(correction_width);</a>
+<a name="203"><span class="lineNum">     203 </span>            :                  grid_index &lt; static_cast&lt;int&gt;(face_index[dim]) +</a>
+<a name="204"><span class="lineNum">     204 </span>            :                                   static_cast&lt;int&gt;(correction_width);</a>
+<a name="205"><span class="lineNum">     205 </span>            :                  ++grid_index, ++stencil_index) {</a>
+<a name="206"><span class="lineNum">     206 </span>            :               if (grid_index &lt; 0) {</a>
+<a name="207"><span class="lineNum">     207 </span>            :                 neighbor_index[dim] = static_cast&lt;size_t&gt;(</a>
+<a name="208"><span class="lineNum">     208 </span>            :                     static_cast&lt;int&gt;(number_of_ghost_cells) + grid_index);</a>
+<a name="209"><span class="lineNum">     209 </span>            :                 gsl::at(cell_centered_fluxes_for_stencil, stencil_index) =</a>
+<a name="210"><span class="lineNum">     210 </span>            :                     lower_neighbor_cell_centered_flux[flux_storage_index]</a>
+<a name="211"><span class="lineNum">     211 </span>            :                                                      [collapsed_index(</a>
+<a name="212"><span class="lineNum">     212 </span>            :                                                          neighbor_index,</a>
+<a name="213"><span class="lineNum">     213 </span>            :                                                          neighbor_extents)];</a>
+<a name="214"><span class="lineNum">     214 </span>            :               } else if (grid_index &gt;= static_cast&lt;int&gt;(subcell_extents[dim])) {</a>
+<a name="215"><span class="lineNum">     215 </span>            :                 neighbor_index[dim] = static_cast&lt;size_t&gt;(</a>
+<a name="216"><span class="lineNum">     216 </span>            :                     grid_index - static_cast&lt;int&gt;(subcell_extents[dim]));</a>
+<a name="217"><span class="lineNum">     217 </span>            :                 gsl::at(cell_centered_fluxes_for_stencil, stencil_index) =</a>
+<a name="218"><span class="lineNum">     218 </span>            :                     upper_neighbor_cell_centered_flux[flux_storage_index]</a>
+<a name="219"><span class="lineNum">     219 </span>            :                                                      [collapsed_index(</a>
+<a name="220"><span class="lineNum">     220 </span>            :                                                          neighbor_index,</a>
+<a name="221"><span class="lineNum">     221 </span>            :                                                          neighbor_extents)];</a>
+<a name="222"><span class="lineNum">     222 </span>            :               } else {</a>
+<a name="223"><span class="lineNum">     223 </span>            :                 Index&lt;Dim&gt; volume_index = face_index;</a>
+<a name="224"><span class="lineNum">     224 </span>            :                 volume_index[dim] = static_cast&lt;size_t&gt;(grid_index);</a>
+<a name="225"><span class="lineNum">     225 </span>            :                 gsl::at(cell_centered_fluxes_for_stencil, stencil_index) =</a>
+<a name="226"><span class="lineNum">     226 </span>            :                     cell_centered_flux[flux_storage_index][collapsed_index(</a>
+<a name="227"><span class="lineNum">     227 </span>            :                         volume_index, subcell_extents)];</a>
+<a name="228"><span class="lineNum">     228 </span>            :               }</a>
+<a name="229"><span class="lineNum">     229 </span>            :             }</a>
+<a name="230"><span class="lineNum">     230 </span>            : </a>
+<a name="231"><span class="lineNum">     231 </span>            :             size_t lower_neighbor_index = std::numeric_limits&lt;size_t&gt;::max();</a>
+<a name="232"><span class="lineNum">     232 </span>            :             size_t upper_neighbor_index = std::numeric_limits&lt;size_t&gt;::max();</a>
+<a name="233"><span class="lineNum">     233 </span>            :             if constexpr (static_cast&lt;int&gt;(DerivOrder) &lt; 0) {</a>
+<a name="234"><span class="lineNum">     234 </span>            :               Index&lt;Dim&gt; lower_n{};</a>
+<a name="235"><span class="lineNum">     235 </span>            :               Index&lt;Dim&gt; upper_n{};</a>
+<a name="236"><span class="lineNum">     236 </span>            :               if constexpr (dim == 0) {</a>
+<a name="237"><span class="lineNum">     237 </span>            :                 if constexpr (Dim == 1) {</a>
+<a name="238"><span class="lineNum">     238 </span>            :                   lower_n = Index&lt;Dim&gt;{i};</a>
+<a name="239"><span class="lineNum">     239 </span>            :                   upper_n = Index&lt;Dim&gt;{i + 1};</a>
+<a name="240"><span class="lineNum">     240 </span>            :                 } else if constexpr (Dim == 2) {</a>
+<a name="241"><span class="lineNum">     241 </span>            :                   lower_n = Index&lt;Dim&gt;{i, j};</a>
+<a name="242"><span class="lineNum">     242 </span>            :                   upper_n = Index&lt;Dim&gt;{i + 1, j};</a>
+<a name="243"><span class="lineNum">     243 </span>            :                 } else if constexpr (Dim == 3) {</a>
+<a name="244"><span class="lineNum">     244 </span>            :                   lower_n = Index&lt;Dim&gt;{i, j, k};</a>
+<a name="245"><span class="lineNum">     245 </span>            :                   upper_n = Index&lt;Dim&gt;{i + 1, j, k};</a>
+<a name="246"><span class="lineNum">     246 </span>            :                 }</a>
+<a name="247"><span class="lineNum">     247 </span>            :               } else if constexpr (dim == 1) {</a>
+<a name="248"><span class="lineNum">     248 </span>            :                 if constexpr (Dim == 2) {</a>
+<a name="249"><span class="lineNum">     249 </span>            :                   lower_n = Index&lt;Dim&gt;{j, i};</a>
+<a name="250"><span class="lineNum">     250 </span>            :                   upper_n = Index&lt;Dim&gt;{j + 1, i};</a>
+<a name="251"><span class="lineNum">     251 </span>            :                 } else if constexpr (Dim == 3) {</a>
+<a name="252"><span class="lineNum">     252 </span>            :                   lower_n = Index&lt;Dim&gt;{j, k, i};</a>
+<a name="253"><span class="lineNum">     253 </span>            :                   upper_n = Index&lt;Dim&gt;{j + 1, k, i};</a>
+<a name="254"><span class="lineNum">     254 </span>            :                 }</a>
+<a name="255"><span class="lineNum">     255 </span>            :               } else if constexpr (dim == 2) {</a>
+<a name="256"><span class="lineNum">     256 </span>            :                 lower_n = Index&lt;Dim&gt;{k, i, j};</a>
+<a name="257"><span class="lineNum">     257 </span>            :                 upper_n = Index&lt;Dim&gt;{k + 1, i, j};</a>
+<a name="258"><span class="lineNum">     258 </span>            :               }</a>
+<a name="259"><span class="lineNum">     259 </span>            :               lower_neighbor_index =</a>
+<a name="260"><span class="lineNum">     260 </span>            :                   collapsed_index(lower_n, reconstruction_extents);</a>
+<a name="261"><span class="lineNum">     261 </span>            :               upper_neighbor_index =</a>
+<a name="262"><span class="lineNum">     262 </span>            :                   collapsed_index(upper_n, reconstruction_extents);</a>
+<a name="263"><span class="lineNum">     263 </span>            :             }</a>
+<a name="264"><span class="lineNum">     264 </span>            : </a>
+<a name="265"><span class="lineNum">     265 </span>            :             if (static_cast&lt;int&gt;(DerivOrder) &gt;= 10 or</a>
+<a name="266"><span class="lineNum">     266 </span>            :                 (static_cast&lt;int&gt;(DerivOrder) &lt; 0 and</a>
+<a name="267"><span class="lineNum">     267 </span>            :                  min(recons_order[lower_neighbor_index],</a>
+<a name="268"><span class="lineNum">     268 </span>            :                      recons_order[upper_neighbor_index]) &gt;= 9)) {</a>
+<a name="269"><span class="lineNum">     269 </span>            :               correction -=</a>
+<a name="270"><span class="lineNum">     270 </span>            :                   5.6689342403628117913e-5 *</a>
+<a name="271"><span class="lineNum">     271 </span>            :                   (gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="272"><span class="lineNum">     272 </span>            :                            correction_width - 4) +</a>
+<a name="273"><span class="lineNum">     273 </span>            :                    gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="274"><span class="lineNum">     274 </span>            :                            correction_width + 3) -</a>
+<a name="275"><span class="lineNum">     275 </span>            :                    9.8 * (gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="276"><span class="lineNum">     276 </span>            :                                   correction_width - 3) +</a>
+<a name="277"><span class="lineNum">     277 </span>            :                           gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="278"><span class="lineNum">     278 </span>            :                                   correction_width + 2)) +</a>
+<a name="279"><span class="lineNum">     279 </span>            :                    49.0 * (gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="280"><span class="lineNum">     280 </span>            :                                    correction_width - 2) +</a>
+<a name="281"><span class="lineNum">     281 </span>            :                            gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="282"><span class="lineNum">     282 </span>            :                                    correction_width + 1)) -</a>
+<a name="283"><span class="lineNum">     283 </span>            :                    245.0 * (gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="284"><span class="lineNum">     284 </span>            :                                     correction_width - 1) +</a>
+<a name="285"><span class="lineNum">     285 </span>            :                             gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="286"><span class="lineNum">     286 </span>            :                                     correction_width)) -</a>
+<a name="287"><span class="lineNum">     287 </span>            :                    409.6 * second_order_var_correction[storage_index]</a>
+<a name="288"><span class="lineNum">     288 </span>            :                                                       [face_storage_index]);</a>
+<a name="289"><span class="lineNum">     289 </span>            :             }</a>
+<a name="290"><span class="lineNum">     290 </span>            :             if (static_cast&lt;int&gt;(DerivOrder) &gt;= 8 or</a>
+<a name="291"><span class="lineNum">     291 </span>            :                 (static_cast&lt;int&gt;(DerivOrder) &lt; 0 and</a>
+<a name="292"><span class="lineNum">     292 </span>            :                  min(recons_order[lower_neighbor_index],</a>
+<a name="293"><span class="lineNum">     293 </span>            :                      recons_order[upper_neighbor_index]) &gt;= 7)) {</a>
+<a name="294"><span class="lineNum">     294 </span>            :               correction +=</a>
+<a name="295"><span class="lineNum">     295 </span>            :                   4.7619047619047619047e-4 *</a>
+<a name="296"><span class="lineNum">     296 </span>            :                   (gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="297"><span class="lineNum">     297 </span>            :                            correction_width - 3) +</a>
+<a name="298"><span class="lineNum">     298 </span>            :                    gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="299"><span class="lineNum">     299 </span>            :                            correction_width + 2) -</a>
+<a name="300"><span class="lineNum">     300 </span>            :                    8.3333333333333333333 *</a>
+<a name="301"><span class="lineNum">     301 </span>            :                        (gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="302"><span class="lineNum">     302 </span>            :                                 correction_width - 2) +</a>
+<a name="303"><span class="lineNum">     303 </span>            :                         gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="304"><span class="lineNum">     304 </span>            :                                 correction_width + 1)) +</a>
+<a name="305"><span class="lineNum">     305 </span>            :                    50.0 * (gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="306"><span class="lineNum">     306 </span>            :                                    correction_width - 1) +</a>
+<a name="307"><span class="lineNum">     307 </span>            :                            gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="308"><span class="lineNum">     308 </span>            :                                    correction_width)) +</a>
+<a name="309"><span class="lineNum">     309 </span>            :                    85.333333333333333333 *</a>
+<a name="310"><span class="lineNum">     310 </span>            :                        second_order_var_correction[storage_index]</a>
+<a name="311"><span class="lineNum">     311 </span>            :                                                   [face_storage_index]);</a>
+<a name="312"><span class="lineNum">     312 </span>            :             }</a>
+<a name="313"><span class="lineNum">     313 </span>            :             if (static_cast&lt;int&gt;(DerivOrder) &gt;= 6 or</a>
+<a name="314"><span class="lineNum">     314 </span>            :                 (static_cast&lt;int&gt;(DerivOrder) &lt; 0 and</a>
+<a name="315"><span class="lineNum">     315 </span>            :                  min(recons_order[lower_neighbor_index],</a>
+<a name="316"><span class="lineNum">     316 </span>            :                      recons_order[upper_neighbor_index]) &gt;=</a>
+<a name="317"><span class="lineNum">     317 </span>            :                      (DerivOrder ==</a>
+<a name="318"><span class="lineNum">     318 </span>            :                               DerivativeOrder::OneHigherThanReconsButFiveToFour</a>
+<a name="319"><span class="lineNum">     319 </span>            :                           ? 6</a>
+<a name="320"><span class="lineNum">     320 </span>            :                           : 5))) {</a>
+<a name="321"><span class="lineNum">     321 </span>            :               correction -=</a>
+<a name="322"><span class="lineNum">     322 </span>            :                   5.5555555555555555555e-3 *</a>
+<a name="323"><span class="lineNum">     323 </span>            :                   (gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="324"><span class="lineNum">     324 </span>            :                            correction_width - 2) +</a>
+<a name="325"><span class="lineNum">     325 </span>            :                    gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="326"><span class="lineNum">     326 </span>            :                            correction_width + 1) -</a>
+<a name="327"><span class="lineNum">     327 </span>            :                    9.0 * (gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="328"><span class="lineNum">     328 </span>            :                                   correction_width - 1) +</a>
+<a name="329"><span class="lineNum">     329 </span>            :                           gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="330"><span class="lineNum">     330 </span>            :                                   correction_width)) -</a>
+<a name="331"><span class="lineNum">     331 </span>            :                    16.0 * second_order_var_correction[storage_index]</a>
+<a name="332"><span class="lineNum">     332 </span>            :                                                      [face_storage_index]);</a>
+<a name="333"><span class="lineNum">     333 </span>            :             }</a>
+<a name="334"><span class="lineNum">     334 </span>            :             if (static_cast&lt;int&gt;(DerivOrder) &gt;= 4 or</a>
+<a name="335"><span class="lineNum">     335 </span>            :                 (static_cast&lt;int&gt;(DerivOrder) &lt; 0 and</a>
+<a name="336"><span class="lineNum">     336 </span>            :                  min(recons_order[lower_neighbor_index],</a>
+<a name="337"><span class="lineNum">     337 </span>            :                      recons_order[upper_neighbor_index]) &gt;= 3)) {</a>
+<a name="338"><span class="lineNum">     338 </span>            :               correction +=</a>
+<a name="339"><span class="lineNum">     339 </span>            :                   0.166666666666666666 *</a>
+<a name="340"><span class="lineNum">     340 </span>            :                   (gsl::at(cell_centered_fluxes_for_stencil,</a>
+<a name="341"><span class="lineNum">     341 </span>            :                            correction_width - 1) +</a>
+<a name="342"><span class="lineNum">     342 </span>            :                    gsl::at(cell_centered_fluxes_for_stencil, correction_width) +</a>
+<a name="343"><span class="lineNum">     343 </span>            :                    2.0 * second_order_var_correction[storage_index]</a>
+<a name="344"><span class="lineNum">     344 </span>            :                                                     [face_storage_index]);</a>
+<a name="345"><span class="lineNum">     345 </span>            :             }</a>
+<a name="346"><span class="lineNum">     346 </span>            : </a>
+<a name="347"><span class="lineNum">     347 </span>            :             // Add second-order correction last</a>
+<a name="348"><span class="lineNum">     348 </span>            :             correction +=</a>
+<a name="349"><span class="lineNum">     349 </span>            :                 second_order_var_correction[storage_index][face_storage_index];</a>
+<a name="350"><span class="lineNum">     350 </span>            :           }</a>
+<a name="351"><span class="lineNum">     351 </span>            :         }</a>
+<a name="352"><span class="lineNum">     352 </span>            :       }</a>
+<a name="353"><span class="lineNum">     353 </span>            :     }</a>
+<a name="354"><span class="lineNum">     354 </span>            :   };</a>
+<a name="355"><span class="lineNum">     355 </span>            : </a>
+<a name="356"><span class="lineNum">     356 </span>            :   EXPAND_PACK_LEFT_TO_RIGHT(</a>
+<a name="357"><span class="lineNum">     357 </span>            :       impl(EvolvedVarsTags{}, std::integral_constant&lt;size_t, 0&gt;{}));</a>
+<a name="358"><span class="lineNum">     358 </span>            :   if constexpr (Dim &gt; 1) {</a>
+<a name="359"><span class="lineNum">     359 </span>            :     EXPAND_PACK_LEFT_TO_RIGHT(</a>
+<a name="360"><span class="lineNum">     360 </span>            :         impl(EvolvedVarsTags{}, std::integral_constant&lt;size_t, 1&gt;{}));</a>
+<a name="361"><span class="lineNum">     361 </span>            :     if constexpr (Dim &gt; 2) {</a>
+<a name="362"><span class="lineNum">     362 </span>            :       EXPAND_PACK_LEFT_TO_RIGHT(</a>
+<a name="363"><span class="lineNum">     363 </span>            :           impl(EvolvedVarsTags{}, std::integral_constant&lt;size_t, 2&gt;{}));</a>
+<a name="364"><span class="lineNum">     364 </span>            :     }</a>
+<a name="365"><span class="lineNum">     365 </span>            :   }</a>
+<a name="366"><span class="lineNum">     366 </span>            : }</a>
+<a name="367"><span class="lineNum">     367 </span>            : </a>
+<a name="368"><span class="lineNum">     368 </span>            : template &lt;size_t Dim, typename... EvolvedVarsTags&gt;</a>
+<a name="369"><span class="lineNum">     369 </span><span class="lineCov">          1 : void cartesian_high_order_fluxes_using_nodes(</span></a>
+<a name="370"><span class="lineNum">     370 </span>            :     const gsl::not_null&lt;</a>
+<a name="371"><span class="lineNum">     371 </span>            :         std::array&lt;Variables&lt;tmpl::list&lt;EvolvedVarsTags...&gt;&gt;, Dim&gt;*&gt;</a>
+<a name="372"><span class="lineNum">     372 </span>            :         high_order_boundary_corrections_in_logical_direction,</a>
+<a name="373"><span class="lineNum">     373 </span>            : </a>
+<a name="374"><span class="lineNum">     374 </span>            :     const std::array&lt;Variables&lt;tmpl::list&lt;EvolvedVarsTags...&gt;&gt;, Dim&gt;&amp;</a>
+<a name="375"><span class="lineNum">     375 </span>            :         second_order_boundary_corrections_in_logical_direction,</a>
+<a name="376"><span class="lineNum">     376 </span>            :     const Variables&lt;tmpl::list&lt;</a>
+<a name="377"><span class="lineNum">     377 </span>            :         ::Tags::Flux&lt;EvolvedVarsTags, tmpl::size_t&lt;Dim&gt;, Frame::Inertial&gt;...&gt;&gt;&amp;</a>
+<a name="378"><span class="lineNum">     378 </span>            :         cell_centered_inertial_flux,</a>
+<a name="379"><span class="lineNum">     379 </span>            :     const DirectionMap&lt;</a>
+<a name="380"><span class="lineNum">     380 </span>            :         Dim, Variables&lt;tmpl::list&lt;::Tags::Flux&lt;</a>
+<a name="381"><span class="lineNum">     381 </span>            :                  EvolvedVarsTags, tmpl::size_t&lt;Dim&gt;, Frame::Inertial&gt;...&gt;&gt;&gt;&amp;</a>
+<a name="382"><span class="lineNum">     382 </span>            :         ghost_cell_inertial_flux,</a>
+<a name="383"><span class="lineNum">     383 </span>            :     const Mesh&lt;Dim&gt;&amp; subcell_mesh, const size_t number_of_ghost_cells,</a>
+<a name="384"><span class="lineNum">     384 </span>            :     const DerivativeOrder derivative_order,</a>
+<a name="385"><span class="lineNum">     385 </span>            :     [[maybe_unused]] const std::array&lt;gsl::span&lt;std::uint8_t&gt;, Dim&gt;&amp;</a>
+<a name="386"><span class="lineNum">     386 </span>            :         reconstruction_order = {}) {</a>
+<a name="387"><span class="lineNum">     387 </span>            :   switch (derivative_order) {</a>
+<a name="388"><span class="lineNum">     388 </span>            :     case DerivativeOrder::OneHigherThanRecons:</a>
+<a name="389"><span class="lineNum">     389 </span>            :       cartesian_high_order_fluxes_using_nodes&lt;</a>
+<a name="390"><span class="lineNum">     390 </span>            :           DerivativeOrder::OneHigherThanRecons&gt;(</a>
+<a name="391"><span class="lineNum">     391 </span>            :           high_order_boundary_corrections_in_logical_direction,</a>
+<a name="392"><span class="lineNum">     392 </span>            :           second_order_boundary_corrections_in_logical_direction,</a>
+<a name="393"><span class="lineNum">     393 </span>            :           cell_centered_inertial_flux, ghost_cell_inertial_flux, subcell_mesh,</a>
+<a name="394"><span class="lineNum">     394 </span>            :           number_of_ghost_cells, reconstruction_order);</a>
+<a name="395"><span class="lineNum">     395 </span>            :       break;</a>
+<a name="396"><span class="lineNum">     396 </span>            :     case DerivativeOrder::OneHigherThanReconsButFiveToFour:</a>
+<a name="397"><span class="lineNum">     397 </span>            :       cartesian_high_order_fluxes_using_nodes&lt;</a>
+<a name="398"><span class="lineNum">     398 </span>            :           DerivativeOrder::OneHigherThanReconsButFiveToFour&gt;(</a>
+<a name="399"><span class="lineNum">     399 </span>            :           high_order_boundary_corrections_in_logical_direction,</a>
+<a name="400"><span class="lineNum">     400 </span>            :           second_order_boundary_corrections_in_logical_direction,</a>
+<a name="401"><span class="lineNum">     401 </span>            :           cell_centered_inertial_flux, ghost_cell_inertial_flux, subcell_mesh,</a>
+<a name="402"><span class="lineNum">     402 </span>            :           number_of_ghost_cells, reconstruction_order);</a>
+<a name="403"><span class="lineNum">     403 </span>            :       break;</a>
+<a name="404"><span class="lineNum">     404 </span>            :     case DerivativeOrder::Two:</a>
+<a name="405"><span class="lineNum">     405 </span>            :       cartesian_high_order_fluxes_using_nodes&lt;DerivativeOrder::Two&gt;(</a>
+<a name="406"><span class="lineNum">     406 </span>            :           high_order_boundary_corrections_in_logical_direction,</a>
+<a name="407"><span class="lineNum">     407 </span>            :           second_order_boundary_corrections_in_logical_direction,</a>
+<a name="408"><span class="lineNum">     408 </span>            :           cell_centered_inertial_flux, ghost_cell_inertial_flux, subcell_mesh,</a>
+<a name="409"><span class="lineNum">     409 </span>            :           number_of_ghost_cells, reconstruction_order);</a>
+<a name="410"><span class="lineNum">     410 </span>            :       break;</a>
+<a name="411"><span class="lineNum">     411 </span>            :     case DerivativeOrder::Four:</a>
+<a name="412"><span class="lineNum">     412 </span>            :       cartesian_high_order_fluxes_using_nodes&lt;DerivativeOrder::Four&gt;(</a>
+<a name="413"><span class="lineNum">     413 </span>            :           high_order_boundary_corrections_in_logical_direction,</a>
+<a name="414"><span class="lineNum">     414 </span>            :           second_order_boundary_corrections_in_logical_direction,</a>
+<a name="415"><span class="lineNum">     415 </span>            :           cell_centered_inertial_flux, ghost_cell_inertial_flux, subcell_mesh,</a>
+<a name="416"><span class="lineNum">     416 </span>            :           number_of_ghost_cells, reconstruction_order);</a>
+<a name="417"><span class="lineNum">     417 </span>            :       break;</a>
+<a name="418"><span class="lineNum">     418 </span>            :     case DerivativeOrder::Six:</a>
+<a name="419"><span class="lineNum">     419 </span>            :       cartesian_high_order_fluxes_using_nodes&lt;DerivativeOrder::Six&gt;(</a>
+<a name="420"><span class="lineNum">     420 </span>            :           high_order_boundary_corrections_in_logical_direction,</a>
+<a name="421"><span class="lineNum">     421 </span>            :           second_order_boundary_corrections_in_logical_direction,</a>
+<a name="422"><span class="lineNum">     422 </span>            :           cell_centered_inertial_flux, ghost_cell_inertial_flux, subcell_mesh,</a>
+<a name="423"><span class="lineNum">     423 </span>            :           number_of_ghost_cells, reconstruction_order);</a>
+<a name="424"><span class="lineNum">     424 </span>            :       break;</a>
+<a name="425"><span class="lineNum">     425 </span>            :     case DerivativeOrder::Eight:</a>
+<a name="426"><span class="lineNum">     426 </span>            :       cartesian_high_order_fluxes_using_nodes&lt;DerivativeOrder::Eight&gt;(</a>
+<a name="427"><span class="lineNum">     427 </span>            :           high_order_boundary_corrections_in_logical_direction,</a>
+<a name="428"><span class="lineNum">     428 </span>            :           second_order_boundary_corrections_in_logical_direction,</a>
+<a name="429"><span class="lineNum">     429 </span>            :           cell_centered_inertial_flux, ghost_cell_inertial_flux, subcell_mesh,</a>
+<a name="430"><span class="lineNum">     430 </span>            :           number_of_ghost_cells, reconstruction_order);</a>
+<a name="431"><span class="lineNum">     431 </span>            :       break;</a>
+<a name="432"><span class="lineNum">     432 </span>            :     case DerivativeOrder::Ten:</a>
+<a name="433"><span class="lineNum">     433 </span>            :       cartesian_high_order_fluxes_using_nodes&lt;DerivativeOrder::Ten&gt;(</a>
+<a name="434"><span class="lineNum">     434 </span>            :           high_order_boundary_corrections_in_logical_direction,</a>
+<a name="435"><span class="lineNum">     435 </span>            :           second_order_boundary_corrections_in_logical_direction,</a>
+<a name="436"><span class="lineNum">     436 </span>            :           cell_centered_inertial_flux, ghost_cell_inertial_flux, subcell_mesh,</a>
+<a name="437"><span class="lineNum">     437 </span>            :           number_of_ghost_cells, reconstruction_order);</a>
+<a name="438"><span class="lineNum">     438 </span>            :       break;</a>
+<a name="439"><span class="lineNum">     439 </span>            :     default:</a>
+<a name="440"><span class="lineNum">     440 </span>            :       ERROR(&quot;Unsupported correction order &quot; &lt;&lt; derivative_order);</a>
+<a name="441"><span class="lineNum">     441 </span>            :   };</a>
+<a name="442"><span class="lineNum">     442 </span>            : }</a>
+<a name="443"><span class="lineNum">     443 </span>            : /// @}</a>
+<a name="444"><span class="lineNum">     444 </span>            : </a>
+<a name="445"><span class="lineNum">     445 </span>            : /*!</a>
+<a name="446"><span class="lineNum">     446 </span>            :  * \brief Fill the `flux_neighbor_data` with pointers into the</a>
+<a name="447"><span class="lineNum">     447 </span>            :  * `all_ghost_data`.</a>
+<a name="448"><span class="lineNum">     448 </span>            :  *</a>
+<a name="449"><span class="lineNum">     449 </span>            :  * The `all_ghost_data` is stored in the tag</a>
+<a name="450"><span class="lineNum">     450 </span>            :  * `evolution::dg::subcell::Tags::GhostDataForReconstruction`, and the</a>
+<a name="451"><span class="lineNum">     451 </span>            :  * `ghost_zone_size` should come from the FD reconstructor.</a>
+<a name="452"><span class="lineNum">     452 </span>            :  */</a>
+<a name="453"><span class="lineNum">     453 </span>            : template &lt;size_t Dim, typename FluxesTags&gt;</a>
+<a name="454"><span class="lineNum">     454 </span><span class="lineCov">          1 : void set_cartesian_neighbor_cell_centered_fluxes(</span></a>
+<a name="455"><span class="lineNum">     455 </span>            :     const gsl::not_null&lt;DirectionMap&lt;Dim, Variables&lt;FluxesTags&gt;&gt;*&gt;</a>
+<a name="456"><span class="lineNum">     456 </span>            :         flux_neighbor_data,</a>
+<a name="457"><span class="lineNum">     457 </span>            :     const FixedHashMap&lt;maximum_number_of_neighbors(Dim),</a>
+<a name="458"><span class="lineNum">     458 </span>            :                        std::pair&lt;Direction&lt;Dim&gt;, ElementId&lt;Dim&gt;&gt;,</a>
+<a name="459"><span class="lineNum">     459 </span>            :                        evolution::dg::subcell::GhostData,</a>
+<a name="460"><span class="lineNum">     460 </span>            :                        boost::hash&lt;std::pair&lt;Direction&lt;Dim&gt;, ElementId&lt;Dim&gt;&gt;&gt;&gt;&amp;</a>
+<a name="461"><span class="lineNum">     461 </span>            :         all_ghost_data,</a>
+<a name="462"><span class="lineNum">     462 </span>            :     const Mesh&lt;Dim&gt;&amp; subcell_mesh, const size_t ghost_zone_size,</a>
+<a name="463"><span class="lineNum">     463 </span>            :     const size_t number_of_rdmp_values_in_ghost_data) {</a>
+<a name="464"><span class="lineNum">     464 </span>            :   for (const auto&amp; [direction_id, ghost_data] : all_ghost_data) {</a>
+<a name="465"><span class="lineNum">     465 </span>            :     const size_t neighbor_flux_size =</a>
+<a name="466"><span class="lineNum">     466 </span>            :         subcell_mesh.number_of_grid_points() /</a>
+<a name="467"><span class="lineNum">     467 </span>            :         subcell_mesh.extents(direction_id.first.dimension()) * ghost_zone_size *</a>
+<a name="468"><span class="lineNum">     468 </span>            :         Variables&lt;FluxesTags&gt;::number_of_independent_components;</a>
+<a name="469"><span class="lineNum">     469 </span>            :     const DataVector&amp; neighbor_data =</a>
+<a name="470"><span class="lineNum">     470 </span>            :         ghost_data.neighbor_ghost_data_for_reconstruction();</a>
+<a name="471"><span class="lineNum">     471 </span>            :     (*flux_neighbor_data)[direction_id.first].set_data_ref(</a>
+<a name="472"><span class="lineNum">     472 </span>            :         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)</a>
+<a name="473"><span class="lineNum">     473 </span>            :         const_cast&lt;double*&gt;(std::next(</a>
+<a name="474"><span class="lineNum">     474 </span>            :             neighbor_data.data(),</a>
+<a name="475"><span class="lineNum">     475 </span>            :             static_cast&lt;std::ptrdiff_t&gt;(neighbor_data.size() -</a>
+<a name="476"><span class="lineNum">     476 </span>            :                                         number_of_rdmp_values_in_ghost_data -</a>
+<a name="477"><span class="lineNum">     477 </span>            :                                         neighbor_flux_size))),</a>
+<a name="478"><span class="lineNum">     478 </span>            :         neighbor_flux_size);</a>
+<a name="479"><span class="lineNum">     479 </span>            :   }</a>
+<a name="480"><span class="lineNum">     480 </span>            : }</a>
+<a name="481"><span class="lineNum">     481 </span>            : </a>
+<a name="482"><span class="lineNum">     482 </span>            : /*!</a>
+<a name="483"><span class="lineNum">     483 </span>            :  * \brief Computes the high-order Cartesian flux corrections if necessary.</a>
+<a name="484"><span class="lineNum">     484 </span>            :  *</a>
+<a name="485"><span class="lineNum">     485 </span>            :  * The `cell_centered_fluxes` is stored in the tag</a>
+<a name="486"><span class="lineNum">     486 </span>            :  * `evolution::dg::subcell::Tags::CellCenteredFlux`, `fd_derivative_order` is</a>
+<a name="487"><span class="lineNum">     487 </span>            :  * from `evolution::dg::subcell::Tags::SubcellOptions`</a>
+<a name="488"><span class="lineNum">     488 </span>            :  * (`.finite_difference_derivative_order()`), the `all_ghost_data`</a>
+<a name="489"><span class="lineNum">     489 </span>            :  * is stored in the tag</a>
+<a name="490"><span class="lineNum">     490 </span>            :  * `evolution::dg::subcell::Tags::GhostDataForReconstruction`, the</a>
+<a name="491"><span class="lineNum">     491 </span>            :  * `ghost_zone_size` should come from the FD reconstructor.</a>
+<a name="492"><span class="lineNum">     492 </span>            :  *</a>
+<a name="493"><span class="lineNum">     493 </span>            :  * By default we assume no RDMP data is in the `ghost_data` buffer. In the</a>
+<a name="494"><span class="lineNum">     494 </span>            :  * future we will want to update how we store the data in order to eliminate</a>
+<a name="495"><span class="lineNum">     495 </span>            :  * more memory allocations and copies, in which case that value will be</a>
+<a name="496"><span class="lineNum">     496 </span>            :  * non-zero.</a>
+<a name="497"><span class="lineNum">     497 </span>            :  *</a>
+<a name="498"><span class="lineNum">     498 </span>            :  * \note `high_order_corrections` must either not have a value or have all</a>
+<a name="499"><span class="lineNum">     499 </span>            :  * elements be of the same size as</a>
+<a name="500"><span class="lineNum">     500 </span>            :  * `second_order_boundary_corrections[0].number_of_grid_points()`, where we've</a>
+<a name="501"><span class="lineNum">     501 </span>            :  * assumed `second_order_boundary_corrections` is the same in all directions.</a>
+<a name="502"><span class="lineNum">     502 </span>            :  */</a>
+<a name="503"><span class="lineNum">     503 </span>            : template &lt;size_t Dim, typename... EvolvedVarsTags,</a>
+<a name="504"><span class="lineNum">     504 </span>            :           typename FluxesTags = tmpl::list&lt;::Tags::Flux&lt;</a>
+<a name="505"><span class="lineNum">     505 </span>            :               EvolvedVarsTags, tmpl::size_t&lt;Dim&gt;, Frame::Inertial&gt;...&gt;&gt;</a>
+<a name="506"><span class="lineNum">     506 </span><span class="lineCov">          1 : void cartesian_high_order_flux_corrections(</span></a>
+<a name="507"><span class="lineNum">     507 </span>            :     const gsl::not_null&lt;std::optional&lt;</a>
+<a name="508"><span class="lineNum">     508 </span>            :         std::array&lt;Variables&lt;tmpl::list&lt;EvolvedVarsTags...&gt;&gt;, Dim&gt;&gt;*&gt;</a>
+<a name="509"><span class="lineNum">     509 </span>            :         high_order_corrections,</a>
+<a name="510"><span class="lineNum">     510 </span>            : </a>
+<a name="511"><span class="lineNum">     511 </span>            :     const std::optional&lt;Variables&lt;FluxesTags&gt;&gt;&amp; cell_centered_fluxes,</a>
+<a name="512"><span class="lineNum">     512 </span>            :     const std::array&lt;Variables&lt;tmpl::list&lt;EvolvedVarsTags...&gt;&gt;, Dim&gt;&amp;</a>
+<a name="513"><span class="lineNum">     513 </span>            :         second_order_boundary_corrections,</a>
+<a name="514"><span class="lineNum">     514 </span>            :     const fd::DerivativeOrder&amp; fd_derivative_order,</a>
+<a name="515"><span class="lineNum">     515 </span>            :     const FixedHashMap&lt;maximum_number_of_neighbors(Dim),</a>
+<a name="516"><span class="lineNum">     516 </span>            :                        std::pair&lt;Direction&lt;Dim&gt;, ElementId&lt;Dim&gt;&gt;,</a>
+<a name="517"><span class="lineNum">     517 </span>            :                        evolution::dg::subcell::GhostData,</a>
+<a name="518"><span class="lineNum">     518 </span>            :                        boost::hash&lt;std::pair&lt;Direction&lt;Dim&gt;, ElementId&lt;Dim&gt;&gt;&gt;&gt;&amp;</a>
+<a name="519"><span class="lineNum">     519 </span>            :         all_ghost_data,</a>
+<a name="520"><span class="lineNum">     520 </span>            :     const Mesh&lt;Dim&gt;&amp; subcell_mesh, const size_t ghost_zone_size,</a>
+<a name="521"><span class="lineNum">     521 </span>            :     [[maybe_unused]] const std::array&lt;gsl::span&lt;std::uint8_t&gt;, Dim&gt;&amp;</a>
+<a name="522"><span class="lineNum">     522 </span>            :         reconstruction_order = {},</a>
+<a name="523"><span class="lineNum">     523 </span>            :     const size_t number_of_rdmp_values_in_ghost_data = 0) {</a>
+<a name="524"><span class="lineNum">     524 </span>            :   if (cell_centered_fluxes.has_value()) {</a>
+<a name="525"><span class="lineNum">     525 </span>            :     ASSERT(alg::all_of(</a>
+<a name="526"><span class="lineNum">     526 </span>            :                second_order_boundary_corrections,</a>
+<a name="527"><span class="lineNum">     527 </span>            :                [expected_size = second_order_boundary_corrections[0]</a>
+<a name="528"><span class="lineNum">     528 </span>            :                                     .number_of_grid_points()](const auto&amp; e) {</a>
+<a name="529"><span class="lineNum">     529 </span>            :                  return e.number_of_grid_points() == expected_size;</a>
+<a name="530"><span class="lineNum">     530 </span>            :                }),</a>
+<a name="531"><span class="lineNum">     531 </span>            :            &quot;All second-order boundary corrections must be of the same size, &quot;</a>
+<a name="532"><span class="lineNum">     532 </span>            :                &lt;&lt; second_order_boundary_corrections[0].number_of_grid_points());</a>
+<a name="533"><span class="lineNum">     533 </span>            :     if (fd_derivative_order != DerivativeOrder::Two) {</a>
+<a name="534"><span class="lineNum">     534 </span>            :       if (not high_order_corrections-&gt;has_value()) {</a>
+<a name="535"><span class="lineNum">     535 </span>            :         (*high_order_corrections) =</a>
+<a name="536"><span class="lineNum">     536 </span>            :             make_array&lt;Dim&gt;(Variables&lt;tmpl::list&lt;EvolvedVarsTags...&gt;&gt;{</a>
+<a name="537"><span class="lineNum">     537 </span>            :                 second_order_boundary_corrections[0].number_of_grid_points()});</a>
+<a name="538"><span class="lineNum">     538 </span>            :       }</a>
+<a name="539"><span class="lineNum">     539 </span>            :       ASSERT(</a>
+<a name="540"><span class="lineNum">     540 </span>            :           high_order_corrections-&gt;has_value() and</a>
+<a name="541"><span class="lineNum">     541 </span>            :               alg::all_of(high_order_corrections-&gt;value(),</a>
+<a name="542"><span class="lineNum">     542 </span>            :                           [expected_size =</a>
+<a name="543"><span class="lineNum">     543 </span>            :                                second_order_boundary_corrections[0]</a>
+<a name="544"><span class="lineNum">     544 </span>            :                                    .number_of_grid_points()](const auto&amp; e) {</a>
+<a name="545"><span class="lineNum">     545 </span>            :                             return e.number_of_grid_points() == expected_size;</a>
+<a name="546"><span class="lineNum">     546 </span>            :                           }),</a>
+<a name="547"><span class="lineNum">     547 </span>            :           &quot;The high_order_corrections must all have size &quot;</a>
+<a name="548"><span class="lineNum">     548 </span>            :               &lt;&lt; second_order_boundary_corrections[0].number_of_grid_points());</a>
+<a name="549"><span class="lineNum">     549 </span>            :       DirectionMap&lt;Dim, Variables&lt;FluxesTags&gt;&gt; flux_neighbor_data{};</a>
+<a name="550"><span class="lineNum">     550 </span>            :       set_cartesian_neighbor_cell_centered_fluxes(</a>
+<a name="551"><span class="lineNum">     551 </span>            :           make_not_null(&amp;flux_neighbor_data), all_ghost_data, subcell_mesh,</a>
+<a name="552"><span class="lineNum">     552 </span>            :           ghost_zone_size, number_of_rdmp_values_in_ghost_data);</a>
+<a name="553"><span class="lineNum">     553 </span>            : </a>
+<a name="554"><span class="lineNum">     554 </span>            :       cartesian_high_order_fluxes_using_nodes(</a>
+<a name="555"><span class="lineNum">     555 </span>            :           make_not_null(&amp;(high_order_corrections-&gt;value())),</a>
+<a name="556"><span class="lineNum">     556 </span>            :           second_order_boundary_corrections, cell_centered_fluxes.value(),</a>
+<a name="557"><span class="lineNum">     557 </span>            :           flux_neighbor_data, subcell_mesh, ghost_zone_size,</a>
+<a name="558"><span class="lineNum">     558 </span>            :           fd_derivative_order, reconstruction_order);</a>
+<a name="559"><span class="lineNum">     559 </span>            :     }</a>
+<a name="560"><span class="lineNum">     560 </span>            :   }</a>
+<a name="561"><span class="lineNum">     561 </span>            : }</a>
+<a name="562"><span class="lineNum">     562 </span>            : }  // namespace fd</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.14</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

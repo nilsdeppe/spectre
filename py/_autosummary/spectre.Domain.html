@@ -1,0 +1,974 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="spectre.Domain.CoordinateMaps" href="spectre.Domain.CoordinateMaps.html" /><link rel="prev" title="spectre.DataStructures.Tensor.tnsr" href="spectre.DataStructures.Tensor.tnsr.html" />
+
+    <!-- Generated with Sphinx 7.0.1 and Furo 2023.05.20 -->
+        <title>spectre.Domain - SpECTRE Python interface documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">SpECTRE Python interface  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  
+  <span class="sidebar-brand-text">SpECTRE Python interface  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul>
+<li class="toctree-l1"><a class="reference external" href="https://spectre-code.org/spectre_using_python.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://spectre-code.org">C++ documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python modules</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="spectre.html">spectre</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of spectre</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="spectre.DataStructures.html">spectre.DataStructures</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of spectre.DataStructures</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="spectre.DataStructures.Tensor.html">spectre.DataStructures.Tensor</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of spectre.DataStructures.Tensor</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="spectre.DataStructures.Tensor.EagerMath.html">spectre.DataStructures.Tensor.EagerMath</a></li>
+<li class="toctree-l4"><a class="reference internal" href="spectre.DataStructures.Tensor.Frame.html">spectre.DataStructures.Tensor.Frame</a></li>
+<li class="toctree-l4"><a class="reference internal" href="spectre.DataStructures.Tensor.tnsr.html">spectre.DataStructures.Tensor.tnsr</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 current has-children current-page"><a class="current reference internal" href="#">spectre.Domain</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of spectre.Domain</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Domain.CoordinateMaps.html">spectre.Domain.CoordinateMaps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Domain.Creators.html">spectre.Domain.Creators</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="spectre.IO.html">spectre.IO</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of spectre.IO</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="spectre.IO.H5.html">spectre.IO.H5</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of spectre.IO.H5</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="spectre.IO.H5.DeleteSubfiles.html">spectre.IO.H5.DeleteSubfiles</a></li>
+<li class="toctree-l4"><a class="reference internal" href="spectre.IO.H5.ExtractDatFromH5.html">spectre.IO.H5.ExtractDatFromH5</a></li>
+<li class="toctree-l4"><a class="reference internal" href="spectre.IO.H5.ExtractInputSourceYamlFromH5.html">spectre.IO.H5.ExtractInputSourceYamlFromH5</a></li>
+<li class="toctree-l4"><a class="reference internal" href="spectre.IO.H5.IterElements.html">spectre.IO.H5.IterElements</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="spectre.Informer.html">spectre.Informer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spectre.Interpolation.html">spectre.Interpolation</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="spectre.NumericalAlgorithms.html">spectre.NumericalAlgorithms</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of spectre.NumericalAlgorithms</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="spectre.NumericalAlgorithms.LinearOperators.html">spectre.NumericalAlgorithms.LinearOperators</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="spectre.PointwiseFunctions.html">spectre.PointwiseFunctions</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of spectre.PointwiseFunctions</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="spectre.PointwiseFunctions.AnalyticSolutions.html">spectre.PointwiseFunctions.AnalyticSolutions</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of spectre.PointwiseFunctions.AnalyticSolutions</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="spectre.PointwiseFunctions.AnalyticSolutions.RelativisticEuler.html">spectre.PointwiseFunctions.AnalyticSolutions.RelativisticEuler</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="spectre.PointwiseFunctions.GeneralRelativity.html">spectre.PointwiseFunctions.GeneralRelativity</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of spectre.PointwiseFunctions.GeneralRelativity</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="spectre.PointwiseFunctions.GeneralRelativity.GeneralizedHarmonic.html">spectre.PointwiseFunctions.GeneralRelativity.GeneralizedHarmonic</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="spectre.PointwiseFunctions.Hydro.html">spectre.PointwiseFunctions.Hydro</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of spectre.PointwiseFunctions.Hydro</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="spectre.PointwiseFunctions.Hydro.EquationsOfState.html">spectre.PointwiseFunctions.Hydro.EquationsOfState</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.PointwiseFunctions.Punctures.html">spectre.PointwiseFunctions.Punctures</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="spectre.Spectral.html">spectre.Spectral</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="spectre.Visualization.html">spectre.Visualization</a><input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><div class="visually-hidden">Toggle navigation of spectre.Visualization</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Visualization.GenerateXdmf.html">spectre.Visualization.GenerateXdmf</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Visualization.InterpolateToCoords.html">spectre.Visualization.InterpolateToCoords</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Visualization.InterpolateToMesh.html">spectre.Visualization.InterpolateToMesh</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Visualization.PlotDatFile.html">spectre.Visualization.PlotDatFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Visualization.PlotPowerMonitors.html">spectre.Visualization.PlotPowerMonitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Visualization.ReadH5.html">spectre.Visualization.ReadH5</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Visualization.ReadInputFile.html">spectre.Visualization.ReadInputFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Visualization.Render1D.html">spectre.Visualization.Render1D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.Visualization.TransformVolumeData.html">spectre.Visualization.TransformVolumeData</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="spectre.support.html">spectre.support</a><input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><div class="visually-hidden">Toggle navigation of spectre.support</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="spectre.support.DirectoryStructure.html">spectre.support.DirectoryStructure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.support.Machines.html">spectre.support.Machines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.support.Resubmit.html">spectre.support.Resubmit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.support.Schedule.html">spectre.support.Schedule</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="spectre.tools.html">spectre.tools</a><input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><div class="visually-hidden">Toggle navigation of spectre.tools</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="spectre.tools.CharmSimplifyTraces.html">spectre.tools.CharmSimplifyTraces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.tools.CleanOutput.html">spectre.tools.CleanOutput</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="spectre.tools.Status.html">spectre.tools.Status</a><input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><div class="visually-hidden">Toggle navigation of spectre.tools.Status</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="spectre.tools.Status.ExecutableStatus.html">spectre.tools.Status.ExecutableStatus</a><input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><div class="visually-hidden">Toggle navigation of spectre.tools.Status.ExecutableStatus</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="spectre.tools.Status.ExecutableStatus.EvolveGhBinaryBlackHole.html">spectre.tools.Status.ExecutableStatus.EvolveGhBinaryBlackHole</a></li>
+<li class="toctree-l5"><a class="reference internal" href="spectre.tools.Status.ExecutableStatus.EvolveGhSingleBlackHole.html">spectre.tools.Status.ExecutableStatus.EvolveGhSingleBlackHole</a></li>
+<li class="toctree-l5"><a class="reference internal" href="spectre.tools.Status.ExecutableStatus.ExecutableStatus.html">spectre.tools.Status.ExecutableStatus.ExecutableStatus</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="spectre.tools.Status.Status.html">spectre.tools.Status.Status</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="spectre.tools.ValidateInputFile.html">spectre.tools.ValidateInputFile</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="module-spectre.Domain">
+<span id="spectre-domain"></span><h1>spectre.Domain<a class="headerlink" href="#module-spectre.Domain" title="Permalink to this heading">#</a></h1>
+<span class="target" id="module-spectre.Domain._Pybindings"></span><dl class="py class">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block1D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">Block1D</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block1D" title="Permalink to this definition">#</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block1D.has_distorted_frame">
+<span class="sig-name descname"><span class="pre">has_distorted_frame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#spectre.Domain._Pybindings.Block1D" title="spectre.Domain._Pybindings.Block1D"><span class="pre">spectre.Domain._Pybindings.Block1D</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block1D.has_distorted_frame" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block1D.id">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">id</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block1D.id" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block1D.is_time_dependent">
+<span class="sig-name descname"><span class="pre">is_time_dependent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#spectre.Domain._Pybindings.Block1D" title="spectre.Domain._Pybindings.Block1D"><span class="pre">spectre.Domain._Pybindings.Block1D</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block1D.is_time_dependent" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block1D.moving_mesh_distorted_to_inertial_map">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">moving_mesh_distorted_to_inertial_map</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block1D.moving_mesh_distorted_to_inertial_map" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block1D.moving_mesh_grid_to_distorted_map">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">moving_mesh_grid_to_distorted_map</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block1D.moving_mesh_grid_to_distorted_map" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block1D.moving_mesh_grid_to_inertial_map">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">moving_mesh_grid_to_inertial_map</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block1D.moving_mesh_grid_to_inertial_map" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block1D.moving_mesh_logical_to_grid_map">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">moving_mesh_logical_to_grid_map</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block1D.moving_mesh_logical_to_grid_map" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block1D.name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block1D.name" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block1D.stationary_map">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stationary_map</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block1D.stationary_map" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">Block2D</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block2D" title="Permalink to this definition">#</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block2D.has_distorted_frame">
+<span class="sig-name descname"><span class="pre">has_distorted_frame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#spectre.Domain._Pybindings.Block2D" title="spectre.Domain._Pybindings.Block2D"><span class="pre">spectre.Domain._Pybindings.Block2D</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block2D.has_distorted_frame" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block2D.id">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">id</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block2D.id" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block2D.is_time_dependent">
+<span class="sig-name descname"><span class="pre">is_time_dependent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#spectre.Domain._Pybindings.Block2D" title="spectre.Domain._Pybindings.Block2D"><span class="pre">spectre.Domain._Pybindings.Block2D</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block2D.is_time_dependent" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block2D.moving_mesh_distorted_to_inertial_map">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">moving_mesh_distorted_to_inertial_map</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block2D.moving_mesh_distorted_to_inertial_map" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block2D.moving_mesh_grid_to_distorted_map">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">moving_mesh_grid_to_distorted_map</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block2D.moving_mesh_grid_to_distorted_map" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block2D.moving_mesh_grid_to_inertial_map">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">moving_mesh_grid_to_inertial_map</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block2D.moving_mesh_grid_to_inertial_map" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block2D.moving_mesh_logical_to_grid_map">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">moving_mesh_logical_to_grid_map</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block2D.moving_mesh_logical_to_grid_map" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block2D.name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block2D.name" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block2D.stationary_map">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stationary_map</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block2D.stationary_map" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block3D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">Block3D</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block3D" title="Permalink to this definition">#</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block3D.has_distorted_frame">
+<span class="sig-name descname"><span class="pre">has_distorted_frame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#spectre.Domain._Pybindings.Block3D" title="spectre.Domain._Pybindings.Block3D"><span class="pre">spectre.Domain._Pybindings.Block3D</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block3D.has_distorted_frame" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block3D.id">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">id</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block3D.id" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block3D.is_time_dependent">
+<span class="sig-name descname"><span class="pre">is_time_dependent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#spectre.Domain._Pybindings.Block3D" title="spectre.Domain._Pybindings.Block3D"><span class="pre">spectre.Domain._Pybindings.Block3D</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block3D.is_time_dependent" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block3D.moving_mesh_distorted_to_inertial_map">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">moving_mesh_distorted_to_inertial_map</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block3D.moving_mesh_distorted_to_inertial_map" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block3D.moving_mesh_grid_to_distorted_map">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">moving_mesh_grid_to_distorted_map</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block3D.moving_mesh_grid_to_distorted_map" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block3D.moving_mesh_grid_to_inertial_map">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">moving_mesh_grid_to_inertial_map</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block3D.moving_mesh_grid_to_inertial_map" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block3D.moving_mesh_logical_to_grid_map">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">moving_mesh_logical_to_grid_map</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block3D.moving_mesh_logical_to_grid_map" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block3D.name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block3D.name" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Block3D.stationary_map">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stationary_map</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Block3D.stationary_map" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.BlockId">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">BlockId</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.BlockId" title="Permalink to this definition">#</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.BlockId.get_index">
+<span class="sig-name descname"><span class="pre">get_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#spectre.Domain._Pybindings.BlockId" title="spectre.Domain._Pybindings.BlockId"><span class="pre">spectre.Domain._Pybindings.BlockId</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.BlockId.get_index" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.BlockIdAndLogicalCoord1D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">BlockIdAndLogicalCoord1D</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.BlockIdAndLogicalCoord1D" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.BlockIdAndLogicalCoord2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">BlockIdAndLogicalCoord2D</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.BlockIdAndLogicalCoord2D" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.BlockIdAndLogicalCoord3D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">BlockIdAndLogicalCoord3D</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.BlockIdAndLogicalCoord3D" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Domain1D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">Domain1D</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Domain1D" title="Permalink to this definition">#</a></dt>
+<dd><dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Domain1D.block_groups">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">block_groups</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Domain1D.block_groups" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Domain1D.blocks">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">blocks</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Domain1D.blocks" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Domain1D.dim">
+<span class="sig-name descname"><span class="pre">dim</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#spectre.Domain._Pybindings.Domain1D.dim" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Domain1D.is_time_dependent">
+<span class="sig-name descname"><span class="pre">is_time_dependent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#spectre.Domain._Pybindings.Domain1D" title="spectre.Domain._Pybindings.Domain1D"><span class="pre">spectre.Domain._Pybindings.Domain1D</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Domain1D.is_time_dependent" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Domain2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">Domain2D</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Domain2D" title="Permalink to this definition">#</a></dt>
+<dd><dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Domain2D.block_groups">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">block_groups</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Domain2D.block_groups" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Domain2D.blocks">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">blocks</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Domain2D.blocks" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Domain2D.dim">
+<span class="sig-name descname"><span class="pre">dim</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#spectre.Domain._Pybindings.Domain2D.dim" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Domain2D.is_time_dependent">
+<span class="sig-name descname"><span class="pre">is_time_dependent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#spectre.Domain._Pybindings.Domain2D" title="spectre.Domain._Pybindings.Domain2D"><span class="pre">spectre.Domain._Pybindings.Domain2D</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Domain2D.is_time_dependent" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Domain3D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">Domain3D</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Domain3D" title="Permalink to this definition">#</a></dt>
+<dd><dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Domain3D.block_groups">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">block_groups</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Domain3D.block_groups" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Domain3D.blocks">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">blocks</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Domain3D.blocks" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Domain3D.dim">
+<span class="sig-name descname"><span class="pre">dim</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#spectre.Domain._Pybindings.Domain3D.dim" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.Domain3D.is_time_dependent">
+<span class="sig-name descname"><span class="pre">is_time_dependent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#spectre.Domain._Pybindings.Domain3D" title="spectre.Domain._Pybindings.Domain3D"><span class="pre">spectre.Domain._Pybindings.Domain3D</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.Domain3D.is_time_dependent" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementId1D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">ElementId1D</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementId1D" title="Permalink to this definition">#</a></dt>
+<dd><dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementId1D.block_id">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">block_id</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementId1D.block_id" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementId1D.external_boundary_id">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">external_boundary_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#spectre.Domain._Pybindings.ElementId1D" title="spectre.Domain._Pybindings.ElementId1D"><span class="pre">spectre.Domain._Pybindings.ElementId1D</span></a></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementId1D.external_boundary_id" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementId1D.segment_ids">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">segment_ids</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementId1D.segment_ids" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementId2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">ElementId2D</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementId2D" title="Permalink to this definition">#</a></dt>
+<dd><dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementId2D.block_id">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">block_id</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementId2D.block_id" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementId2D.external_boundary_id">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">external_boundary_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#spectre.Domain._Pybindings.ElementId2D" title="spectre.Domain._Pybindings.ElementId2D"><span class="pre">spectre.Domain._Pybindings.ElementId2D</span></a></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementId2D.external_boundary_id" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementId2D.segment_ids">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">segment_ids</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementId2D.segment_ids" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementId3D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">ElementId3D</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementId3D" title="Permalink to this definition">#</a></dt>
+<dd><dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementId3D.block_id">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">block_id</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementId3D.block_id" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementId3D.external_boundary_id">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">external_boundary_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#spectre.Domain._Pybindings.ElementId3D" title="spectre.Domain._Pybindings.ElementId3D"><span class="pre">spectre.Domain._Pybindings.ElementId3D</span></a></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementId3D.external_boundary_id" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementId3D.segment_ids">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">segment_ids</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementId3D.segment_ids" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementLogicalCoordHolder1D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">ElementLogicalCoordHolder1D</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementLogicalCoordHolder1D" title="Permalink to this definition">#</a></dt>
+<dd><dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementLogicalCoordHolder1D.element_logical_coords">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">element_logical_coords</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementLogicalCoordHolder1D.element_logical_coords" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementLogicalCoordHolder1D.offsets">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">offsets</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementLogicalCoordHolder1D.offsets" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementLogicalCoordHolder2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">ElementLogicalCoordHolder2D</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementLogicalCoordHolder2D" title="Permalink to this definition">#</a></dt>
+<dd><dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementLogicalCoordHolder2D.element_logical_coords">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">element_logical_coords</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementLogicalCoordHolder2D.element_logical_coords" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementLogicalCoordHolder2D.offsets">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">offsets</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementLogicalCoordHolder2D.offsets" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementLogicalCoordHolder3D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">ElementLogicalCoordHolder3D</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementLogicalCoordHolder3D" title="Permalink to this definition">#</a></dt>
+<dd><dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementLogicalCoordHolder3D.element_logical_coords">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">element_logical_coords</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementLogicalCoordHolder3D.element_logical_coords" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementLogicalCoordHolder3D.offsets">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">offsets</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementLogicalCoordHolder3D.offsets" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.ElementMap">
+<span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">ElementMap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectre.Domain._Pybindings.ElementMap" title="Permalink to this definition">#</a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>ElementMap(element_id: spectre.Domain._Pybindings.ElementId1D, domain: spectre.Domain._Pybindings.Domain1D) -&gt; spectre.Domain.CoordinateMaps._Pybindings.CoordinateMapElementLogicalToInertial1D</p></li>
+<li><p>ElementMap(element_id: spectre.Domain._Pybindings.ElementId2D, domain: spectre.Domain._Pybindings.Domain2D) -&gt; spectre.Domain.CoordinateMaps._Pybindings.CoordinateMapElementLogicalToInertial2D</p></li>
+<li><p>ElementMap(element_id: spectre.Domain._Pybindings.ElementId3D, domain: spectre.Domain._Pybindings.Domain3D) -&gt; spectre.Domain.CoordinateMaps._Pybindings.CoordinateMapElementLogicalToInertial3D</p></li>
+</ol>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.FunctionOfTime">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">FunctionOfTime</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.FunctionOfTime" title="Permalink to this definition">#</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.FunctionOfTime.func">
+<span class="sig-name descname"><span class="pre">func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#spectre.Domain._Pybindings.FunctionOfTime" title="spectre.Domain._Pybindings.FunctionOfTime"><span class="pre">spectre.Domain._Pybindings.FunctionOfTime</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="spectre.DataStructures.html#spectre.DataStructures._Pybindings.DataVector" title="spectre.DataStructures._Pybindings.DataVector"><span class="pre">spectre.DataStructures._Pybindings.DataVector</span></a><span class="p"><span class="pre">[</span></span><span class="m"><span class="pre">1</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.FunctionOfTime.func" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.FunctionOfTime.func_and_2_derivs">
+<span class="sig-name descname"><span class="pre">func_and_2_derivs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#spectre.Domain._Pybindings.FunctionOfTime" title="spectre.Domain._Pybindings.FunctionOfTime"><span class="pre">spectre.Domain._Pybindings.FunctionOfTime</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="spectre.DataStructures.html#spectre.DataStructures._Pybindings.DataVector" title="spectre.DataStructures._Pybindings.DataVector"><span class="pre">spectre.DataStructures._Pybindings.DataVector</span></a><span class="p"><span class="pre">[</span></span><span class="m"><span class="pre">3</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.FunctionOfTime.func_and_2_derivs" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.FunctionOfTime.func_and_deriv">
+<span class="sig-name descname"><span class="pre">func_and_deriv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#spectre.Domain._Pybindings.FunctionOfTime" title="spectre.Domain._Pybindings.FunctionOfTime"><span class="pre">spectre.Domain._Pybindings.FunctionOfTime</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="spectre.DataStructures.html#spectre.DataStructures._Pybindings.DataVector" title="spectre.DataStructures._Pybindings.DataVector"><span class="pre">spectre.DataStructures._Pybindings.DataVector</span></a><span class="p"><span class="pre">[</span></span><span class="m"><span class="pre">2</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.FunctionOfTime.func_and_deriv" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.FunctionOfTime.time_bounds">
+<span class="sig-name descname"><span class="pre">time_bounds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#spectre.Domain._Pybindings.FunctionOfTime" title="spectre.Domain._Pybindings.FunctionOfTime"><span class="pre">spectre.Domain._Pybindings.FunctionOfTime</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">[</span></span><span class="m"><span class="pre">2</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.FunctionOfTime.time_bounds" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.SegmentId">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">SegmentId</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.SegmentId" title="Permalink to this definition">#</a></dt>
+<dd><dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.SegmentId.index">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">index</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.SegmentId.index" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.SegmentId.refinement_level">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">refinement_level</span></span><a class="headerlink" href="#spectre.Domain._Pybindings.SegmentId.refinement_level" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.block_logical_coordinates">
+<span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">block_logical_coordinates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectre.Domain._Pybindings.block_logical_coordinates" title="Permalink to this definition">#</a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>block_logical_coordinates(domain: Domain&lt;1ul&gt;, inertial_coords: spectre.DataStructures.Tensor._Pybindings.TensorIDV1Inertial, time: Optional[float], functions_of_time: Optional[Dict[str, domain::FunctionsOfTime::FunctionOfTime]]) -&gt; List[Optional[spectre.Domain._Pybindings.BlockIdAndLogicalCoord1D]]</p></li>
+<li><p>block_logical_coordinates(domain: Domain&lt;2ul&gt;, inertial_coords: spectre.DataStructures.Tensor._Pybindings.TensorIDV2Inertial, time: Optional[float], functions_of_time: Optional[Dict[str, domain::FunctionsOfTime::FunctionOfTime]]) -&gt; List[Optional[spectre.Domain._Pybindings.BlockIdAndLogicalCoord2D]]</p></li>
+<li><p>block_logical_coordinates(domain: Domain&lt;3ul&gt;, inertial_coords: spectre.DataStructures.Tensor._Pybindings.TensorIDV3Inertial, time: Optional[float], functions_of_time: Optional[Dict[str, domain::FunctionsOfTime::FunctionOfTime]]) -&gt; List[Optional[spectre.Domain._Pybindings.BlockIdAndLogicalCoord3D]]</p></li>
+</ol>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.deserialize_domain_1d">
+<span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">deserialize_domain_1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">serialized_domain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#spectre.Domain._Pybindings.Domain1D" title="spectre.Domain._Pybindings.Domain1D"><span class="pre">spectre.Domain._Pybindings.Domain1D</span></a></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.deserialize_domain_1d" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.deserialize_domain_2d">
+<span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">deserialize_domain_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">serialized_domain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#spectre.Domain._Pybindings.Domain2D" title="spectre.Domain._Pybindings.Domain2D"><span class="pre">spectre.Domain._Pybindings.Domain2D</span></a></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.deserialize_domain_2d" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.deserialize_domain_3d">
+<span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">deserialize_domain_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">serialized_domain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#spectre.Domain._Pybindings.Domain3D" title="spectre.Domain._Pybindings.Domain3D"><span class="pre">spectre.Domain._Pybindings.Domain3D</span></a></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.deserialize_domain_3d" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.deserialize_functions_of_time">
+<span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">deserialize_functions_of_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">serialized_functions_of_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#spectre.Domain._Pybindings.FunctionOfTime" title="spectre.Domain._Pybindings.FunctionOfTime"><span class="pre">spectre.Domain._Pybindings.FunctionOfTime</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#spectre.Domain._Pybindings.deserialize_functions_of_time" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.element_logical_coordinates">
+<span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">element_logical_coordinates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectre.Domain._Pybindings.element_logical_coordinates" title="Permalink to this definition">#</a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>element_logical_coordinates(element_ids: List[spectre.Domain._Pybindings.ElementId1D], block_coord_holders: List[Optional[spectre.Domain._Pybindings.BlockIdAndLogicalCoord1D]]) -&gt; Dict[spectre.Domain._Pybindings.ElementId1D, spectre.Domain._Pybindings.ElementLogicalCoordHolder1D]</p></li>
+<li><p>element_logical_coordinates(element_ids: List[spectre.Domain._Pybindings.ElementId2D], block_coord_holders: List[Optional[spectre.Domain._Pybindings.BlockIdAndLogicalCoord2D]]) -&gt; Dict[spectre.Domain._Pybindings.ElementId2D, spectre.Domain._Pybindings.ElementLogicalCoordHolder2D]</p></li>
+<li><p>element_logical_coordinates(element_ids: List[spectre.Domain._Pybindings.ElementId3D], block_coord_holders: List[Optional[spectre.Domain._Pybindings.BlockIdAndLogicalCoord3D]]) -&gt; Dict[spectre.Domain._Pybindings.ElementId3D, spectre.Domain._Pybindings.ElementLogicalCoordHolder3D]</p></li>
+</ol>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.jacobian_diagnostic">
+<span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">jacobian_diagnostic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectre.Domain._Pybindings.jacobian_diagnostic" title="Permalink to this definition">#</a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>jacobian_diagnostic(jacobian: spectre.DataStructures.Tensor._Pybindings.JacobianDV1ElementLogicalToGrid, grid_coords: spectre.DataStructures.Tensor._Pybindings.TensorIDV1Grid, mesh: Mesh&lt;1ul&gt;) -&gt; spectre.DataStructures.Tensor._Pybindings.TensoriDV1ElementLogical</p></li>
+<li><p>jacobian_diagnostic(jacobian: spectre.DataStructures.Tensor._Pybindings.JacobianDV2ElementLogicalToGrid, grid_coords: spectre.DataStructures.Tensor._Pybindings.TensorIDV2Grid, mesh: Mesh&lt;2ul&gt;) -&gt; spectre.DataStructures.Tensor._Pybindings.TensoriDV2ElementLogical</p></li>
+<li><p>jacobian_diagnostic(jacobian: spectre.DataStructures.Tensor._Pybindings.JacobianDV3ElementLogicalToGrid, grid_coords: spectre.DataStructures.Tensor._Pybindings.TensorIDV3Grid, mesh: Mesh&lt;3ul&gt;) -&gt; spectre.DataStructures.Tensor._Pybindings.TensoriDV3ElementLogical</p></li>
+<li><p>jacobian_diagnostic(jacobian: spectre.DataStructures.Tensor._Pybindings.JacobianDV1ElementLogicalToInertial, inertial_coords: spectre.DataStructures.Tensor._Pybindings.TensorIDV1Inertial, mesh: Mesh&lt;1ul&gt;) -&gt; spectre.DataStructures.Tensor._Pybindings.TensoriDV1ElementLogical</p></li>
+<li><p>jacobian_diagnostic(jacobian: spectre.DataStructures.Tensor._Pybindings.JacobianDV2ElementLogicalToInertial, inertial_coords: spectre.DataStructures.Tensor._Pybindings.TensorIDV2Inertial, mesh: Mesh&lt;2ul&gt;) -&gt; spectre.DataStructures.Tensor._Pybindings.TensoriDV2ElementLogical</p></li>
+<li><p>jacobian_diagnostic(jacobian: spectre.DataStructures.Tensor._Pybindings.JacobianDV3ElementLogicalToInertial, inertial_coords: spectre.DataStructures.Tensor._Pybindings.TensorIDV3Inertial, mesh: Mesh&lt;3ul&gt;) -&gt; spectre.DataStructures.Tensor._Pybindings.TensoriDV3ElementLogical</p></li>
+</ol>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.radially_compressed_coordinates">
+<span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">radially_compressed_coordinates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectre.Domain._Pybindings.radially_compressed_coordinates" title="Permalink to this definition">#</a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>radially_compressed_coordinates(inertial_coords: spectre.DataStructures.Tensor._Pybindings.TensorIDV1Inertial, inner_radius: float, outer_radius: float, compression: spectre.Domain.CoordinateMaps._Pybindings.Distribution) -&gt; spectre.DataStructures.Tensor._Pybindings.TensorIDV1Inertial</p></li>
+<li><p>radially_compressed_coordinates(inertial_coords: spectre.DataStructures.Tensor._Pybindings.TensorIDV2Inertial, inner_radius: float, outer_radius: float, compression: spectre.Domain.CoordinateMaps._Pybindings.Distribution) -&gt; spectre.DataStructures.Tensor._Pybindings.TensorIDV2Inertial</p></li>
+<li><p>radially_compressed_coordinates(inertial_coords: spectre.DataStructures.Tensor._Pybindings.TensorIDV3Inertial, inner_radius: float, outer_radius: float, compression: spectre.Domain.CoordinateMaps._Pybindings.Distribution) -&gt; spectre.DataStructures.Tensor._Pybindings.TensorIDV3Inertial</p></li>
+</ol>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="spectre.Domain._Pybindings.serialize_domain">
+<span class="sig-prename descclassname"><span class="pre">spectre.Domain._Pybindings.</span></span><span class="sig-name descname"><span class="pre">serialize_domain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#spectre.Domain._Pybindings.serialize_domain" title="Permalink to this definition">#</a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>serialize_domain(arg0: spectre.Domain._Pybindings.Domain1D) -&gt; List[str]</p></li>
+<li><p>serialize_domain(arg0: spectre.Domain._Pybindings.Domain2D) -&gt; List[str]</p></li>
+<li><p>serialize_domain(arg0: spectre.Domain._Pybindings.Domain3D) -&gt; List[str]</p></li>
+</ol>
+</dd></dl>
+
+<p class="rubric">Modules</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="spectre.Domain.CoordinateMaps.html#module-spectre.Domain.CoordinateMaps" title="spectre.Domain.CoordinateMaps"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spectre.Domain.CoordinateMaps</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="spectre.Domain.Creators.html#module-spectre.Domain.Creators" title="spectre.Domain.Creators"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spectre.Domain.Creators</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="spectre.Domain.CoordinateMaps.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">spectre.Domain.CoordinateMaps</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="spectre.DataStructures.Tensor.tnsr.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">spectre.DataStructures.Tensor.tnsr</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2017-2023, SXS Collaboration
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">spectre.Domain</a><ul>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block1D"><code class="docutils literal notranslate"><span class="pre">Block1D</span></code></a><ul>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block1D.has_distorted_frame"><code class="docutils literal notranslate"><span class="pre">Block1D.has_distorted_frame()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block1D.id"><code class="docutils literal notranslate"><span class="pre">Block1D.id</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block1D.is_time_dependent"><code class="docutils literal notranslate"><span class="pre">Block1D.is_time_dependent()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block1D.moving_mesh_distorted_to_inertial_map"><code class="docutils literal notranslate"><span class="pre">Block1D.moving_mesh_distorted_to_inertial_map</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block1D.moving_mesh_grid_to_distorted_map"><code class="docutils literal notranslate"><span class="pre">Block1D.moving_mesh_grid_to_distorted_map</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block1D.moving_mesh_grid_to_inertial_map"><code class="docutils literal notranslate"><span class="pre">Block1D.moving_mesh_grid_to_inertial_map</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block1D.moving_mesh_logical_to_grid_map"><code class="docutils literal notranslate"><span class="pre">Block1D.moving_mesh_logical_to_grid_map</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block1D.name"><code class="docutils literal notranslate"><span class="pre">Block1D.name</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block1D.stationary_map"><code class="docutils literal notranslate"><span class="pre">Block1D.stationary_map</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block2D"><code class="docutils literal notranslate"><span class="pre">Block2D</span></code></a><ul>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block2D.has_distorted_frame"><code class="docutils literal notranslate"><span class="pre">Block2D.has_distorted_frame()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block2D.id"><code class="docutils literal notranslate"><span class="pre">Block2D.id</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block2D.is_time_dependent"><code class="docutils literal notranslate"><span class="pre">Block2D.is_time_dependent()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block2D.moving_mesh_distorted_to_inertial_map"><code class="docutils literal notranslate"><span class="pre">Block2D.moving_mesh_distorted_to_inertial_map</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block2D.moving_mesh_grid_to_distorted_map"><code class="docutils literal notranslate"><span class="pre">Block2D.moving_mesh_grid_to_distorted_map</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block2D.moving_mesh_grid_to_inertial_map"><code class="docutils literal notranslate"><span class="pre">Block2D.moving_mesh_grid_to_inertial_map</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block2D.moving_mesh_logical_to_grid_map"><code class="docutils literal notranslate"><span class="pre">Block2D.moving_mesh_logical_to_grid_map</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block2D.name"><code class="docutils literal notranslate"><span class="pre">Block2D.name</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block2D.stationary_map"><code class="docutils literal notranslate"><span class="pre">Block2D.stationary_map</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block3D"><code class="docutils literal notranslate"><span class="pre">Block3D</span></code></a><ul>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block3D.has_distorted_frame"><code class="docutils literal notranslate"><span class="pre">Block3D.has_distorted_frame()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block3D.id"><code class="docutils literal notranslate"><span class="pre">Block3D.id</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block3D.is_time_dependent"><code class="docutils literal notranslate"><span class="pre">Block3D.is_time_dependent()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block3D.moving_mesh_distorted_to_inertial_map"><code class="docutils literal notranslate"><span class="pre">Block3D.moving_mesh_distorted_to_inertial_map</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block3D.moving_mesh_grid_to_distorted_map"><code class="docutils literal notranslate"><span class="pre">Block3D.moving_mesh_grid_to_distorted_map</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block3D.moving_mesh_grid_to_inertial_map"><code class="docutils literal notranslate"><span class="pre">Block3D.moving_mesh_grid_to_inertial_map</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block3D.moving_mesh_logical_to_grid_map"><code class="docutils literal notranslate"><span class="pre">Block3D.moving_mesh_logical_to_grid_map</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block3D.name"><code class="docutils literal notranslate"><span class="pre">Block3D.name</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Block3D.stationary_map"><code class="docutils literal notranslate"><span class="pre">Block3D.stationary_map</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.BlockId"><code class="docutils literal notranslate"><span class="pre">BlockId</span></code></a><ul>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.BlockId.get_index"><code class="docutils literal notranslate"><span class="pre">BlockId.get_index()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.BlockIdAndLogicalCoord1D"><code class="docutils literal notranslate"><span class="pre">BlockIdAndLogicalCoord1D</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.BlockIdAndLogicalCoord2D"><code class="docutils literal notranslate"><span class="pre">BlockIdAndLogicalCoord2D</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.BlockIdAndLogicalCoord3D"><code class="docutils literal notranslate"><span class="pre">BlockIdAndLogicalCoord3D</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Domain1D"><code class="docutils literal notranslate"><span class="pre">Domain1D</span></code></a><ul>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Domain1D.block_groups"><code class="docutils literal notranslate"><span class="pre">Domain1D.block_groups</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Domain1D.blocks"><code class="docutils literal notranslate"><span class="pre">Domain1D.blocks</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Domain1D.dim"><code class="docutils literal notranslate"><span class="pre">Domain1D.dim</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Domain1D.is_time_dependent"><code class="docutils literal notranslate"><span class="pre">Domain1D.is_time_dependent()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Domain2D"><code class="docutils literal notranslate"><span class="pre">Domain2D</span></code></a><ul>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Domain2D.block_groups"><code class="docutils literal notranslate"><span class="pre">Domain2D.block_groups</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Domain2D.blocks"><code class="docutils literal notranslate"><span class="pre">Domain2D.blocks</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Domain2D.dim"><code class="docutils literal notranslate"><span class="pre">Domain2D.dim</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Domain2D.is_time_dependent"><code class="docutils literal notranslate"><span class="pre">Domain2D.is_time_dependent()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Domain3D"><code class="docutils literal notranslate"><span class="pre">Domain3D</span></code></a><ul>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Domain3D.block_groups"><code class="docutils literal notranslate"><span class="pre">Domain3D.block_groups</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Domain3D.blocks"><code class="docutils literal notranslate"><span class="pre">Domain3D.blocks</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Domain3D.dim"><code class="docutils literal notranslate"><span class="pre">Domain3D.dim</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.Domain3D.is_time_dependent"><code class="docutils literal notranslate"><span class="pre">Domain3D.is_time_dependent()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementId1D"><code class="docutils literal notranslate"><span class="pre">ElementId1D</span></code></a><ul>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementId1D.block_id"><code class="docutils literal notranslate"><span class="pre">ElementId1D.block_id</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementId1D.external_boundary_id"><code class="docutils literal notranslate"><span class="pre">ElementId1D.external_boundary_id()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementId1D.segment_ids"><code class="docutils literal notranslate"><span class="pre">ElementId1D.segment_ids</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementId2D"><code class="docutils literal notranslate"><span class="pre">ElementId2D</span></code></a><ul>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementId2D.block_id"><code class="docutils literal notranslate"><span class="pre">ElementId2D.block_id</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementId2D.external_boundary_id"><code class="docutils literal notranslate"><span class="pre">ElementId2D.external_boundary_id()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementId2D.segment_ids"><code class="docutils literal notranslate"><span class="pre">ElementId2D.segment_ids</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementId3D"><code class="docutils literal notranslate"><span class="pre">ElementId3D</span></code></a><ul>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementId3D.block_id"><code class="docutils literal notranslate"><span class="pre">ElementId3D.block_id</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementId3D.external_boundary_id"><code class="docutils literal notranslate"><span class="pre">ElementId3D.external_boundary_id()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementId3D.segment_ids"><code class="docutils literal notranslate"><span class="pre">ElementId3D.segment_ids</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementLogicalCoordHolder1D"><code class="docutils literal notranslate"><span class="pre">ElementLogicalCoordHolder1D</span></code></a><ul>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementLogicalCoordHolder1D.element_logical_coords"><code class="docutils literal notranslate"><span class="pre">ElementLogicalCoordHolder1D.element_logical_coords</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementLogicalCoordHolder1D.offsets"><code class="docutils literal notranslate"><span class="pre">ElementLogicalCoordHolder1D.offsets</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementLogicalCoordHolder2D"><code class="docutils literal notranslate"><span class="pre">ElementLogicalCoordHolder2D</span></code></a><ul>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementLogicalCoordHolder2D.element_logical_coords"><code class="docutils literal notranslate"><span class="pre">ElementLogicalCoordHolder2D.element_logical_coords</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementLogicalCoordHolder2D.offsets"><code class="docutils literal notranslate"><span class="pre">ElementLogicalCoordHolder2D.offsets</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementLogicalCoordHolder3D"><code class="docutils literal notranslate"><span class="pre">ElementLogicalCoordHolder3D</span></code></a><ul>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementLogicalCoordHolder3D.element_logical_coords"><code class="docutils literal notranslate"><span class="pre">ElementLogicalCoordHolder3D.element_logical_coords</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementLogicalCoordHolder3D.offsets"><code class="docutils literal notranslate"><span class="pre">ElementLogicalCoordHolder3D.offsets</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.ElementMap"><code class="docutils literal notranslate"><span class="pre">ElementMap()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.FunctionOfTime"><code class="docutils literal notranslate"><span class="pre">FunctionOfTime</span></code></a><ul>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.FunctionOfTime.func"><code class="docutils literal notranslate"><span class="pre">FunctionOfTime.func()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.FunctionOfTime.func_and_2_derivs"><code class="docutils literal notranslate"><span class="pre">FunctionOfTime.func_and_2_derivs()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.FunctionOfTime.func_and_deriv"><code class="docutils literal notranslate"><span class="pre">FunctionOfTime.func_and_deriv()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.FunctionOfTime.time_bounds"><code class="docutils literal notranslate"><span class="pre">FunctionOfTime.time_bounds()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.SegmentId"><code class="docutils literal notranslate"><span class="pre">SegmentId</span></code></a><ul>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.SegmentId.index"><code class="docutils literal notranslate"><span class="pre">SegmentId.index</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.SegmentId.refinement_level"><code class="docutils literal notranslate"><span class="pre">SegmentId.refinement_level</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.block_logical_coordinates"><code class="docutils literal notranslate"><span class="pre">block_logical_coordinates()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.deserialize_domain_1d"><code class="docutils literal notranslate"><span class="pre">deserialize_domain_1d()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.deserialize_domain_2d"><code class="docutils literal notranslate"><span class="pre">deserialize_domain_2d()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.deserialize_domain_3d"><code class="docutils literal notranslate"><span class="pre">deserialize_domain_3d()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.deserialize_functions_of_time"><code class="docutils literal notranslate"><span class="pre">deserialize_functions_of_time()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.element_logical_coordinates"><code class="docutils literal notranslate"><span class="pre">element_logical_coordinates()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.jacobian_diagnostic"><code class="docutils literal notranslate"><span class="pre">jacobian_diagnostic()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.radially_compressed_coordinates"><code class="docutils literal notranslate"><span class="pre">radially_compressed_coordinates()</span></code></a></li>
+<li><a class="reference internal" href="#spectre.Domain._Pybindings.serialize_domain"><code class="docutils literal notranslate"><span class="pre">serialize_domain()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/scripts/furo.js"></script>
+    </body>
+</html>

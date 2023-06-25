@@ -1,0 +1,38 @@
+spectre.Domain
+==============
+
+.. automodule:: spectre.Domain
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+.. automodule:: spectre.Domain._Pybindings
+
+.. currentmodule:: spectre.Domain
+
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   spectre.Domain.CoordinateMaps
+   spectre.Domain.Creators
+
+
