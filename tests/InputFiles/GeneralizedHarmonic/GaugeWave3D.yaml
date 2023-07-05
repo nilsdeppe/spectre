@@ -40,15 +40,15 @@ Evolution:
         SafetyFactor: 0.95
 
 PhaseChangeAndTriggers:
-  - Trigger:
-      Slabs:
-       EvenlySpaced:
-         # Current implementation checks wallclock at these global syncs
-         Interval: 100
-         Offset: 0
-    PhaseChanges:
-      - CheckpointAndExitAfterWallclock:
-          WallclockHours: None
+  # - Trigger:
+  #     Slabs:
+  #      EvenlySpaced:
+  #        # Current implementation checks wallclock at these global syncs
+  #        Interval: 100
+  #        Offset: 0
+  #   PhaseChanges:
+  #     - CheckpointAndExitAfterWallclock:
+  #         WallclockHours: None
 
 InitialData: &InitialData
   GaugeWave:
@@ -98,8 +98,9 @@ DomainCreator:
 EvolutionSystem:
   GeneralizedHarmonic:
     GaugeCondition:
-      AnalyticChristoffel:
-        AnalyticPrescription: *InitialData
+      Harmonic:
+      # AnalyticChristoffel:
+      #   AnalyticPrescription: *InitialData
     DampingFunctionGamma0:
       GaussianPlusConstant:
         Constant: 1.0
@@ -173,7 +174,7 @@ EventsAndTriggers:
   - Trigger:
       Slabs:
         Specified:
-          Values: [10]
+          Values: [15]
     Events:
       - Completion
 
