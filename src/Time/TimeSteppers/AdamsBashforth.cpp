@@ -25,6 +25,7 @@
 #include "Utilities/ErrorHandling/Assert.hpp"
 #include "Utilities/ErrorHandling/Error.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/System/Prefetch.hpp"
 
 namespace TimeSteppers {
 
@@ -153,6 +154,22 @@ void AdamsBashforth::update_u_common(const gsl::not_null<T*> u,
   const auto history_start =
       history.end() -
       static_cast<typename ConstUntypedHistory<T>::difference_type>(order);
+
+  constexpr uint32_t number_of_cachelines_in_block = 128;
+  if constexpr (std::is_same_v<T, DataVector>) {
+    // Prefetch the first iteration.
+    constexpr uint32_t number_of_doubles_in_block =
+        (DataVector::SIMDType::size < 8 ? 8 : DataVector::SIMDType::size) *
+        number_of_cachelines_in_block;
+    for (uint32_t j = 0; j <= number_of_doubles_in_block; j += 8) {
+      sys::prefetch<sys::PrefetchTo::L1Cache>(&(*u)[j]);
+      for (auto history_entry = history_start; history_entry != history.end();
+           ++history_entry) {
+        sys::prefetch<sys::PrefetchTo::L1Cache>(&history_entry->derivative[j]);
+      }
+    }
+  }
+
   const auto coefficients = adams_coefficients::coefficients(
       history_time_iterator(history_start),
       history_time_iterator(history.end()),
@@ -160,9 +177,82 @@ void AdamsBashforth::update_u_common(const gsl::not_null<T*> u,
       history.back().time_step_id.step_time() + time_step);
 
   *u = *history.back().value;
+  if constexpr (std::is_same_v<T, DataVector>) {
+    constexpr uint32_t number_of_doubles_in_block =
+        (DataVector::SIMDType::size < 8 ? 8 : DataVector::SIMDType::size) *
+        number_of_cachelines_in_block;
+    if (const uint32_t number_of_points = u->size();
+        LIKELY(number_of_points >= number_of_doubles_in_block)) {
+      OrderVector<typename DataVector::SIMDType> simd_coefficients{};
+      for (const double coefficient : coefficients) {
+        simd_coefficients.push_back(blaze::set(coefficient));
+      }
+
+      const uint32_t bound = number_of_points - 2 * number_of_doubles_in_block;
+      for (uint32_t i = 0; i < bound; i += number_of_doubles_in_block) {
+        // Prefetch the next iteration.
+        const uint32_t fetch_location = i + number_of_doubles_in_block;
+        for (uint32_t j = fetch_location;
+             j <= fetch_location + number_of_doubles_in_block; j += 8) {
+          sys::prefetch<sys::PrefetchTo::L1Cache>(&(*u)[j]);
+          for (auto history_entry = history_start;
+               history_entry != history.end(); ++history_entry) {
+            sys::prefetch<sys::PrefetchTo::L1Cache>(
+                &history_entry->derivative[j]);
+          }
+        }
+
+        // Make sure we use the full 64-byte (8-double) cachelines.
+        for (uint32_t j = i; j < fetch_location;
+             j += DataVector::SIMDType::size) {
+          double* u_location = &(*u)[j];
+          auto result = blaze::loadu(u_location);
+          uint32_t coefficient_index = 0;
+          for (auto history_entry = history_start;
+               history_entry != history.end();
+               ++history_entry, ++coefficient_index) {
+            result += simd_coefficients[coefficient_index] *
+                      blaze::loadu(&history_entry->derivative[j]);
+          }
+          blaze::storeu(u_location, result);
+        }
+      }
+      // Do prefetch for remaining partial block into the L1 cache. We then have
+      // all remaining data in the L1 cache.
+      for (uint32_t j = bound + number_of_doubles_in_block;
+           j <= number_of_points; j += 8) {
+        sys::prefetch<sys::PrefetchTo::L1Cache>(&(*u)[j]);
+        for (auto history_entry = history_start; history_entry != history.end();
+             ++history_entry) {
+          sys::prefetch<sys::PrefetchTo::L1Cache>(
+              &history_entry->derivative[j]);
+        }
+      }
+
+      // Do the remainder of the grid points without prefetching to avoid
+      // segfaults. At this point the hardware prefetcher should have a pretty
+      // good idea of what data it should prefetch.
+      for (uint32_t i = bound; i < number_of_points;
+           i += number_of_doubles_in_block) {
+        const uint32_t location =
+            std::min(i, static_cast<uint32_t>(number_of_points -
+                                              DataVector::SIMDType::size - 1));
+        auto result = blaze::loadu(&(*u)[location]);
+        uint32_t coefficient_index = 0;
+        for (auto history_entry = history_start; history_entry != history.end();
+             ++history_entry, ++coefficient_index) {
+          result += simd_coefficients[coefficient_index] *
+                    blaze::loadu(&history_entry->derivative[location]);
+        }
+        blaze::storeu(&(*u)[location], result);
+      }
+      return;
+    }
+  }
+  // Fallback case: we either aren't using DataVectors or the size of the
+  // DataVectors is too small to bother with a cache-aware algorithm.
   auto coefficient = coefficients.begin();
-  for (auto history_entry = history_start;
-       history_entry != history.end();
+  for (auto history_entry = history_start; history_entry != history.end();
        ++history_entry, ++coefficient) {
     *u += *coefficient * history_entry->derivative;
   }
