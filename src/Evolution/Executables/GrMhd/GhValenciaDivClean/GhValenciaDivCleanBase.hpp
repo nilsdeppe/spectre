@@ -448,6 +448,26 @@ struct GhValenciaDivCleanTemplateBase<
           typename system::primitive_variables_tag::tags_list,
           tmpl::conditional_t<use_numeric_initial_data, tmpl::list<>,
                               error_tags>,
+          tmpl::conditional_t<
+              use_control_systems,
+              tmpl::list<
+                  hydro::Tags::TildeDInHalfPlaneCompute<
+                      DataVector, volume_dim, ::domain::ObjectLabel::A,
+                      Events::Tags::ObserverCoordinates<3, Frame::Grid>>,
+                  hydro::Tags::TildeDInHalfPlaneCompute<
+                      DataVector, volume_dim, ::domain::ObjectLabel::B,
+                      Events::Tags::ObserverCoordinates<3, Frame::Grid>>,
+                  hydro::Tags::MassWeightedCoordsCompute<
+                      DataVector, volume_dim, ::domain::ObjectLabel::A,
+                      Events::Tags::ObserverCoordinates<3, Frame::Grid>,
+                      Events::Tags::ObserverCoordinates<3, Frame::Inertial>,
+                      Frame::Inertial>,
+                  hydro::Tags::MassWeightedCoordsCompute<
+                      DataVector, volume_dim, ::domain::ObjectLabel::B,
+                      Events::Tags::ObserverCoordinates<3, Frame::Grid>,
+                      Events::Tags::ObserverCoordinates<3, Frame::Inertial>,
+                      Frame::Inertial>>,
+              tmpl::list<>>,
           tmpl::list<
               hydro::Tags::MassWeightedInternalEnergyCompute<DataVector>,
               hydro::Tags::MassWeightedKineticEnergyCompute<DataVector>,
@@ -495,6 +515,25 @@ struct GhValenciaDivCleanTemplateBase<
                                                      Frame::Inertial>>>;
   using integrand_fields = tmpl::append<
       typename system::variables_tag::tags_list,
+      tmpl::conditional_t<
+          use_control_systems,
+          tmpl::list<hydro::Tags::TildeDInHalfPlaneCompute<
+                         DataVector, volume_dim, ::domain::ObjectLabel::A,
+                         Events::Tags::ObserverCoordinates<3, Frame::Grid>>,
+                     hydro::Tags::TildeDInHalfPlaneCompute<
+                         DataVector, volume_dim, ::domain::ObjectLabel::B,
+                         Events::Tags::ObserverCoordinates<3, Frame::Grid>>,
+                     hydro::Tags::MassWeightedCoordsCompute<
+                         DataVector, volume_dim, ::domain::ObjectLabel::A,
+                         Events::Tags::ObserverCoordinates<3, Frame::Grid>,
+                         Events::Tags::ObserverCoordinates<3, Frame::Inertial>,
+                         Frame::Inertial>,
+                     hydro::Tags::MassWeightedCoordsCompute<
+                         DataVector, volume_dim, ::domain::ObjectLabel::B,
+                         Events::Tags::ObserverCoordinates<3, Frame::Grid>,
+                         Events::Tags::ObserverCoordinates<3, Frame::Inertial>,
+                         Frame::Inertial>>,
+          tmpl::list<>>,
       tmpl::list<hydro::Tags::MassWeightedInternalEnergyCompute<DataVector>,
                  hydro::Tags::MassWeightedKineticEnergyCompute<DataVector>,
                  hydro::Tags::TildeDUnboundUtCriterionCompute<
