@@ -80,11 +80,69 @@ void FixToAtmosphere<Dim>::operator()(
       for (size_t d = 0; d < Dim; ++d) {
         spatial_velocity->get(d)[i] = 0.0;
       }
-      lorentz_factor->get()[i] = 1.0;
     } else if (UNLIKELY(rest_mass_density->get()[i] <
                         transition_density_cutoff_)) {
       set_to_magnetic_free_transition(rest_mass_density, spatial_velocity,
                                       lorentz_factor, spatial_metric, i);
+    }
+
+    double magnitude_of_velocity = 0.0;
+    for (size_t j = 0; j < Dim; ++j) {
+      magnitude_of_velocity += spatial_velocity->get(j)[i] *
+                               spatial_velocity->get(j)[i] *
+                               spatial_metric.get(j, j)[i];
+      for (size_t k = j + 1; k < Dim; ++k) {
+        magnitude_of_velocity += 2.0 * spatial_velocity->get(j)[i] *
+                                 spatial_velocity->get(k)[i] *
+                                 spatial_metric.get(j, k)[i];
+      }
+    }
+    if (magnitude_of_velocity > 0.99) {
+      const double scale_factor = sqrt(0.99 / magnitude_of_velocity);
+      for (size_t j = 0; j < Dim; ++j) {
+        spatial_velocity->get(j)[i] *= scale_factor;
+      }
+      magnitude_of_velocity = 0.99;
+    }
+    get(*lorentz_factor)[i] = 1.0 / sqrt(1.0 - magnitude_of_velocity);
+
+    if constexpr (ThermodynamicDim == 2) {
+      double temperature =
+          get(equation_of_state.temperature_from_density_and_energy(
+              Scalar<double>{rest_mass_density->get()[i]},
+              Scalar<double>{specific_internal_energy->get()[i]}));
+      if (temperature < 0.0) {
+        temperature = 0.0;
+        specific_internal_energy->get()[i] =
+            get(equation_of_state
+                    .specific_internal_energy_from_density_and_temperature(
+                        Scalar<double>{rest_mass_density->get()[i]},
+                        Scalar<double>{temperature}));
+        pressure->get()[i] =
+            get(equation_of_state.pressure_from_density_and_energy(
+                Scalar<double>{rest_mass_density->get()[i]},
+                Scalar<double>{specific_internal_energy->get()[i]}));
+        specific_enthalpy->get()[i] = get(hydro::relativistic_specific_enthalpy(
+            Scalar<double>{rest_mass_density->get()[i]},
+            Scalar<double>{specific_internal_energy->get()[i]},
+            Scalar<double>{pressure->get()[i]}));
+      }
+      if (temperature > 1e4 * rest_mass_density->get()[i]) {
+        temperature = 1e4 * rest_mass_density->get()[i];
+        specific_internal_energy->get()[i] =
+            get(equation_of_state
+                    .specific_internal_energy_from_density_and_temperature(
+                        Scalar<double>{rest_mass_density->get()[i]},
+                        Scalar<double>{temperature}));
+        pressure->get()[i] =
+            get(equation_of_state.pressure_from_density_and_energy(
+                Scalar<double>{rest_mass_density->get()[i]},
+                Scalar<double>{specific_internal_energy->get()[i]}));
+        specific_enthalpy->get()[i] = get(hydro::relativistic_specific_enthalpy(
+            Scalar<double>{rest_mass_density->get()[i]},
+            Scalar<double>{specific_internal_energy->get()[i]},
+            Scalar<double>{pressure->get()[i]}));
+      }
     }
   }
 }
@@ -108,15 +166,18 @@ void FixToAtmosphere<Dim>::set_density_to_atmosphere(
         get(equation_of_state.specific_internal_energy_from_density(
             atmosphere_density));
   } else if constexpr (ThermodynamicDim == 2) {
-    Scalar<double> atmosphere_energy{0.0};
+    Scalar<double> atmosphere_temperature{0.0};
+    specific_internal_energy->get()[grid_index] = get(
+        equation_of_state.specific_internal_energy_from_density_and_temperature(
+            atmosphere_density, atmosphere_temperature));
     pressure->get()[grid_index] =
         get(equation_of_state.pressure_from_density_and_energy(
-            atmosphere_density, atmosphere_energy));
-    specific_internal_energy->get()[grid_index] = get(atmosphere_energy);
+            atmosphere_density,
+            Scalar<double>{specific_internal_energy->get()[grid_index]}));
   }
   specific_enthalpy->get()[grid_index] =
       get(hydro::relativistic_specific_enthalpy(
-          Scalar<double>{atmosphere_density},
+          atmosphere_density,
           Scalar<double>{specific_internal_energy->get()[grid_index]},
           Scalar<double>{pressure->get()[grid_index]}));
 }

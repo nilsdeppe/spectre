@@ -3,11 +3,12 @@
 
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/FixConservatives.hpp"
 
+#include <pup.h>  // IWYU pragma: keep
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <ostream>
-#include <pup.h>  // IWYU pragma: keep
 
 #include "DataStructures/DataVector.hpp"
 #include "DataStructures/Tags/TempTensor.hpp"
@@ -257,7 +258,14 @@ bool FixConservatives::operator()(
 
     // If s_tilde_squared is small enough, no fix is needed. Otherwise, we need
     // to do some real work.
-    if (s_tilde_squared > one_minus_safety_factor_for_momentum_density_ *
+    const double corr_one_minus_safety_factor_for_momentum_density_ =
+        d_tilde > 1.e-8 ? one_minus_safety_factor_for_momentum_density_
+                        : one_minus_safety_factor_for_momentum_density_ *
+                              (1.0 - 0.0001 * log10(1.e-8 / d_tilde));
+    if (corr_one_minus_safety_factor_for_momentum_density_ > 1.0) {
+      ERROR("Safety factor should always be smaller than 1.0");
+    }
+    if (s_tilde_squared > corr_one_minus_safety_factor_for_momentum_density_ *
                               simple_upper_bound_for_s_tilde_squared) {
       // Find root of Equation B.34 of Foucart
       // NOTE:
@@ -336,10 +344,30 @@ bool FixConservatives::operator()(
         }
       }
 
-      const double rescaling_factor =
-          sqrt(one_minus_safety_factor_for_momentum_density_ *
+      const double upper_bound_s =
+          (2.0 + tau_over_d) * tau_over_d * square(d_tilde);
+      double rescaling_factor =
+          sqrt(corr_one_minus_safety_factor_for_momentum_density_ *
                upper_bound_for_s_tilde_squared(excess_lorentz_factor) /
                (s_tilde_squared + 1.e-16 * square(d_tilde)));
+      rescaling_factor =
+          sqrt(corr_one_minus_safety_factor_for_momentum_density_ *
+               upper_bound_s / (s_tilde_squared + 1.e-16 * square(d_tilde)));
+      if (rescaling_factor < 1.) {
+        needed_fixing = true;
+        for (size_t i = 0; i < 3; i++) {
+          tilde_s->get(i)[s] *= rescaling_factor;
+        }
+      }
+    } else {
+      const double upper_bound_s =
+          (2.0 + tau_over_d) * tau_over_d * square(d_tilde);
+      const double rescaling_factor =
+          sqrt(corr_one_minus_safety_factor_for_momentum_density_ *
+               upper_bound_s / (s_tilde_squared + 1.e-16 * square(d_tilde)));
+      /*sqrt(corr_one_minus_safety_factor_for_momentum_density_ *
+        upper_bound_for_s_tilde_squared(excess_lorentz_factor) /
+        (s_tilde_squared + 1.e-16 * square(d_tilde)));*/
       if (rescaling_factor < 1.) {
         needed_fixing = true;
         for (size_t i = 0; i < 3; i++) {
