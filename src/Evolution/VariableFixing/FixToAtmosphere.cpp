@@ -14,10 +14,11 @@
 namespace VariableFixing {
 
 template <size_t Dim>
-FixToAtmosphere<Dim>::FixToAtmosphere(
-    const double density_of_atmosphere, const double density_cutoff,
-    const double transition_density_cutoff, const double max_velocity_magnitude,
-    const Options::Context& context)
+FixToAtmosphere<Dim>::FixToAtmosphere(const double density_of_atmosphere,
+                                      const double density_cutoff,
+                                      const double transition_density_cutoff,
+                                      const double max_velocity_magnitude,
+                                      const Options::Context& context)
     : density_of_atmosphere_(density_of_atmosphere),
       density_cutoff_(density_cutoff),
       transition_density_cutoff_(transition_density_cutoff),

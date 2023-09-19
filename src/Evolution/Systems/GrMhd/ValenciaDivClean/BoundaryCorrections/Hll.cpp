@@ -3,16 +3,23 @@
 
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/BoundaryCorrections/Hll.hpp"
 
+#include <math.h>
+#include <pup.h>
+
 #include <memory>
 #include <optional>
-#include <pup.h>
 
 #include "DataStructures/DataVector.hpp"
 #include "DataStructures/Tags/TempTensor.hpp"
 #include "DataStructures/Tensor/EagerMath/DotProduct.hpp"
+#include "DataStructures/Tensor/EagerMath/Magnitude.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "NumericalAlgorithms/DiscontinuousGalerkin/Formulation.hpp"
 #include "NumericalAlgorithms/DiscontinuousGalerkin/NormalDotFlux.hpp"
+#include "PointwiseFunctions/Hydro/SoundSpeedSquared.hpp"
+#include "PointwiseFunctions/Hydro/SpecificEnthalpy.hpp"
+#include "Utilities/ErrorHandling/CaptureForError.hpp"
+#include "Utilities/GenerateInstantiations.hpp"
 #include "Utilities/Gsl.hpp"
 
 namespace grmhd::ValenciaDivClean::BoundaryCorrections {
@@ -24,6 +31,7 @@ std::unique_ptr<BoundaryCorrection> Hll::get_clone() const {
 
 void Hll::pup(PUP::er& p) { BoundaryCorrection::pup(p); }
 
+template <size_t ThermodynamicDim>
 double Hll::dg_package_data(
     const gsl::not_null<Scalar<DataVector>*> packaged_tilde_d,
     const gsl::not_null<Scalar<DataVector>*> packaged_tilde_ye,
@@ -61,26 +69,120 @@ double Hll::dg_package_data(
 
     const Scalar<DataVector>& lapse,
     const tnsr::I<DataVector, 3, Frame::Inertial>& shift,
+    const tnsr::i<DataVector, 3, Frame::Inertial>& spatial_velocity_one_form,
+
+    const Scalar<DataVector>& rest_mass_density,
+    const Scalar<DataVector>& /*electron_fraction*/,
+    const Scalar<DataVector>& temperature,
+    const tnsr::I<DataVector, 3, Frame::Inertial>& spatial_velocity,
 
     const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector,
     const tnsr::I<DataVector, 3, Frame::Inertial>& /*normal_vector*/,
     const std::optional<tnsr::I<DataVector, 3, Frame::Inertial>>&
     /*mesh_velocity*/,
-    const std::optional<Scalar<DataVector>>& normal_dot_mesh_velocity) {
+    const std::optional<Scalar<DataVector>>& normal_dot_mesh_velocity,
+    const EquationsOfState::EquationOfState<true, ThermodynamicDim>&
+        equation_of_state) {
   {
     // Compute max abs char speed
-    Scalar<DataVector>& shift_dot_normal = *packaged_tilde_d;
+    Scalar<DataVector> shift_dot_normal = tilde_d;
     dot_product(make_not_null(&shift_dot_normal), shift, normal_covector);
+
+    const bool has_b_field = max(get(magnitude(tilde_b))) > 1.e-30;
+
+    // Initialize characteristic speeds to light speed
+    // (default choice)
+    get(*packaged_largest_outgoing_char_speed) =
+        get(lapse) - get(shift_dot_normal);
+    get(*packaged_largest_ingoing_char_speed) =
+        -get(lapse) - get(shift_dot_normal);
+
+    if (lapse.get()[0] < 0.98 && (not has_b_field)) {
+      if constexpr (ThermodynamicDim == 2) {
+        // Calculate sound speed squared
+        Scalar<DataVector> specific_internal_energy =
+            equation_of_state
+                .specific_internal_energy_from_density_and_temperature(
+                    rest_mass_density, temperature);
+        Scalar<DataVector> pressure =
+            equation_of_state.pressure_from_density_and_energy(
+                rest_mass_density, specific_internal_energy);
+        Scalar<DataVector> specific_enthalpy =
+            hydro::relativistic_specific_enthalpy(
+                rest_mass_density, specific_internal_energy, pressure);
+        Scalar<DataVector> sound_speed_squared = hydro::sound_speed_squared(
+            rest_mass_density, specific_internal_energy, specific_enthalpy,
+            equation_of_state);
+
+        // Get v0 from Font
+        Scalar<DataVector> v0 = tilde_d;
+        dot_product(make_not_null(&v0), spatial_velocity, normal_covector);
+        get(v0) *= get(lapse);
+
+        // Get v^2
+        Scalar<DataVector> v_squared = tilde_d;
+        dot_product(make_not_null(&v_squared), spatial_velocity,
+                    spatial_velocity_one_form);
+
+        for (size_t i = 0; i < get(rest_mass_density).size(); i++) {
+          if (get(sound_speed_squared)[i] > 1.0) {
+            get(sound_speed_squared)[i] = 1.0;
+          }
+          if (get(v_squared)[i] > 1.0 - 1.e-8) {
+            get(v_squared)[i] = 1.0 - 1.e-8;
+          }
+          if (get(sound_speed_squared)[i] < 0) {
+            get(sound_speed_squared)[i] = 0;
+          }
+          if (get(v_squared)[i] < 0) {
+            get(v_squared)[i] = 0;
+          }
+        }
+
+        // Calculate characteristic speeds in inertial frame
+        DataVector discriminant = get(sound_speed_squared);
+        discriminant = get(sound_speed_squared) * (1.0 - get(v_squared)) *
+                       (get(lapse) * get(lapse) *
+                            (1.0 - get(v_squared) * get(sound_speed_squared)) -
+                        get(v0) * get(v0) * (1.0 - get(sound_speed_squared)));
+        for (size_t i = 0; i < get(rest_mass_density).size(); i++) {
+          if (discriminant[i] < 0.0) {
+            discriminant[i] = 0.0;
+          }
+        }
+
+        discriminant = sqrt(discriminant);
+        get(*packaged_largest_outgoing_char_speed) =
+            (get(v0) * (1.0 - get(sound_speed_squared)) + discriminant) /
+                (1.0 - get(v_squared) * get(sound_speed_squared)) -
+            get(shift_dot_normal);
+        get(*packaged_largest_ingoing_char_speed) =
+            (get(v0) * (1.0 - get(sound_speed_squared)) - discriminant) /
+                (1.0 - get(v_squared) * get(sound_speed_squared)) -
+            get(shift_dot_normal);
+
+        for (size_t i = 0; i < get(rest_mass_density).size(); i++) {
+          if (get(rest_mass_density)[i] < 1.e-08) {
+            double alpha = 0.0;  // get(rest_mass_density)[i]/1.e-08;
+            get(*packaged_largest_outgoing_char_speed)[i] =
+                get(*packaged_largest_outgoing_char_speed)[i] * alpha +
+                (get(lapse)[i] - get(shift_dot_normal)[i]) * (1.0 - alpha);
+            get(*packaged_largest_ingoing_char_speed)[i] =
+                get(*packaged_largest_ingoing_char_speed)[i] * alpha +
+                (-get(lapse)[i] - get(shift_dot_normal)[i]) * (1.0 - alpha);
+          }
+        }
+      }
+    }
+
+    // Correct for mesh velocity
     if (normal_dot_mesh_velocity.has_value()) {
       get(*packaged_largest_outgoing_char_speed) =
-          get(lapse) - get(shift_dot_normal) - get(*normal_dot_mesh_velocity);
+          get(*packaged_largest_outgoing_char_speed) -
+          get(*normal_dot_mesh_velocity);
       get(*packaged_largest_ingoing_char_speed) =
-          -get(lapse) - get(shift_dot_normal) - get(*normal_dot_mesh_velocity);
-    } else {
-      get(*packaged_largest_outgoing_char_speed) =
-          get(lapse) - get(shift_dot_normal);
-      get(*packaged_largest_ingoing_char_speed) =
-          -get(lapse) - get(shift_dot_normal);
+          get(*packaged_largest_ingoing_char_speed) -
+          get(*normal_dot_mesh_velocity);
     }
   }
 
@@ -246,4 +348,62 @@ bool operator!=(const Hll& lhs, const Hll& rhs) { return not(lhs == rhs); }
 
 // NOLINTNEXTLINE
 PUP::able::PUP_ID Hll::my_PUP_ID = 0;
+
+#define GET_DIM(data) BOOST_PP_TUPLE_ELEM(0, data)
+
+#define INSTANTIATION(r, data)                                                 \
+  template double Hll::dg_package_data(                                        \
+      gsl::not_null<Scalar<DataVector>*> packaged_tilde_d,                     \
+      gsl::not_null<Scalar<DataVector>*> packaged_tilde_ye,                    \
+      gsl::not_null<Scalar<DataVector>*> packaged_tilde_tau,                   \
+      gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>                  \
+          packaged_tilde_s,                                                    \
+      gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>                  \
+          packaged_tilde_b,                                                    \
+      gsl::not_null<Scalar<DataVector>*> packaged_tilde_phi,                   \
+      gsl::not_null<Scalar<DataVector>*> packaged_normal_dot_flux_tilde_d,     \
+      gsl::not_null<Scalar<DataVector>*> packaged_normal_dot_flux_tilde_ye,    \
+      gsl::not_null<Scalar<DataVector>*> packaged_normal_dot_flux_tilde_tau,   \
+      gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>                  \
+          packaged_normal_dot_flux_tilde_s,                                    \
+      gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>                  \
+          packaged_normal_dot_flux_tilde_b,                                    \
+      gsl::not_null<Scalar<DataVector>*> packaged_normal_dot_flux_tilde_phi,   \
+      gsl::not_null<Scalar<DataVector>*> packaged_largest_outgoing_char_speed, \
+      gsl::not_null<Scalar<DataVector>*> packaged_largest_ingoing_char_speed,  \
+                                                                               \
+      const Scalar<DataVector>& tilde_d, const Scalar<DataVector>& tilde_ye,   \
+      const Scalar<DataVector>& tilde_tau,                                     \
+      const tnsr::i<DataVector, 3, Frame::Inertial>& tilde_s,                  \
+      const tnsr::I<DataVector, 3, Frame::Inertial>& tilde_b,                  \
+      const Scalar<DataVector>& tilde_phi,                                     \
+                                                                               \
+      const tnsr::I<DataVector, 3, Frame::Inertial>& flux_tilde_d,             \
+      const tnsr::I<DataVector, 3, Frame::Inertial>& flux_tilde_ye,            \
+      const tnsr::I<DataVector, 3, Frame::Inertial>& flux_tilde_tau,           \
+      const tnsr::Ij<DataVector, 3, Frame::Inertial>& flux_tilde_s,            \
+      const tnsr::IJ<DataVector, 3, Frame::Inertial>& flux_tilde_b,            \
+      const tnsr::I<DataVector, 3, Frame::Inertial>& flux_tilde_phi,           \
+                                                                               \
+      const Scalar<DataVector>& lapse,                                         \
+      const tnsr::I<DataVector, 3, Frame::Inertial>& shift,                    \
+      const tnsr::i<DataVector, 3, Frame::Inertial>&                           \
+          spatial_velocity_one_form,                                           \
+      const Scalar<DataVector>& rest_mass_density,                             \
+      const Scalar<DataVector>& electron_fraction,                             \
+      const Scalar<DataVector>& temperature,                                   \
+      const tnsr::I<DataVector, 3, Frame::Inertial>& spatial_velocity,         \
+                                                                               \
+      const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector,          \
+      const tnsr::I<DataVector, 3, Frame::Inertial>& normal_vector,            \
+      const std::optional<                                                     \
+          tnsr::I<DataVector, 3, Frame::Inertial>>& /*mesh_velocity*/,         \
+      const std::optional<Scalar<DataVector>>& normal_dot_mesh_velocity,       \
+      const EquationsOfState::EquationOfState<true, GET_DIM(data)>&            \
+          equation_of_state);
+
+GENERATE_INSTANTIATIONS(INSTANTIATION, (1, 2, 3))
+
+#undef INSTANTIATION
+#undef GET_DIM
 }  // namespace grmhd::ValenciaDivClean::BoundaryCorrections

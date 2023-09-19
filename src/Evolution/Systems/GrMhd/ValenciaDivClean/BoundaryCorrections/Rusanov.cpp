@@ -3,9 +3,10 @@
 
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/BoundaryCorrections/Rusanov.hpp"
 
+#include <pup.h>
+
 #include <memory>
 #include <optional>
-#include <pup.h>
 
 #include "DataStructures/DataVector.hpp"
 #include "DataStructures/Tensor/EagerMath/DotProduct.hpp"
@@ -24,6 +25,7 @@ std::unique_ptr<BoundaryCorrection> Rusanov::get_clone() const {
 
 void Rusanov::pup(PUP::er& p) { BoundaryCorrection::pup(p); }
 
+template <size_t ThermodynamicDim>
 double Rusanov::dg_package_data(
     const gsl::not_null<Scalar<DataVector>*> packaged_tilde_d,
     const gsl::not_null<Scalar<DataVector>*> packaged_tilde_ye,
@@ -58,12 +60,21 @@ double Rusanov::dg_package_data(
 
     const Scalar<DataVector>& lapse,
     const tnsr::I<DataVector, 3, Frame::Inertial>& shift,
+    const tnsr::i<DataVector, 3,
+                  Frame::Inertial>& /*spatial_velocity_one_form*/,
+
+    const Scalar<DataVector>& /*rest_mass_density*/,
+    const Scalar<DataVector>& /*electron_fraction*/,
+    const Scalar<DataVector>& /*temperature*/,
+    const tnsr::I<DataVector, 3, Frame::Inertial>& /*spatial_velocity*/,
 
     const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector,
     const tnsr::I<DataVector, 3, Frame::Inertial>& /*normal_vector*/,
     const std::optional<tnsr::I<DataVector, 3, Frame::Inertial>>&
     /*mesh_velocity*/,
-    const std::optional<Scalar<DataVector>>& normal_dot_mesh_velocity) {
+    const std::optional<Scalar<DataVector>>& normal_dot_mesh_velocity,
+    const EquationsOfState::EquationOfState<true, ThermodynamicDim>&
+    /*equation_of_state*/) {
   {
     // Compute max abs char speed
     Scalar<DataVector>& shift_dot_normal = *packaged_tilde_d;
@@ -219,4 +230,62 @@ bool operator!=(const Rusanov& lhs, const Rusanov& rhs) {
 
 // NOLINTNEXTLINE
 PUP::able::PUP_ID Rusanov::my_PUP_ID = 0;
+
+#define GET_DIM(data) BOOST_PP_TUPLE_ELEM(0, data)
+
+#define INSTANTIATION(r, data)                                               \
+  template double Rusanov::dg_package_data(                                  \
+      gsl::not_null<Scalar<DataVector>*> packaged_tilde_d,                   \
+      gsl::not_null<Scalar<DataVector>*> packaged_tilde_ye,                  \
+      gsl::not_null<Scalar<DataVector>*> packaged_tilde_tau,                 \
+      gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>                \
+          packaged_tilde_s,                                                  \
+      gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>                \
+          packaged_tilde_b,                                                  \
+      gsl::not_null<Scalar<DataVector>*> packaged_tilde_phi,                 \
+      gsl::not_null<Scalar<DataVector>*> packaged_normal_dot_flux_tilde_d,   \
+      gsl::not_null<Scalar<DataVector>*> packaged_normal_dot_flux_tilde_ye,  \
+      gsl::not_null<Scalar<DataVector>*> packaged_normal_dot_flux_tilde_tau, \
+      gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>                \
+          packaged_normal_dot_flux_tilde_s,                                  \
+      gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>                \
+          packaged_normal_dot_flux_tilde_b,                                  \
+      gsl::not_null<Scalar<DataVector>*> packaged_normal_dot_flux_tilde_phi, \
+      gsl::not_null<Scalar<DataVector>*> packaged_abs_char_speed,            \
+                                                                             \
+      const Scalar<DataVector>& tilde_d, const Scalar<DataVector>& tilde_ye, \
+      const Scalar<DataVector>& tilde_tau,                                   \
+      const tnsr::i<DataVector, 3, Frame::Inertial>& tilde_s,                \
+      const tnsr::I<DataVector, 3, Frame::Inertial>& tilde_b,                \
+      const Scalar<DataVector>& tilde_phi,                                   \
+                                                                             \
+      const tnsr::I<DataVector, 3, Frame::Inertial>& flux_tilde_d,           \
+      const tnsr::I<DataVector, 3, Frame::Inertial>& flux_tilde_ye,          \
+      const tnsr::I<DataVector, 3, Frame::Inertial>& flux_tilde_tau,         \
+      const tnsr::Ij<DataVector, 3, Frame::Inertial>& flux_tilde_s,          \
+      const tnsr::IJ<DataVector, 3, Frame::Inertial>& flux_tilde_b,          \
+      const tnsr::I<DataVector, 3, Frame::Inertial>& flux_tilde_phi,         \
+                                                                             \
+      const Scalar<DataVector>& lapse,                                       \
+      const tnsr::I<DataVector, 3, Frame::Inertial>& shift,                  \
+      const tnsr::i<DataVector, 3, Frame::Inertial>&                         \
+          spatial_velocity_one_form,                                         \
+                                                                             \
+      const Scalar<DataVector>& rest_mass_density,                           \
+      const Scalar<DataVector>& electron_fraction,                           \
+      const Scalar<DataVector>& temperature,                                 \
+      const tnsr::I<DataVector, 3, Frame::Inertial>& spatial_velocity,       \
+                                                                             \
+      const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector,        \
+      const tnsr::I<DataVector, 3, Frame::Inertial>& normal_vector,          \
+      const std::optional<                                                   \
+          tnsr::I<DataVector, 3, Frame::Inertial>>& /*mesh_velocity*/,       \
+      const std::optional<Scalar<DataVector>>& normal_dot_mesh_velocity,     \
+      const EquationsOfState::EquationOfState<true, GET_DIM(data)>&          \
+          equation_of_state);
+
+GENERATE_INSTANTIATIONS(INSTANTIATION, (1, 2, 3))
+
+#undef INSTANTIATION
+#undef GET_DIM
 }  // namespace grmhd::ValenciaDivClean::BoundaryCorrections
