@@ -13,6 +13,7 @@
 #include "NumericalAlgorithms/DiscontinuousGalerkin/Formulation.hpp"
 #include "Options/String.hpp"
 #include "PointwiseFunctions/GeneralRelativity/Tags.hpp"
+#include "PointwiseFunctions/Hydro/Tags.hpp"
 #include "Utilities/Gsl.hpp"
 #include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
@@ -125,7 +126,7 @@ class Hll final : public BoundaryCorrection {
                  LargestOutgoingCharSpeed, LargestIngoingCharSpeed>;
   using dg_package_data_temporary_tags =
       tmpl::list<gr::Tags::Lapse<DataVector>, gr::Tags::Shift<DataVector, 3>>;
-  using dg_package_data_primitive_tags = tmpl::list<>;
+  using dg_package_data_primitive_tags = tmpl::list<hydro::Tags::RestMassDensity<DataVector>>;
   using dg_package_data_volume_tags = tmpl::list<>;
 
   static double dg_package_data(
@@ -161,6 +162,8 @@ class Hll final : public BoundaryCorrection {
 
       const Scalar<DataVector>& lapse,
       const tnsr::I<DataVector, 3, Frame::Inertial>& shift,
+
+      const Scalar<DataVector>& /*rest_mass_density*/,
 
       const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector,
       const tnsr::I<DataVector, 3, Frame::Inertial>& normal_vector,

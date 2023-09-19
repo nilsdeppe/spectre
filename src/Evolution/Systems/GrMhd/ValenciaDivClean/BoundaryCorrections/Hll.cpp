@@ -62,6 +62,8 @@ double Hll::dg_package_data(
     const Scalar<DataVector>& lapse,
     const tnsr::I<DataVector, 3, Frame::Inertial>& shift,
 
+    const Scalar<DataVector>& /*rest_mass_density*/,
+
     const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector,
     const tnsr::I<DataVector, 3, Frame::Inertial>& /*normal_vector*/,
     const std::optional<tnsr::I<DataVector, 3, Frame::Inertial>>&

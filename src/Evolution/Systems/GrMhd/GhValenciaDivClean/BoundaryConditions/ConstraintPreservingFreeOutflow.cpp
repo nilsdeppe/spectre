@@ -53,6 +53,7 @@ std::optional<std::string> ConstraintPreservingFreeOutflow::dg_ghost(
     const gsl::not_null<Scalar<DataVector>*> gamma2,
     const gsl::not_null<Scalar<DataVector>*> lapse,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> shift,
+    const gsl::not_null<Scalar<DataVector>*> /*rest_mass_density*/,
     const gsl::not_null<tnsr::II<DataVector, 3, Frame::Inertial>*>
         inv_spatial_metric,
 
