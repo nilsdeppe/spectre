@@ -49,6 +49,7 @@ struct ProductOfCorrectionsImpl<
     tmpl::list<DeduplicatedTempTags...>, tmpl::list<GhPrimTags...>,
     tmpl::list<ValenciaPrimTags...>, tmpl::list<GhVolumeTags...>,
     tmpl::list<ValenciaVolumeTags...>> {
+  template <size_t ThermodynamicDim>
   static double dg_package_data(
       const gsl::not_null<
           typename GhPackageFieldTags::type*>... gh_packaged_fields,
@@ -73,6 +74,8 @@ struct ProductOfCorrectionsImpl<
       const std::optional<Scalar<DataVector>>& normal_dot_mesh_velocity,
 
       const typename GhVolumeTags::type&... gh_volume_quantities,
+      const EquationsOfState::EquationOfState<true, ThermodynamicDim>&
+          equation_of_state,
       const typename ValenciaVolumeTags::type&... valencia_volume_quantities,
 
       const DerivedGhCorrection& gh_correction,
@@ -93,7 +96,7 @@ struct ProductOfCorrectionsImpl<
             tuples::get<Tags::detail::TemporaryReference<ValenciaTempTags>>(
                 shuffle_refs)...,
             valencia_primitives..., normal_covector, normal_vector,
-            mesh_velocity, normal_dot_mesh_velocity,
+            mesh_velocity, normal_dot_mesh_velocity, equation_of_state,
             valencia_volume_quantities...));
   }
 
@@ -168,7 +171,9 @@ class ProductOfCorrections final : public BoundaryCorrection {
       dg_package_data_temporary_tags, tmpl::list<>,
       typename DerivedValenciaCorrection::dg_package_data_primitive_tags,
       typename DerivedGhCorrection::dg_package_data_volume_tags,
-      typename DerivedValenciaCorrection::dg_package_data_volume_tags>;
+      tmpl::remove<
+          typename DerivedValenciaCorrection::dg_package_data_volume_tags,
+          hydro::Tags::EquationOfStateBase>>;
 
   static std::string name() {
     return "Product" + pretty_type::name<DerivedGhCorrection>() + "And" +
