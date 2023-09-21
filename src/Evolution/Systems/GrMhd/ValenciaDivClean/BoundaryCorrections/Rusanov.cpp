@@ -59,7 +59,7 @@ double Rusanov::dg_package_data(
 
     const Scalar<DataVector>& lapse,
     const tnsr::I<DataVector, 3, Frame::Inertial>& shift,
-    // const tnsr::i<DataVector, 3, Frame::Inertial>& spatial_velocity_one_form,
+    const tnsr::i<DataVector, 3, Frame::Inertial>& spatial_velocity_one_form,
 
     const Scalar<DataVector>& rest_mass_density,
     const Scalar<DataVector>& electron_fraction,
@@ -266,6 +266,8 @@ PUP::able::PUP_ID Rusanov::my_PUP_ID = 0;
                                                                              \
       const Scalar<DataVector>& lapse,                                       \
       const tnsr::I<DataVector, 3, Frame::Inertial>& shift,                  \
+      const tnsr::i<DataVector, 3, Frame::Inertial>&                         \
+          spatial_velocity_one_form,                                         \
                                                                              \
       const Scalar<DataVector>& rest_mass_density,                           \
       const Scalar<DataVector>& electron_fraction,                           \

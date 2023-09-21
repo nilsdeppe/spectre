@@ -121,6 +121,7 @@ void PositivityPreservingAdaptiveOrderPrim::reconstruct(
     const Element<dim>& element,
     const DirectionalIdMap<dim, evolution::dg::subcell::GhostData>& ghost_data,
     const Mesh<dim>& subcell_mesh) const {
+  ERROR("Need to set v_i");
   using all_tags_for_reconstruction = grmhd::GhValenciaDivClean::Tags::
       primitive_grmhd_and_spacetime_reconstruction_tags;
 
@@ -246,6 +247,7 @@ void PositivityPreservingAdaptiveOrderPrim::reconstruct_fd_neighbor(
     const DirectionalIdMap<dim, evolution::dg::subcell::GhostData>& ghost_data,
     const Mesh<dim>& subcell_mesh,
     const Direction<dim> direction_to_reconstruct) const {
+  ERROR("Need to set v_i");
   using prim_tags_for_reconstruction =
       grmhd::GhValenciaDivClean::Tags::primitive_grmhd_reconstruction_tags;
   using all_tags_for_reconstruction = grmhd::GhValenciaDivClean::Tags::
@@ -385,6 +387,7 @@ bool operator!=(const PositivityPreservingAdaptiveOrderPrim& lhs,
       ::Tags::Flux<ValenciaDivClean::Tags::TildePhi, tmpl::size_t<3>,          \
                    Frame::Inertial>,                                           \
       gr::Tags::Lapse<DataVector>, gr::Tags::Shift<DataVector, 3>,             \
+      hydro::Tags::SpatialVelocityOneForm<DataVector, 3, Frame::Inertial>,     \
       gr::Tags::SpatialMetric<DataVector, 3>,                                  \
       gr::Tags::SqrtDetSpatialMetric<DataVector>,                              \
       gr::Tags::InverseSpatialMetric<DataVector, 3>,                           \
@@ -422,6 +425,7 @@ bool operator!=(const PositivityPreservingAdaptiveOrderPrim& lhs,
       gh::ConstraintDamping::Tags::ConstraintGamma1,                           \
       gh::ConstraintDamping::Tags::ConstraintGamma2,                           \
       gr::Tags::Lapse<DataVector>, gr::Tags::Shift<DataVector, 3>,             \
+      hydro::Tags::SpatialVelocityOneForm<DataVector, 3, Frame::Inertial>,     \
       gr::Tags::SpatialMetric<DataVector, 3>,                                  \
       gr::Tags::SqrtDetSpatialMetric<DataVector>,                              \
       gr::Tags::InverseSpatialMetric<DataVector, 3>,                           \
