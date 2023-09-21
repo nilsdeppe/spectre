@@ -3,10 +3,11 @@
 
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/FiniteDifference/MonotonicityPreserving5.hpp"
 
+#include <pup.h>
+
 #include <array>
 #include <cstddef>
 #include <memory>
-#include <pup.h>
 #include <utility>
 
 #include "DataStructures/DataVector.hpp"
@@ -148,6 +149,7 @@ bool operator!=(const MonotonicityPreserving5Prim& lhs,
              hydro::Tags::Pressure<DataVector>,                              \
              hydro::Tags::Temperature<DataVector>,                           \
              hydro::Tags::LorentzFactorTimesSpatialVelocity<DataVector, 3>,  \
+             hydro::Tags::SpatialVelocityOneForm<DataVector, 3, Frame::Inertial>, \
              ::Tags::Flux<Tags::TildeD, tmpl::size_t<3>, Frame::Inertial>,   \
              ::Tags::Flux<Tags::TildeYe, tmpl::size_t<3>, Frame::Inertial>,  \
              ::Tags::Flux<Tags::TildeTau, tmpl::size_t<3>, Frame::Inertial>, \

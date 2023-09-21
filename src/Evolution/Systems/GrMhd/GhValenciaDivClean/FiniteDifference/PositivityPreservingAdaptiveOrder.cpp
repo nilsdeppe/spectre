@@ -121,7 +121,6 @@ void PositivityPreservingAdaptiveOrderPrim::reconstruct(
     const Element<dim>& element,
     const DirectionalIdMap<dim, evolution::dg::subcell::GhostData>& ghost_data,
     const Mesh<dim>& subcell_mesh) const {
-  ERROR("Need to set v_i");
   using all_tags_for_reconstruction = grmhd::GhValenciaDivClean::Tags::
       primitive_grmhd_and_spacetime_reconstruction_tags;
 
@@ -247,7 +246,6 @@ void PositivityPreservingAdaptiveOrderPrim::reconstruct_fd_neighbor(
     const DirectionalIdMap<dim, evolution::dg::subcell::GhostData>& ghost_data,
     const Mesh<dim>& subcell_mesh,
     const Direction<dim> direction_to_reconstruct) const {
-  ERROR("Need to set v_i");
   using prim_tags_for_reconstruction =
       grmhd::GhValenciaDivClean::Tags::primitive_grmhd_reconstruction_tags;
   using all_tags_for_reconstruction = grmhd::GhValenciaDivClean::Tags::

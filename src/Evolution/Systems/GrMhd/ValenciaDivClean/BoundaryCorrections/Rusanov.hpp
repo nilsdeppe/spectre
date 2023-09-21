@@ -148,12 +148,13 @@ class Rusanov final : public BoundaryCorrection {
 
       const Scalar<DataVector>& lapse,
       const tnsr::I<DataVector, 3, Frame::Inertial>& shift,
-      const tnsr::i<DataVector, 3, Frame::Inertial>& spatial_velocity_one_form,
+      const tnsr::i<DataVector, 3,
+                    Frame::Inertial>& /*spatial_velocity_one_form*/,
 
-      const Scalar<DataVector>& rest_mass_density,
-      const Scalar<DataVector>& electron_fraction,
-      const Scalar<DataVector>& temperature,
-      const tnsr::I<DataVector, 3, Frame::Inertial>& spatial_velocity,
+      const Scalar<DataVector>& /*rest_mass_density*/,
+      const Scalar<DataVector>& /*electron_fraction*/,
+      const Scalar<DataVector>& /*temperature*/,
+      const tnsr::I<DataVector, 3, Frame::Inertial>& /*spatial_velocity*/,
 
       const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector,
       const tnsr::I<DataVector, 3, Frame::Inertial>& normal_vector,
@@ -161,7 +162,7 @@ class Rusanov final : public BoundaryCorrection {
       /*mesh_velocity*/,
       const std::optional<Scalar<DataVector>>& normal_dot_mesh_velocity,
       const EquationsOfState::EquationOfState<true, ThermodynamicDim>&
-          equation_of_state);
+      /*equation_of_state*/);
 
   static void dg_boundary_terms(
       gsl::not_null<Scalar<DataVector>*> boundary_correction_tilde_d,

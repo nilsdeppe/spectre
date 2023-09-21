@@ -289,6 +289,7 @@ bool operator!=(const Wcns5zPrim& lhs, const Wcns5zPrim& rhs) {
       ::Tags::Flux<ValenciaDivClean::Tags::TildePhi, tmpl::size_t<3>,          \
                    Frame::Inertial>,                                           \
       gr::Tags::Lapse<DataVector>, gr::Tags::Shift<DataVector, 3>,             \
+      hydro::Tags::SpatialVelocityOneForm<DataVector, 3, Frame::Inertial>,     \
       gr::Tags::SpatialMetric<DataVector, 3>,                                  \
       gr::Tags::SqrtDetSpatialMetric<DataVector>,                              \
       gr::Tags::InverseSpatialMetric<DataVector, 3>,                           \
@@ -326,6 +327,7 @@ bool operator!=(const Wcns5zPrim& lhs, const Wcns5zPrim& rhs) {
       gh::ConstraintDamping::Tags::ConstraintGamma1,                           \
       gh::ConstraintDamping::Tags::ConstraintGamma2,                           \
       gr::Tags::Lapse<DataVector>, gr::Tags::Shift<DataVector, 3>,             \
+      hydro::Tags::SpatialVelocityOneForm<DataVector, 3, Frame::Inertial>,     \
       gr::Tags::SpatialMetric<DataVector, 3>,                                  \
       gr::Tags::SqrtDetSpatialMetric<DataVector>,                              \
       gr::Tags::InverseSpatialMetric<DataVector, 3>,                           \
