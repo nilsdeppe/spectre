@@ -10,6 +10,8 @@
 #include "Options/String.hpp"
 #include "PointwiseFunctions/AnalyticData/AnalyticData.hpp"
 #include "PointwiseFunctions/AnalyticData/GrMhd/AnalyticData.hpp"
+#include "PointwiseFunctions/AnalyticData/GrMhd/InitialMagneticFields/Factory.hpp"
+#include "PointwiseFunctions/AnalyticData/GrMhd/InitialMagneticFields/InitialMagneticField.hpp"
 #include "PointwiseFunctions/AnalyticSolutions/RelativisticEuler/TovStar.hpp"
 #include "PointwiseFunctions/Hydro/EquationsOfState/Factory.hpp"
 #include "PointwiseFunctions/Hydro/TagsDeclarations.hpp"
@@ -42,20 +44,19 @@ struct MagnetizedTovVariables
   using Base::radial_solution;
   using Base::radius;
 
-  size_t pressure_exponent;
-  double cutoff_pressure;
-  double vector_potential_amplitude;
+  const std::vector<std::unique_ptr<
+      grmhd::AnalyticData::InitialMagneticFields::InitialMagneticField>>&
+      magnetic_fields;
 
   MagnetizedTovVariables(
       const tnsr::I<DataType, 3>& local_x, const DataType& local_radius,
       const RelativisticEuler::Solutions::TovSolution& local_radial_solution,
       const EquationsOfState::EquationOfState<true, 1>& local_eos,
-      size_t local_pressure_exponent, double local_cutoff_pressure,
-      double local_vector_potential_amplitude)
+      const std::vector<std::unique_ptr<
+          grmhd::AnalyticData::InitialMagneticFields::InitialMagneticField>>&
+          mag_fields)
       : Base(local_x, local_radius, local_radial_solution, local_eos),
-        pressure_exponent(local_pressure_exponent),
-        cutoff_pressure(local_cutoff_pressure),
-        vector_potential_amplitude(local_vector_potential_amplitude) {}
+        magnetic_fields(mag_fields) {}
 
   void operator()(
       gsl::not_null<tnsr::I<DataType, 3>*> magnetic_field,
@@ -194,32 +195,14 @@ class MagnetizedTovStar : public virtual evolution::initial_data::InitialData,
   using tov_star = RelativisticEuler::Solutions::TovStar;
 
  public:
-  struct PressureExponent {
-    using type = size_t;
+  struct MagneticFields {
+    using type = std::vector<std::unique_ptr<
+        grmhd::AnalyticData::InitialMagneticFields::InitialMagneticField>>;
     static constexpr Options::String help = {
-        "The exponent n_s controlling the smoothness of the field"};
+        "Magnetic fields to superpose on the TOV solution."};
   };
 
-  struct VectorPotentialAmplitude {
-    using type = double;
-    static constexpr Options::String help = {
-        "The amplitude A_b of the phi-component of the vector potential. This "
-        "controls the magnetic field strength."};
-    static type lower_bound() { return 0.0; }
-  };
-
-  struct CutoffPressureFraction {
-    using type = double;
-    static constexpr Options::String help = {
-        "The fraction of the central pressure below which there is no magnetic "
-        "field. p_cut = Fraction * p_max."};
-    static type lower_bound() { return 0.0; }
-    static type upper_bound() { return 1.0; }
-  };
-
-  using options =
-      tmpl::push_back<tov_star::options, PressureExponent,
-                      CutoffPressureFraction, VectorPotentialAmplitude>;
+  using options = tmpl::push_back<tov_star::options, MagneticFields>;
 
   static constexpr Options::String help = {"Magnetized TOV star."};
 
@@ -228,20 +211,21 @@ class MagnetizedTovStar : public virtual evolution::initial_data::InitialData,
   template <typename DataType>
   using tags = typename tov_star::template tags<DataType>;
 
-  MagnetizedTovStar() = default;
-  MagnetizedTovStar(const MagnetizedTovStar& /*rhs*/) = default;
-  MagnetizedTovStar& operator=(const MagnetizedTovStar& /*rhs*/) = default;
-  MagnetizedTovStar(MagnetizedTovStar&& /*rhs*/) = default;
-  MagnetizedTovStar& operator=(MagnetizedTovStar&& /*rhs*/) = default;
-  ~MagnetizedTovStar() override = default;
+  MagnetizedTovStar();
+  MagnetizedTovStar(const MagnetizedTovStar& rhs);
+  MagnetizedTovStar& operator=(const MagnetizedTovStar& rhs);
+  MagnetizedTovStar(MagnetizedTovStar&& /*rhs*/);
+  MagnetizedTovStar& operator=(MagnetizedTovStar&& /*rhs*/);
+  ~MagnetizedTovStar() override;
 
   MagnetizedTovStar(
       double central_rest_mass_density,
       std::unique_ptr<EquationsOfState::EquationOfState<true, 1>>
           equation_of_state,
       RelativisticEuler::Solutions::TovCoordinates coordinate_system,
-      size_t pressure_exponent, double cutoff_pressure_fraction,
-      double vector_potential_amplitude);
+      std::vector<std::unique_ptr<
+          grmhd::AnalyticData::InitialMagneticFields::InitialMagneticField>>
+          magnetic_fields);
 
   auto get_clone() const
       -> std::unique_ptr<evolution::initial_data::InitialData> override;
@@ -260,8 +244,7 @@ class MagnetizedTovStar : public virtual evolution::initial_data::InitialData,
   tuples::TaggedTuple<Tags...> variables(const tnsr::I<DataType, 3>& x,
                                          tmpl::list<Tags...> /*meta*/) const {
     return variables_impl<magnetized_tov_detail::MagnetizedTovVariables>(
-        x, tmpl::list<Tags...>{}, pressure_exponent_, cutoff_pressure_,
-        vector_potential_amplitude_);
+        x, tmpl::list<Tags...>{}, magnetic_fields_);
   }
 
   // NOLINTNEXTLINE(google-runtime-references)
@@ -272,10 +255,9 @@ class MagnetizedTovStar : public virtual evolution::initial_data::InitialData,
                          const MagnetizedTovStar& rhs);
 
  protected:
-  size_t pressure_exponent_ = std::numeric_limits<size_t>::max();
-  double cutoff_pressure_ = std::numeric_limits<double>::signaling_NaN();
-  double vector_potential_amplitude_ =
-      std::numeric_limits<double>::signaling_NaN();
+  std::vector<std::unique_ptr<
+      grmhd::AnalyticData::InitialMagneticFields::InitialMagneticField>>
+      magnetic_fields_{};
 };
 
 bool operator!=(const MagnetizedTovStar& lhs, const MagnetizedTovStar& rhs);
