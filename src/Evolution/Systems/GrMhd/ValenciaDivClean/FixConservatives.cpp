@@ -132,15 +132,14 @@ FunctionOfLorentzFactor(const T& b_squared_over_d, const T& tau_over_d,
 
 #ifdef SPECTRE_USE_SIMD
 
-template <typename batch_type, size_t... Is>
-batch_type make_sequence_impl(std::index_sequence<Is...>) {
-  return batch_type{static_cast<typename batch_type::value_type>(Is)...};
+template <typename T, size_t... Is>
+T make_sequence_impl(std::index_sequence<Is...>) {
+  return T{static_cast<typename T::value_type>(Is)...};
 }
 
-template <typename batch_type>
-batch_type make_sequence() {
-  return make_sequence_impl<batch_type>(
-      std::make_index_sequence<batch_type::size>{});
+template <typename T>
+T make_sequence() {
+  return make_sequence_impl<T>(std::make_index_sequence<T::size>{});
 }
 
 template <typename SimdType, typename Symm, typename IndexList>

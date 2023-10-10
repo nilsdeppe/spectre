@@ -6,6 +6,8 @@
 #ifdef SPECTRE_USE_XSIMD
 #include <xsimd/xsimd.hpp>
 
+#include "Utilities/TypeTraits/CreateGetTypeAliasOrDefault.hpp"
+
 /// Namespace containing SIMD functions based on XSIMD.
 namespace simd = xsimd;
 
@@ -23,5 +25,9 @@ namespace xsimd {
 inline bool any(const bool t) { return t; }
 inline bool all(const bool t) { return t; }
 inline bool none(const bool t) { return not t; }
+
+CREATE_GET_TYPE_ALIAS_OR_DEFAULT(value_type)
+
+
 }  // namespace xsimd
 #endif

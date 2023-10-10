@@ -30,5 +30,10 @@ if("${GoogleBenchmark_FOUND}" AND NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     GrMhdAnalyticData
     HydroHelpers
     ValenciaDivClean
+  )
+  target_compile_options(
+    ${executable}
+    PUBLIC
+    -fno-math-errno
     )
 endif()

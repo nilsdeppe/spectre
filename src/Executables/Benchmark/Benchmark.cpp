@@ -34,19 +34,30 @@
 #include <random>
 
 #include "DataStructures/DataVector.hpp"
+#include "DataStructures/Tags/TempTensor.hpp"
 #include "DataStructures/Tensor/EagerMath/DeterminantAndInverse.hpp"
+#include "DataStructures/Tensor/EagerMath/DotProduct.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
+#include "DataStructures/Variables.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/ConservativeFromPrimitive.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/KastaunEtAl.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/NewmanHamlin.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/PalenzuelaEtAl.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/PrimitiveFromConservative.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/PrimitiveRecoveryData.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/Tags.hpp"  // IWYU pragma: keep
 #include "Helpers/PointwiseFunctions/GeneralRelativity/TestHelpers.hpp"
 #include "Helpers/PointwiseFunctions/Hydro/TestHelpers.hpp"
+#include "PointwiseFunctions/GeneralRelativity/IndexManipulation.hpp"
+#include "PointwiseFunctions/GeneralRelativity/Tags.hpp"  // IWYU pragma: keep
 #include "PointwiseFunctions/Hydro/EquationsOfState/EquationOfState.hpp"
 #include "PointwiseFunctions/Hydro/EquationsOfState/IdealFluid.hpp"
 #include "PointwiseFunctions/Hydro/EquationsOfState/PolytropicFluid.hpp"
 #include "PointwiseFunctions/Hydro/SpecificEnthalpy.hpp"
+#include "PointwiseFunctions/Hydro/Tags.hpp"  // IWYU pragma: keep
+#include "Utilities/ConstantExpressions.hpp"
+#include "Utilities/ErrorHandling/Error.hpp"
+#include "Utilities/GenerateInstantiations.hpp"
 
 // Charm looks for this function but since we build without a main function or
 // main module we just have it be empty
@@ -323,7 +334,17 @@ void benchmark_fix_cons(benchmark::State& state) {
 }
 // BENCHMARK(benchmark_fix_cons)->Iterations(40380);
 
-template <size_t ThermodynamicDim>
+template <typename T>
+static inline void prefetch_range(T* addr, size_t len) {
+  char* cp = reinterpret_cast<char*>(addr);
+  char* end = reinterpret_cast<char*>(addr + len);
+
+  for (; cp < end; cp += 64) {
+    _mm_prefetch(cp, _MM_HINT_T0);
+  }
+}
+
+template <size_t SimdWidth, size_t ThermodynamicDim>
 void benchmark_c2p_impl(
     benchmark::State& state,
     const EquationsOfState::EquationOfState<true, ThermodynamicDim>&
@@ -402,37 +423,221 @@ void benchmark_c2p_impl(
   Scalar<DataVector> lorentz_factor(number_of_points);
   Scalar<DataVector> pressure(number_of_points, 0.0);
   Scalar<DataVector> specific_enthalpy(number_of_points);
-  for (auto _ : state) {
-    benchmark::DoNotOptimize(
-        grmhd::ValenciaDivClean::PrimitiveFromConservative<tmpl::list<
-            grmhd::ValenciaDivClean::PrimitiveRecoverySchemes::KastaunEtAl>>::
-            apply(make_not_null(&rest_mass_density),
-                  make_not_null(&electron_fraction),
-                  make_not_null(&specific_internal_energy),
-                  make_not_null(&spatial_velocity),
-                  make_not_null(&magnetic_field),
-                  make_not_null(&divergence_cleaning_field),
-                  make_not_null(&lorentz_factor), make_not_null(&pressure),
-                  make_not_null(&specific_enthalpy), tilde_d, tilde_ye,
-                  tilde_tau, tilde_s, tilde_b, tilde_phi, spatial_metric,
-                  inv_spatial_metric, sqrt_det_spatial_metric,
-                  equation_of_state));
+
+
+  get(divergence_cleaning_field) =
+      get(tilde_phi) / get(sqrt_det_spatial_metric);
+  for (size_t i = 0; i < 3; ++i) {
+    magnetic_field.get(i) = tilde_b.get(i) / get(sqrt_det_spatial_metric);
   }
+  const size_t size = get<0>(tilde_b).size();
+  Variables<
+      tmpl::list<::Tags::TempScalar<0>, ::Tags::TempScalar<1>,
+                 ::Tags::TempScalar<2>, ::Tags::TempScalar<3>,
+                 ::Tags::TempScalar<4>, ::Tags::TempI<5, 3, Frame::Inertial>>>
+      temp_buffer(size);
+
+  DataVector& total_energy_density =
+      get(get<::Tags::TempScalar<0>>(temp_buffer));
+  total_energy_density =
+      (get(tilde_tau) + get(tilde_d)) / get(sqrt_det_spatial_metric);
+
+  tnsr::I<DataVector, 3, Frame::Inertial>& tilde_s_upper =
+      get<::Tags::TempI<5, 3, Frame::Inertial>>(temp_buffer);
+  raise_or_lower_index(make_not_null(&tilde_s_upper), tilde_s,
+                       inv_spatial_metric);
+
+  Scalar<DataVector>& momentum_density_squared =
+      get<::Tags::TempScalar<1>>(temp_buffer);
+  dot_product(make_not_null(&momentum_density_squared), tilde_s, tilde_s_upper);
+  get(momentum_density_squared) /= square(get(sqrt_det_spatial_metric));
+
+  Scalar<DataVector>& momentum_density_dot_magnetic_field =
+      get<::Tags::TempScalar<2>>(temp_buffer);
+  dot_product(make_not_null(&momentum_density_dot_magnetic_field), tilde_s,
+              magnetic_field);
+  get(momentum_density_dot_magnetic_field) /= get(sqrt_det_spatial_metric);
+
+  Scalar<DataVector>& magnetic_field_squared =
+      get<::Tags::TempScalar<3>>(temp_buffer);
+  dot_product(make_not_null(&magnetic_field_squared), magnetic_field,
+              magnetic_field, spatial_metric);
+
+  DataVector& rest_mass_density_times_lorentz_factor =
+      get(get<::Tags::TempScalar<4>>(temp_buffer));
+  rest_mass_density_times_lorentz_factor =
+      get(tilde_d) / get(sqrt_det_spatial_metric);
+
+  get(electron_fraction) = min(0.5, max(get(tilde_ye) / get(tilde_d), 0.0));
+
+  using SimdType =
+      typename xsimd::make_sized_batch<double,
+                                       (SimdWidth > 1 ? SimdWidth : 2)>::type;
+  static constexpr bool use_simd = SimdWidth > 1;
+  static constexpr size_t stride = use_simd ? SimdType::size : 1;
+  if (total_energy_density.size() % SimdType::size != 0) {
+    ERROR("Goof!");
+  }
+
+  // Copy into a buffer that is ordered (p, t_e, s^2, s.b, b^2, rho W, Y) each
+  // of the simd width
+  //
+  // Note: this didn't help :(
+  // DataVector buffer{7 * number_of_points};
+  // for (size_t i = 0; i < number_of_points; i += stride) {
+  //   size_t s = 7 * i;
+  //   SimdType::load_unaligned(&get(pressure)[s]).store_unaligned(&buffer[s]);
+  //   SimdType::load_unaligned(&total_energy_density[s])
+  //       .store_unaligned(&buffer[s + stride]);
+  //   SimdType::load_unaligned(&get(momentum_density_squared)[s])
+  //       .store_unaligned(&buffer[s + 2 * stride]);
+  //   SimdType::load_unaligned(&get(momentum_density_dot_magnetic_field)[s])
+  //       .store_unaligned(&buffer[s + 3 * stride]);
+  //   SimdType::load_unaligned(&get(magnetic_field_squared)[s])
+  //       .store_unaligned(&buffer[s + 4 * stride]);
+  //   SimdType::load_unaligned(&rest_mass_density_times_lorentz_factor[s])
+  //       .store_unaligned(&buffer[s + 5 * stride]);
+  //   SimdType::load_unaligned(&get(electron_fraction)[s])
+  //       .store_unaligned(&buffer[s + 6 * stride]);
+  // }
+
+
+  // Try alignment?
+
+  for (auto _ : state) {
+    size_t s = 0;
+    // prefetch_range(&get(pressure)[s], number_of_points);
+    // prefetch_range(&total_energy_density[s], number_of_points);
+    // prefetch_range(&get(momentum_density_squared)[s], number_of_points);
+    // prefetch_range(&get(momentum_density_dot_magnetic_field)[s],
+    //                number_of_points);
+    // prefetch_range(&get(magnetic_field_squared)[s], number_of_points);
+    // prefetch_range(&rest_mass_density_times_lorentz_factor[s],
+    //                number_of_points);
+    // prefetch_range(&get(electron_fraction)[s], number_of_points);
+
+    for (; s < number_of_points; s += stride) {
+      if constexpr (use_simd) {
+        benchmark::DoNotOptimize(
+            grmhd::ValenciaDivClean::PrimitiveRecoverySchemes::KastaunEtAl::
+                template apply<ThermodynamicDim>(
+                    SimdType::load_unaligned(&get(pressure)[s]),
+                    SimdType::load_unaligned(&total_energy_density[s]),
+                    SimdType::load_unaligned(&get(momentum_density_squared)[s]),
+                    SimdType::load_unaligned(
+                        &get(momentum_density_dot_magnetic_field)[s]),
+                    SimdType::load_unaligned(&get(magnetic_field_squared)[s]),
+                    SimdType::load_unaligned(
+                        &rest_mass_density_times_lorentz_factor[s]),
+                    SimdType::load_unaligned(&get(electron_fraction)[s]),
+                    equation_of_state));
+        // const size_t prefetch_factor = 8;
+        // _mm_prefetch(&get(pressure)[s + prefetch_factor*stride],_MM_HINT_T0);
+        // _mm_prefetch(&total_energy_density[s + prefetch_factor * stride],
+        //              _MM_HINT_T0);
+        // _mm_prefetch(
+        //     &get(momentum_density_squared)[s + prefetch_factor * stride],
+        //     _MM_HINT_T0);
+        // _mm_prefetch(
+        //     &get(momentum_density_dot_magnetic_field)[s +
+        //                                          prefetch_factor * stride],
+        //     _MM_HINT_T0);
+        // _mm_prefetch(&get(magnetic_field_squared)[s+prefetch_factor* stride],
+        //              _MM_HINT_T0);
+        // _mm_prefetch(
+        //     &rest_mass_density_times_lorentz_factor[s +
+        //                                          prefetch_factor * stride],
+        //     _MM_HINT_T0);
+        // _mm_prefetch(&get(electron_fraction)[s + prefetch_factor * stride],
+        //              _MM_HINT_T0);
+      } else {
+        benchmark::DoNotOptimize(
+            grmhd::ValenciaDivClean::PrimitiveRecoverySchemes::KastaunEtAl::
+                template apply<ThermodynamicDim>(
+                    get(pressure)[s], total_energy_density[s],
+                    get(momentum_density_squared)[s],
+                    get(momentum_density_dot_magnetic_field)[s],
+                    get(magnetic_field_squared)[s],
+                    rest_mass_density_times_lorentz_factor[s],
+                    get(electron_fraction)[s], equation_of_state));
+      }
+    }
+    benchmark::ClobberMemory();
+  }
+
+          // benchmark::DoNotOptimize(
+        //     grmhd::ValenciaDivClean::PrimitiveFromConservative<
+        //       tmpl::list<grmhd::ValenciaDivClean::PrimitiveRecoverySchemes::
+        //                        KastaunEtAl>>::
+        //         apply(make_not_null(&rest_mass_density),
+        //               make_not_null(&electron_fraction),
+        //               make_not_null(&specific_internal_energy),
+        //               make_not_null(&spatial_velocity),
+        //               make_not_null(&magnetic_field),
+        //               make_not_null(&divergence_cleaning_field),
+        //       make_not_null(&lorentz_factor), make_not_null(&pressure),
+        //               make_not_null(&specific_enthalpy), tilde_d, tilde_ye,
+        //               tilde_tau, tilde_s, tilde_b, tilde_phi, spatial_metric,
+        //               inv_spatial_metric, sqrt_det_spatial_metric,
+        //               equation_of_state));
 }
 
-void benchmark_c2p_polytrope(
-    benchmark::State& state) {
-  const EquationsOfState::PolytropicFluid<true> polytropic_fluid(100.0, 2.0);
-  benchmark_c2p_impl(state, polytropic_fluid);
-}
-BENCHMARK(benchmark_c2p_polytrope); //->Iterations(40380);
+// void benchmark_c2p_polytrope(
+//     benchmark::State& state) {
+//   const EquationsOfState::PolytropicFluid<true> polytropic_fluid(100.0, 2.0);
+//   benchmark_c2p_impl(state, polytropic_fluid);
+// }
+// BENCHMARK(benchmark_c2p_polytrope); //->Iterations(40380);
 
-void benchmark_c2p_ideal_fluid(
+#define SINGLE_ITER 10000
+
+void benchmark_c2p_ideal_fluid_avx512(
     benchmark::State& state) {
   const EquationsOfState::IdealFluid<true> ideal_fluid(4.0 / 3.0);
-  benchmark_c2p_impl(state, ideal_fluid);
+  benchmark_c2p_impl<8>(state, ideal_fluid);
 }
-BENCHMARK(benchmark_c2p_ideal_fluid); //->Iterations(40380);
+BENCHMARK(benchmark_c2p_ideal_fluid_avx512)
+#ifdef SINGLE_ITER
+->Iterations(SINGLE_ITER);
+#else
+;
+#endif
+
+// void benchmark_c2p_ideal_fluid_av2(
+//     benchmark::State& state) {
+//   const EquationsOfState::IdealFluid<true> ideal_fluid(4.0 / 3.0);
+//   benchmark_c2p_impl<4>(state, ideal_fluid);
+// }
+// BENCHMARK(benchmark_c2p_ideal_fluid_av2)
+// #ifdef SINGLE_ITER
+// ->Iterations(SINGLE_ITER);
+// #else
+// ;
+// #endif
+
+// void benchmark_c2p_ideal_fluid_sse(
+//     benchmark::State& state) {
+//   const EquationsOfState::IdealFluid<true> ideal_fluid(4.0 / 3.0);
+//   benchmark_c2p_impl<2>(state, ideal_fluid);
+// }
+// BENCHMARK(benchmark_c2p_ideal_fluid_sse)
+// #ifdef SINGLE_ITER
+// ->Iterations(SINGLE_ITER);
+// #else
+// ;
+// #endif
+
+// void benchmark_c2p_ideal_fluid_scalar(
+//     benchmark::State& state) {
+//   const EquationsOfState::IdealFluid<true> ideal_fluid(4.0 / 3.0);
+//   benchmark_c2p_impl<1>(state, ideal_fluid);
+// }
+// BENCHMARK(benchmark_c2p_ideal_fluid_scalar)
+// #ifdef SINGLE_ITER
+// ->Iterations(SINGLE_ITER);
+// #else
+// ;
+// #endif
 
 // Reference times:
 // benchmark_c2p_polytrope       775022 ns       774529 ns          740

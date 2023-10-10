@@ -20,14 +20,10 @@
 #include "Utilities/ErrorHandling/Error.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
 #include "Utilities/Simd/Simd.hpp"
-#include "Utilities/TypeTraits/CreateGetTypeAliasOrDefault.hpp"
 
 namespace grmhd::ValenciaDivClean::PrimitiveRecoverySchemes {
 
 namespace {
-
-CREATE_GET_TYPE_ALIAS_OR_DEFAULT(value_type)
-
 // Equation (26)
 template <typename T>
 T compute_x(const T mu, const T b_squared) {

@@ -1,3 +1,5 @@
+#include <iostream>
+
 // Distributed under the MIT License.
 // See LICENSE.txt for details.
 
@@ -108,7 +110,27 @@ bool PrimitiveFromConservative<OrderedListOfPrimitiveRecoverySchemes,
   // This may need bounds
   // limit Ye to table bounds once that is implemented
 
-  for (size_t s = 0; s < total_energy_density.size(); ++s) {
+  // TODO: simd loop
+  using SimdType = typename xsimd::make_sized_batch<double, 4>::type;
+  static constexpr bool use_simd = true;
+  static constexpr size_t stride = use_simd ? SimdType::size : 1;
+  if (total_energy_density.size() % SimdType::size != 0) {
+    ERROR("Goof!");
+  }
+  bool done = false;
+  for (size_t s = 0; s < total_energy_density.size() and not done;
+       s += stride) {
+    if (UNLIKELY(s + stride > size)) {
+      done = true;
+      const size_t remainder = s - (size - stride);
+      // TODO: deal with sequence
+      incomplete_mask = make_sequence<SimdType>() >=
+                        static_cast<double>(remainder);
+
+      // Use remainder to offset index
+      s = size - stride;
+    }
+
     std::optional<PrimitiveRecoverySchemes::PrimitiveRecoveryData>
         primitive_data = std::nullopt;
     tmpl::for_each<OrderedListOfPrimitiveRecoverySchemes>(
@@ -118,14 +140,33 @@ bool PrimitiveFromConservative<OrderedListOfPrimitiveRecoverySchemes,
          &equation_of_state, &s, &electron_fraction](auto scheme) {
           using primitive_recovery_scheme = tmpl::type_from<decltype(scheme)>;
           if (not primitive_data.has_value()) {
-            primitive_data =
-                primitive_recovery_scheme::template apply<ThermodynamicDim>(
-                    get(*pressure)[s], total_energy_density[s],
-                    get(momentum_density_squared)[s],
-                    get(momentum_density_dot_magnetic_field)[s],
-                    get(magnetic_field_squared)[s],
-                    rest_mass_density_times_lorentz_factor[s],
-                    get(*electron_fraction)[s], equation_of_state);
+            if constexpr (std::is_same_v<
+                              primitive_recovery_scheme,
+                              PrimitiveRecoverySchemes::KastaunEtAl> and
+                          use_simd) {
+              primitive_data =
+                  primitive_recovery_scheme::template apply<ThermodynamicDim>(
+                      SimdType::load_unaligned(&get(*pressure)[s]),
+                      SimdType::load_unaligned(&total_energy_density[s]),
+                      SimdType::load_unaligned(
+                          &get(momentum_density_squared)[s]),
+                      SimdType::load_unaligned(
+                          &get(momentum_density_dot_magnetic_field)[s]),
+                      SimdType::load_unaligned(&get(magnetic_field_squared)[s]),
+                      SimdType::load_unaligned(
+                          &rest_mass_density_times_lorentz_factor[s]),
+                      SimdType::load_unaligned(&get(*electron_fraction)[s]),
+                      equation_of_state);
+            } else {
+              primitive_data =
+                  primitive_recovery_scheme::template apply<ThermodynamicDim>(
+                      get(*pressure)[s], total_energy_density[s],
+                      get(momentum_density_squared)[s],
+                      get(momentum_density_dot_magnetic_field)[s],
+                      get(magnetic_field_squared)[s],
+                      rest_mass_density_times_lorentz_factor[s],
+                      get(*electron_fraction)[s], equation_of_state);
+            }
           }
         });
 
