@@ -69,6 +69,13 @@ target_link_libraries(
   RootFinding
   )
 
+
+target_compile_options(
+  ${LIBRARY}
+  PUBLIC
+  -fno-math-errno
+)
+
 add_subdirectory(Actions)
 add_subdirectory(BoundaryConditions)
 add_subdirectory(BoundaryCorrections)
