@@ -30,7 +30,7 @@ void compute_delta_integral(
     const gsl::not_null<DataVector*> integrand_buffer,
     const Mesh<1>& mesh_of_one_element, const Scalar<DataVector>& phi,
     const Scalar<DataVector>& pi, const Scalar<DataVector>& det_jacobian,
-    const tnsr::I<DataVector, 1, Frame::Inertial>& radius)  {
+    const tnsr::I<DataVector, 1, Frame::Inertial>& radius) {
   ASSERT(get(*delta).size() == get<0>(radius).size(),
          "Radius and delta must be of same size. Radius is: "
              << get<0>(radius).size()
@@ -63,7 +63,7 @@ void compute_delta_integral_logical(
     const Mesh<1>& mesh_of_one_element, const Scalar<DataVector>& phi,
     const Scalar<DataVector>& pi,
     const tnsr::I<DataVector, 1, Frame::ElementLogical>& logical,
-    const Scalar<DataVector>& det_jacobian)  {
+    const Scalar<DataVector>& det_jacobian) {
   ASSERT(get(*delta).size() == get<0>(logical).size(),
          "Radius and delta must be of same size. Radius is: "
              << get<0>(logical).size()
@@ -91,8 +91,7 @@ void compute_delta_integral_logical(
 }
 
 const tnsr::I<DataVector, 1, Frame::ElementLogical> coordinate_transformation(
-    const size_t number_of_elements,
-    const size_t number_of_grid_points)  {
+    const size_t number_of_elements, const size_t number_of_grid_points) {
   tnsr::I<DataVector, 1, Frame::ElementLogical> coordinates{};
 }
 
@@ -102,7 +101,7 @@ void compute_mass_integral(
     const Mesh<1>& mesh_of_one_element, const Scalar<DataVector>& phi,
     const Scalar<DataVector>& pi, const Scalar<DataVector>& det_jacobian,
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
-    const size_t spacetime_dim)  {
+    const size_t spacetime_dim) {
   const size_t pts_per_element = mesh_of_one_element.number_of_grid_points();
   const size_t number_of_grids = get(pi).size() / pts_per_element;
   const Matrix& integration_matrix =
@@ -142,7 +141,7 @@ void compute_metric_function_a_from_mass(
     const gsl::not_null<Scalar<DataVector>*> metric_function_a,
     const Scalar<DataVector>& mass,
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
-    const size_t spacetime_dim)  {
+    const size_t spacetime_dim) {
   DataVector view_a{&get(*metric_function_a)[1],
                     get(*metric_function_a).size() - 1};
   const DataVector view_mass{&const_cast<double&>(get(mass)[1]),  // NOLINT
@@ -155,6 +154,17 @@ void compute_metric_function_a_from_mass(
   view_a = 1.0 - 2.0 * view_mass / pow(view_radius, spacetime_dim - 3);
 }
 
+void compute_seg_ids(std::vector<SegmentId>& segids,
+                     const size_t number_of_elements,
+                     const size_t refinement_level) {
+  std::cout << segids << "\n\n";
+  for (size_t element_index = 0; element_index < number_of_elements;
+       element_index += 1) {
+    SegmentId segid{refinement_level, element_index};
+    std::cout << segid << "\n\n";
+    segids.push_back(segid);
+  }
+}
 // void compute_time_derivatives_first_order(
 //     const gsl::not_null<Scalar<DataVector>*> dt_psi,
 //     const gsl::not_null<Scalar<DataVector>*> dt_phi,
@@ -230,8 +240,9 @@ void compute_metric_function_a_from_mass(
 // }
 
 int main(int argc, char** argv) {
-  const size_t number_of_elements = 8;
-  const Mesh<1> mesh_of_one_element{4, Spectral::Basis::Legendre,
+  const size_t refinement_level = 2;
+  const size_t number_of_elements = 4;
+  const Mesh<1> mesh_of_one_element{8, Spectral::Basis::Legendre,
                                     Spectral::Quadrature::GaussLobatto};
   Scalar<DataVector> delta{mesh_of_one_element.number_of_grid_points() *
                            number_of_elements};
@@ -240,24 +251,12 @@ int main(int argc, char** argv) {
   DataVector integrand_buffer{mesh_of_one_element.number_of_grid_points() *
                               number_of_elements};
   const tnsr::I<DataVector, 1, Frame::ElementLogical> logical_coord{
-      logical_coordinates(
-          mesh_of_one_element)};  // when more than one element, logical
-                                  // coordinates have to be generated using
-                                  // separate function.
-  std::cout << logical_coord << "\n\n";
+      logical_coordinates(mesh_of_one_element)};
+
   const std::array<DataVector, 1> logical_coords_array{logical_coord.get(0)};
 
-  const SegmentId segid0{3, 0};
-  const SegmentId segid1{3, 1};
-  const SegmentId segid2{3, 2};
-  const SegmentId segid3{3, 3};
-  const SegmentId segid4{3, 4};
-  const SegmentId segid5{3, 5};
-  const SegmentId segid6{3, 6};
-  const SegmentId segid7{3, 7};
-  std::vector<SegmentId> segids{segid0, segid1, segid2, segid3,
-                                segid4, segid5, segid6, segid7};
-  std::vector<std::pair<double, double>> interval_buffer{};
+  std::vector<SegmentId> segids = {};
+  compute_seg_ids(segids, number_of_elements, refinement_level);
 
   tnsr::I<DataVector, 1, Frame::ElementLogical> coordinate_values{
       mesh_of_one_element.number_of_grid_points() * number_of_elements, 0.0};
@@ -266,17 +265,13 @@ int main(int argc, char** argv) {
        element_index += 1) {
     double lower = segids[element_index].endpoint(Side::Lower);
     double upper = segids[element_index].endpoint(Side::Upper);
-    std::pair<double, double> endpoints{lower, upper};
-    interval_buffer.push_back(endpoints);
     domain::CoordinateMaps::Affine affine_map(-1, 1, lower, upper);
 
     DataVector jacobian_of_element{
         std::next(get(jacobian).data(),
                   element_index * mesh_of_one_element.number_of_grid_points()),
         mesh_of_one_element.number_of_grid_points()};
-    jacobian_of_element = affine_map.jacobian(
-        logical_coords_array)[0];  // jacobian() returns a std::array, so [0]
-                                   // gets the element of that array
+    jacobian_of_element = affine_map.jacobian(logical_coords_array)[0];
 
     for (size_t coord_index = 0;
          coord_index < mesh_of_one_element.number_of_grid_points();
@@ -291,8 +286,6 @@ int main(int argc, char** argv) {
   }
 
   std::cout << coordinate_values << "\n\n";
-  std::cout << jacobian << "\n\n";
-  std::cout << M_PI << "\n\n";
 
   const Scalar<DataVector> pi{
       DataVector{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
@@ -305,7 +298,7 @@ int main(int argc, char** argv) {
 
   compute_delta_integral_logical(&delta, &integrand_buffer, mesh_of_one_element,
                                  phi, pi, coordinate_values, jacobian);
-  std::cout << 'next' << std::setprecision(6) << delta << "\n\n";
+  std::cout << 'next' << std::setprecision(7) << delta << "\n\n";
 
   return 0;
   boost::program_options::options_description desc(wrap_text(
