@@ -292,7 +292,9 @@ long_lines() {
               'external/Licenses/.*License.txt' \
               'RotatingStarId.dat$' \
               'RotatingStarId_Hybrid.dat$' \
+              'support/Environments/setup/mbot_install.sh' \
               'tools/CheckFiles.sh$' && \
+
         staged_grep '^[^#].\{80,\}' "$1" | long_lines_exclude >/dev/null
 }
 long_lines_report() {
