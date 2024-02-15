@@ -25,38 +25,6 @@
 // main module we just have it be empty
 extern "C" void CkRegisterMainModule(void) {}
 
-void compute_delta_integral(
-    const gsl::not_null<Scalar<DataVector>*> delta,
-    const gsl::not_null<DataVector*> integrand_buffer,
-    const Mesh<1>& mesh_of_one_element, const Scalar<DataVector>& phi,
-    const Scalar<DataVector>& pi, const Scalar<DataVector>& det_jacobian,
-    const tnsr::I<DataVector, 1, Frame::Inertial>& radius) {
-  ASSERT(get(*delta).size() == get<0>(radius).size(),
-         "Radius and delta must be of same size. Radius is: "
-             << get<0>(radius).size()
-             << " and delta is: " << get(*delta).size());
-  ASSERT(integrand_buffer->size() == get<0>(radius).size(), "uh oh");
-
-  *integrand_buffer = -4.0 * M_PI * get(det_jacobian) * get<0>(radius) *
-                      (square(get(pi)) + square(get(phi)));
-  std::array<std::reference_wrapper<const Matrix>, 1> matrices{
-      {std::cref(Spectral::integration_matrix(mesh_of_one_element))}};
-
-  apply_matrices(make_not_null(&get(*delta)), matrices, *integrand_buffer,
-                 mesh_of_one_element.extents());
-  // Loop through each CG grid and add offset from previous grid integration
-  const size_t pts_per_element = mesh_of_one_element.number_of_grid_points();
-  DataVector view{};
-  for (size_t grid_index = pts_per_element;
-       grid_index <
-       get(pi).size();  // if 3, would it only go through loop once?
-       grid_index += pts_per_element) {
-    view.set_data_ref(&get(*delta)[grid_index - pts_per_element],
-                      pts_per_element);
-    view += get(*delta)[grid_index - 1];
-  }
-}
-
 void compute_delta_integral_logical(
     const gsl::not_null<Scalar<DataVector>*> delta,
     const gsl::not_null<DataVector*> integrand_buffer,
@@ -71,16 +39,13 @@ void compute_delta_integral_logical(
   ASSERT(integrand_buffer->size() == get<0>(logical).size(), "uh oh");
 
   *integrand_buffer =
-      -M_PI * (square(get(pi)) + square(get(phi))) *
-      get(det_jacobian);  // the r and logical coordinates dependence is
-                          // embedded in the pi and phi, need to take that into
-                          // account in the looping part
+      -M_PI * (square(get(pi)) + square(get(phi))) * get(det_jacobian);
   std::array<std::reference_wrapper<const Matrix>, 1> matrices{
       {std::cref(Spectral::integration_matrix(mesh_of_one_element))}};
 
   apply_matrices(make_not_null(&get(*delta)), matrices, *integrand_buffer,
                  mesh_of_one_element.extents());
-  // Loop through each CG grid and add offset from previous grid integration
+
   const size_t pts_per_element = mesh_of_one_element.number_of_grid_points();
   DataVector view{};
   for (size_t grid_index = pts_per_element; grid_index < get(pi).size();
@@ -115,12 +80,8 @@ void compute_mass_integral(
                               get(det_jacobian)[k] *
                               (square(get(pi)[k]) + square(get(phi)[k]));
         view[i] += pow(get<0>(radius)[k], spacetime_dim - 2) * common;
-        if (UNLIKELY(get<0>(radius)[k] == 0.0)) {
-          matrix_buffer->operator()(i, k) = (i == k ? 1.0 : 0.0);
-        } else {
-          matrix_buffer->operator()(i, k) =
-              (i == k ? 1.0 : 0.0) - 2.0 / get<0>(radius)[k] * common;
-        }
+        matrix_buffer->operator()(i, k) =
+            (i == k ? 1.0 : 0.0) + 2.0 * get<0>(radius)[k] * common;
       }
     }
     // Solve the linear system A m = b for m (the mass)
@@ -128,6 +89,8 @@ void compute_mass_integral(
   }
 
   // Loop through each CG grid and add offset from previous grid integration
+  // Should we change the name of this Datavector, since we have used view
+  // before.
   DataVector view{};
   for (size_t grid_index = pts_per_element; grid_index < get(pi).size();
        grid_index += pts_per_element) {
