@@ -34,11 +34,13 @@ void FixConservativesAndComputePrims<OrderedListOfRecoverySchemes, System>::
           const gsl::not_null<Variables<hydro::grmhd_tags<DataVector>>*>
               primitive_vars_ptr,
           const tnsr::I<DataVector, 3, Frame::Inertial>& subcell_coords,
+          const tnsr::I<DataVector, 3, Frame::Grid>& dg_grid_coords,
           const grmhd::ValenciaDivClean::FixConservatives& fix_conservatives,
           const EquationsOfState::EquationOfState<true, 3>& eos,
           const grmhd::ValenciaDivClean::PrimitiveFromConservativeOptions&
               primitive_from_conservative_options) {
   CAPTURE_FOR_ERROR(subcell_coords);
+  CAPTURE_FOR_ERROR(dg_grid_coords);
   const auto& cons_vars = *conserved_vars_ptr;
   CAPTURE_FOR_ERROR(cons_vars);
   // Compute the spatial metric, inverse spatial metric, and sqrt{det{spatial
@@ -78,7 +80,8 @@ void FixConservativesAndComputePrims<OrderedListOfRecoverySchemes, System>::
       make_not_null(&get<ValenciaDivClean::Tags::TildeS<Frame::Inertial>>(
           *conserved_vars_ptr)),
       get<ValenciaDivClean::Tags::TildeB<Frame::Inertial>>(*conserved_vars_ptr),
-      spatial_metric, inverse_spatial_metric, sqrt_det_spatial_metric);
+      spatial_metric, inverse_spatial_metric, sqrt_det_spatial_metric,
+      dg_grid_coords);
   grmhd::ValenciaDivClean::
       PrimitiveFromConservative<OrderedListOfRecoverySchemes, true>::apply(
           make_not_null(&get<hydro::Tags::RestMassDensity<DataVector>>(
