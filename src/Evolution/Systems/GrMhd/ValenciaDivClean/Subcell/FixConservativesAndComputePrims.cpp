@@ -27,6 +27,7 @@ void FixConservativesAndComputePrims<OrderedListOfRecoverySchemes>::apply(
         conserved_vars_ptr,
     const gsl::not_null<Variables<hydro::grmhd_tags<DataVector>>*>
         primitive_vars_ptr,
+    const tnsr::I<DataVector, 3, Frame::Grid>& dg_grid_coords,
     const grmhd::ValenciaDivClean::FixConservatives& fix_conservatives,
     const EquationsOfState::EquationOfState<true, 3>& eos,
     const tnsr::ii<DataVector, 3, Frame::Inertial>& spatial_metric,
@@ -40,7 +41,7 @@ void FixConservativesAndComputePrims<OrderedListOfRecoverySchemes>::apply(
       make_not_null(&get<Tags::TildeTau>(*conserved_vars_ptr)),
       make_not_null(&get<Tags::TildeS<Frame::Inertial>>(*conserved_vars_ptr)),
       get<Tags::TildeB<Frame::Inertial>>(*conserved_vars_ptr), spatial_metric,
-      inv_spatial_metric, sqrt_det_spatial_metric);
+      inv_spatial_metric, sqrt_det_spatial_metric, dg_grid_coords);
   grmhd::ValenciaDivClean::
       PrimitiveFromConservative<OrderedListOfRecoverySchemes, true>::apply(
           make_not_null(&get<hydro::Tags::RestMassDensity<DataVector>>(
