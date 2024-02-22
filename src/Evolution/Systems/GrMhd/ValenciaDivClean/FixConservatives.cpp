@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstddef>
 #include <limits>
+#include <optional>
 #include <ostream>
 #include <pup.h>
 
@@ -21,6 +22,7 @@
 #include "PointwiseFunctions/Hydro/MagneticFieldTreatment.hpp"
 #include "Utilities/ConstantExpressions.hpp"
 #include "Utilities/Math.hpp"
+#include "Utilities/Serialization/PupStlCpp17.hpp"
 #include "Utilities/Simd/Simd.hpp"
 #include "Utilities/TMPL.hpp"
 
@@ -139,6 +141,8 @@ FixConservatives::FixConservatives(
     const double safety_factor_for_momentum_density_cutoff_d,
     const double safety_factor_for_momentum_density_slope, const bool enable,
     const hydro::MagneticFieldTreatment magnetic_field_treatment,
+    const std::optional<std::array<std::array<double, 3>, 2>>
+        atmosphere_box_bounds,
     const Options::Context& context)
     : minimum_rest_mass_density_times_lorentz_factor_(
           minimum_rest_mass_density_times_lorentz_factor),
@@ -155,7 +159,8 @@ FixConservatives::FixConservatives(
       safety_factor_for_momentum_density_slope_(
           safety_factor_for_momentum_density_slope),
       enable_(enable),
-      magnetic_field_treatment_(magnetic_field_treatment) {
+      magnetic_field_treatment_(magnetic_field_treatment),
+      atmosphere_box_bounds_(atmosphere_box_bounds) {
   if (minimum_rest_mass_density_times_lorentz_factor_ >
       rest_mass_density_times_lorentz_factor_cutoff_) {
     PARSE_ERROR(context,
@@ -185,6 +190,20 @@ FixConservatives::FixConservatives(
                 "SafetyFactorForSSlope too large, will lead to unphysical "
                 "cutoff at low density");
   }
+  if (atmosphere_box_bounds_.has_value()) {
+    for (size_t i = 0; i < 3; ++i) {
+      if (gsl::at(atmosphere_box_bounds_.value()[0], i) >=
+          gsl::at(atmosphere_box_bounds_.value()[1], i)) {
+        PARSE_ERROR(context,
+                    "The lower bounds must be lower than the upper bounds, but "
+                    "this is not true in direction "
+                        << i << " with lower bound "
+                        << gsl::at(atmosphere_box_bounds_.value()[0], i)
+                        << " and upper bound "
+                        << gsl::at(atmosphere_box_bounds_.value()[1], i));
+      }
+    }
+  }
 }
 
 // NOLINTNEXTLINE(google-runtime-references)
@@ -199,6 +218,7 @@ void FixConservatives::pup(PUP::er& p) {
   p | safety_factor_for_momentum_density_slope_;
   p | enable_;
   p | magnetic_field_treatment_;
+  p | atmosphere_box_bounds_;
 }
 
 // WARNING!
@@ -218,7 +238,8 @@ bool FixConservatives::operator()(
     const tnsr::I<DataVector, 3, Frame::Inertial>& tilde_b,
     const tnsr::ii<DataVector, 3, Frame::Inertial>& spatial_metric,
     const tnsr::II<DataVector, 3, Frame::Inertial>& inv_spatial_metric,
-    const Scalar<DataVector>& sqrt_det_spatial_metric) const {
+    const Scalar<DataVector>& sqrt_det_spatial_metric,
+    const tnsr::I<DataVector, 3, Frame::Grid>& dg_grid_coords) const {
   bool needed_fixing = false;
   if (not enable_) {
     return needed_fixing;
@@ -227,6 +248,28 @@ bool FixConservatives::operator()(
   Variables<tmpl::list<::Tags::TempScalar<1>, ::Tags::TempScalar<2>,
                        ::Tags::TempScalar<3>>>
       temp_buffer(size);
+
+  if (atmosphere_box_bounds_.has_value()) {
+    const size_t size_dg = get<0>(dg_grid_coords).size();
+    if (get<0>(dg_grid_coords)[size_dg - 1] >
+            atmosphere_box_bounds_.value()[1][0] or
+        get<1>(dg_grid_coords)[size_dg - 1] >
+            atmosphere_box_bounds_.value()[1][1] or
+        get<2>(dg_grid_coords)[size_dg - 1] >
+            atmosphere_box_bounds_.value()[1][2] or
+        get<0>(dg_grid_coords)[0] < atmosphere_box_bounds_.value()[0][0] or
+        get<1>(dg_grid_coords)[0] < atmosphere_box_bounds_.value()[0][1] or
+        get<2>(dg_grid_coords)[0] < atmosphere_box_bounds_.value()[0][2]) {
+      get(*tilde_d) = minimum_rest_mass_density_times_lorentz_factor_;
+      get(*tilde_tau) =
+          pow(minimum_rest_mass_density_times_lorentz_factor_, 1.5);
+      get(*tilde_ye) = get(*tilde_d) * minimum_electron_fraction_;
+      for (size_t i = 0; i < 3; ++i) {
+        tilde_s->get(i) = 0.0;
+      }
+      return false;
+    }
+  }
 
   Scalar<DataVector>& tilde_s_squared = get<::Tags::TempScalar<2>>(temp_buffer);
   dot_product(make_not_null(&tilde_s_squared), *tilde_s, *tilde_s,
@@ -614,7 +657,8 @@ bool operator==(const FixConservatives& lhs, const FixConservatives& rhs) {
              rhs.safety_factor_for_momentum_density_cutoff_d_ and
          lhs.safety_factor_for_momentum_density_slope_ ==
              rhs.safety_factor_for_momentum_density_slope_ and
-         lhs.enable_ == rhs.enable_;
+         lhs.enable_ == rhs.enable_ and
+         lhs.atmosphere_box_bounds_ == rhs.atmosphere_box_bounds_;
 }
 
 bool operator!=(const FixConservatives& lhs, const FixConservatives& rhs) {
