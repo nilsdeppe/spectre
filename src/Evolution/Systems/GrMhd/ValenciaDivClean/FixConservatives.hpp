@@ -6,6 +6,7 @@
 #include <limits>
 
 #include "DataStructures/Tensor/TypeAliases.hpp"
+#include "Domain/Tags.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/TagsDeclarations.hpp"  // IWYU pragma: keep
 #include "Options/Context.hpp"
 #include "Options/String.hpp"
@@ -196,7 +197,8 @@ class FixConservatives {
       tmpl::list<grmhd::ValenciaDivClean::Tags::TildeB<>,
                  gr::Tags::SpatialMetric<DataVector, 3>,
                  gr::Tags::InverseSpatialMetric<DataVector, 3>,
-                 gr::Tags::SqrtDetSpatialMetric<DataVector>>;
+                 gr::Tags::SqrtDetSpatialMetric<DataVector>,
+                 domain::Tags::Coordinates<3, Frame::Grid>>;
 
   /// Returns `true` if any variables were fixed.
   bool operator()(
@@ -207,7 +209,8 @@ class FixConservatives {
       const tnsr::I<DataVector, 3, Frame::Inertial>& tilde_b,
       const tnsr::ii<DataVector, 3, Frame::Inertial>& spatial_metric,
       const tnsr::II<DataVector, 3, Frame::Inertial>& inv_spatial_metric,
-      const Scalar<DataVector>& sqrt_det_spatial_metric) const;
+      const Scalar<DataVector>& sqrt_det_spatial_metric,
+      const tnsr::I<DataVector, 3, Frame::Grid>& dg_grid_coords) const;
 
  private:
   friend bool operator==(const FixConservatives& lhs,

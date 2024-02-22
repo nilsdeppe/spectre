@@ -182,7 +182,8 @@ bool FixConservatives::operator()(
     const tnsr::I<DataVector, 3, Frame::Inertial>& tilde_b,
     const tnsr::ii<DataVector, 3, Frame::Inertial>& spatial_metric,
     const tnsr::II<DataVector, 3, Frame::Inertial>& inv_spatial_metric,
-    const Scalar<DataVector>& sqrt_det_spatial_metric) const {
+    const Scalar<DataVector>& sqrt_det_spatial_metric,
+    const tnsr::I<DataVector, 3, Frame::Grid>& dg_grid_coords) const {
   bool needed_fixing = false;
   if (not enable_) {
     return needed_fixing;
@@ -197,6 +198,17 @@ bool FixConservatives::operator()(
       get(get<::Tags::TempScalar<0>>(temp_buffer));
   rest_mass_density_times_lorentz_factor =
       get(*tilde_d) / get(sqrt_det_spatial_metric);
+
+  const size_t size_dg = get<0>(dg_grid_coords).size();
+  if( get<0>(dg_grid_coords)[size_dg-1] > 36.0 ||
+      get<1>(dg_grid_coords)[size_dg-1] > 16.0 ||
+      get<2>(dg_grid_coords)[size_dg-1] > 16.0 ||
+      get<0>(dg_grid_coords)[0] < -36.0 ||
+      get<1>(dg_grid_coords)[0]< -16.0||
+      get<2>(dg_grid_coords)[0]< -16.0){
+    rest_mass_density_times_lorentz_factor =
+      rest_mass_density_times_lorentz_factor * 0.0;
+  }
 
   Scalar<DataVector>& tilde_b_squared = get<::Tags::TempScalar<1>>(temp_buffer);
   dot_product(make_not_null(&tilde_b_squared), tilde_b, tilde_b,
