@@ -6,6 +6,7 @@
 #include <cstddef>
 
 #include "DataStructures/Tensor/TypeAliases.hpp"
+#include "Domain/Tags.hpp"
 #include "Evolution/DgSubcell/Tags/Coordinates.hpp"
 #include "Evolution/Systems/GrMhd/GhValenciaDivClean/System.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/FixConservatives.hpp"
@@ -43,6 +44,7 @@ struct FixConservativesAndComputePrims {
                                  typename System::primitive_variables_tag>;
   using argument_tags = tmpl::list<
       evolution::dg::subcell::Tags::Coordinates<3, Frame::Inertial>,
+      domain::Tags::Coordinates<3, Frame::Grid>,
       ::Tags::VariableFixer<grmhd::ValenciaDivClean::FixConservatives>,
       hydro::Tags::GrmhdEquationOfState,
       grmhd::ValenciaDivClean::Tags::PrimitiveFromConservativeOptions>;
@@ -53,6 +55,7 @@ struct FixConservativesAndComputePrims {
       gsl::not_null<Variables<hydro::grmhd_tags<DataVector>>*>
           primitive_vars_ptr,
       const tnsr::I<DataVector, 3, Frame::Inertial>& subcell_coords,
+      const tnsr::I<DataVector, 3, Frame::Grid>& dg_grid_coords,
       const grmhd::ValenciaDivClean::FixConservatives& fix_conservatives,
       const EquationsOfState::EquationOfState<true, 3>& eos,
       const grmhd::ValenciaDivClean::PrimitiveFromConservativeOptions&

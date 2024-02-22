@@ -4,9 +4,12 @@
 #pragma once
 
 #include <limits>
+#include <optional>
 
 #include "DataStructures/Tensor/TypeAliases.hpp"
+#include "Domain/Tags.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/TagsDeclarations.hpp"
+#include "Options/Auto.hpp"
 #include "Options/Context.hpp"
 #include "Options/String.hpp"
 #include "PointwiseFunctions/GeneralRelativity/TagsDeclarations.hpp"
@@ -167,24 +170,34 @@ class FixConservatives {
     static constexpr Options::String help = {
         "How to treat the magnetic field."};
   };
+  struct AtmosphereBoxBounds {
+    using type = Options::Auto<std::array<std::array<double, 3>, 2>,
+                               Options::AutoLabel::None>;
+    static constexpr Options::String help = {
+        "Outside of the bounding box we force atmosphere, essentially having "
+        "the bounding box act as a cheap (and incorrect) outflow condition. "
+        "Specify as: "
+        "[[LOWER_X, LOWER_Y, LOWER_Z], [UPPER_X, UPPER_Y, UPPER_Z]]."};
+  };
 
-  using options =
-      tmpl::list<MinimumValueOfD, CutoffD, MinimumValueOfYe, CutoffYe,
-                 SafetyFactorForB, SafetyFactorForS, SafetyFactorForSCutoffD,
-                 SafetyFactorForSSlope, Enable, MagneticField>;
+  using options = tmpl::list<MinimumValueOfD, CutoffD, MinimumValueOfYe,
+                             CutoffYe, SafetyFactorForB, SafetyFactorForS,
+                             SafetyFactorForSCutoffD, SafetyFactorForSSlope,
+                             Enable, MagneticField, AtmosphereBoxBounds>;
   static constexpr Options::String help = {
       "Variable fixing used in Foucart's thesis.\n"};
 
-  FixConservatives(double minimum_rest_mass_density_times_lorentz_factor,
-                   double rest_mass_density_times_lorentz_factor_cutoff,
-                   double minimum_electron_fraction,
-                   double electron_fraction_cutoff,
-                   double safety_factor_for_magnetic_field,
-                   double safety_factor_for_momentum_density,
-                   double safety_factor_for_momentum_density_cutoff_d,
-                   double safety_factor_for_momentum_density_slope, bool enable,
-                   hydro::MagneticFieldTreatment magnetic_field_treatment,
-                   const Options::Context& context = {});
+  FixConservatives(
+      double minimum_rest_mass_density_times_lorentz_factor,
+      double rest_mass_density_times_lorentz_factor_cutoff,
+      double minimum_electron_fraction, double electron_fraction_cutoff,
+      double safety_factor_for_magnetic_field,
+      double safety_factor_for_momentum_density,
+      double safety_factor_for_momentum_density_cutoff_d,
+      double safety_factor_for_momentum_density_slope, bool enable,
+      hydro::MagneticFieldTreatment magnetic_field_treatment,
+      std::optional<std::array<std::array<double, 3>, 2>> atmosphere_box_bounds,
+      const Options::Context& context = {});
 
   FixConservatives() = default;
   FixConservatives(const FixConservatives& /*rhs*/) = default;
@@ -204,7 +217,8 @@ class FixConservatives {
       tmpl::list<grmhd::ValenciaDivClean::Tags::TildeB<>,
                  gr::Tags::SpatialMetric<DataVector, 3>,
                  gr::Tags::InverseSpatialMetric<DataVector, 3>,
-                 gr::Tags::SqrtDetSpatialMetric<DataVector>>;
+                 gr::Tags::SqrtDetSpatialMetric<DataVector>,
+                 domain::Tags::Coordinates<3, Frame::Grid>>;
 
   /// Returns `true` if any variables were fixed.
   bool operator()(
@@ -215,7 +229,8 @@ class FixConservatives {
       const tnsr::I<DataVector, 3, Frame::Inertial>& tilde_b,
       const tnsr::ii<DataVector, 3, Frame::Inertial>& spatial_metric,
       const tnsr::II<DataVector, 3, Frame::Inertial>& inv_spatial_metric,
-      const Scalar<DataVector>& sqrt_det_spatial_metric) const;
+      const Scalar<DataVector>& sqrt_det_spatial_metric,
+      const tnsr::I<DataVector, 3, Frame::Grid>& dg_grid_coords) const;
 
  private:
   friend bool operator==(const FixConservatives& lhs,
@@ -240,6 +255,8 @@ class FixConservatives {
   bool enable_{true};
   hydro::MagneticFieldTreatment magnetic_field_treatment_{
       hydro::MagneticFieldTreatment::AssumeNonZero};
+  std::optional<std::array<std::array<double, 3>, 2>> atmosphere_box_bounds_{
+      std::nullopt};
 };
 
 bool operator!=(const FixConservatives& lhs, const FixConservatives& rhs);
