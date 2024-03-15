@@ -180,13 +180,13 @@ struct System {
   using boundary_conditions_base = BoundaryConditions::BoundaryCondition;
 
   using variables_tag = ::Tags::Variables<
-      tmpl::list<Tags::TildeD, Tags::TildeYe, Tags::TildeTau, Tags::TildeS<>,
-                 Tags::TildeB<>, Tags::TildePhi>>;
+      tmpl::list<Tags::TildeB<>, Tags::TildeD, Tags::TildeYe, Tags::TildeTau,
+                 Tags::TildeS<>, Tags::TildePhi>>;
   using flux_variables =
-      tmpl::list<Tags::TildeD, Tags::TildeYe, Tags::TildeTau, Tags::TildeS<>,
-                 Tags::TildeB<>, Tags::TildePhi>;
+      tmpl::list<Tags::TildeB<>, Tags::TildeD, Tags::TildeYe, Tags::TildeTau,
+                 Tags::TildeS<>, Tags::TildePhi>;
   using non_conservative_variables = tmpl::list<>;
-  using gradient_variables = tmpl::list<>;
+  using gradient_variables = tmpl::list<Tags::TildeB<>>;
   using primitive_variables_tag =
       ::Tags::Variables<hydro::grmhd_tags<DataVector>>;
   using spacetime_variables_tag =

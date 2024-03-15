@@ -71,18 +71,18 @@ void fluxes_impl(
 }  // namespace detail
 
 void ComputeFluxes::apply(
+    const gsl::not_null<tnsr::IJ<DataVector, 3, Frame::Inertial>*> tilde_b_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_d_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_ye_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
         tilde_tau_flux,
     const gsl::not_null<tnsr::Ij<DataVector, 3, Frame::Inertial>*> tilde_s_flux,
-    const gsl::not_null<tnsr::IJ<DataVector, 3, Frame::Inertial>*> tilde_b_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
         tilde_phi_flux,
+    const tnsr::I<DataVector, 3, Frame::Inertial>& tilde_b,
     const Scalar<DataVector>& tilde_d, const Scalar<DataVector>& tilde_ye,
     const Scalar<DataVector>& tilde_tau,
     const tnsr::i<DataVector, 3, Frame::Inertial>& tilde_s,
-    const tnsr::I<DataVector, 3, Frame::Inertial>& tilde_b,
     const Scalar<DataVector>& tilde_phi, const Scalar<DataVector>& lapse,
     const tnsr::I<DataVector, 3, Frame::Inertial>& shift,
     const Scalar<DataVector>& sqrt_det_spatial_metric,

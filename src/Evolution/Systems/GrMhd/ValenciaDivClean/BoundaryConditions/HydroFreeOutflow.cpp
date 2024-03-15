@@ -45,19 +45,19 @@ void HydroFreeOutflow::pup(PUP::er& p) { BoundaryCondition::pup(p); }
 PUP::able::PUP_ID HydroFreeOutflow::my_PUP_ID = 0;
 
 std::optional<std::string> HydroFreeOutflow::dg_ghost(
+    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_b,
     const gsl::not_null<Scalar<DataVector>*> tilde_d,
     const gsl::not_null<Scalar<DataVector>*> tilde_ye,
     const gsl::not_null<Scalar<DataVector>*> tilde_tau,
     const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*> tilde_s,
-    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_b,
     const gsl::not_null<Scalar<DataVector>*> tilde_phi,
 
+    const gsl::not_null<tnsr::IJ<DataVector, 3, Frame::Inertial>*> tilde_b_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_d_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_ye_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
         tilde_tau_flux,
     const gsl::not_null<tnsr::Ij<DataVector, 3, Frame::Inertial>*> tilde_s_flux,
-    const gsl::not_null<tnsr::IJ<DataVector, 3, Frame::Inertial>*> tilde_b_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
         tilde_phi_flux,
 
@@ -166,7 +166,7 @@ std::optional<std::string> HydroFreeOutflow::dg_ghost(
       (*spatial_velocity)(ti::J) * (interior_spatial_metric(ti::i, ti::j)));
 
   ConservativeFromPrimitive::apply(
-      tilde_d, tilde_ye, tilde_tau, tilde_s, tilde_b, tilde_phi,
+      tilde_b, tilde_d, tilde_ye, tilde_tau, tilde_s, tilde_phi,
       interior_rest_mass_density, interior_electron_fraction,
       interior_specific_internal_energy, interior_pressure, *spatial_velocity,
       interior_lorentz_factor, interior_magnetic_field,
@@ -174,8 +174,8 @@ std::optional<std::string> HydroFreeOutflow::dg_ghost(
       exterior_divergence_cleaning_field);
 
   ComputeFluxes::apply(
-      tilde_d_flux, tilde_ye_flux, tilde_tau_flux, tilde_s_flux, tilde_b_flux,
-      tilde_phi_flux, *tilde_d, *tilde_ye, *tilde_tau, *tilde_s, *tilde_b,
+      tilde_b_flux, tilde_d_flux, tilde_ye_flux, tilde_tau_flux, tilde_s_flux,
+      tilde_phi_flux, *tilde_b, *tilde_d, *tilde_ye, *tilde_tau, *tilde_s,
       *tilde_phi, *lapse, *shift, interior_sqrt_det_spatial_metric,
       interior_spatial_metric, *inv_spatial_metric, interior_pressure,
       *spatial_velocity, interior_lorentz_factor, interior_magnetic_field);

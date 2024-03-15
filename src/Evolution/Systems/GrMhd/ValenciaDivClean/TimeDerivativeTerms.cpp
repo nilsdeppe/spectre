@@ -17,25 +17,26 @@
 #include "PointwiseFunctions/GeneralRelativity/Tags.hpp"
 #include "PointwiseFunctions/Hydro/Tags.hpp"
 #include "Utilities/ConstantExpressions.hpp"
+#include "Utilities/ErrorHandling/CaptureForError.hpp"
 #include "Utilities/Gsl.hpp"
 
 namespace grmhd::ValenciaDivClean {
 evolution::dg::TimeDerivativeDecisions<3> TimeDerivativeTerms::apply(
+    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
+        non_flux_terms_dt_tilde_b,
     const gsl::not_null<Scalar<DataVector>*> /*non_flux_terms_dt_tilde_d*/,
     const gsl::not_null<Scalar<DataVector>*> /*non_flux_terms_dt_tilde_ye*/,
     const gsl::not_null<Scalar<DataVector>*> non_flux_terms_dt_tilde_tau,
     const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
         non_flux_terms_dt_tilde_s,
-    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
-        non_flux_terms_dt_tilde_b,
     const gsl::not_null<Scalar<DataVector>*> non_flux_terms_dt_tilde_phi,
 
+    const gsl::not_null<tnsr::IJ<DataVector, 3, Frame::Inertial>*> tilde_b_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_d_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_ye_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
         tilde_tau_flux,
     const gsl::not_null<tnsr::Ij<DataVector, 3, Frame::Inertial>*> tilde_s_flux,
-    const gsl::not_null<tnsr::IJ<DataVector, 3, Frame::Inertial>*> tilde_b_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
         tilde_phi_flux,
 
@@ -70,6 +71,8 @@ evolution::dg::TimeDerivativeDecisions<3> TimeDerivativeTerms::apply(
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> temp_shift,
     const gsl::not_null<tnsr::II<DataVector, 3, Frame::Inertial>*>
         temp_inverse_spatial_metric,
+
+    const tnsr::iJ<DataVector, 3, Frame::Inertial>& d_tilde_b,
 
     const Scalar<DataVector>& tilde_d, const Scalar<DataVector>& tilde_ye,
     const Scalar<DataVector>& tilde_tau,
@@ -154,6 +157,32 @@ evolution::dg::TimeDerivativeDecisions<3> TimeDerivativeTerms::apply(
 
       rest_mass_density, electron_fraction, pressure, specific_internal_energy,
       extrinsic_curvature, constraint_damping_parameter);
+
+  /*
+  for (size_t i = 0; i < 3; ++i){
+    for (size_t j = 0; j < 3; ++j){
+      CAPTURE_FOR_ERROR(d_tilde_b);
+      non_flux_terms_dt_tilde_b->get(i) -= get(lapse) * spatial_velocity.get(i)
+  * d_tilde_b.get(j, j);
+    }
+  }
+  */
+
+  for (size_t i = 0; i < 3; ++i) {
+    for (size_t j = 0; j < 3; ++j) {
+      non_flux_terms_dt_tilde_s->get(i) -=
+          lapse_b_over_w->get(i) *
+          d_tilde_b.get(j,
+                        j);  // get(lapse) * shift.get(i) * d_tilde_b.get(j, j);
+    }
+  }
+
+  /*
+  for (size_t i = 0; i < 3; ++i){
+    get(*non_flux_terms_dt_tilde_tau) -= get(lapse) *
+  get(*magnetic_field_dot_spatial_velocity) * d_tilde_b.get(i, i); } // got
+  variables based on what seems like the corresponding term in Fluxes.cpp
+  */
   return {true};
 }
 }  // namespace grmhd::ValenciaDivClean

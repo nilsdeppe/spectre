@@ -656,6 +656,14 @@ def soln_flux_tilde_b(
     dim,
 ):
     return fluxes.tilde_b_flux(
+        soln_tilde_b(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
         soln_tilde_d(
             face_mesh_velocity,
             outward_directed_normal_covector,
@@ -681,14 +689,6 @@ def soln_flux_tilde_b(
             dim,
         ),
         soln_tilde_s(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        soln_tilde_b(
             face_mesh_velocity,
             outward_directed_normal_covector,
             outward_directed_normal_vector,

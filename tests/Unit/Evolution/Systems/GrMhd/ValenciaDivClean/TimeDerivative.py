@@ -7,11 +7,11 @@ import Sources
 
 
 def tilde_d_flux(
+    tilde_b,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
     tilde_phi,
     lapse,
     shift,
@@ -32,11 +32,11 @@ def tilde_d_flux(
     constraint_damping_parameter,
 ):
     return Fluxes.tilde_d_flux(
+        tilde_b,
         tilde_d,
         tilde_ye,
         tilde_tau,
         tilde_s,
-        tilde_b,
         tilde_phi,
         lapse,
         shift,
@@ -51,11 +51,11 @@ def tilde_d_flux(
 
 
 def tilde_ye_flux(
+    tilde_b,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
     tilde_phi,
     lapse,
     shift,
@@ -76,11 +76,11 @@ def tilde_ye_flux(
     constraint_damping_parameter,
 ):
     return Fluxes.tilde_ye_flux(
+        tilde_b,
         tilde_d,
         tilde_ye,
         tilde_tau,
         tilde_s,
-        tilde_b,
         tilde_phi,
         lapse,
         shift,
@@ -95,11 +95,11 @@ def tilde_ye_flux(
 
 
 def tilde_tau_flux(
+    tilde_b,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
     tilde_phi,
     lapse,
     shift,
@@ -120,11 +120,11 @@ def tilde_tau_flux(
     constraint_damping_parameter,
 ):
     return Fluxes.tilde_tau_flux(
+        tilde_b,
         tilde_d,
         tilde_ye,
         tilde_tau,
         tilde_s,
-        tilde_b,
         tilde_phi,
         lapse,
         shift,
@@ -139,11 +139,11 @@ def tilde_tau_flux(
 
 
 def tilde_s_flux(
+    tilde_b,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
     tilde_phi,
     lapse,
     shift,
@@ -164,11 +164,11 @@ def tilde_s_flux(
     constraint_damping_parameter,
 ):
     return Fluxes.tilde_s_flux(
+        tilde_b,
         tilde_d,
         tilde_ye,
         tilde_tau,
         tilde_s,
-        tilde_b,
         tilde_phi,
         lapse,
         shift,
@@ -183,11 +183,11 @@ def tilde_s_flux(
 
 
 def tilde_b_flux(
+    tilde_b,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
     tilde_phi,
     lapse,
     shift,
@@ -208,11 +208,11 @@ def tilde_b_flux(
     constraint_damping_parameter,
 ):
     return Fluxes.tilde_b_flux(
+        tilde_b,
         tilde_d,
         tilde_ye,
         tilde_tau,
         tilde_s,
-        tilde_b,
         tilde_phi,
         lapse,
         shift,
@@ -227,11 +227,11 @@ def tilde_b_flux(
 
 
 def tilde_phi_flux(
+    tilde_b,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
     tilde_phi,
     lapse,
     shift,
@@ -252,11 +252,11 @@ def tilde_phi_flux(
     constraint_damping_parameter,
 ):
     return Fluxes.tilde_phi_flux(
+        tilde_b,
         tilde_d,
         tilde_ye,
         tilde_tau,
         tilde_s,
-        tilde_b,
         tilde_phi,
         lapse,
         shift,
@@ -271,11 +271,11 @@ def tilde_phi_flux(
 
 
 def source_tilde_d(
+    tilde_b,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
     tilde_phi,
     lapse,
     shift,
@@ -299,11 +299,11 @@ def source_tilde_d(
 
 
 def source_tilde_ye(
+    tilde_b,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
     tilde_phi,
     lapse,
     shift,
@@ -327,11 +327,11 @@ def source_tilde_ye(
 
 
 def source_tilde_tau(
+    tilde_b,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
     tilde_phi,
     lapse,
     shift,
@@ -352,11 +352,11 @@ def source_tilde_tau(
     constraint_damping_parameter,
 ):
     return Sources.source_tilde_tau(
+        tilde_b,
         tilde_d,
         tilde_ye,
         tilde_tau,
         tilde_s,
-        tilde_b,
         tilde_phi,
         spatial_velocity,
         magnetic_field,
@@ -379,11 +379,11 @@ def source_tilde_tau(
 
 
 def source_tilde_s(
+    tilde_b,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
     tilde_phi,
     lapse,
     shift,
@@ -404,11 +404,11 @@ def source_tilde_s(
     constraint_damping_parameter,
 ):
     return Sources.source_tilde_s(
+        tilde_b,
         tilde_d,
         tilde_ye,
         tilde_tau,
         tilde_s,
-        tilde_b,
         tilde_phi,
         spatial_velocity,
         magnetic_field,
@@ -431,11 +431,11 @@ def source_tilde_s(
 
 
 def source_tilde_b(
+    tilde_b,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
     tilde_phi,
     lapse,
     shift,
@@ -456,11 +456,11 @@ def source_tilde_b(
     constraint_damping_parameter,
 ):
     return Sources.source_tilde_b(
+        tilde_b,
         tilde_d,
         tilde_ye,
         tilde_tau,
         tilde_s,
-        tilde_b,
         tilde_phi,
         spatial_velocity,
         magnetic_field,
@@ -483,11 +483,11 @@ def source_tilde_b(
 
 
 def source_tilde_phi(
+    tilde_b,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
     tilde_phi,
     lapse,
     shift,
@@ -508,11 +508,11 @@ def source_tilde_phi(
     constraint_damping_parameter,
 ):
     return Sources.source_tilde_phi(
+        tilde_b,
         tilde_d,
         tilde_ye,
         tilde_tau,
         tilde_s,
-        tilde_b,
         tilde_phi,
         spatial_velocity,
         magnetic_field,

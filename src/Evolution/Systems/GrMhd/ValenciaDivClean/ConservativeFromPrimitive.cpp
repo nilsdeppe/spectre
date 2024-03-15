@@ -19,11 +19,11 @@
 namespace grmhd::ValenciaDivClean {
 
 void ConservativeFromPrimitive::apply(
+    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_b,
     const gsl::not_null<Scalar<DataVector>*> tilde_d,
     const gsl::not_null<Scalar<DataVector>*> tilde_ye,
     const gsl::not_null<Scalar<DataVector>*> tilde_tau,
     const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*> tilde_s,
-    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_b,
     const gsl::not_null<Scalar<DataVector>*> tilde_phi,
     const Scalar<DataVector>& rest_mass_density,
     const Scalar<DataVector>& electron_fraction,

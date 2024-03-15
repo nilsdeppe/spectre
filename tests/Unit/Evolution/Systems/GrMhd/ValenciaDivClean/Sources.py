@@ -52,11 +52,11 @@ def stress_tensor(
 
 
 def source_tilde_tau(
+    tilde_b,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
     tilde_phi,
     spatial_velocity,
     magnetic_field,
@@ -93,11 +93,11 @@ def source_tilde_tau(
 
 
 def source_tilde_s(
+    tilde_b,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
     tilde_phi,
     spatial_velocity,
     magnetic_field,
@@ -136,11 +136,11 @@ def source_tilde_s(
 
 
 def source_tilde_b(
+    tilde_b,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
     tilde_phi,
     spatial_velocity,
     magnetic_field,
@@ -175,11 +175,11 @@ def source_tilde_b(
 
 
 def source_tilde_phi(
+    tilde_b,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
     tilde_phi,
     spatial_velocity,
     magnetic_field,

@@ -33,6 +33,8 @@ void forward_to_time_deriv(
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
         tilde_phi_flux,
 
+    const tnsr::iJ<DataVector, 3, Frame::Inertial>& d_tilde_b,
+
     const Scalar<DataVector>& tilde_d, const Scalar<DataVector>& tilde_ye,
     const Scalar<DataVector>& tilde_tau,
     const tnsr::i<DataVector, 3, Frame::Inertial>& tilde_s,
@@ -63,11 +65,11 @@ void forward_to_time_deriv(
       temp{get(lapse).size(), 0.0};
 
   grmhd::ValenciaDivClean::TimeDerivativeTerms::apply(
-      non_flux_terms_dt_tilde_d, non_flux_terms_dt_tilde_ye,
-      non_flux_terms_dt_tilde_tau, non_flux_terms_dt_tilde_s,
-      non_flux_terms_dt_tilde_b, non_flux_terms_dt_tilde_phi,
+      non_flux_terms_dt_tilde_b, non_flux_terms_dt_tilde_d,
+      non_flux_terms_dt_tilde_ye, non_flux_terms_dt_tilde_tau,
+      non_flux_terms_dt_tilde_s, non_flux_terms_dt_tilde_phi,
 
-      tilde_d_flux, tilde_ye_flux, tilde_tau_flux, tilde_s_flux, tilde_b_flux,
+      tilde_b_flux, tilde_d_flux, tilde_ye_flux, tilde_tau_flux, tilde_s_flux,
       tilde_phi_flux,
 
       make_not_null(
@@ -110,6 +112,8 @@ void forward_to_time_deriv(
       make_not_null(&get<gr::Tags::Lapse<DataVector>>(temp)),
       make_not_null(&get<gr::Tags::Shift<DataVector, 3>>(temp)),
       make_not_null(&get<gr::Tags::InverseSpatialMetric<DataVector, 3>>(temp)),
+
+      d_tilde_b,
 
       tilde_d, tilde_ye, tilde_tau, tilde_s, tilde_b, tilde_phi, lapse, shift,
       sqrt_det_spatial_metric, spatial_metric, inv_spatial_metric, d_lapse,

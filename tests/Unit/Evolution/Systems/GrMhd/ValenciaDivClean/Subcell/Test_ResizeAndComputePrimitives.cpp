@@ -110,11 +110,11 @@ void test(const gsl::not_null<std::mt19937*> gen,
                              &sqrt_det_spatial_metric](const auto& prims) {
     cons_vars.initialize(prims.number_of_grid_points());
     ConservativeFromPrimitive::apply(
+        make_not_null(&get<Tags::TildeB<Frame::Inertial>>(cons_vars)),
         make_not_null(&get<Tags::TildeD>(cons_vars)),
         make_not_null(&get<Tags::TildeYe>(cons_vars)),
         make_not_null(&get<Tags::TildeTau>(cons_vars)),
         make_not_null(&get<Tags::TildeS<Frame::Inertial>>(cons_vars)),
-        make_not_null(&get<Tags::TildeB<Frame::Inertial>>(cons_vars)),
         make_not_null(&get<Tags::TildePhi>(cons_vars)),
         get<hydro::Tags::RestMassDensity<DataVector>>(prims),
         get<hydro::Tags::ElectronFraction<DataVector>>(prims),

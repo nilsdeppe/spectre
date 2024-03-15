@@ -55,11 +55,11 @@ namespace ValenciaDivClean {
  * \frac{W}{W + 1} \right) + p v^2 \right] .\f]
  */
 struct ConservativeFromPrimitive {
-  using return_tags = tmpl::list<grmhd::ValenciaDivClean::Tags::TildeD,
+  using return_tags = tmpl::list<grmhd::ValenciaDivClean::Tags::TildeB<>,
+                                 grmhd::ValenciaDivClean::Tags::TildeD,
                                  grmhd::ValenciaDivClean::Tags::TildeYe,
                                  grmhd::ValenciaDivClean::Tags::TildeTau,
                                  grmhd::ValenciaDivClean::Tags::TildeS<>,
-                                 grmhd::ValenciaDivClean::Tags::TildeB<>,
                                  grmhd::ValenciaDivClean::Tags::TildePhi>;
 
   using argument_tags =
@@ -75,11 +75,11 @@ struct ConservativeFromPrimitive {
                  hydro::Tags::DivergenceCleaningField<DataVector>>;
 
   static void apply(
+      gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_b,
       gsl::not_null<Scalar<DataVector>*> tilde_d,
       gsl::not_null<Scalar<DataVector>*> tilde_ye,
       gsl::not_null<Scalar<DataVector>*> tilde_tau,
       gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*> tilde_s,
-      gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_b,
       gsl::not_null<Scalar<DataVector>*> tilde_phi,
       const Scalar<DataVector>& rest_mass_density,
       const Scalar<DataVector>& electron_fraction,

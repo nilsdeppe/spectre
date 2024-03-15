@@ -49,11 +49,11 @@ namespace grmhd::ValenciaDivClean::fd {
 /// \brief The list of tags used by `reconstruct_prims_work` and
 /// `reconstruct_fd_neighbor_work`
 using tags_list_for_reconstruct = tmpl::list<
+    grmhd::ValenciaDivClean::Tags::TildeB<Frame::Inertial>,
     grmhd::ValenciaDivClean::Tags::TildeD,
     grmhd::ValenciaDivClean::Tags::TildeYe,
     grmhd::ValenciaDivClean::Tags::TildeTau,
     grmhd::ValenciaDivClean::Tags::TildeS<Frame::Inertial>,
-    grmhd::ValenciaDivClean::Tags::TildeB<Frame::Inertial>,
     grmhd::ValenciaDivClean::Tags::TildePhi,
     hydro::Tags::RestMassDensity<DataVector>,
     hydro::Tags::ElectronFraction<DataVector>,
@@ -64,6 +64,8 @@ using tags_list_for_reconstruct = tmpl::list<
     hydro::Tags::LorentzFactor<DataVector>, hydro::Tags::Pressure<DataVector>,
     hydro::Tags::Temperature<DataVector>,
     hydro::Tags::LorentzFactorTimesSpatialVelocity<DataVector, 3>,
+    ::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildeB<Frame::Inertial>,
+                 tmpl::size_t<3>, Frame::Inertial>,
     ::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildeD, tmpl::size_t<3>,
                  Frame::Inertial>,
     ::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildeYe, tmpl::size_t<3>,
@@ -71,8 +73,6 @@ using tags_list_for_reconstruct = tmpl::list<
     ::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildeTau, tmpl::size_t<3>,
                  Frame::Inertial>,
     ::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildeS<Frame::Inertial>,
-                 tmpl::size_t<3>, Frame::Inertial>,
-    ::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildeB<Frame::Inertial>,
                  tmpl::size_t<3>, Frame::Inertial>,
     ::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildePhi, tmpl::size_t<3>,
                  Frame::Inertial>,
