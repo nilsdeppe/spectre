@@ -167,7 +167,7 @@ evolution::dg::TimeDerivativeDecisions<3> TimeDerivativeTerms::apply(
     }
   }
   */
-
+  /*
   for (size_t i = 0; i < 3; ++i) {
     for (size_t j = 0; j < 3; ++j) {
       non_flux_terms_dt_tilde_s->get(i) -=
@@ -176,6 +176,7 @@ evolution::dg::TimeDerivativeDecisions<3> TimeDerivativeTerms::apply(
                         j);  // get(lapse) * shift.get(i) * d_tilde_b.get(j, j);
     }
   }
+  */
 
   /*
   for (size_t i = 0; i < 3; ++i){
