@@ -158,6 +158,9 @@ evolution::dg::TimeDerivativeDecisions<3> TimeDerivativeTerms::apply(
       rest_mass_density, electron_fraction, pressure, specific_internal_energy,
       extrinsic_curvature, constraint_damping_parameter);
 
+  for (size_t i = 0; i < 3; ++i){
+    non_flux_terms_dt_tilde_b->get(i) = 0;
+    }
   /*
   for (size_t i = 0; i < 3; ++i){
     for (size_t j = 0; j < 3; ++j){

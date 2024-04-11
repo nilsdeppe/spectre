@@ -8,6 +8,8 @@
 #include "PointwiseFunctions/Hydro/Tags.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
 #include "Utilities/MakeWithValue.hpp"
+#include "DataStructures/Tensor/EagerMath/Magnitude.hpp"
+#include "DataStructures/Tensor/Expressions/Divide.hpp"
 
 namespace grmhd::Solutions {
 
@@ -36,7 +38,23 @@ tuples::TaggedTuple<hydro::Tags::MagneticField<DataType, 3>>
 SmoothFlow::variables(
     const tnsr::I<DataType, 3>& x, double /*t*/,
     tmpl::list<hydro::Tags::MagneticField<DataType, 3>> /*meta*/) const {
-  return {make_with_value<tnsr::I<DataType, 3>>(x, 0.0)};
+  //    return {make_with_value<tnsr::I<DataType, 3>>(x, 0.0)};
+
+  auto result = make_with_value<tnsr::I<DataType, 3>>(x, 0.0);
+  result.get(2) = 1.0;
+  return  {std::move(result)}; // infinite sheet of charge
+  /*
+  auto result = x;
+  const Scalar<DataType> radius = magnitude(x);
+  for (size_t i = 0; i < 3; ++i) {
+    result.get(i) /= square(get(radius));
+  }
+  return {std::move(result)}; // ~point charge? */
+  /*
+  auto result = make_with_value<tnsr::I<DataType, 3>>(x, 0.0);
+  result.get(2) = 1.0 * x.get(2);
+  return {std::move(result)}; // slab spanning the size of the domain
+  */
 }
 
 template <typename DataType>
