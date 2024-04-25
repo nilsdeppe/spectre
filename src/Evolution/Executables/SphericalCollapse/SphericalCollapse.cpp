@@ -69,6 +69,8 @@ void compute_mass_integral(
     const size_t spacetime_dim) {
   const size_t pts_per_element = mesh_of_one_element.number_of_grid_points();
   const size_t number_of_grids = get(pi).size() / pts_per_element;
+  std::cout << pts_per_element << '\n\n';
+  std::cout << get(pi).size() << '\n\n';
   const Matrix& integration_matrix =
       Spectral::integration_matrix(mesh_of_one_element);
   for (size_t grid = 0; grid < number_of_grids; ++grid) {
@@ -84,8 +86,9 @@ void compute_mass_integral(
             (i == k ? 1.0 : 0.0) + 2.0 * get<0>(radius)[k] * common;
       }
     }
-    // Solve the linear system A m = b for m (the mass)
-    lapack::general_matrix_linear_solve(make_not_null(&view), matrix_buffer);
+    // std::cout << "g: " << grid << ' ' << view << "\n" << *matrix_buffer <<
+    // "\n\n"; Solve the linear system A m = b for m (the mass)
+    lapack::general_matrix_linear_solve(make_not_null(&view), *matrix_buffer);
   }
 
   // Loop through each CG grid and add offset from previous grid integration
@@ -94,8 +97,7 @@ void compute_mass_integral(
   DataVector view{};
   for (size_t grid_index = pts_per_element; grid_index < get(pi).size();
        grid_index += pts_per_element) {
-    view.set_data_ref(&get(*mass)[grid_index - pts_per_element],
-                      pts_per_element);
+    view.set_data_ref(&get(*mass)[grid_index], pts_per_element);
     view += get(*mass)[grid_index - 1];
   }
 }
@@ -120,11 +122,9 @@ void compute_metric_function_a_from_mass(
 void compute_seg_ids(std::vector<SegmentId>& segids,
                      const size_t number_of_elements,
                      const size_t refinement_level) {
-  std::cout << segids << "\n\n";
   for (size_t element_index = 0; element_index < number_of_elements;
        element_index += 1) {
     SegmentId segid{refinement_level, element_index};
-    std::cout << segid << "\n\n";
     segids.push_back(segid);
   }
 }
@@ -221,7 +221,7 @@ int main(int argc, char** argv) {
   std::vector<SegmentId> segids = {};
   compute_seg_ids(segids, number_of_elements, refinement_level);
 
-  tnsr::I<DataVector, 1, Frame::ElementLogical> coordinate_values{
+  tnsr::I<DataVector, 1, Frame::BlockLogical> block_logical_coords{
       mesh_of_one_element.number_of_grid_points() * number_of_elements, 0.0};
 
   for (size_t element_index = 0; element_index < number_of_elements;
@@ -242,14 +242,40 @@ int main(int argc, char** argv) {
       std::array<double, 1> point{};
       std::array<double, 1> point_to_check{logical_coord[0][coord_index]};
       point = affine_map(point_to_check);
-      coordinate_values.get(
+      block_logical_coords.get(
           0)[element_index * mesh_of_one_element.number_of_grid_points() +
              coord_index] = point[0];
     }
   }
+  Scalar<DataVector> phi_2{
+      mesh_of_one_element.number_of_grid_points() * number_of_elements, 0.0};
+  Scalar<DataVector> mass{mesh_of_one_element.number_of_grid_points() *
+                          number_of_elements};
+  tnsr::I<DataVector, 1, Frame::Inertial> radius{
+      mesh_of_one_element.number_of_grid_points() * number_of_elements, 0};
+  // const std::array<DataVector, 1> values_array{block_logical_coords.get(0)};
+  // DataVector jacobian_of_element{mesh_of_one_element.number_of_grid_points()
+  // *
+  //                          number_of_elements};
 
-  std::cout << coordinate_values << "\n\n";
+  radius.get(0) = sqrt((block_logical_coords.get(0) + 1.0) * 0.5);
+  // radius[0][coord_index] = std::sqrt((values_array[coord_index]+1)/2);
+  // get(jacobian)[coord_index] = 1/(4*radius[0][coord_index]);
+  get(phi_2) = sqrt(radius.get(0));
+  get(jacobian) *= 1.0 / (4.0 * radius.get(0));
+  std::cout << jacobian << "\n\n";
 
+  Matrix matrix_buffer{mesh_of_one_element.number_of_grid_points(),
+                       mesh_of_one_element.number_of_grid_points()};
+
+  const Scalar<DataVector> pi_2{
+      mesh_of_one_element.number_of_grid_points() * number_of_elements, 0.0};
+  std::cout << phi_2 << "\n\n";
+
+  const size_t spacetime_dim = 3;
+  std::cout << radius << "\n\n";
+
+  // std::cout <<jacobian << "\n\n";
   const Scalar<DataVector> pi{
       DataVector{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
                  0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
@@ -260,8 +286,12 @@ int main(int argc, char** argv) {
                  0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5}};
 
   compute_delta_integral_logical(&delta, &integrand_buffer, mesh_of_one_element,
-                                 phi, pi, coordinate_values, jacobian);
-  std::cout << 'next' << std::setprecision(7) << delta << "\n\n";
+                                 phi, pi, block_logical_coords, jacobian);
+  compute_mass_integral(&mass, &matrix_buffer, mesh_of_one_element, phi_2, pi_2,
+                        jacobian, radius, spacetime_dim);
+
+  // std::cout << 'next' << std::setprecision(7) << delta << "\n\n";
+  std::cout << 'next' << std::setprecision(7) << mass << "\n\n";
 
   return 0;
   boost::program_options::options_description desc(wrap_text(
