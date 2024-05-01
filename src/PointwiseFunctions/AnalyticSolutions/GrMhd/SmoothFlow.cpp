@@ -38,11 +38,11 @@ tuples::TaggedTuple<hydro::Tags::MagneticField<DataType, 3>>
 SmoothFlow::variables(
     const tnsr::I<DataType, 3>& x, double /*t*/,
     tmpl::list<hydro::Tags::MagneticField<DataType, 3>> /*meta*/) const {
-  //    return {make_with_value<tnsr::I<DataType, 3>>(x, 0.0)};
-
+  //  return {make_with_value<tnsr::I<DataType, 3>>(x, 0.0)};
+  /*
   auto result = make_with_value<tnsr::I<DataType, 3>>(x, 0.0);
   result.get(2) = 1.0;
-  return  {std::move(result)}; // infinite sheet of charge
+  return  {std::move(result)}; // infinite sheet of charge */
   /*
   auto result = x;
   const Scalar<DataType> radius = magnitude(x);
@@ -50,11 +50,17 @@ SmoothFlow::variables(
     result.get(i) /= square(get(radius));
   }
   return {std::move(result)}; // ~point charge? */
+
   /*
   auto result = make_with_value<tnsr::I<DataType, 3>>(x, 0.0);
   result.get(2) = 1.0 * x.get(2);
   return {std::move(result)}; // slab spanning the size of the domain
   */
+
+  auto result = make_with_value<tnsr::I<DataType, 3>>(x, 0.0);
+  result.get(2) = 1.0*x.get(2) * exp(-0.5 * square(x.get(2)));
+  return {std::move(result)};
+// smooth function that is ~0 at 0 and pi and has some maximum between
 }
 
 template <typename DataType>

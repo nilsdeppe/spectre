@@ -580,6 +580,12 @@ struct TimeDerivative {
 
     evolution::dg::subcell::store_reconstruction_order_in_databox(
         box, reconstruction_order);
+    /*
+    for (size_t i = 0; i < 3; ++i){
+      get<::Tags::dt<grmhd::ValenciaDivClean::Tags::TildeB<>>>
+        (*dt_vars_ptr).get(i) = 0;
+    } // sets time derivative of magnetic field to 0
+    */
   }
 
  private:
