@@ -106,19 +106,19 @@ struct TimeDerivativeTerms {
   static evolution::dg::TimeDerivativeDecisions<3> apply(
       gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
           non_flux_terms_dt_tilde_b,
+      gsl::not_null<Scalar<DataVector>*> non_flux_terms_dt_tilde_phi,
       gsl::not_null<Scalar<DataVector>*> /*non_flux_terms_dt_tilde_d*/,
       gsl::not_null<Scalar<DataVector>*> /*non_flux_terms_dt_tilde_ye*/,
       gsl::not_null<Scalar<DataVector>*> non_flux_terms_dt_tilde_tau,
       gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
           non_flux_terms_dt_tilde_s,
-      gsl::not_null<Scalar<DataVector>*> non_flux_terms_dt_tilde_phi,
 
       gsl::not_null<tnsr::IJ<DataVector, 3, Frame::Inertial>*> tilde_b_flux,
+      gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_phi_flux,
       gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_d_flux,
       gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_ye_flux,
       gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_tau_flux,
       gsl::not_null<tnsr::Ij<DataVector, 3, Frame::Inertial>*> tilde_s_flux,
-      gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_phi_flux,
 
       gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
           spatial_velocity_one_form,
@@ -151,6 +151,7 @@ struct TimeDerivativeTerms {
           temp_inverse_spatial_metric,
 
       const tnsr::iJ<DataVector, 3, Frame::Inertial>& d_tilde_b,
+      const tnsr::i<DataVector, 3, Frame::Inertial>& d_tilde_phi,
 
       const Scalar<DataVector>& tilde_d, const Scalar<DataVector>& tilde_ye,
       const Scalar<DataVector>& tilde_tau,

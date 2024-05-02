@@ -56,11 +56,11 @@ namespace ValenciaDivClean {
  */
 struct ConservativeFromPrimitive {
   using return_tags = tmpl::list<grmhd::ValenciaDivClean::Tags::TildeB<>,
+                                 grmhd::ValenciaDivClean::Tags::TildePhi,
                                  grmhd::ValenciaDivClean::Tags::TildeD,
                                  grmhd::ValenciaDivClean::Tags::TildeYe,
                                  grmhd::ValenciaDivClean::Tags::TildeTau,
-                                 grmhd::ValenciaDivClean::Tags::TildeS<>,
-                                 grmhd::ValenciaDivClean::Tags::TildePhi>;
+                                 grmhd::ValenciaDivClean::Tags::TildeS<>>;
 
   using argument_tags =
       tmpl::list<hydro::Tags::RestMassDensity<DataVector>,
@@ -76,11 +76,11 @@ struct ConservativeFromPrimitive {
 
   static void apply(
       gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_b,
+      gsl::not_null<Scalar<DataVector>*> tilde_phi,
       gsl::not_null<Scalar<DataVector>*> tilde_d,
       gsl::not_null<Scalar<DataVector>*> tilde_ye,
       gsl::not_null<Scalar<DataVector>*> tilde_tau,
       gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*> tilde_s,
-      gsl::not_null<Scalar<DataVector>*> tilde_phi,
       const Scalar<DataVector>& rest_mass_density,
       const Scalar<DataVector>& electron_fraction,
       const Scalar<DataVector>& specific_internal_energy,

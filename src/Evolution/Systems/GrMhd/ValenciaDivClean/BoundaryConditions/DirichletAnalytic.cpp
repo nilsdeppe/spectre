@@ -87,20 +87,20 @@ PUP::able::PUP_ID DirichletAnalytic::my_PUP_ID = 0;
 
 std::optional<std::string> DirichletAnalytic::dg_ghost(
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_b,
+    const gsl::not_null<Scalar<DataVector>*> tilde_phi,
     const gsl::not_null<Scalar<DataVector>*> tilde_d,
     const gsl::not_null<Scalar<DataVector>*> tilde_ye,
     const gsl::not_null<Scalar<DataVector>*> tilde_tau,
     const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*> tilde_s,
-    const gsl::not_null<Scalar<DataVector>*> tilde_phi,
 
     const gsl::not_null<tnsr::IJ<DataVector, 3, Frame::Inertial>*> tilde_b_flux,
+    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
+        tilde_phi_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_d_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_ye_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
         tilde_tau_flux,
     const gsl::not_null<tnsr::Ij<DataVector, 3, Frame::Inertial>*> tilde_s_flux,
-    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
-        tilde_phi_flux,
 
     const gsl::not_null<Scalar<DataVector>*> lapse,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> shift,
@@ -195,7 +195,7 @@ std::optional<std::string> DirichletAnalytic::dg_ghost(
                                        boundary_values)(ti::i, ti::j)));
   // Recover the conservative variables from the primitives
   ConservativeFromPrimitive::apply(
-      tilde_b, tilde_d, tilde_ye, tilde_tau, tilde_s, tilde_phi,
+      tilde_b, tilde_phi, tilde_d, tilde_ye, tilde_tau, tilde_s,
       get<hydro::Tags::RestMassDensity<DataVector>>(boundary_values),
       get<hydro::Tags::ElectronFraction<DataVector>>(boundary_values),
       get<hydro::Tags::SpecificInternalEnergy<DataVector>>(boundary_values),
@@ -208,9 +208,9 @@ std::optional<std::string> DirichletAnalytic::dg_ghost(
       get<hydro::Tags::DivergenceCleaningField<DataVector>>(boundary_values));
 
   ComputeFluxes::apply(
-      tilde_b_flux, tilde_d_flux, tilde_ye_flux, tilde_tau_flux, tilde_s_flux,
-      tilde_phi_flux, *tilde_b, *tilde_d, *tilde_ye, *tilde_tau, *tilde_s,
-      *tilde_phi, *lapse, *shift,
+      tilde_b_flux, tilde_phi_flux, tilde_d_flux, tilde_ye_flux, tilde_tau_flux,
+      tilde_s_flux, *tilde_b, *tilde_phi, *tilde_d, *tilde_ye, *tilde_tau,
+      *tilde_s, *lapse, *shift,
       get<gr::Tags::SqrtDetSpatialMetric<DataVector>>(boundary_values),
       get<gr::Tags::SpatialMetric<DataVector, 3>>(boundary_values),
       get<gr::Tags::InverseSpatialMetric<DataVector, 3>>(boundary_values),

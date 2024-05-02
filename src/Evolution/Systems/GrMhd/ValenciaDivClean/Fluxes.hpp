@@ -79,6 +79,8 @@ struct ComputeFluxes {
   using return_tags =
       tmpl::list<::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildeB<>,
                               tmpl::size_t<3>, Frame::Inertial>,
+                 ::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildePhi,
+                              tmpl::size_t<3>, Frame::Inertial>,
                  ::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildeD,
                               tmpl::size_t<3>, Frame::Inertial>,
                  ::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildeYe,
@@ -86,17 +88,15 @@ struct ComputeFluxes {
                  ::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildeTau,
                               tmpl::size_t<3>, Frame::Inertial>,
                  ::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildeS<>,
-                              tmpl::size_t<3>, Frame::Inertial>,
-                 ::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildePhi,
                               tmpl::size_t<3>, Frame::Inertial>>;
 
   using argument_tags =
       tmpl::list<grmhd::ValenciaDivClean::Tags::TildeB<>,
+                 grmhd::ValenciaDivClean::Tags::TildePhi,
                  grmhd::ValenciaDivClean::Tags::TildeD,
                  grmhd::ValenciaDivClean::Tags::TildeYe,
                  grmhd::ValenciaDivClean::Tags::TildeTau,
                  grmhd::ValenciaDivClean::Tags::TildeS<>,
-                 grmhd::ValenciaDivClean::Tags::TildePhi,
                  gr::Tags::Lapse<DataVector>, gr::Tags::Shift<DataVector, 3>,
                  gr::Tags::SqrtDetSpatialMetric<DataVector>,
                  gr::Tags::SpatialMetric<DataVector, 3>,
@@ -108,16 +108,17 @@ struct ComputeFluxes {
 
   static void apply(
       gsl::not_null<tnsr::IJ<DataVector, 3, Frame::Inertial>*> tilde_b_flux,
+      gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_phi_flux,
       gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_d_flux,
       gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_ye_flux,
       gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_tau_flux,
       gsl::not_null<tnsr::Ij<DataVector, 3, Frame::Inertial>*> tilde_s_flux,
-      gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_phi_flux,
       const tnsr::I<DataVector, 3, Frame::Inertial>& tilde_b,
+      const Scalar<DataVector>& tilde_phi,
       const Scalar<DataVector>& tilde_d, const Scalar<DataVector>& tilde_ye,
       const Scalar<DataVector>& tilde_tau,
       const tnsr::i<DataVector, 3, Frame::Inertial>& tilde_s,
-      const Scalar<DataVector>& tilde_phi, const Scalar<DataVector>& lapse,
+      const Scalar<DataVector>& lapse,
       const tnsr::I<DataVector, 3, Frame::Inertial>& shift,
       const Scalar<DataVector>& sqrt_det_spatial_metric,
       const tnsr::ii<DataVector, 3, Frame::Inertial>& spatial_metric,

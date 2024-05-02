@@ -63,17 +63,17 @@ double Hll::dg_package_data(
         packaged_largest_ingoing_char_speed,
 
     const tnsr::I<DataVector, 3, Frame::Inertial>& tilde_b,
+    const Scalar<DataVector>& tilde_phi,
     const Scalar<DataVector>& tilde_d, const Scalar<DataVector>& tilde_ye,
     const Scalar<DataVector>& tilde_tau,
     const tnsr::i<DataVector, 3, Frame::Inertial>& tilde_s,
-    const Scalar<DataVector>& tilde_phi,
 
     const tnsr::IJ<DataVector, 3, Frame::Inertial>& flux_tilde_b,
+    const tnsr::I<DataVector, 3, Frame::Inertial>& flux_tilde_phi,
     const tnsr::I<DataVector, 3, Frame::Inertial>& flux_tilde_d,
     const tnsr::I<DataVector, 3, Frame::Inertial>& flux_tilde_ye,
     const tnsr::I<DataVector, 3, Frame::Inertial>& flux_tilde_tau,
     const tnsr::Ij<DataVector, 3, Frame::Inertial>& flux_tilde_s,
-    const tnsr::I<DataVector, 3, Frame::Inertial>& flux_tilde_phi,
 
     const Scalar<DataVector>& lapse,
     const tnsr::I<DataVector, 3, Frame::Inertial>& shift,
@@ -219,12 +219,12 @@ double Hll::dg_package_data(
 void Hll::dg_boundary_terms(
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
         boundary_correction_tilde_b,
+    const gsl::not_null<Scalar<DataVector>*> boundary_correction_tilde_phi,
     const gsl::not_null<Scalar<DataVector>*> boundary_correction_tilde_d,
     const gsl::not_null<Scalar<DataVector>*> boundary_correction_tilde_ye,
     const gsl::not_null<Scalar<DataVector>*> boundary_correction_tilde_tau,
     const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
         boundary_correction_tilde_s,
-    const gsl::not_null<Scalar<DataVector>*> boundary_correction_tilde_phi,
     const Scalar<DataVector>& tilde_d_int,
     const Scalar<DataVector>& tilde_ye_int,
     const Scalar<DataVector>& tilde_tau_int,
