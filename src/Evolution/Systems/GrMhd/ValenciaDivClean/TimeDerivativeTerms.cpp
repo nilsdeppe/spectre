@@ -178,7 +178,7 @@ evolution::dg::TimeDerivativeDecisions<3> TimeDerivativeTerms::apply(
     }
   }
   */
-  /*
+
   for (size_t i = 0; i < 3; ++i) {
     for (size_t j = 0; j < 3; ++j) {
       non_flux_terms_dt_tilde_s->get(i) -=
@@ -187,14 +187,20 @@ evolution::dg::TimeDerivativeDecisions<3> TimeDerivativeTerms::apply(
                         j);  // get(lapse) * shift.get(i) * d_tilde_b.get(j, j);
     }
   }
-  */
 
-  /*
+
+
   for (size_t i = 0; i < 3; ++i){
     get(*non_flux_terms_dt_tilde_tau) -= get(lapse) *
-  get(*magnetic_field_dot_spatial_velocity) * d_tilde_b.get(i, i); } // got
-  //  variables based on what seems like the corresponding term in Fluxes.cpp
-  */
+      get(*magnetic_field_dot_spatial_velocity) * d_tilde_b.get(i, i);
+    get(*non_flux_terms_dt_tilde_tau) -= tilde_b.get(i) * d_tilde_phi.get(i);
+  } // variables based on what seems like the corresponding term in Fluxes.cpp
+
+
+  for (size_t i = 0; i < 3; ++i){
+    get(*non_flux_terms_dt_tilde_phi) -= transport_velocity->get(i)
+      * d_tilde_phi.get(i);
+  }
   return {true};
 }
 }  // namespace grmhd::ValenciaDivClean
