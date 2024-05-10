@@ -13,7 +13,7 @@ template <size_t Dim>
 class Mesh;
 enum class Side;
 namespace Spectral {
-enum class Quadrature;
+enum class Quadrature : uint8_t;
 }  // namespace Spectral
 /// \endcond
 

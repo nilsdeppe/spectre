@@ -15,7 +15,7 @@ class Mesh;
 template <size_t Dim>
 struct OrientationMap;
 namespace Spectral {
-enum class Quadrature;
+enum class Quadrature : uint8_t;
 }  // namespace Spectral
 /// \endcond
 
