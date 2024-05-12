@@ -17,6 +17,9 @@ struct create_from_yaml;
 /// \endcond
 
 namespace Spectral {
+namespace detail {
+constexpr uint8_t basis_shift = 4;
+}  // namespace detail
 /*!
  * \brief Either the basis functions used by a spectral or discontinuous
  * Galerkin (DG) method, or the value `FiniteDifference` when a finite
@@ -40,16 +43,23 @@ namespace Spectral {
  * a spherical harmonic basis.  By convention, the first dimension represents
  * the polar/zentith angle (or colatitude), while the second dimension
  * represents the azimuthal angle (or longitude)
+ *
+ * \note We store these effectively as a 4-bit integer using the highest 4
+ * bits of a uint8_t, which is why we do the left shift.  We cannot
+ * have more than 16 bases to fit into the 4 bits, including the
+ * `Uninitialized` value. The number of bits to shift is encoded in the variable
+ * `Spectral::detail::basis_shift`.
  */
 enum class Basis : uint8_t {
-  Chebyshev,
-  Legendre,
-  FiniteDifference,
-  SphericalHarmonic
+  Uninitialized = 0 << detail::basis_shift,
+  Chebyshev = 1 << detail::basis_shift,
+  Legendre = 2 << detail::basis_shift,
+  FiniteDifference = 3 << detail::basis_shift,
+  SphericalHarmonic = 4 << detail::basis_shift
 };
 
 /// All possible values of Basis
-std::array<Basis, 4> all_bases();
+std::array<Basis, 5> all_bases();
 
 /// Convert a string to a Basis enum.
 Basis to_basis(const std::string& basis);
