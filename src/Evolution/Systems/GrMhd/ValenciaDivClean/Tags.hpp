@@ -74,6 +74,10 @@ struct ComovingMagneticFieldOneForm : db::SimpleTag {
 struct VariablesNeededFixing : db::SimpleTag {
   using type = bool;
 };
+
+struct LapseTimesbOverW : db::SimpleTag {
+  using type = tnsr::i<DataVector, 3, Frame::Inertial>;
+};
 }  // namespace Tags
 
 namespace OptionTags {

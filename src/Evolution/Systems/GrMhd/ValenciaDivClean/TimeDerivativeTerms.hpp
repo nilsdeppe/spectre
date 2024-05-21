@@ -50,9 +50,6 @@ struct TimeDerivativeTerms {
   struct EnthalpyTimesDensityWSquaredPlusBSquared : db::SimpleTag {
     using type = Scalar<DataVector>;
   };
-  struct LapseTimesbOverW : db::SimpleTag {
-    using type = tnsr::i<DataVector, 3, Frame::Inertial>;
-  };
 
   using temporary_tags = tmpl::list<
       // Flux terms
@@ -63,7 +60,7 @@ struct TimeDerivativeTerms {
       OneOverLorentzFactorSquared, PressureStar,
       PressureStarLapseSqrtDetSpatialMetric,
       hydro::Tags::TransportVelocity<DataVector, 3, Frame::Inertial>,
-      LapseTimesbOverW,
+      Tags::LapseTimesbOverW,
 
       // Source terms
       TildeSUp, DensitizedStress,

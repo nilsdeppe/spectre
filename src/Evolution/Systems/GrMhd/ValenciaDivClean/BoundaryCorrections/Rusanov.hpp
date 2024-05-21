@@ -18,6 +18,15 @@
 #include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
+#include "DataStructures/Variables.hpp"
+// #include "PointwiseFunctions/Hydro/TagsDeclarations.hpp"
+// #include "Evolution/Systems/GrMhd/ValenciaDivClean/TagsDeclarations.hpp"
+#include "DataStructures/DataBox/DataBoxTag.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/TagsDeclarations.hpp"
+#include "NumericalAlgorithms/LinearOperators/PartialDerivatives.hpp"
+#include "PointwiseFunctions/GeneralRelativity/TagsDeclarations.hpp"
+#include "PointwiseFunctions/Hydro/TagsDeclarations.hpp"
+
 /// \cond
 class DataVector;
 namespace gsl {
@@ -72,6 +81,18 @@ class Rusanov final : public evolution::BoundaryCorrection {
   struct AbsCharSpeed : db::SimpleTag {
     using type = Scalar<DataVector>;
   };
+  struct NormalCovectorSent : db::SimpleTag {
+    using type = tnsr::i<DataVector, 3, Frame::Inertial>;
+  };
+  struct LapseSent : db::SimpleTag {
+    using type = Scalar<DataVector>;
+  }; /*
+   struct FluxTildeD : db::SimpleTag {
+     using type = tnsr::i<DataVector, 3, Frame::Inertial>;
+     };*/
+  struct BDotSpatialVelocity : db::SimpleTag {
+    using type = Scalar<DataVector>;
+  };
 
  public:
   using options = tmpl::list<>;
@@ -103,10 +124,19 @@ class Rusanov final : public evolution::BoundaryCorrection {
                  ::Tags::NormalDotFlux<Tags::TildeTau>,
                  ::Tags::NormalDotFlux<Tags::TildeS<Frame::Inertial>>,
                  ::Tags::NormalDotFlux<Tags::TildeB<Frame::Inertial>>,
-                 ::Tags::NormalDotFlux<Tags::TildePhi>, AbsCharSpeed>;
+                 ::Tags::NormalDotFlux<Tags::TildePhi>, AbsCharSpeed,
+                 BDotSpatialVelocity,
+                 //                 hydro::Tags::TransportVelocity<DataVector,
+                 //                 3, Frame::Inertial>,
+                 NormalCovectorSent, LapseSent, Tags::LapseTimesbOverW,
+                 ::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildeD,
+                              tmpl::size_t<3>, Frame::Inertial>>;
   using dg_package_data_temporary_tags = tmpl::list<
       gr::Tags::Lapse<DataVector>, gr::Tags::Shift<DataVector, 3>,
       hydro::Tags::SpatialVelocityOneForm<DataVector, 3, Frame::Inertial>>;
+  //               hydro::Tags::MagneticFieldDotSpatialVelocity<DataVector>>;
+  /*hydro::Tags::TransportVelocity<DataVector, 3, Frame::Inertial>,
+  Tags::LapseTimesbOverW>;*/
   using dg_package_data_primitive_tags =
       tmpl::list<hydro::Tags::RestMassDensity<DataVector>,
                  hydro::Tags::ElectronFraction<DataVector>,
@@ -132,11 +162,20 @@ class Rusanov final : public evolution::BoundaryCorrection {
           packaged_normal_dot_flux_tilde_b,
       gsl::not_null<Scalar<DataVector>*> packaged_normal_dot_flux_tilde_phi,
       gsl::not_null<Scalar<DataVector>*> packaged_abs_char_speed,
+      gsl::not_null<Scalar<DataVector>*> packaged_b_dot_sp_velocity, /*
+       gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
+       packaged_tr_velocity,*/
+      gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
+          packaged_normal_covector,
+      gsl::not_null<Scalar<DataVector>*> packaged_lapse,
+      gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
+          packaged_lapse_b_over_w,
+      gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
+          packaged_flux_tilde_d,
 
       const tnsr::I<DataVector, 3, Frame::Inertial>& tilde_b,
-      const Scalar<DataVector>& tilde_phi,
-      const Scalar<DataVector>& tilde_d, const Scalar<DataVector>& tilde_ye,
-      const Scalar<DataVector>& tilde_tau,
+      const Scalar<DataVector>& tilde_phi, const Scalar<DataVector>& tilde_d,
+      const Scalar<DataVector>& tilde_ye, const Scalar<DataVector>& tilde_tau,
       const tnsr::i<DataVector, 3, Frame::Inertial>& tilde_s,
 
       const tnsr::IJ<DataVector, 3, Frame::Inertial>& flux_tilde_b,
@@ -155,6 +194,9 @@ class Rusanov final : public evolution::BoundaryCorrection {
       const Scalar<DataVector>& /*electron_fraction*/,
       const Scalar<DataVector>& /*temperature*/,
       const tnsr::I<DataVector, 3, Frame::Inertial>& /*spatial_velocity*/,
+      //      const Scalar<DataVector>& b_dot_sp_velocity,
+      //      const tnsr::I<DataVector, 3, Frame::Inertial>& tr_velocity,
+      //      const tnsr::i<DataVector, 3, Frame::Inertial>& lapse_b_over_w,
 
       const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector,
       const tnsr::I<DataVector, 3, Frame::Inertial>& normal_vector,
@@ -188,6 +230,12 @@ class Rusanov final : public evolution::BoundaryCorrection {
           normal_dot_flux_tilde_b_int,
       const Scalar<DataVector>& normal_dot_flux_tilde_phi_int,
       const Scalar<DataVector>& abs_char_speed_int,
+      const Scalar<DataVector>& b_dot_sp_velocity_int,
+      //      const tnsr::I<DataVector, 3, Frame::Inertial>& tr_velocity_int,
+      const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector_int,
+      const Scalar<DataVector>& lapse_int,
+      const tnsr::i<DataVector, 3, Frame::Inertial>& lapse_b_over_w_int,
+      const tnsr::I<DataVector, 3, Frame::Inertial>& flux_tilde_d_int,
       const Scalar<DataVector>& tilde_d_ext,
       const Scalar<DataVector>& tilde_ye_ext,
       const Scalar<DataVector>& tilde_tau_ext,
@@ -203,6 +251,12 @@ class Rusanov final : public evolution::BoundaryCorrection {
           normal_dot_flux_tilde_b_ext,
       const Scalar<DataVector>& normal_dot_flux_tilde_phi_ext,
       const Scalar<DataVector>& abs_char_speed_ext,
+      const Scalar<DataVector>& b_dot_sp_velocity_ext,
+      //      const tnsr::I<DataVector, 3, Frame::Inertial>& tr_velocity_ext,
+      const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector_ext,
+      const Scalar<DataVector>& lapse_ext,
+      const tnsr::i<DataVector, 3, Frame::Inertial>& lapse_b_over_w_ext,
+      const tnsr::I<DataVector, 3, Frame::Inertial>& flux_tilde_d_ext,
       dg::Formulation dg_formulation);
 };
 

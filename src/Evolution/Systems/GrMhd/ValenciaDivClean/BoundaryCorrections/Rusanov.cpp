@@ -13,6 +13,7 @@
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "NumericalAlgorithms/DiscontinuousGalerkin/Formulation.hpp"
 #include "NumericalAlgorithms/DiscontinuousGalerkin/NormalDotFlux.hpp"
+#include "Utilities/ErrorHandling/CaptureForError.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
 #include "Utilities/Gsl.hpp"
 
@@ -43,11 +44,20 @@ double Rusanov::dg_package_data(
         packaged_normal_dot_flux_tilde_b,
     const gsl::not_null<Scalar<DataVector>*> packaged_normal_dot_flux_tilde_phi,
     const gsl::not_null<Scalar<DataVector>*> packaged_abs_char_speed,
+    const gsl::not_null<Scalar<DataVector>*> packaged_b_dot_sp_velocity,
+    //    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
+    //    packaged_tr_velocity,*/
+    const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
+        packaged_normal_covector,
+    const gsl::not_null<Scalar<DataVector>*> packaged_lapse,
+    const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
+        packaged_lapse_b_over_w,
+    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
+        packaged_flux_tilde_d,
 
     const tnsr::I<DataVector, 3, Frame::Inertial>& tilde_b,
-    const Scalar<DataVector>& tilde_phi,
-    const Scalar<DataVector>& tilde_d, const Scalar<DataVector>& tilde_ye,
-    const Scalar<DataVector>& tilde_tau,
+    const Scalar<DataVector>& tilde_phi, const Scalar<DataVector>& tilde_d,
+    const Scalar<DataVector>& tilde_ye, const Scalar<DataVector>& tilde_tau,
     const tnsr::i<DataVector, 3, Frame::Inertial>& tilde_s,
 
     const tnsr::IJ<DataVector, 3, Frame::Inertial>& flux_tilde_b,
@@ -66,6 +76,9 @@ double Rusanov::dg_package_data(
     const Scalar<DataVector>& /*electron_fraction*/,
     const Scalar<DataVector>& /*temperature*/,
     const tnsr::I<DataVector, 3, Frame::Inertial>& /*spatial_velocity*/,
+    //    const Scalar<DataVector>& b_dot_sp_velocity,
+    //    const tnsr::I<DataVector, 3, Frame::Inertial>& tr_velocity,
+    //    const tnsr::i<DataVector, 3, Frame::Inertial>& lapse_b_over_w,
 
     const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector,
     const tnsr::I<DataVector, 3, Frame::Inertial>& /*normal_vector*/,
@@ -97,6 +110,16 @@ double Rusanov::dg_package_data(
   *packaged_tilde_s = tilde_s;
   *packaged_tilde_b = tilde_b;
   *packaged_tilde_phi = tilde_phi;
+
+  /*  for (size_t i = 0; i < 3; ++i){
+    packaged_normal_covector->get(i) = normal_covector.get(i);
+    //    packaged_tr_velocity->get(i) = tr_velocity.get(i);
+    //    packaged_lapse_b_over_w->get(i) = lapse_b_over_w.get(i);
+    //    packaged_flux_tilde_d->get(i) = flux_tilde_d.get(i);
+  }
+  *packaged_lapse = lapse;
+
+  get(*packaged_b_dot_sp_velocity) = get(b_dot_sp_velocity);*/
 
   normal_dot_flux(packaged_normal_dot_flux_tilde_d, normal_covector,
                   flux_tilde_d);
@@ -136,6 +159,12 @@ void Rusanov::dg_boundary_terms(
     const tnsr::I<DataVector, 3, Frame::Inertial>& normal_dot_flux_tilde_b_int,
     const Scalar<DataVector>& normal_dot_flux_tilde_phi_int,
     const Scalar<DataVector>& abs_char_speed_int,
+    const Scalar<DataVector>& b_dot_sp_velocity_int,
+    //    const tnsr::I<DataVector, 3, Frame::Inertial>& tr_velocity_int,
+    const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector_int,
+    const Scalar<DataVector>& lapse_int,
+    const tnsr::i<DataVector, 3, Frame::Inertial>& lapse_b_over_w_int,
+    const tnsr::I<DataVector, 3, Frame::Inertial>& flux_tilde_d_int,
     const Scalar<DataVector>& tilde_d_ext,
     const Scalar<DataVector>& tilde_ye_ext,
     const Scalar<DataVector>& tilde_tau_ext,
@@ -149,6 +178,12 @@ void Rusanov::dg_boundary_terms(
     const tnsr::I<DataVector, 3, Frame::Inertial>& normal_dot_flux_tilde_b_ext,
     const Scalar<DataVector>& normal_dot_flux_tilde_phi_ext,
     const Scalar<DataVector>& abs_char_speed_ext,
+    const Scalar<DataVector>& b_dot_sp_velocity_ext,
+    //    const tnsr::I<DataVector, 3, Frame::Inertial>& tr_velocity_ext,
+    const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector_ext,
+    const Scalar<DataVector>& lapse_ext,
+    const tnsr::i<DataVector, 3, Frame::Inertial>& lapse_b_over_w_ext,
+    const tnsr::I<DataVector, 3, Frame::Inertial>& flux_tilde_d_ext,
     const dg::Formulation dg_formulation) {
   if (dg_formulation == dg::Formulation::WeakInertial) {
     get(*boundary_correction_tilde_d) =
@@ -185,6 +220,10 @@ void Rusanov::dg_boundary_terms(
               (tilde_b_ext.get(i) - tilde_b_int.get(i));
     }
   } else {
+    //    CAPTURE_FOR_ERROR(b_dot_sp_velocity_ext);
+    //    CAPTURE_FOR_ERROR(lapse_ext);
+    //    CAPTURE_FOR_ERROR(tr_velocity_ext);
+
     get(*boundary_correction_tilde_d) =
         -0.5 * (get(normal_dot_flux_tilde_d_int) +
                 get(normal_dot_flux_tilde_d_ext)) -
@@ -204,7 +243,24 @@ void Rusanov::dg_boundary_terms(
         -0.5 * (get(normal_dot_flux_tilde_phi_int) +
                 get(normal_dot_flux_tilde_phi_ext)) -
         0.5 * max(get(abs_char_speed_int), get(abs_char_speed_ext)) *
-            (get(tilde_phi_ext) - get(tilde_phi_int));
+            (get(tilde_phi_ext) - get(tilde_phi_int)) +
+        0.25 * (get(tilde_phi_ext) - get(tilde_phi_int)) *
+            (get(normal_dot_flux_tilde_d_int) / get(tilde_d_int) +
+             get(normal_dot_flux_tilde_d_ext) / get(tilde_d_ext));
+    /*
+    for (size_t i = 0; i < 3; ++i) {
+      get(*boundary_correction_tilde_tau) += 0.25 *
+        (get(tilde_phi_ext) - get(tilde_phi_int)) *
+        (tilde_b_int.get(i) * normal_covector_int.get(i) +
+         tilde_b_ext.get(i) * normal_covector_ext.get(i));
+    }
+    for (size_t i = 0; i < 3; ++i) {
+      get(*boundary_correction_tilde_tau) += 0.25 *
+        (tilde_b_int.get(i) * normal_covector_int.get(i) +
+         tilde_b_ext.get(i) * normal_covector_ext.get(i)) *
+        (get(lapse_int) * get(b_dot_sp_velocity_int) +
+         get(lapse_ext) * get(b_dot_sp_velocity_ext));
+         }*/
 
     for (size_t i = 0; i < 3; ++i) {
       boundary_correction_tilde_s->get(i) =
@@ -218,6 +274,24 @@ void Rusanov::dg_boundary_terms(
           0.5 * max(get(abs_char_speed_int), get(abs_char_speed_ext)) *
               (tilde_b_ext.get(i) - tilde_b_int.get(i));
     }
+    /*
+    for (size_t i = 0; i < 3; ++i){
+      for (size_t j = 0; j < 3; ++j){
+        boundary_correction_tilde_b->get(i) += 0.25 *
+          (tilde_b_ext.get(j) * normal_covector_ext.get(j) -
+           tilde_b_int.get(j) * normal_covector_int.get(j)) *
+          (tr_velocity_int.get(i) + tr_velocity_ext.get(i));
+      }
+      }*/
+    /*
+    for (size_t i = 0; i < 3; ++i){
+      for (size_t j = 0; j < 3; ++j){
+        boundary_correction_tilde_s->get(i) += 0.25 *
+          (tilde_b_ext.get(j) * normal_covector_ext.get(j) -
+           tilde_b_int.get(j) * normal_covector_int.get(j)) *
+          (lapse_b_over_w_ext.get(i) + lapse_b_over_w_int.get(i));
+      }
+      }*/
   }
 }
 
