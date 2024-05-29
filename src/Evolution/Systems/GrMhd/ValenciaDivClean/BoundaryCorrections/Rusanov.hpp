@@ -89,10 +89,10 @@ class Rusanov final : public evolution::BoundaryCorrection {
   }; /*
    struct FluxTildeD : db::SimpleTag {
      using type = tnsr::i<DataVector, 3, Frame::Inertial>;
-     };*/
+     };
   struct BDotSpatialVelocity : db::SimpleTag {
     using type = Scalar<DataVector>;
-  };
+    };*/
 
  public:
   using options = tmpl::list<>;
@@ -125,7 +125,7 @@ class Rusanov final : public evolution::BoundaryCorrection {
                  ::Tags::NormalDotFlux<Tags::TildeS<Frame::Inertial>>,
                  ::Tags::NormalDotFlux<Tags::TildeB<Frame::Inertial>>,
                  ::Tags::NormalDotFlux<Tags::TildePhi>, AbsCharSpeed,
-                 BDotSpatialVelocity,
+                 hydro::Tags::MagneticFieldDotSpatialVelocity<DataVector>,
                  //                 hydro::Tags::TransportVelocity<DataVector,
                  //                 3, Frame::Inertial>,
                  NormalCovectorSent, LapseSent, Tags::LapseTimesbOverW,
@@ -133,10 +133,11 @@ class Rusanov final : public evolution::BoundaryCorrection {
                               tmpl::size_t<3>, Frame::Inertial>>;
   using dg_package_data_temporary_tags = tmpl::list<
       gr::Tags::Lapse<DataVector>, gr::Tags::Shift<DataVector, 3>,
+      hydro::Tags::MagneticFieldDotSpatialVelocity<DataVector>,
+      // hydro::Tags::TransportVelocity<DataVector, 3,
+      // Frame::Inertial>,
+      Tags::LapseTimesbOverW,
       hydro::Tags::SpatialVelocityOneForm<DataVector, 3, Frame::Inertial>>;
-  //               hydro::Tags::MagneticFieldDotSpatialVelocity<DataVector>>;
-  /*hydro::Tags::TransportVelocity<DataVector, 3, Frame::Inertial>,
-  Tags::LapseTimesbOverW>;*/
   using dg_package_data_primitive_tags =
       tmpl::list<hydro::Tags::RestMassDensity<DataVector>,
                  hydro::Tags::ElectronFraction<DataVector>,
@@ -187,6 +188,9 @@ class Rusanov final : public evolution::BoundaryCorrection {
 
       const Scalar<DataVector>& lapse,
       const tnsr::I<DataVector, 3, Frame::Inertial>& shift,
+      const Scalar<DataVector>& b_dot_sp_velocity,
+      //      const tnsr::I<DataVector, 3, Frame::Inertial>& tr_velocity,
+      const tnsr::i<DataVector, 3, Frame::Inertial>& lapse_b_over_w,
       const tnsr::i<DataVector, 3,
                     Frame::Inertial>& /*spatial_velocity_one_form*/,
 
@@ -194,9 +198,6 @@ class Rusanov final : public evolution::BoundaryCorrection {
       const Scalar<DataVector>& /*electron_fraction*/,
       const Scalar<DataVector>& /*temperature*/,
       const tnsr::I<DataVector, 3, Frame::Inertial>& /*spatial_velocity*/,
-      //      const Scalar<DataVector>& b_dot_sp_velocity,
-      //      const tnsr::I<DataVector, 3, Frame::Inertial>& tr_velocity,
-      //      const tnsr::i<DataVector, 3, Frame::Inertial>& lapse_b_over_w,
 
       const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector,
       const tnsr::I<DataVector, 3, Frame::Inertial>& normal_vector,

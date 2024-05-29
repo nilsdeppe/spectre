@@ -119,6 +119,8 @@ class DirichletAnalytic final : public BoundaryCondition {
 
       gsl::not_null<Scalar<DataVector>*> lapse,
       gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> shift,
+      gsl::not_null<Scalar<DataVector>*> b_dot_sp_velocity,
+      gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*> lapse_b_over_w,
       gsl::not_null<tnsr::i<DataVector, 3,
                             Frame::Inertial>*> /*spatial_velocity_one_form*/,
       gsl::not_null<Scalar<DataVector>*> /*rest_mass_density*/,

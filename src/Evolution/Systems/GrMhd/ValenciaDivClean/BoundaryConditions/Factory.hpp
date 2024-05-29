@@ -13,8 +13,8 @@
 
 namespace grmhd::ValenciaDivClean::BoundaryConditions {
 /// Typelist of standard BoundaryConditions
-using standard_boundary_conditions =
-    tmpl::list<CartoonGhost, DemandOutgoingCharSpeeds, DirichletAnalytic,
-               HydroFreeOutflow, Reflective,
-               domain::BoundaryConditions::Periodic<BoundaryCondition>>;
+using standard_boundary_conditions = tmpl::list<
+    /*DemandOutgoingCharSpeeds,*/ DirichletAnalytic, /*, HydroFreeOutflow,
+                                                      Reflective,*/
+    domain::BoundaryConditions::Periodic<BoundaryCondition>>;
 }  // namespace grmhd::ValenciaDivClean::BoundaryConditions

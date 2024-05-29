@@ -199,6 +199,16 @@ struct TimeDerivative {
                   gr::Tags::SqrtDetSpatialMetric<DataVector>,
                   gr::Tags::InverseSpatialMetric<DataVector, 3>,
                   evolution::dg::Actions::detail::NormalVector<3>>>>;
+          // static assert here tmpl::size<>::value
+          static_assert(tmpl::size<dg_package_data_argument_tags>::value ==
+                            tmpl::size<fd::tags_list_for_reconstruct>::value,
+                        "Package data argument tags and tags list for "
+                        "reconstruct have different sizes.");
+          static_assert(std::is_same_v<dg_package_data_argument_tags,
+                                       fd::tags_list_for_reconstruct>,
+                        "Package data argument tags and tags list for "
+                        "reconstruct are different.");
+
           // Computed prims and cons on face via reconstruction
           auto package_data_argvars_lower_face = make_array<3>(
               Variables<dg_package_data_argument_tags>(reconstructed_num_pts));
