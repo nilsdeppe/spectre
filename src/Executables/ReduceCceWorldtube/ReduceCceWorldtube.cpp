@@ -288,18 +288,18 @@ int main(int argc, char** argv) {
 
   boost::program_options::options_description desc("Options");
   desc.add_options()("help,h,", "show this help message")(
-      "input_file", boost::program_options::value<std::string>()->required(),
+      "input-file", boost::program_options::value<std::string>()->required(),
       "name of old CCE data file")(
-      "output_file", boost::program_options::value<std::string>()->required(),
+      "output-file", boost::program_options::value<std::string>()->required(),
       "output filename")(
-      "fix_spec_normalization",
+      "fix-spec-normalization",
       "Apply corrections associated with documented SpEC "
       "worldtube file errors")(
-      "buffer_depth",
+      "buffer-depth",
       boost::program_options::value<size_t>()->default_value(2000),
       "number of time steps to load during each call to the file-accessing "
       "routines. Higher values mean fewer, larger loads from file into RAM.")(
-      "lmax_factor", boost::program_options::value<size_t>()->default_value(2),
+      "lmax-factor", boost::program_options::value<size_t>()->default_value(2),
       "the boundary computations will be performed at a resolution that is "
       "lmax_factor times the input file lmax to avoid aliasing");
 
@@ -312,15 +312,15 @@ int main(int argc, char** argv) {
           .run(),
       vars);
 
-  if (vars.count("help") != 0u or vars.count("input_file") == 0u or
-      vars.count("output_file") == 0u) {
+  if (vars.count("help") != 0u or vars.count("input-file") == 0u or
+      vars.count("output-file") == 0u) {
     Parallel::printf("%s\n", desc);
     return 0;
   }
 
-  perform_cce_worldtube_reduction(vars["input_file"].as<std::string>(),
-                                  vars["output_file"].as<std::string>(),
-                                  vars["buffer_depth"].as<size_t>(),
-                                  vars["lmax_factor"].as<size_t>(),
-                                  vars.count("fix_spec_normalization") != 0u);
+  perform_cce_worldtube_reduction(vars["input-file"].as<std::string>(),
+                                  vars["output-file"].as<std::string>(),
+                                  vars["buffer-depth"].as<size_t>(),
+                                  vars["lmax-factor"].as<size_t>(),
+                                  vars.count("fix-spec-normalization") != 0u);
 }
