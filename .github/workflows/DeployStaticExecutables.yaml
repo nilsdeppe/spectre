@@ -12,28 +12,30 @@ on:
         type: string
         required: true
         description: The name of the release tag
-      release_version:
-        description: >
-          Enter a version name YYYY.MM.DD[.TWEAK] to create a release on success
-        required: true
+      # release_version:
+      #   description: >
+#     Enter a version name YYYY.MM.DD[.TWEAK] to create a release on success
+      #   required: true
 
-  workflow_call:
-    inputs:
-      tag_name:
-        type: string
-        required: true
-        description: The name of the release tag
-      release_version:
-        description: >
-          Enter a version name YYYY.MM.DD[.TWEAK] to create a release on success
-        required: false
-        default: ''
+  # workflow_call:
+  #   inputs:
+  #     tag_name:
+  #       type: string
+  #       required: true
+  #       description: The name of the release tag
+  #     release_version:
+  #       description: >
+#         Enter a version name YYYY.MM.DD[.TWEAK] to create a release on success
+  #       required: false
+  #       default: ''
 
 jobs:
-  docker:
-    name: Build and push
+  deploy_static_execs:
+    name: Deploy static executables and libraries
     runs-on: ubuntu-latest
     environment: deploy-static-executables
+    env:
+      RELEASE_TAG_NAME: ${{ inputs.tag_name || github.event.release.tag_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -69,11 +71,13 @@ jobs:
           done
 
           tar cJf CceExecutables.tar.xz CceExecutables
+
+          echo "${{ env.RELEASE_TAG_NAME }}"
       - name: Create release on GitHub
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GH_TOKEN_RELEASE }}
-          tag_name: v${{ env.RELEASE_VERSION }}
+          tag_name: ${{ env.RELEASE_TAG_NAME }}
           fail_on_unmatched_files: true
           files: |
             CceExecutables.tar.xz
