@@ -17,7 +17,8 @@ jobs:
   deploy_static_execs:
     name: Deploy static executables and libraries
     runs-on: ubuntu-latest
-    environment: deploy-static-executables
+    # Running in a protected environment that provides the necessary secrets
+    environment: release
     env:
       RELEASE_TAG_NAME: ${{ inputs.tag_name || github.event.release.tag_name }}
     steps:
