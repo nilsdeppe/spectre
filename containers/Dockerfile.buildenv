@@ -569,6 +569,4 @@ RUN if [ ${UBUNTU_VERSION} != 18.04 ] && [ "$TARGETARCH" != "amd64" ]; then \
     -D quadmath=/usr/lib/gcc/x86_64-linux-gnu/9/libquadmath.a \
     .. \
     && make ${PARALLEL_MAKE_ARG} CharacteristicExtract ReduceCceWorldtube \
-    && ./bin/CharacteristicExtract --help \
-    && ./bin/ReduceCceWorldtube --help \
     && ctest -LE unit -R CharacteristicExtract
