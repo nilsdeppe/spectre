@@ -1,0 +1,79 @@
+# Distributed under the MIT License.
+# See LICENSE.txt for details.
+
+name: Deploy static executables
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        type: string
+        required: true
+        description: The name of the release tag
+      release_version:
+        description: >
+          Enter a version name YYYY.MM.DD[.TWEAK] to create a release on success
+        required: true
+
+  workflow_call:
+    inputs:
+      tag_name:
+        type: string
+        required: true
+        description: The name of the release tag
+      release_version:
+        description: >
+          Enter a version name YYYY.MM.DD[.TWEAK] to create a release on success
+        required: false
+        default: ''
+
+jobs:
+  docker:
+    name: Build and push
+    runs-on: ubuntu-latest
+    environment: deploy-static-executables
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      # Build static executables in a Docker container with an older version
+      # of Ubuntu so that the glibc is compatible with most Linux distros.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push deploy container
+        uses: docker/build-push-action@v5
+        with:
+          push: false
+          context: .
+          file: "./containers/Dockerfile.buildenv"
+          target: deploy_static_execs_and_libs
+          tags: sxs-collaboration/spectre:deploy_static_execs_and_libs
+          platforms: linux/amd64
+          load: true
+          build-args:
+            UBUNTU_VERSION=18.04
+      - name: Run Docker container
+        run: >
+          docker run --name static-execs
+          sxs-collaboration/spectre:deploy_static_execs_and_libs
+      - name: Copy static executables and libraries from Docker container
+        # Note: We use xz compression since it's much better than gzip, even
+        # though it's a decent bit slower. Specifically, xz is two thirds the
+        # size of gzip.
+        run: >
+          mkdir CceExecutables
+
+          for i in CharacteristicExtract ReduceCceWorldtube; do
+            docker cp static-execs:/work/spectre/build/bin/$i ./CceExecutables;
+          done
+
+          tar cJf CceExecutables.tar.xz CceExecutables
+      - name: Create release on GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GH_TOKEN_RELEASE }}
+          tag_name: v${{ env.RELEASE_VERSION }}
+          fail_on_unmatched_files: true
+          files: |
+            CceExecutables.tar.xz
