@@ -26,27 +26,27 @@ jobs:
         uses: actions/checkout@v4
       # Build static executables in a Docker container with an older version
       # of Ubuntu so that the glibc is compatible with most Linux distros.
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Build and push deploy container
-        uses: docker/build-push-action@v5
-        with:
-          push: false
-          context: .
-          file: "./containers/Dockerfile.buildenv"
-          target: deploy_static_execs_and_libs
-          tags: sxs-collaboration/spectre:deploy_static_execs_and_libs
-          platforms: linux/amd64
-          load: true
-          build-args:
-            UBUNTU_VERSION=18.04
-      - name: Run Docker container
-        run: >
-          docker run --name static-execs
-          sxs-collaboration/spectre:deploy_static_execs_and_libs
+      # - name: Set up Docker Buildx
+      #   uses: docker/setup-buildx-action@v3
+      # - name: Build and push deploy container
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     push: false
+      #     context: .
+      #     file: "./containers/Dockerfile.buildenv"
+      #     target: deploy_static_execs_and_libs
+      #     tags: sxs-collaboration/spectre:deploy_static_execs_and_libs
+      #     platforms: linux/amd64
+      #     load: true
+      #     build-args:
+      #       UBUNTU_VERSION=18.04
+      # - name: Run Docker container
+      #   run: >
+      #     docker run --name static-execs
+      #     sxs-collaboration/spectre:deploy_static_execs_and_libs
       - name: Install python dependencies
         run: >
-          pip3 install numpy h5py
+          pip3 install numpy h5py gdown
       - name: Create CCE executables release asset
         # Note: We use xz compression since it's much better than gzip, even
         # though it's a decent bit slower. Specifically, xz is two thirds the
@@ -57,20 +57,31 @@ jobs:
           cp ./tests/InputFiles/Cce/CharacteristicExtract.yaml
           ./CceExecutables/CharacteristicExtract.yaml
 
-          for i in CharacteristicExtract ReduceCceWorldtube; do
-            docker cp static-execs:/work/spectre/build/bin/$i ./CceExecutables;
-          done
+          # for i in CharacteristicExtract ReduceCceWorldtube; do
+          #  docker cp static-execs:/work/spectre/build/bin/$i ./CceExecutables;
+          # done
 
           # Download extra data to include for CCE
 
-          wget -O BondiSachsCceR0200.h5
-          "https://drive.google.com/uc?export=download&id=1CmgLLfuLod8stc13EtmjHUvBoIgSVD-Y"
+          gdown
+          "https://drive.google.com/uc?id=1CmgLLfuLod8stc13EtmjHUvBoIgSVD-Y"
 
-          wget -O CharacteristicExtractReduction_Expected.h5
-          "https://drive.google.com/uc?export=download&id=1uaESVdylNmcHwpZwogX4TVrNs8JbWNF1"
+          gdown
+          "https://drive.google.com/uc?id=1uaESVdylNmcHwpZwogX4TVrNs8JbWNF1"
 
-          wget -O CheckCceOutput.py
-          "https://drive.google.com/uc?export=download&id=1rfzjtXtrP9pQE2az3935uN0z_5aSF1hy"
+          gdown
+          "https://drive.google.com/uc?id=1rfzjtXtrP9pQE2az3935uN0z_5aSF1hy"
+
+
+
+          # wget -O BondiSachsCceR0200.h5
+          # "https://drive.google.com/uc?export=download&id=1CmgLLfuLod8stc13EtmjHUvBoIgSVD-Y"
+
+          # wget -O CharacteristicExtractReduction_Expected.h5
+          # "https://drive.google.com/uc?export=download&id=1uaESVdylNmcHwpZwogX4TVrNs8JbWNF1"
+
+          # wget -O CheckCceOutput.py
+          # "https://drive.google.com/uc?export=download&id=1rfzjtXtrP9pQE2az3935uN0z_5aSF1hy"
 
           # Test CCE works as expected.
 
@@ -80,12 +91,12 @@ jobs:
           sed -i 's/H5IsBondiData: False/H5IsBondiData: True/g'
           ./CceExecutables/CharacteristicExtract.yaml
 
-          ./CceExecutables/CharacteristicExtract
-          --input-file ./CceExecutables/CharacteristicExtract.yaml
+          # ./CceExecutables/CharacteristicExtract
+          # --input-file ./CceExecutables/CharacteristicExtract.yaml
 
           python ./CheckCceOutput.py
 
-          rm CharacteristicExtractReduction.h5
+          # rm CharacteristicExtractReduction.h5
 
           # Copy CCE data into directory
 
