@@ -4,8 +4,11 @@
 # If you change this file please push the new images to DockerHub. If you do not
 # have permission to push to DockerHub please coordinate with someone who does.
 # Since changes to this image affect our testing infrastructure it is important
-# all changes be carefully reviewed before they are pushed. This is how you use
-# GitHub Actions to build and push the new images:
+# all changes be carefully reviewed before they are pushed.
+#
+# GitHub Actions (recommended method)
+#
+# This is how you use GitHub Actions to build and push the new images:
 #
 # 1. Push your changes to the `develop` branch on your fork of the spectre
 #    repository on GitHub (https://github.com/YOURNAME/spectre).
@@ -18,11 +21,35 @@
 # 4. The images will be built and pushed to DockerHub and CI will run over them.
 #    See `.github/workflows/BuildDockerContainer.yaml` for details.
 #
-# Alternatively, you can build the container locally and push it, but remember
-# to build and push both x86 and ARM versions. Docker must be run as root on
-# your machine. There are 4 different images in this Dockerfile. Here is how to
-# build them for x86_64 (for Apple Silicon, replace linux/amd64 with
-# linux/arm64):
+# Local build & push (can be tedious and time consuming)
+#
+# What you need to push to Dockerhub is:
+#
+#   Arch: linux/amd64,linux/arm64
+#         # Note that cross compiling can be slow, so for testing just do amd64
+#         # or arm64 depending on your CPU.
+#   Ubuntu version: 22.04 (default)
+#   --platform linux/amd64,linux/arm64
+#   --target dev
+#   -t sxscollaboration/spectre:dev
+#
+#   Arch: linux/amd64
+#   Ubuntu version: 22.04 (default)
+#   --platform linux/amd64
+#   --target ci
+#   -t sxscollaboration/spectre:ci
+#
+#   Arch: linux/amd64
+#   Ubuntu version: 18.04
+#   --platform linux/amd64
+#   --target dev
+#   -t sxscollaboration/spectre:dev1804
+#   --build-arg UBUNTU_VERSION=18.04
+#
+# Docker must be run as root on your machine. There are 4 different images in
+# this Dockerfile, but you can ignore the 'deploy_static_execs_and_libs' since
+# it's only used in CI. Here is how to build them for x86_64 (for Apple Silicon,
+# replace linux/amd64 with linux/arm64):
 #
 # 1. `dev`
 #
@@ -31,18 +58,23 @@
 #                 --platform linux/amd64 \
 #                 -f ./containers/Dockerfile.buildenv .
 #
-# 2. `ci` (this should use the `dev` image you just built for most of it)
+# 2. `ci` (this should use the `dev` image you just built for most of it).
+#         NOT NEEDED FOR ARM64!!!!
 #
 #   cd $SPECTRE_HOME
 #   docker build --target ci -t sxscollaboration/spectre:ci \
 #                 --platform linux/amd64 \
 #                 -f ./containers/Dockerfile.buildenv .
+#   docker push sxscollaboration/spectre:dev
+#   docker push sxscollaboration/spectre:ci # don't do this on ARM64
 #
-# 3. `demo` To build this, it is recommended to first push the `dev` and `ci`
-#    images to DockerHub as the `demo` image uses the remote `dev` image.
+# You DO NOT need to push the below. CI does that automatically.
+#
+# 3. `demo` To build this, you MUST first push the `dev` and `ci` images to
+#           DockerHub as the `demo` image uses the remote `dev` image.
 #
 #   docker push sxscollaboration/spectre:dev
-#   docker push sxscollaboration/spectre:ci
+#   docker push sxscollaboration/spectre:ci # don't do this on ARM64
 #
 #    To build `demo`, you must be in $SPECTRE_ROOT and there cannot be a
 #    directory named `build` in $SPECTRE_ROOT because the image will create
@@ -61,10 +93,10 @@
 # 4. `deploy_static_execs_and_libs` This is used for building various
 #    executables and libraries with an old enough version of glibc so
 #    that the resulting executables are quite portable. This must be built
-#    as
+#    as, but should generally only be done in CI unless you are debugging
+#    the container build.
 #
 #  docker build --target deploy_static_execs_and_libs --platform linux/amd64 \
-#    --build-arg BUILDPLATFORM="linux/amd64" --build-arg TARGETARCH="amd64" \
 #    --build-arg UBUNTU_VERSION=18.04 -f ./containers/Dockerfile.buildenv .
 #
 #    That is, it uses Ubuntu 18.04 and AMD64. There is no support for ARM and
