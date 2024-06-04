@@ -6,6 +6,7 @@
 # directory that are tracked by Git. I.e.
 #   git ls-tree --full-tree --name-only HEAD
 set(SPECTRE_FORMALINE_LOCATIONS
+  blah
   .clang-format
   .clang-tidy
   .codecov.yaml
