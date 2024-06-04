@@ -1,0 +1,77 @@
+# Distributed under the MIT License.
+# See LICENSE.txt for details.
+
+name: Deploy static executables
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        type: string
+        required: true
+        description: The name of the release tag
+
+  workflow_call:
+    inputs:
+      tag_name:
+        type: string
+        required: true
+        description: The name of the release tag
+
+jobs:
+  docker:
+    name: Build and push
+    runs-on: ubuntu-latest
+    environment: deploy-static-executables
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push deploy container
+        uses: docker/build-push-action@v5
+        with:
+          push: false
+          context: .
+          file: "./containers/Dockerfile.buildenv"
+          target: deploy_static_execs_and_libs
+          tags: sxs-collaboration/spectre:deploy_static_execs_and_libs
+          platforms: linux/amd64
+          load: true
+          build-args:
+            - BUILDPLATFORM="linux/amd64"
+            - TARGETARCH="amd64"
+            - UBUNTU_VERSION=18.04
+            - PARALLEL_MAKE_ARG=-j4
+
+      - name: Run Docker container
+        run: >
+          docker run --name static-execs
+          sxs-collaboration/spectre:deploy_static_execs_and_libs
+
+      - name: Copy artifact from Docker container
+        # Note: We use xz compression since it's much better than gzip, even
+        # though it's a decent bit slower. Specifically, xz is two thirds the
+        # size of gzip.
+        run: >
+          for i in [ CharacteristicExtract ReduceCceWorldtube ]; do
+            docker cp static-execs:/work/spectre/build/bin/$i ./;
+          done
+
+          tar cJf CceExecutables.tar.xz CharacteristicExtract ReduceCceWorldtube
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: static_execs
+          path: ./CceExecutables.tar.xz
+        if-no-files-found: error
+
+      # - name: Upload CCE executables to release
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ./CceExecutables.zip
+      #     asset_name: CceExecutables.zip
+      #     asset_content_type: application/zip
