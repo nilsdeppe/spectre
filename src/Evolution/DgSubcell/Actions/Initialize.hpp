@@ -663,4 +663,67 @@ struct SetInitialGridFromTciData {
     return {Parallel::AlgorithmExecution::Continue, std::nullopt};
   }
 };
+
+template <size_t Dim, typename System, bool UseNumericInitialDataV>
+struct ResetInitialDataIfOnDg {
+  using const_global_cache_tags = tmpl::list<Tags::SubcellOptions<Dim>>;
+
+  using simple_tags = tmpl::list<
+      Tags::ActiveGrid, Tags::DidRollback, Tags::TciGridHistory,
+      Tags::TciCallsSinceRollback, Tags::StepsSinceTciCall,
+      Tags::GhostDataForReconstruction<Dim>, Tags::TciDecision,
+      Tags::NeighborTciDecisions<Dim>, Tags::DataForRdmpTci,
+      subcell::Tags::CellCenteredFlux<typename System::flux_variables, Dim>,
+      subcell::Tags::ReconstructionOrder<Dim>,
+      evolution::dg::subcell::Tags::InterpolatorsFromFdToNeighborFd<Dim>,
+      evolution::dg::subcell::Tags::InterpolatorsFromDgToNeighborFd<Dim>,
+      evolution::dg::subcell::Tags::InterpolatorsFromNeighborDgToFd<Dim>>;
+  using compute_tags =
+      tmpl::list<Tags::MeshCompute<Dim>, Tags::LogicalCoordinatesCompute<Dim>,
+                 ::domain::Tags::MappedCoordinates<
+                     ::domain::Tags::ElementMap<Dim, Frame::Grid>,
+                     subcell::Tags::Coordinates<Dim, Frame::ElementLogical>,
+                     subcell::Tags::Coordinates>,
+                 Tags::InertialCoordinatesCompute<
+                     ::domain::CoordinateMaps::Tags::CoordinateMap<
+                         Dim, Frame::Grid, Frame::Inertial>>,
+                 fd::Tags::InverseJacobianLogicalToGridCompute<
+                     ::domain::Tags::ElementMap<Dim, Frame::Grid>, Dim>,
+                 fd::Tags::DetInverseJacobianLogicalToGridCompute<Dim>,
+                 fd::Tags::InverseJacobianLogicalToInertialCompute<
+                     ::domain::CoordinateMaps::Tags::CoordinateMap<
+                         Dim, Frame::Grid, Frame::Inertial>,
+                     Dim>,
+                 fd::Tags::DetInverseJacobianLogicalToInertialCompute<
+                     ::domain::CoordinateMaps::Tags::CoordinateMap<
+                         Dim, Frame::Grid, Frame::Inertial>,
+                     Dim>>;
+
+  template <typename DbTagsList, typename... InboxTags, typename ArrayIndex,
+            typename ActionList, typename ParallelComponent,
+            typename Metavariables>
+
+  static Parallel::iterable_action_return_t apply(
+      db::DataBox<DbTagsList>& box,
+      [[maybe_unused]] const tuples::TaggedTuple<InboxTags...>& inboxes,
+      [[maybe_unused]] const Parallel::GlobalCache<Metavariables>& cache,
+      [[maybe_unused]] const ArrayIndex& array_index, ActionList /*meta*/,
+      const ParallelComponent* const /*meta*/) {
+    if constexpr (not UseNumericInitialDataV) {
+      if (db::get<Tags::ActiveGrid>(box) ==
+          evolution::dg::subcell::ActiveGrid::Dg) {
+        evolution::Initialization::Actions::SetVariables<
+            ::domain::Tags::Coordinates<Dim, Frame::ElementLogical>>::
+            apply(box, inboxes, cache, array_index, ActionList{},
+                  std::add_pointer_t<ParallelComponent>{nullptr});
+      } else {
+        evolution::Initialization::Actions::
+            SetVariables<Tags::Coordinates<Dim, Frame::ElementLogical>>::apply(
+                box, inboxes, cache, array_index, ActionList{},
+                std::add_pointer_t<ParallelComponent>{nullptr});
+      }
+    }
+    return {Parallel::AlgorithmExecution::Continue, std::nullopt};
+  }
+};
 }  // namespace evolution::dg::subcell::Actions
