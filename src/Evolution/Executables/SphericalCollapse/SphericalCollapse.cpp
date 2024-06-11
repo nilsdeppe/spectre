@@ -1,23 +1,33 @@
 // Distributed under the MIT License.
 // See LICENSE.txt for details.
 
+// Need Boost MultiArray because it is used internally by ODEINT
+#include "DataStructures/BoostMultiArray.hpp"
+
+#include <algorithm>
+#include <boost/numeric/odeint.hpp>
 #include <boost/program_options.hpp>
 #include <cstddef>
 #include <iostream>
+#include <iterator>
 #include <limits>
 #include <string>
 
 #include "DataStructures/ApplyMatrices.hpp"
 #include "DataStructures/DataVector.hpp"
 #include "DataStructures/Matrix.hpp"
+#include "DataStructures/Tensor/IndexType.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
+#include "DataStructures/VectorImpl.hpp"
 #include "Domain/CoordinateMaps/Affine.hpp"
 #include "Domain/Structure/SegmentId.hpp"
+#include "NumericalAlgorithms/Interpolation/IrregularInterpolant.hpp"
 #include "NumericalAlgorithms/LinearSolver/Lapack.hpp"
 #include "NumericalAlgorithms/Spectral/LogicalCoordinates.hpp"
 #include "NumericalAlgorithms/Spectral/Mesh.hpp"
 #include "NumericalAlgorithms/Spectral/Spectral.hpp"
-#include "Parallel/Printf.hpp"
+#include "Parallel/Printf/Printf.hpp"
+#include "Utilities/ConstantExpressions.hpp"
 #include "Utilities/Gsl.hpp"
 #include "Utilities/WrapText.hpp"
 
@@ -29,14 +39,12 @@ void compute_delta_integral_logical(
     const gsl::not_null<Scalar<DataVector>*> delta,
     const gsl::not_null<DataVector*> integrand_buffer,
     const Mesh<1>& mesh_of_one_element, const Scalar<DataVector>& phi,
-    const Scalar<DataVector>& pi,
-    const tnsr::I<DataVector, 1, Frame::ElementLogical>& logical,
-    const Scalar<DataVector>& det_jacobian) {
-  ASSERT(get(*delta).size() == get<0>(logical).size(),
+    const Scalar<DataVector>& pi, const Scalar<DataVector>& det_jacobian) {
+  ASSERT(get(*delta).size() == get(det_jacobian).size(),
          "Radius and delta must be of same size. Radius is: "
-             << get<0>(logical).size()
+             << get(det_jacobian).size()
              << " and delta is: " << get(*delta).size());
-  ASSERT(integrand_buffer->size() == get<0>(logical).size(), "uh oh");
+  ASSERT(integrand_buffer->size() == get(det_jacobian).size(), "uh oh");
 
   *integrand_buffer =
       -M_PI * (square(get(pi)) + square(get(phi))) * get(det_jacobian);
@@ -55,11 +63,6 @@ void compute_delta_integral_logical(
   }
 }
 
-const tnsr::I<DataVector, 1, Frame::ElementLogical> coordinate_transformation(
-    const size_t number_of_elements, const size_t number_of_grid_points) {
-  tnsr::I<DataVector, 1, Frame::ElementLogical> coordinates{};
-}
-
 void compute_mass_integral(
     const gsl::not_null<Scalar<DataVector>*> mass,
     const gsl::not_null<Matrix*> matrix_buffer,
@@ -69,36 +72,28 @@ void compute_mass_integral(
     const size_t spacetime_dim) {
   const size_t pts_per_element = mesh_of_one_element.number_of_grid_points();
   const size_t number_of_grids = get(pi).size() / pts_per_element;
-  std::cout << pts_per_element << '\n\n';
-  std::cout << get(pi).size() << '\n\n';
   const Matrix& integration_matrix =
       Spectral::integration_matrix(mesh_of_one_element);
   for (size_t grid = 0; grid < number_of_grids; ++grid) {
     DataVector view{&get(*mass)[grid * pts_per_element], pts_per_element};
+    const double boundary_condition =
+        grid == 0 ? 0.0 : get(*mass)[grid * pts_per_element - 1];
     for (size_t i = 0; i < pts_per_element; ++i) {
-      view[i] = 0.0;
+      view[i] = boundary_condition;
       for (size_t k = 0; k < pts_per_element; ++k) {
-        const double common = integration_matrix(i, k) * M_PI *
-                              get(det_jacobian)[k] *
-                              (square(get(pi)[k]) + square(get(phi)[k]));
-        view[i] += pow(get<0>(radius)[k], spacetime_dim - 2) * common;
+        const size_t index = k + grid * pts_per_element;
+        const double sigma =
+            0.5 * M_PI * (square(get(pi)[index]) + square(get(phi)[index]));
+        view[i] += integration_matrix(i, k) * 0.5 * sigma *
+                   get(det_jacobian)[index] *
+                   pow(get<0>(radius)[index], spacetime_dim - 3);
         matrix_buffer->operator()(i, k) =
-            (i == k ? 1.0 : 0.0) + 2.0 * get<0>(radius)[k] * common;
+            (i == k ? 1.0 : 0.0) +
+            integration_matrix(i, k) * sigma * get(det_jacobian)[index];
       }
     }
-    // std::cout << "g: " << grid << ' ' << view << "\n" << *matrix_buffer <<
-    // "\n\n"; Solve the linear system A m = b for m (the mass)
-    lapack::general_matrix_linear_solve(make_not_null(&view), *matrix_buffer);
-  }
-
-  // Loop through each CG grid and add offset from previous grid integration
-  // Should we change the name of this Datavector, since we have used view
-  // before.
-  DataVector view{};
-  for (size_t grid_index = pts_per_element; grid_index < get(pi).size();
-       grid_index += pts_per_element) {
-    view.set_data_ref(&get(*mass)[grid_index], pts_per_element);
-    view += get(*mass)[grid_index - 1];
+    // Solve the linear system A m = b for m (the mass)
+    lapack::general_matrix_linear_solve(make_not_null(&view), matrix_buffer);
   }
 }
 
@@ -119,15 +114,6 @@ void compute_metric_function_a_from_mass(
   view_a = 1.0 - 2.0 * view_mass / pow(view_radius, spacetime_dim - 3);
 }
 
-void compute_seg_ids(std::vector<SegmentId>& segids,
-                     const size_t number_of_elements,
-                     const size_t refinement_level) {
-  for (size_t element_index = 0; element_index < number_of_elements;
-       element_index += 1) {
-    SegmentId segid{refinement_level, element_index};
-    segids.push_back(segid);
-  }
-}
 // void compute_time_derivatives_first_order(
 //     const gsl::not_null<Scalar<DataVector>*> dt_psi,
 //     const gsl::not_null<Scalar<DataVector>*> dt_phi,
@@ -137,11 +123,12 @@ void compute_seg_ids(std::vector<SegmentId>& segids,
 //     const Scalar<DataVector>& metric_function_a,
 //     const Scalar<DataVector>& metric_function_delta, const double gamma2,
 //     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
-//     const InverseJacobian<DataVector, 1, Frame::Logical, Frame::Inertial>&
-//         inverse_jacobian,
-//     const InverseJacobian<DataVector, 1, Frame::Logical, Frame::Inertial>&
-//         inverse_jacobian_divided_by_radius,
-//     const size_t spacetime_dim)  {
+//     const InverseJacobian<DataVector, 1, Frame::ElementLogical,
+//                           Frame::Inertial>& inverse_jacobian,
+//     const InverseJacobian<DataVector, 1, Frame::ElementLogical,
+//                           Frame::Inertial>&
+//                           inverse_jacobian_divided_by_radius,
+//     const size_t spacetime_dim) {
 //   std::array<std::reference_wrapper<const Matrix>, 1> logical_diff_matrices{
 //       {std::cref(Spectral::differentiation_matrix(mesh_of_one_element))}};
 //   // Assemble dt_pi, using dt_psi as a buffer
@@ -201,15 +188,50 @@ void compute_seg_ids(std::vector<SegmentId>& segids,
 
 //   // Pi boundary condition
 // }
+Scalar<DataVector> differential_eq_for_A(
+    const gsl::not_null<Scalar<DataVector>*> derivative_r,
+    const Mesh<1>& mesh_of_one_element, const Scalar<DataVector>& phi,
+    const Scalar<DataVector>& pi, const Scalar<DataVector>& A,
+    const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
+    const size_t spacetime_dim) {
+  std::array<std::reference_wrapper<const Matrix>, 1> matrices{
+      {std::cref(Spectral::differentiation_matrix(mesh_of_one_element))}};
 
-int main(int argc, char** argv) {
-  const size_t refinement_level = 2;
-  const size_t number_of_elements = 4;
-  const Mesh<1> mesh_of_one_element{8, Spectral::Basis::Legendre,
+  apply_matrices(make_not_null(&get(*derivative_r)), matrices, get(A),
+                 mesh_of_one_element.extents());
+
+  const DataVector view_A{&const_cast<double&>(get(A)[0]),  // NOLINT
+                          get(A).size()};
+  const DataVector view_radius{
+      &const_cast<double&>(get<0>(radius)[0]),  // NOLINT
+      get<0>(radius).size()};
+  Scalar<DataVector> diff_eq{
+      ((spacetime_dim - 3) / view_radius) * (1 - view_A) -
+      2 * M_PI * view_radius * view_A * (square(get(pi)) + square(get(phi)))};
+  return diff_eq;
+}
+std::vector<SegmentId> compute_seg_ids(const size_t number_of_elements,
+                                       const size_t refinement_level) {
+  std::vector<SegmentId> segids{};
+  segids.reserve(number_of_elements);
+  for (size_t element_index = 0; element_index < number_of_elements;
+       element_index += 1) {
+    SegmentId segid{refinement_level, element_index};
+    segids.push_back(segid);
+  }
+  return segids;
+}
+
+void run(const size_t refinement_level, const size_t points_per_element) {
+  const size_t number_of_elements = two_to_the(refinement_level);
+  const Mesh<1> mesh_of_one_element{points_per_element,
+                                    Spectral::Basis::Legendre,
                                     Spectral::Quadrature::GaussLobatto};
   Scalar<DataVector> delta{mesh_of_one_element.number_of_grid_points() *
                            number_of_elements};
   Scalar<DataVector> jacobian{
+      mesh_of_one_element.number_of_grid_points() * number_of_elements, 0.0};
+  Scalar<DataVector> inv_jacobian{
       mesh_of_one_element.number_of_grid_points() * number_of_elements, 0.0};
   DataVector integrand_buffer{mesh_of_one_element.number_of_grid_points() *
                               number_of_elements};
@@ -218,8 +240,8 @@ int main(int argc, char** argv) {
 
   const std::array<DataVector, 1> logical_coords_array{logical_coord.get(0)};
 
-  std::vector<SegmentId> segids = {};
-  compute_seg_ids(segids, number_of_elements, refinement_level);
+  const std::vector<SegmentId> segids =
+      compute_seg_ids(number_of_elements, refinement_level);
 
   tnsr::I<DataVector, 1, Frame::BlockLogical> block_logical_coords{
       mesh_of_one_element.number_of_grid_points() * number_of_elements, 0.0};
@@ -231,11 +253,20 @@ int main(int argc, char** argv) {
     domain::CoordinateMaps::Affine affine_map(-1, 1, lower, upper);
 
     DataVector jacobian_of_element{
-        std::next(get(jacobian).data(),
-                  element_index * mesh_of_one_element.number_of_grid_points()),
+        std::next(
+            get(jacobian).data(),
+            static_cast<std::ptrdiff_t>(
+                element_index * mesh_of_one_element.number_of_grid_points())),
         mesh_of_one_element.number_of_grid_points()};
     jacobian_of_element = affine_map.jacobian(logical_coords_array)[0];
 
+    DataVector inv_jacobian_of_element{
+        std::next(
+            get(inv_jacobian).data(),
+            static_cast<std::ptrdiff_t>(
+                element_index * mesh_of_one_element.number_of_grid_points())),
+        mesh_of_one_element.number_of_grid_points()};
+    inv_jacobian_of_element = affine_map.inv_jacobian(logical_coords_array)[0];
     for (size_t coord_index = 0;
          coord_index < mesh_of_one_element.number_of_grid_points();
          coord_index += 1) {
@@ -247,53 +278,60 @@ int main(int argc, char** argv) {
              coord_index] = point[0];
     }
   }
-  Scalar<DataVector> phi_2{
-      mesh_of_one_element.number_of_grid_points() * number_of_elements, 0.0};
   Scalar<DataVector> mass{mesh_of_one_element.number_of_grid_points() *
                           number_of_elements};
-  tnsr::I<DataVector, 1, Frame::Inertial> radius{
-      mesh_of_one_element.number_of_grid_points() * number_of_elements, 0};
-  // const std::array<DataVector, 1> values_array{block_logical_coords.get(0)};
-  // DataVector jacobian_of_element{mesh_of_one_element.number_of_grid_points()
-  // *
-  //                          number_of_elements};
+  Scalar<DataVector> metric_function_a{
+      mesh_of_one_element.number_of_grid_points() * number_of_elements};
+  const tnsr::I<DataVector, 1, Frame::Inertial> radius{
+      {{sqrt((block_logical_coords.get(0) + 1.0) * 0.5)}}};
 
-  radius.get(0) = sqrt((block_logical_coords.get(0) + 1.0) * 0.5);
-  // radius[0][coord_index] = std::sqrt((values_array[coord_index]+1)/2);
-  // get(jacobian)[coord_index] = 1/(4*radius[0][coord_index]);
-  get(phi_2) = sqrt(radius.get(0));
-  get(jacobian) *= 1.0 / (4.0 * radius.get(0));
-  std::cout << jacobian << "\n\n";
+  const Scalar<DataVector> phi{
+      0.1 * get<0>(radius)  //  *
+                            // exp(-square(radius.get(0)))
+  };
+  const Scalar<DataVector> pi{
+      mesh_of_one_element.number_of_grid_points() * number_of_elements, 0.0};
 
   Matrix matrix_buffer{mesh_of_one_element.number_of_grid_points(),
                        mesh_of_one_element.number_of_grid_points()};
 
-  const Scalar<DataVector> pi_2{
-      mesh_of_one_element.number_of_grid_points() * number_of_elements, 0.0};
-  std::cout << phi_2 << "\n\n";
+  const size_t spacetime_dim = 4;
 
-  const size_t spacetime_dim = 3;
-  std::cout << radius << "\n\n";
+  //   compute_delta_integral_logical(&delta, &integrand_buffer,
+  //   mesh_of_one_element,
+  //                                  phi, pi, jacobian);
 
-  // std::cout <<jacobian << "\n\n";
-  const Scalar<DataVector> pi{
-      DataVector{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
-                 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
-                 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5}};
-  const Scalar<DataVector> phi{
-      DataVector{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
-                 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
-                 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5}};
-
-  compute_delta_integral_logical(&delta, &integrand_buffer, mesh_of_one_element,
-                                 phi, pi, block_logical_coords, jacobian);
-  compute_mass_integral(&mass, &matrix_buffer, mesh_of_one_element, phi_2, pi_2,
+  [[maybe_unused]] const size_t last_point = get(mass).size() - 1;
+  compute_mass_integral(&mass, &matrix_buffer, mesh_of_one_element, phi, pi,
                         jacobian, radius, spacetime_dim);
+  compute_metric_function_a_from_mass(&metric_function_a, mass, radius,
+                                      spacetime_dim);
+  Scalar<DataVector> derivative_r{mesh_of_one_element.number_of_grid_points() *
+                                  number_of_elements};
+  auto diff_eq =
+      differential_eq_for_A(&derivative_r, mesh_of_one_element, phi, pi,
+                            metric_function_a, radius, spacetime_dim);
+  Scalar<DataVector> derivative_from_D{
+      mesh_of_one_element.number_of_grid_points() * number_of_elements, 0.0};
+  get(derivative_from_D) =
+      4 * get(derivative_r) * get(inv_jacobian) * get<0>(radius);
 
-  // std::cout << 'next' << std::setprecision(7) << delta << "\n\n";
-  std::cout << 'next' << std::setprecision(7) << mass << "\n\n";
+  std::cout << "Mass:\n"
+            << std::setprecision(16) << std::scientific << get(mass)[last_point]
+            << "\n";
+  std::cout << "Metric A:\n"
+            << std::setprecision(16) << std::scientific
+            << get(metric_function_a)[last_point] << "\n";
+  std::cout << "Differential_Eq_values:\n"
+            << std::setprecision(16) << std::scientific
+            << get(diff_eq)[last_point] << "\n";
+  std::cout << "Derivative_Operator_Values:\n"
+            << std::setprecision(16) << std::scientific
+            << (get(derivative_from_D) - get(diff_eq)) / get(metric_function_a)
+            << "\n";
+}
 
-  return 0;
+int main(int argc, char** argv) {
   boost::program_options::options_description desc(wrap_text(
       "Spherical gravitational collapse using one-sided Legendre polynomials "
       "at r=0 to analytically regularize the evolution equations. The metric "
@@ -309,8 +347,12 @@ int main(int argc, char** argv) {
       "\n\nOptions",
       79));
   desc.add_options()("help,h,", "show this help message")(
-      "input_file", boost::program_options::value<std::string>()->required(),
-      "input file to use for evolution");
+      "input-file", boost::program_options::value<std::string>()->required(),
+      "input file to use for evolution")(
+      "ref", boost::program_options::value<size_t>()->required(),
+      "Refinement level")("points",
+                          boost::program_options::value<size_t>()->required(),
+                          "Points per element");
 
   boost::program_options::variables_map vars;
 
@@ -320,8 +362,11 @@ int main(int argc, char** argv) {
           .run(),
       vars);
 
-  if (vars.count("help") != 0u or vars.count("input_file") == 0u) {
+  if (vars.count("help") != 0u or vars.count("input-file") == 0u or
+      vars.count("ref") == 0u or vars.count("points") == 0u) {
     Parallel::printf("%s\n", desc);
     return 0;
   }
+
+  run(vars["ref"].as<size_t>(), vars["points"].as<size_t>());
 }
