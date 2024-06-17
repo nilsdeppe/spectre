@@ -74,7 +74,7 @@ struct TimeDerivativeTerms {
       gr::Tags::Lapse<DataVector>, gr::Tags::Shift<DataVector, 3>,
       gr::Tags::InverseSpatialMetric<DataVector, 3>>;
   using argument_tags =
-      tmpl::list<grmhd::ValenciaDivClean::Tags::TildeD,
+    tmpl::list<grmhd::ValenciaDivClean::Tags::TildeD,
                  grmhd::ValenciaDivClean::Tags::TildeYe,
                  grmhd::ValenciaDivClean::Tags::TildeTau,
                  grmhd::ValenciaDivClean::Tags::TildeS<>,

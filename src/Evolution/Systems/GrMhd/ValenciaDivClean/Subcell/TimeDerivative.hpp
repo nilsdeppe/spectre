@@ -59,6 +59,8 @@
 #include "Utilities/MakeWithValue.hpp"
 #include "Utilities/TMPL.hpp"
 
+#include "Utilities/MakeWithValue.hpp"
+
 namespace grmhd::ValenciaDivClean::subcell {
 /*!
  * \brief Compute the time derivative on the subcell grid using FD
@@ -199,7 +201,6 @@ struct TimeDerivative {
                   gr::Tags::SqrtDetSpatialMetric<DataVector>,
                   gr::Tags::InverseSpatialMetric<DataVector, 3>,
                   evolution::dg::Actions::detail::NormalVector<3>>>>;
-          // static assert here tmpl::size<>::value
           static_assert(tmpl::size<dg_package_data_argument_tags>::value ==
                             tmpl::size<fd::tags_list_for_reconstruct>::value,
                         "Package data argument tags and tags list for "
@@ -555,6 +556,21 @@ struct TimeDerivative {
               ? gsl::at(high_order_corrections.value(), dim)
               : gsl::at(boundary_corrections, dim);
       const double inverse_delta = gsl::at(one_over_delta_xi, dim);
+
+      // how to get associated tags for a given variable
+      using b_tag = grmhd::ValenciaDivClean::Tags::TildeB<>;
+      auto& dt_tilde_b = get<::Tags::dt<b_tag>>(*dt_vars_ptr);
+      auto& b_correction = get<b_tag>(boundary_correction_in_axis);
+
+      auto tensor_zeros = make_with_value<
+        tnsr::I<DataVector, 3>>(dt_tilde_b, 0.0);
+      for (size_t i = 0; i < dt_tilde_b.size(); ++i) {
+        evolution::dg::subcell::add_cartesian_flux_divergence(
+          make_not_null(&tensor_zeros[i]), inverse_delta,
+          get(cell_centered_det_inv_jacobian), b_correction[i],
+          subcell_mesh.extents(), dim);
+      }
+
       tmpl::for_each<typename variables_tag::tags_list>(
           [&dt_vars_ptr, &boundary_correction_in_axis,
            &cell_centered_det_inv_jacobian, dim, inverse_delta, &subcell_mesh,
@@ -564,7 +580,7 @@ struct TimeDerivative {
             using dt_tag = ::Tags::dt<evolved_var_tag>;
             auto& dt_var = get<dt_tag>(*dt_vars_ptr);
             const auto& var_correction =
-                get<evolved_var_tag>(boundary_correction_in_axis);
+              get<evolved_var_tag>(boundary_correction_in_axis);
             for (size_t i = 0; i < dt_var.size(); ++i) {
               if (comp_dim == 3) {
                 evolution::dg::subcell::add_cartesian_flux_divergence(
@@ -584,7 +600,18 @@ struct TimeDerivative {
                     get<::Tags::Time>(*box),
                     get<domain::Tags::FunctionsOfTime>(*box));
               }
-            }
+            }/*
+            evolution::dg::subcell::add_cartesian_flux_divergence(
+                  make_not_null(&zeros), inverse_delta,
+                  get(cell_centered_det_inv_jacobian), var_correction[size],
+                  subcell_mesh.extents(), dim);*/
+            /*
+            evolution::dg::subcell::add_cartesian_flux_divergence(
+                make_not_null(&dt_var[1]), inverse_delta,
+                get(cell_centered_det_inv_jacobian),
+                get<grmhd::ValenciaDivClean::Tags::TildeB<>>,
+                subcell_mesh.extents(), dim);*/
+            // attempt to call cartesian_flux_divergence for non-BC terms
           });
     }
 
