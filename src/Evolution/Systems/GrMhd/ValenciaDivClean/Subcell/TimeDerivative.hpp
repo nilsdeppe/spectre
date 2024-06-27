@@ -561,31 +561,6 @@ struct TimeDerivative {
         reconstruction_order.value_or(std::array<gsl::span<std::uint8_t>, 3>{}),
         false, conormal, ghost_cells_conormal);
 
-    /*
-    // Trying to make the face variables needed
-    using DerivedCorrection = std::decay_t<decltype(*boundary_corrections)>;
-    using dg_package_data_temporary_tags =
-              typename DerivedCorrection::dg_package_data_temporary_tags;
-    using dg_package_data_argument_tags = tmpl::append<
-              evolved_vars_tags, recons_prim_tags, fluxes_tags,
-              tmpl::remove_duplicates<tmpl::push_back<
-                  dg_package_data_temporary_tags,
-                  gr::Tags::SpatialMetric<DataVector, 3>,
-                  gr::Tags::SqrtDetSpatialMetric<DataVector>,
-                  gr::Tags::InverseSpatialMetric<DataVector, 3>,
-                  evolution::dg::Actions::detail::NormalVector<3>>>>;
-    auto package_data_argvars_lower_face = make_array<3>(
-              Variables<dg_package_data_argument_tags>(reconstructed_num_pts));
-    auto package_data_argvars_upper_face = make_array<3>(
-    Variables<dg_package_data_argument_tags>(reconstructed_num_pts));*/
-
-    /*
-    for (size_t i; i < 3; ++i) {
-      for (size_t j; j < 3; ++j) {
-        auto b_upper_normal = upper_normal; // upper_outward_conormal;
-      }
-      }*/
-
     // how to get associated tags for a given variable
     using b_tag = grmhd::ValenciaDivClean::Tags::TildeB<>;
     auto& dt_tilde_b = get<::Tags::dt<b_tag>>(*dt_vars_ptr);
@@ -593,7 +568,7 @@ struct TimeDerivative {
     using phi_tag = grmhd::ValenciaDivClean::Tags::TildePhi;
     auto& dt_tilde_phi = get<::Tags::dt<phi_tag>>(*dt_vars_ptr);
 
-    auto tilde_s_correction = make_with_value<
+    auto div_b = make_with_value<
       Scalar<DataVector>>(dt_tilde_phi, 0.0);
 
     const auto& cell_centered_det_inv_jacobian = db::get<
@@ -630,13 +605,9 @@ struct TimeDerivative {
           get(boundary_lower));
 
       evolution::dg::subcell::add_cartesian_flux_divergence(
-        make_not_null(&get(tilde_s_correction)), inverse_delta,
+        make_not_null(&get(div_b)), inverse_delta,
         get(cell_centered_det_inv_jacobian), maybe_correction,
         subcell_mesh.extents(), dim);
-
-      using b_over_w_tag = grmhd::ValenciaDivClean::Tags::LapseTimesbOverW;
-      //      auto b_over_w = get<b_over_w_tag>(*box); // construct explicitly
-      //      auto tilde_b_test = get<b_tag>(box);
 
       tmpl::for_each<typename variables_tag::tags_list>(
           [&dt_vars_ptr, &boundary_correction_in_axis,
@@ -673,19 +644,60 @@ struct TimeDerivative {
 
     evolution::dg::subcell::store_reconstruction_order_in_databox(
         box, reconstruction_order);
-    /*
+
     for (size_t i = 0; i < 3; ++i){
       get<::Tags::dt<grmhd::ValenciaDivClean::Tags::TildeB<>>>
         (*dt_vars_ptr).get(i) = 0;
     } // sets time derivative of magnetic field to 0
-    */
-    auto magfield = get(get<hydro::Tags::SpatialVelocity<DataVector, 3>>(*box));
-    for (size_t i = 0; i < 3; ++i){
-      get<::Tags::dt<grmhd::ValenciaDivClean::Tags::TildeS<>>>
-        (*dt_vars_ptr).get(i) += get(tilde_s_correction) *
-        get(get<gr::Tags::Lapse<DataVector>>(*box)); // * lapse_times_b_over_w
+
+    tnsr::i<DataVector, 3> magfield_lower = make_with_value<
+      tnsr::i<DataVector, 3>>(dt_tilde_phi, 0.0);
+    tnsr::i<DataVector, 3> spatial_velocity = make_with_value<
+      tnsr::i<DataVector, 3>>(dt_tilde_phi, 0.0);
+    const tnsr::ii<DataVector, 3>& spatial_metric =
+      get<gr::Tags::SpatialMetric<DataVector, 3>>(*box);
+    const tnsr::I<DataVector, 3>& magfield_upper =
+      get<hydro::Tags::MagneticField<DataVector, 3>>(*box);
+    const tnsr::I<DataVector, 3>& spatial_velocity_upper =
+      get<hydro::Tags::SpatialVelocity<DataVector, 3>>(*box);
+
+    for (size_t i = 0; i < 3; ++i) {
+      for (size_t j = 0; j < 3; ++j) {
+        magfield_lower.get(i) += magfield_upper.get(j) *
+          spatial_metric.get(i, j);
+        spatial_velocity.get(i) += spatial_velocity_upper.get(j) *
+          spatial_metric.get(i, j);
+      }
     }
 
+    const Scalar<DataVector>& lapse = get<gr::Tags::Lapse<DataVector>>(*box);
+    const Scalar<DataVector>& lorentz_factor =
+      get<hydro::Tags::LorentzFactor<DataVector>>(*box);
+    const Scalar<DataVector> one_over_w_squared{1.0 /
+      square(get(lorentz_factor))};
+
+    Scalar<DataVector> b_dot_sp_velocity = make_with_value<
+      Scalar<DataVector>>(dt_tilde_phi, 0.0);
+    for (size_t i = 0; i < 3; ++i) {
+      get(b_dot_sp_velocity) += spatial_velocity.get(i) * magfield_upper.get(i);
+    }
+
+    tnsr::i<DataVector, 3> lowercase_b_over_w;
+    for (size_t i = 0; i < 3; ++i) {
+      lowercase_b_over_w.get(i) = get(b_dot_sp_velocity) *
+        spatial_velocity.get(i) + magfield_lower.get(i) *
+        get(one_over_w_squared);
+    }
+
+    tnsr::i<DataVector, 3> lapse_b_over_w;
+    for (size_t i = 0; i < 3; ++i) {
+      lapse_b_over_w.get(i) = lowercase_b_over_w.get(i) * get(lapse);
+    }
+
+    for (size_t i = 0; i < 3; ++i) {
+      get<::Tags::dt<grmhd::ValenciaDivClean::Tags::TildeS<>>>
+        (*dt_vars_ptr).get(i) -= get(div_b) * lapse_b_over_w.get(i);
+    }
   }
 
  private:
