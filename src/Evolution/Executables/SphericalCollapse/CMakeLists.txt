@@ -20,6 +20,8 @@ target_link_libraries(
   IO
   Informer
   LinearSolver
+  Observer
+  Parallel
   Spectral
   Utilities
   )
