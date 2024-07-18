@@ -12,7 +12,7 @@ spectre_python_add_module(
   LorentzFactor.cpp
   LowerSpatialFourVelocity.cpp
   MassFlux.cpp
-  MassWeightedFluidItems.cpp
+  #  MassWeightedFluidItems.cpp
   SoundSpeedSquared.cpp
   SpecificEnthalpy.cpp
   StressEnergy.cpp

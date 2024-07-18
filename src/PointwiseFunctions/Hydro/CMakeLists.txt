@@ -14,7 +14,7 @@ spectre_target_sources(
   LowerSpatialFourVelocity.cpp
   MagneticFieldTreatment.cpp
   MassFlux.cpp
-  MassWeightedFluidItems.cpp
+  #  MassWeightedFluidItems.cpp
   QuadrupoleFormula.cpp
   SoundSpeedSquared.cpp
   SpecificEnthalpy.cpp
