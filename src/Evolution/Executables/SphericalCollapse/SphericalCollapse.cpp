@@ -451,7 +451,8 @@ std::array<DataVector, 3> integrate_fields_in_time(
     const Scalar<DataVector>& det_inverse_jacobian, const size_t spacetime_dim,
     const double R_0, const size_t refinement_level, bool BH_formed,
     const Scalar<DataVector>& det_jacobian_tau,
-    const Scalar<DataVector>& det_inv_jacobian_tau) {
+    const Scalar<DataVector>& det_inv_jacobian_tau,
+    std::array<std::reference_wrapper<const Matrix>, 1> filter_matrices) {
   using Vars = std::array<DataVector, 3>;
 
   Vars vars{get(psi), get(phi), get(pi)};
@@ -464,19 +465,30 @@ std::array<DataVector, 3> integrate_fields_in_time(
   const double epsilon = 0.0000001;
   double time = 0.0;
   double dt = 0.0;
-  const double CFL = 0.05;
+  const double CFL = 0.1;
   size_t step = 0;
-  while (time < 20.0 && time != -std::numeric_limits<double>::infinity()) {
+  while (time < 5.0 && time != -std::numeric_limits<double>::infinity()) {
     auto system = [&mesh_of_one_element, &metric_function_a, &delta, &mass,
                    &radius, &det_inverse_jacobian, &gamma2, &spacetime_dim,
                    &buffer3, &integrand_buffer, &det_jacobian, &matrix_buffer,
-                   &R_0, &det_inv_jacobian_tau,
-                   &det_jacobian_tau](const Vars& local_vars, Vars& local_dvars,
-                                      const double current_time) {
-      Scalar<DataVector> temp_psi{local_vars[0]};
-      Scalar<DataVector> temp_phi{local_vars[1]};
-      Scalar<DataVector> temp_pi{local_vars[2]};
-
+                   &R_0, &det_inv_jacobian_tau, &det_jacobian_tau,
+                   &filter_matrices](const Vars& local_vars, Vars& local_dvars,
+                                     const double current_time) {
+      Scalar<DataVector> temp_psi{const_cast<DataVector&>(local_vars[0]).data(),
+                                  local_vars[0].size()};
+      Scalar<DataVector> temp_phi{const_cast<DataVector&>(local_vars[1]).data(),
+                                  local_vars[1].size()};
+      Scalar<DataVector> temp_pi{const_cast<DataVector&>(local_vars[2]).data(),
+                                 local_vars[2].size()};
+      apply_matrices(make_not_null(&const_cast<DataVector&>(get(temp_psi))),
+                     filter_matrices, get(temp_psi),
+                     mesh_of_one_element.extents());
+      apply_matrices(make_not_null(&const_cast<DataVector&>(get(temp_pi))),
+                     filter_matrices, get(temp_pi),
+                     mesh_of_one_element.extents());
+      apply_matrices(make_not_null(&const_cast<DataVector&>(get(temp_phi))),
+                     filter_matrices, get(temp_phi),
+                     mesh_of_one_element.extents());
       // compute_delta_integral_logical(delta, integrand_buffer,
       // mesh_of_one_element, temp_phi, temp_pi,
       // det_jacobian, R_0, det_jacobian_tau);
@@ -500,34 +512,18 @@ std::array<DataVector, 3> integrate_fields_in_time(
       local_dvars[1] = get(temp_dtphi);
       local_dvars[2] = get(temp_dtpi);
     };
-    const double alpha = 36;
-    const unsigned half_power = 32;  // to remove lower mode.
-    const long unsigned int FilterIndex = 0;
-    Filters::Exponential<FilterIndex> exponential_filter =
-        Filters::Exponential<FilterIndex>(alpha, half_power, true,
-                                          std::nullopt);
-    const Matrix& filter_matrix =
-        exponential_filter.filter_matrix(mesh_of_one_element);
-    std::array<std::reference_wrapper<const Matrix>, 1> filter_matrices{
-        {std::cref(filter_matrix)}};
-    apply_matrices(make_not_null(&const_cast<DataVector&>(get(psi))),
-                   filter_matrices, get(psi), mesh_of_one_element.extents());
-    apply_matrices(make_not_null(&const_cast<DataVector&>(get(pi))),
-                   filter_matrices, get(pi), mesh_of_one_element.extents());
-    apply_matrices(make_not_null(&const_cast<DataVector&>(get(phi))),
-                   filter_matrices, get(phi), mesh_of_one_element.extents());
-    std::vector<ElementVolumeData> VolumeData = create_data_for_file(
-        radius, mesh_of_one_element, number_of_elements, refinement_level, vars,
-        integrand_buffer, mass, delta, metric_function_a, gamma2, det_jacobian,
-        matrix_buffer, spacetime_dim, R_0, det_jacobian_tau,
-        det_inv_jacobian_tau);
 
     std::string tag{"ElementData"};
     const observers::ObservationId obs_id = observers::ObservationId(time, tag);
 
     if (step % 500 == 0) {
-      // std::cout << "time:\n" << time << "\n";
-      // std::cout << "step:\n" << step << "\n";
+      std::vector<ElementVolumeData> VolumeData = create_data_for_file(
+          radius, mesh_of_one_element, number_of_elements, refinement_level,
+          vars, integrand_buffer, mass, delta, metric_function_a, gamma2,
+          det_jacobian, matrix_buffer, spacetime_dim, R_0, det_jacobian_tau,
+          det_inv_jacobian_tau);
+      std::cout << "time:\n" << time << "\n";
+      std::cout << "step:\n" << step << "\n";
       // std::cout << "dt:\n" << dt << "\n";
       write_data_hd5file(VolumeData, obs_id, 0.0, R_0, refinement_level,
                          mesh_of_one_element.number_of_grid_points());
@@ -698,7 +694,7 @@ void run(const size_t refinement_level, const size_t points_per_element,
   Matrix matrix_buffer{mesh_of_one_element.number_of_grid_points(),
                        mesh_of_one_element.number_of_grid_points()};
 
-  const size_t spacetime_dim = 3;
+  const size_t spacetime_dim = 4;
 
   bool BH_formed = false;
   const double gamma2 = 0.0;
@@ -706,6 +702,15 @@ void run(const size_t refinement_level, const size_t points_per_element,
   std::cout << "tau_jacobian:\n"
             << std::setprecision(16) << std::scientific << get(jacobian_tau)
             << "\n";
+  const double alpha = 36;
+  const unsigned half_power = 32;  // to remove lower mode.
+  const long unsigned int FilterIndex = 0;
+  Filters::Exponential<FilterIndex> exponential_filter =
+      Filters::Exponential<FilterIndex>(alpha, half_power, true, std::nullopt);
+  const Matrix& filter_matrix =
+      exponential_filter.filter_matrix(mesh_of_one_element);
+  std::array<std::reference_wrapper<const Matrix>, 1> filter_matrices{
+      {std::cref(filter_matrix)}};
   // compute_delta_integral_logical(&delta, &integrand_buffer,
   // mesh_of_one_element,
   //                                phi, pi, jacobian, R_0, jacobian_tau);
@@ -713,15 +718,16 @@ void run(const size_t refinement_level, const size_t points_per_element,
   //                       jacobian, radius, spacetime_dim, R_0, jacobian_tau);
   // compute_metric_function_a_from_mass(&metric_function_a, mass, radius,
   //                                     spacetime_dim);
-  compute_time_derivatives_first_order(
-      &dt_psi, &dt_phi, &dt_pi, &buffer, mesh_of_one_element, psi, phi, pi,
-      metric_function_a, delta, gamma2, radius, inv_jacobian, spacetime_dim,
-      R_0, inv_jacobian_tau);
+  // compute_time_derivatives_first_order(
+  //     &dt_psi, &dt_phi, &dt_pi, &buffer, mesh_of_one_element, psi, phi, pi,
+  //     metric_function_a, delta, gamma2, radius, inv_jacobian, spacetime_dim,
+  //     R_0, inv_jacobian_tau);
   std::array<DataVector, 3> evaluated_vars = integrate_fields_in_time(
       &dt_psi, &dt_phi, &dt_pi, &buffer, &integrand_buffer, jacobian,
       &matrix_buffer, mesh_of_one_element, psi, phi, pi, &mass, &delta,
       &metric_function_a, gamma2, radius, inv_jacobian, spacetime_dim, R_0,
-      refinement_level, BH_formed, jacobian_tau, inv_jacobian_tau);
+      refinement_level, BH_formed, jacobian_tau, inv_jacobian_tau,
+      filter_matrices);
 
   std::cout << "Psi:\n"
             << std::setprecision(16) << std::scientific << evaluated_vars[0]
