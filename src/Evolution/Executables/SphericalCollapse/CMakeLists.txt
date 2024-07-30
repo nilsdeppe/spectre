@@ -19,6 +19,7 @@ target_link_libraries(
   DomainStructure
   IO
   Informer
+  LinearOperators
   LinearSolver
   Observer
   Parallel
