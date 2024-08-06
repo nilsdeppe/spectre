@@ -193,7 +193,7 @@ void ComposeTable::pup(PUP::er& p) {
 const std::vector<std::string>
     ComposeTable::compose_regular_and_additional_index_to_names_{
         "pressure",
-        "specific entropy",
+        "entropy per baryon",
         "baryon chemical potential",
         "charge chemical potential",
         "lepton chemical potential",
