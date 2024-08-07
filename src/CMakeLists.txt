@@ -18,3 +18,5 @@ add_subdirectory(PythonBindings)
 add_subdirectory(Time)
 add_subdirectory(Utilities)
 add_subdirectory(Visualization)
+
+add_subdirectory(Kokkos)
