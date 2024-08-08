@@ -20,7 +20,6 @@ if(${ENABLE_WARNINGS})
 -Wformat-y2k;\
 -Wformat=2;\
 -Winvalid-pch;\
--Wmissing-declarations;\
 -Wmissing-field-initializers;\
 -Wmissing-format-attribute;\
 -Wmissing-include-dirs;\
@@ -33,7 +32,6 @@ if(${ENABLE_WARNINGS})
 -Wno-type-limits;\
 -Wno-undefined-var-template;\
 -Wnon-virtual-dtor;\
--Wold-style-cast;\
 -Woverloaded-virtual;\
 -Wpacked;\
 -Wpedantic;\
