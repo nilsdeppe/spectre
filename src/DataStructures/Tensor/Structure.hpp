@@ -17,14 +17,16 @@
 #include "Utilities/ErrorHandling/Assert.hpp"
 #include "Utilities/ForceInline.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Kokkos/KokkosCore.hpp"
 #include "Utilities/MakeArray.hpp"
 #include "Utilities/Requires.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace Tensor_detail {
 template <size_t Size>
-constexpr size_t number_of_independent_components(
-    const std::array<int, Size>& symm, const std::array<size_t, Size>& dims) {
+KOKKOS_FUNCTION constexpr size_t number_of_independent_components(
+    const cpp20::array<int, Size>& symm,
+    const cpp20::array<size_t, Size>& dims) {
   if constexpr (Size == 0) {
     (void)symm;
     (void)dims;
@@ -41,7 +43,10 @@ constexpr size_t number_of_independent_components(
       // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay,cppcoreguidelines-pro-bounds-constant-array-index)
       assert(symm[i] > 0);
       // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-      max_element = std::max(static_cast<size_t>(ce_abs(symm[i])), max_element);
+      max_element = static_cast<size_t>(ce_abs(symm[i])) > max_element
+                        ? static_cast<size_t>(ce_abs(symm[i]))
+                        : max_element;
+      ;
     }
     assert(max_element > 0);  // NOLINT
     size_t total_independent_components = 1;
@@ -131,7 +136,7 @@ constexpr cpp20::array<size_t, Size> canonicalize_tensor_index(
 }
 
 template <size_t Rank>
-constexpr size_t compute_collapsed_index(
+KOKKOS_FUNCTION constexpr size_t compute_collapsed_index(
     const cpp20::array<size_t, Rank>& tensor_index,
     const cpp20::array<size_t, Rank> dims) {
   size_t collapsed_index = 0;
@@ -361,13 +366,13 @@ struct Structure {
     return sizeof...(Indices);
   }
 
-  SPECTRE_ALWAYS_INLINE static constexpr size_t size() {
+  KOKKOS_FUNCTION SPECTRE_ALWAYS_INLINE static constexpr size_t size() {
     constexpr auto number_of_independent_components =
         ::Tensor_detail::number_of_independent_components(
-            make_array_from_list<
+            make_cpp20_array_from_list<
                 tmpl::conditional_t<sizeof...(Indices) != 0, Symm, int>>(),
-            make_array_from_list<tmpl::conditional_t<sizeof...(Indices) != 0,
-                                                     index_list, size_t>>());
+            make_cpp20_array_from_list<tmpl::conditional_t<
+                sizeof...(Indices) != 0, index_list, size_t>>());
     return number_of_independent_components;
   }
 
@@ -472,8 +477,8 @@ struct Structure {
   /// storage_index
   /// \return the storage_index of a tensor_index
   template <typename... N>
-  SPECTRE_ALWAYS_INLINE static constexpr std::size_t get_storage_index(
-      const N... args) {
+  KOKKOS_FUNCTION SPECTRE_ALWAYS_INLINE static constexpr std::size_t
+  get_storage_index(const N... args) {
     static_assert(sizeof...(Indices) == sizeof...(N),
                   "the number arguments must be equal to rank_");
     constexpr auto collapsed_to_storage = collapsed_to_storage_;
@@ -481,12 +486,20 @@ struct Structure {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
-    return gsl::at(
-        collapsed_to_storage,
+#ifdef SPECTRE_KOKKOS
+    return collapsed_to_storage[
+#else
+    return gsl::at(collapsed_to_storage,
+#endif
         compute_collapsed_index(
-            cpp20::array<size_t, sizeof...(N)>{{static_cast<size_t>(args)...}},
-            make_cpp20_array_from_list<tmpl::conditional_t<
-                0 != sizeof...(Indices), index_list, size_t>>()));
+        cpp20::array<size_t, sizeof...(N)>{{static_cast<size_t>(args)...}},
+        make_cpp20_array_from_list<tmpl::conditional_t<0 != sizeof...(Indices),
+                                                       index_list, size_t>>())
+#ifndef SPECTRE_KOKKOS
+         );
+#else
+         ];
+#endif
 #if defined(__GNUC__) and not defined(__clang__) and __GNUC__ >= 10 and __GNUC__ < 12
 #pragma GCC diagnostic pop
 #endif
