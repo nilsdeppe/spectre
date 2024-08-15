@@ -50,7 +50,7 @@ if(SPECTRE_KOKKOS)
       APPEND PROPERTY
       INTERFACE_COMPILE_OPTIONS
       $<$<COMPILE_LANGUAGE:CXX>:
-      -Xcudafe;"--diag_suppress=186,191,554,1301,1305,2189,3060">
+      -Xcudafe;"--diag_suppress=114,177,186,191,550,554,1301,1305,2189,3060">
     )
   endif()
 
