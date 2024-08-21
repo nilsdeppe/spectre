@@ -584,7 +584,7 @@ struct TimeDerivative {
     const auto& cell_centered_det_inv_jacobian = db::get<
         evolution::dg::subcell::fd::Tags::DetInverseJacobianLogicalToInertial>(
         *box);
-    Parallel::printf("\n\ninv_jacobian%s\n", cell_centered_det_inv_jacobian);
+
     for (size_t dim = 0; dim < comp_dim; ++dim) {
       const auto& boundary_correction_in_axis =
           high_order_corrections.has_value()
@@ -651,8 +651,8 @@ struct TimeDerivative {
         (*dt_vars_ptr).get(i) = 0;
     } // sets time derivative of magnetic field to 0
 
-    Parallel::printf("\n\n tilde_s_before%s\n", get<::Tags::dt<
-     grmhd::ValenciaDivClean::Tags::TildeS<>>>(*dt_vars_ptr));
+    //    Parallel::printf("\n\n tilde_s_before%s\n", get<::Tags::dt<
+    //     grmhd::ValenciaDivClean::Tags::TildeS<>>>(*dt_vars_ptr));
 
     tnsr::i<DataVector, 3> magfield_lower = make_with_value<
       tnsr::i<DataVector, 3>>(dt_tilde_phi, 0.0);
@@ -664,9 +664,9 @@ struct TimeDerivative {
     const tnsr::I<DataVector, 3>& magfield_upper =
       get<hydro::Tags::MagneticField<DataVector, 3>>(*box);
     const tnsr::I<DataVector, 3>& spatial_velocity_upper =
-      get<hydro::Tags::SpatialVelocity<DataVector, 3>>(*box);
+      get<hydro::Tags::SpatialVelocity<DataVector, 3>>(*box);/*
     Parallel::printf("\n\n spatial_velocity_upper%s\n", spatial_velocity_upper);
-    Parallel::printf("\n\nmagfield_upper%s\n", magfield_upper);
+    Parallel::printf("\n\nmagfield_upper%s\n", magfield_upper);*/
 
     for (size_t i = 0; i < 3; ++i) {
       for (size_t j = 0; j < 3; ++j) {
@@ -677,23 +677,23 @@ struct TimeDerivative {
       }
     }
 
-    Parallel::printf("\n\n spatial_velocity_lower%s\n", spatial_velocity);
+    //    Parallel::printf("\n\n spatial_velocity_lower%s\n", spatial_velocity);
 
     const Scalar<DataVector>& lapse = get<gr::Tags::Lapse<DataVector>>(*box);
-    Parallel::printf("\n\nlapse%s\n", lapse);
+    //    Parallel::printf("\n\nlapse%s\n", lapse);
     const Scalar<DataVector>& lorentz_factor =
       get<hydro::Tags::LorentzFactor<DataVector>>(*box);
     const Scalar<DataVector> one_over_w_squared{1.0 /
       square(get(lorentz_factor))};
 
-    Parallel::printf("\n\n lorentz_factor%s\n", lorentz_factor);
+    //    Parallel::printf("\n\n lorentz_factor%s\n", lorentz_factor);
 
     Scalar<DataVector> b_dot_sp_velocity = make_with_value<
       Scalar<DataVector>>(dt_tilde_phi, 0.0);
     for (size_t i = 0; i < 3; ++i) {
       get(b_dot_sp_velocity) += spatial_velocity.get(i) * magfield_upper.get(i);
     }
-    Parallel::printf("\n\nb_dot_sp_velocity%s\n", b_dot_sp_velocity);
+    //    Parallel::printf("\n\nb_dot_sp_velocity%s\n", b_dot_sp_velocity);
 
     tnsr::i<DataVector, 3> lowercase_b_over_w;
     for (size_t i = 0; i < 3; ++i) {
@@ -701,7 +701,7 @@ struct TimeDerivative {
         spatial_velocity.get(i) + magfield_lower.get(i) *
         get(one_over_w_squared);
     }
-    Parallel::printf("\n\nlowercase_b_over_w%s\n", lowercase_b_over_w);
+    //    Parallel::printf("\n\nlowercase_b_over_w%s\n", lowercase_b_over_w);
 
     tnsr::i<DataVector, 3> lapse_b_over_w;
     for (size_t i = 0; i < 3; ++i) {
@@ -710,13 +710,14 @@ struct TimeDerivative {
 
     for (size_t i = 0; i < 3; ++i) {
       get<::Tags::dt<grmhd::ValenciaDivClean::Tags::TildeS<>>>
-        (*dt_vars_ptr).get(i) += get(div_tilde_b) * lapse_b_over_w.get(i);
+        (*dt_vars_ptr).get(i) -= get(div_tilde_b) * lapse_b_over_w.get(i);
     }
-
-    Parallel::printf("\n\n dt_tilde_s_after\n\n%s\n", get<::Tags::dt<
+    /*
+    Parallel::printf("\n\ndt_tilde_s_after\n\n%s\n", get<::Tags::dt<
       grmhd::ValenciaDivClean::Tags::TildeS<>>>(*dt_vars_ptr));
-    Parallel::printf("\n\n div_tilde_b\n\n%s\n", div_tilde_b);
-    Parallel::printf("\n\n lapse_b_over_w\n\n%s\n", lapse_b_over_w);
+    Parallel::printf("\n\ntime\n\n%f\n", get<::Tags::Time>(*box));
+    Parallel::printf("\n\ndiv_tilde_b\n\n%s\n", div_tilde_b);
+    Parallel::printf("\n\nlapse_b_over_w\n\n%s\n", lapse_b_over_w);*/
   }
 
  private:
