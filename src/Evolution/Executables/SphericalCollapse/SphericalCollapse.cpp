@@ -18,14 +18,18 @@
 #include "DataStructures/ApplyMatrices.hpp"
 #include "DataStructures/DataVector.hpp"
 #include "DataStructures/Matrix.hpp"
+#include "DataStructures/Tensor/EagerMath/Determinant.hpp"
 #include "DataStructures/Tensor/IndexType.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "DataStructures/VectorImpl.hpp"
 #include "Domain/CoordinateMaps/Affine.hpp"
+#include "Domain/CoordinateMaps/CoordinateMap.hpp"
+#include "Domain/CoordinateMaps/CoordinateMap.tpp"
 #include "Domain/CoordinateMaps/Distribution.hpp"
 #include "Domain/CoordinateMaps/Interval.hpp"
 #include "Domain/Creators/Interval.hpp"
 #include "Domain/Creators/RegisterDerivedWithCharm.hpp"
+#include "Domain/ElementToBlockLogicalMap.hpp"
 #include "Domain/Structure/ElementId.hpp"
 #include "Domain/Structure/SegmentId.hpp"
 #include "IO/H5/AccessType.hpp"
@@ -65,7 +69,6 @@ Scalar<DataVector> differential_eq_for_A(
 }
 Scalar<DataVector> differential_eq_for_delta(
     const Scalar<DataVector>& phi, const Scalar<DataVector>& pi,
-    const Scalar<DataVector>& delta,
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius) {
   Scalar<DataVector> diff_eq{-4 * M_PI * get<0>(radius) *
                              (square(get(pi)) + square(get(phi)))};
@@ -101,9 +104,9 @@ void compute_delta_integral_logical(
     const gsl::not_null<DataVector*> integrand_buffer,
     const Mesh<1>& mesh_of_one_element, const Scalar<DataVector>& phi,
     const Scalar<DataVector>& pi, const Scalar<DataVector>& det_jacobian,
-    const double R_0, const Scalar<DataVector>& det_jacobian_tau) {
+    const double R_0) {
   *integrand_buffer = -M_PI * (square(get(pi)) + square(get(phi))) *
-                      get(det_jacobian) * square(R_0) * get(det_jacobian_tau);
+                      get(det_jacobian) * square(R_0);
   std::array<std::reference_wrapper<const Matrix>, 1> matrices{
       {std::cref(Spectral::integration_matrix(mesh_of_one_element))}};
 
@@ -125,8 +128,7 @@ void compute_mass_integral(
     const Mesh<1>& mesh_of_one_element, const Scalar<DataVector>& phi,
     const Scalar<DataVector>& pi, const Scalar<DataVector>& det_jacobian,
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
-    const size_t spacetime_dim, const double R_0,
-    const Scalar<DataVector>& det_jacobian_tau) {
+    const size_t spacetime_dim, const double R_0) {
   const size_t pts_per_element = mesh_of_one_element.number_of_grid_points();
   const size_t number_of_grids = get(pi).size() / pts_per_element;
   const Matrix& integration_matrix =
@@ -142,12 +144,11 @@ void compute_mass_integral(
         const double sigma = square(R_0) * 0.5 * M_PI *
                              (square(get(pi)[index]) + square(get(phi)[index]));
         view[i] += integration_matrix(i, k) * 0.5 * sigma *
-                   get(det_jacobian)[index] * get(det_jacobian_tau)[index] *
+                   get(det_jacobian)[index] *
                    pow(get<0>(radius)[index], spacetime_dim - 3);
         matrix_buffer->operator()(i, k) =
-            (i == k ? 1.0 : 0.0) + integration_matrix(i, k) * sigma *
-                                       get(det_jacobian)[index] *
-                                       get(det_jacobian_tau)[index];
+            (i == k ? 1.0 : 0.0) +
+            integration_matrix(i, k) * sigma * get(det_jacobian)[index];
       }
     }
     // Solve the linear system A m = b for m (the mass)
@@ -171,6 +172,7 @@ void compute_metric_function_a_from_mass(
   get(*metric_function_a)[0] = 1.0;
   view_a = 1.0 - 2.0 * view_mass / pow(view_radius, spacetime_dim - 3);
 }
+
 void compute_time_derivatives_first_order_2(
     const gsl::not_null<Scalar<DataVector>*> dt_psi,
     const gsl::not_null<Scalar<DataVector>*> dt_phi_tilde,
@@ -182,7 +184,7 @@ void compute_time_derivatives_first_order_2(
     const Scalar<DataVector>& metric_function_delta, const double gamma2,
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
     const Scalar<DataVector>& det_inverse_jacobian, const size_t spacetime_dim,
-    const double R_0, const Scalar<DataVector>& det_inv_jacobian_tau,
+    const double R_0,
     const std::array<std::reference_wrapper<const Matrix>, 1>&
         filter_matrices) {
   Scalar<DataVector> diff_eq_A{get(psi).size()};
@@ -193,8 +195,7 @@ void compute_time_derivatives_first_order_2(
   // std::cout << "A:\n" << metric_function_a << "\n";
   // std::cout << "delta:\n" << metric_function_delta << "\n";
   // std::cout << "pi:\n" << pi << "\n";
-  Scalar<DataVector> diff_eq_delta =
-      differential_eq_for_delta(phi, pi, metric_function_delta, radius);
+  Scalar<DataVector> diff_eq_delta = differential_eq_for_delta(phi, pi, radius);
   // Scalar<DataVector> diff_eq_A{get(metric_function_a).size(), 0.0};
   // Scalar<DataVector> diff_eq_delta{get(metric_function_a).size(), 0.0};
   const double number_of_elements =
@@ -210,21 +211,19 @@ void compute_time_derivatives_first_order_2(
       {std::cref(Spectral::differentiation_matrix(mesh_of_one_element))}};
   apply_matrices(make_not_null(&get(buffer4)), logical_diff_matrices,
                  get(metric_function_a), mesh_of_one_element.extents());
-  get(diff_eq_A) = 4 * get<0>(radius) * get(det_inv_jacobian_tau) *
-                   get(det_inverse_jacobian) * get(buffer4);
+  get(diff_eq_A) =
+      4 * get<0>(radius) * get(det_inverse_jacobian) * get(buffer4);
 
   {
     // compute dt_psi
     get(buffer1) = get(metric_function_a) * exp(-get(metric_function_delta));
     get(*dt_psi) = get(buffer1) * get(pi);
 
-
-
     // compute 2nd term of dt_pi
     apply_matrices(make_not_null(&get(*dt_pi)), logical_diff_matrices,
                    get(phi_tilde), mesh_of_one_element.extents());
-    get(*dt_pi) *= (16 * square(get<0>(radius)) * get(det_inv_jacobian_tau) *
-                    get(det_inverse_jacobian) * get(buffer1)) *
+    get(*dt_pi) *= (16 * square(get<0>(radius)) * get(det_inverse_jacobian) *
+                    get(buffer1)) *
                    (1.0 / square(R_0));
     get(*dt_pi) += get(diff_eq_A) * exp(-get(metric_function_delta)) * 4 *
                        get<0>(radius) * get(phi_tilde) -
@@ -237,7 +236,7 @@ void compute_time_derivatives_first_order_2(
                    get(psi), mesh_of_one_element.extents());
     get(*dt_pi) +=
         (spacetime_dim - 2.0) * get(buffer1) * 4 * get(*buffer3) *
-        get(det_inv_jacobian_tau) * get(det_inverse_jacobian) *
+        get(det_inverse_jacobian) *
         (1.0 / square(R_0));  // adding in the first term of the expansion
 
     // compute dt_phi
@@ -245,8 +244,7 @@ void compute_time_derivatives_first_order_2(
 
     apply_matrices(make_not_null(&get(*dt_phi_tilde)), logical_diff_matrices,
                    get(buffer2), mesh_of_one_element.extents());
-    get(*dt_phi_tilde) *= get(det_inv_jacobian_tau) *
-                          get(det_inverse_jacobian) * (1.0 / square(R_0));
+    get(*dt_phi_tilde) *= get(det_inverse_jacobian) * (1.0 / square(R_0));
     get(*dt_phi_tilde) -= gamma2 * get(phi_tilde);
   }
   // DataVector no_filter{get(*dt_psi)};
@@ -303,6 +301,7 @@ double compute_adaptive_step_size(
   min_adapted_dt = CFL_safety_factor * min_adapted_dt;
   return min_adapted_dt;
 }
+
 void write_data_hd5file(std::vector<ElementVolumeData>& volume_data,
                         const observers::ObservationId& observation_id,
                         const double lower_r, const double upper_r,
@@ -324,6 +323,7 @@ void write_data_hd5file(std::vector<ElementVolumeData>& volume_data,
   volume_file.write_volume_data(observation_id.hash(), observation_id.value(),
                                 std::move(volume_data), serialized_domain);
 }
+
 std::vector<ElementVolumeData> create_data_for_file(
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
     const Mesh<1>& mesh_of_one_element, const size_t number_of_elements,
@@ -334,17 +334,14 @@ std::vector<ElementVolumeData> create_data_for_file(
     const gsl::not_null<Scalar<DataVector>*> metric_function_a,
     const double gamma2, const Scalar<DataVector>& det_jacobian,
     const gsl::not_null<Matrix*> matrix_buffer, const size_t spacetime_dim,
-    const double R_0, const Scalar<DataVector>& det_jacobian_tau,
-    const Scalar<DataVector>& det_inv_jacobian_tau) {
+    const double R_0) {
   std::vector<ElementVolumeData> VolumeData;
   Scalar<DataVector> temp_phi{vars[1] * 4 * get<0>(radius)};
   Scalar<DataVector> temp_pi{vars[2]};
   compute_delta_integral_logical(delta, integrand_buffer, mesh_of_one_element,
-                                 temp_phi, temp_pi, det_jacobian, R_0,
-                                 det_jacobian_tau);
+                                 temp_phi, temp_pi, det_jacobian, R_0);
   compute_mass_integral(mass, matrix_buffer, mesh_of_one_element, temp_phi,
-                        temp_pi, det_jacobian, radius, spacetime_dim, R_0,
-                        det_jacobian_tau);
+                        temp_pi, det_jacobian, radius, spacetime_dim, R_0);
   compute_metric_function_a_from_mass(metric_function_a, *mass, radius,
                                       spacetime_dim);
   for (size_t i = 0; i < get<0>(radius).size();
@@ -391,16 +388,20 @@ std::vector<ElementVolumeData> create_data_for_file(
   }
   return VolumeData;
 }
-void find_min_A(const gsl::not_null<Scalar<DataVector>*> metric_function_a,
+
+bool find_min_A(const gsl::not_null<Scalar<DataVector>*> metric_function_a,
                 bool BH_formed, const double epsilon) {
   for (size_t index = 0; index < get(*metric_function_a).size(); index++) {
-    if (get(*metric_function_a)[index] < epsilon) {
-      BH_formed = true;
-      break;
+    if (abs(get(*metric_function_a)[index]) < epsilon) {
+      std::cout << get(*metric_function_a)[index] << "\n";
+      std::cout << "here"
+                << "\n";
+      return true;
     }
   }
+  return false;
 }
-inline const char* const BoolToString(bool b) { return b ? "true" : "false"; }
+
 std::array<DataVector, 3> integrate_fields_in_time(
     const gsl::not_null<Scalar<DataVector>*> dt_psi,
     const gsl::not_null<Scalar<DataVector>*> dt_phi,
@@ -417,8 +418,6 @@ std::array<DataVector, 3> integrate_fields_in_time(
     const double gamma2, const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
     const Scalar<DataVector>& det_inverse_jacobian, const size_t spacetime_dim,
     const double R_0, const size_t refinement_level, bool BH_formed,
-    const Scalar<DataVector>& det_jacobian_tau,
-    const Scalar<DataVector>& det_inv_jacobian_tau,
     const std::array<std::reference_wrapper<const Matrix>, 1>&
         filter_matrices) {
   using Vars = std::array<DataVector, 3>;
@@ -430,19 +429,19 @@ std::array<DataVector, 3> integrate_fields_in_time(
       get<0>(radius).size() / mesh_of_one_element.number_of_grid_points();
   StateDopri5 st{};
   std::vector<double> times;
-  const double epsilon = 0.0000001;
+  const double epsilon = 0.001;
   double time = 0.0;
   double dt = 0.0;
   const double CFL = 0.1;
   size_t step = 0;
   // size_t nan = 2;
   // size_t counter =0;
-  while (time < 5.0 && time != -std::numeric_limits<double>::infinity()) {
+  while (time < 40.0 && time != -std::numeric_limits<double>::infinity()) {
     // std::cout << "here:\n"  << "\n";
     auto system = [&mesh_of_one_element, &metric_function_a, &delta, &mass,
                    &radius, &det_inverse_jacobian, &gamma2, &spacetime_dim,
                    &buffer3, &integrand_buffer, &det_jacobian, &matrix_buffer,
-                   &R_0, &det_inv_jacobian_tau, &det_jacobian_tau,
+                   &R_0,
                    &filter_matrices](const Vars& local_vars, Vars& local_dvars,
                                      const double current_time) {
       Scalar<DataVector> temp_psi{const_cast<DataVector&>(local_vars[0]).data(),
@@ -459,10 +458,9 @@ std::array<DataVector, 3> integrate_fields_in_time(
 
       compute_delta_integral_logical(delta, integrand_buffer,
                                      mesh_of_one_element, temp_phi, temp_pi,
-                                     det_jacobian, R_0, det_jacobian_tau);
+                                     det_jacobian, R_0);
       compute_mass_integral(mass, matrix_buffer, mesh_of_one_element, temp_phi,
-                            temp_pi, det_jacobian, radius, spacetime_dim, R_0,
-                            det_jacobian_tau);
+                            temp_pi, det_jacobian, radius, spacetime_dim, R_0);
       compute_metric_function_a_from_mass(metric_function_a, *mass, radius,
                                           spacetime_dim);
 
@@ -474,34 +472,56 @@ std::array<DataVector, 3> integrate_fields_in_time(
           make_not_null(&temp_dtpsi), make_not_null(&temp_dtphi_tilde),
           make_not_null(&temp_dtpi), buffer3, mesh_of_one_element, temp_psi,
           temp_phi_tilde, temp_pi, temp_phi, *metric_function_a, *delta, gamma2,
-          radius, det_inverse_jacobian, spacetime_dim, R_0,
-          det_inv_jacobian_tau, filter_matrices);
+          radius, det_inverse_jacobian, spacetime_dim, R_0, filter_matrices);
 
       local_dvars[0] = get(temp_dtpsi);
       local_dvars[1] = get(temp_dtphi_tilde);
       local_dvars[2] = get(temp_dtpi);
     };
 
-    std::string tag{"ElementData"};
-    const observers::ObservationId obs_id = observers::ObservationId(time, tag);
     // dt = compute_adaptive_step_size(*delta, *metric_function_a, radius, CFL);
     if (step % 100 == 0) {
+      std::string tag{"ElementData"};
+      const observers::ObservationId obs_id =
+          observers::ObservationId(time, tag);
       std::vector<ElementVolumeData> VolumeData = create_data_for_file(
           radius, mesh_of_one_element, number_of_elements, refinement_level,
           vars, integrand_buffer, mass, delta, metric_function_a, gamma2,
-          det_jacobian, matrix_buffer, spacetime_dim, R_0, det_jacobian_tau,
-          det_inv_jacobian_tau);
+          det_jacobian, matrix_buffer, spacetime_dim, R_0);
 
-      std::cout << "time: " << time << " step: " << step << ' ' << dt << "\n";
+      std::cout << "time: " << time << " step: " << step << " dt: " << dt
+                << "\n";
 
       write_data_hd5file(VolumeData, obs_id, 0.0, R_0, refinement_level,
                          mesh_of_one_element.number_of_grid_points());
     }
+    if (step > 299700) {
+      std::cout << "A" << get(*metric_function_a) << "\n";
+      std::cout << "delta" << get(*delta) << "\n";
+      std::cout << "dt" << dt << "\n";
+      std::cout << "time" << time << "\n";
+    }
 
-    find_min_A(metric_function_a, BH_formed, epsilon);
+    BH_formed = find_min_A(metric_function_a, BH_formed, epsilon);
+    // BH_formed = true;
     if (BH_formed) {
+      if (step % 100 != 0) {
+        std::string tag{"ElementData"};
+        const observers::ObservationId obs_id =
+            observers::ObservationId(time, tag);
+        std::vector<ElementVolumeData> VolumeData = create_data_for_file(
+            radius, mesh_of_one_element, number_of_elements, refinement_level,
+            vars, integrand_buffer, mass, delta, metric_function_a, gamma2,
+            det_jacobian, matrix_buffer, spacetime_dim, R_0);
+
+        write_data_hd5file(VolumeData, obs_id, 0.0, R_0, refinement_level,
+                           mesh_of_one_element.number_of_grid_points());
+      }
+
       std::cout << "Black Hole"
                 << "\n";
+      std::cout << "time:\n" << time << "\n";
+      std::cout << "Number of Steps:\n" << step << "\n";
       return vars;
     }
 
@@ -510,28 +530,6 @@ std::array<DataVector, 3> integrate_fields_in_time(
     // std::cout << "A:\n" << get(*metric_function_a) << "\n";
     // std::cout << "where_nan:\n" << nan << "\n";
 
-    size_t check = 0;
-    if (step % 1000 == 0) {
-      for (size_t element_boundary =
-               mesh_of_one_element.number_of_grid_points();
-           element_boundary <
-           number_of_elements * mesh_of_one_element.number_of_grid_points() - 1;
-           element_boundary =
-               element_boundary + mesh_of_one_element.number_of_grid_points()) {
-        if (vars[0][element_boundary] == vars[0][element_boundary - 1]) {
-          check++;
-        }
-      }
-      if (check == number_of_elements - 1) {
-        std::cout << "check:\n"
-                  << "true"
-                  << "\n";
-      } else {
-        std::cout << "check:\n"
-                  << "false"
-                  << "\n";
-      }
-    }
     time = time + dt;
     step = step + 1;
   }
@@ -561,83 +559,77 @@ void run(const size_t refinement_level, const size_t points_per_element,
                                   number_of_elements};
   Scalar<DataVector> dt_pi{mesh_of_one_element.number_of_grid_points() *
                            number_of_elements};
-  Scalar<DataVector> jacobian{
-      mesh_of_one_element.number_of_grid_points() * number_of_elements, 0.0};
-  Scalar<DataVector> inv_jacobian{
-      mesh_of_one_element.number_of_grid_points() * number_of_elements, 0.0};
-  DataVector integrand_buffer{mesh_of_one_element.number_of_grid_points() *
-                              number_of_elements};
-  const tnsr::I<DataVector, 1, Frame::ElementLogical> logical_coord{
-      logical_coordinates(mesh_of_one_element)};
+  const tnsr::I<DataVector, 1, Frame::ElementLogical>
+      logical_coords_one_element{logical_coordinates(mesh_of_one_element)};
+  const std::vector<ElementId<1>> element_ids =
+      compute_element_ids(number_of_elements, refinement_level);
+  std::vector<domain::CoordinateMap<Frame::ElementLogical, Frame::Grid,
+                                    domain::CoordinateMaps::Affine,
+                                    domain::CoordinateMaps::Interval>>
+      coordinate_maps{element_ids.size()};
 
-  const std::array<DataVector, 1> logical_coords_array{logical_coord.get(0)};
-
-  const std::vector<SegmentId> segids =
-      compute_seg_ids(number_of_elements, refinement_level);
-  tnsr::I<DataVector, 1, Frame::BlockLogical> block_logical_coords{
-      mesh_of_one_element.number_of_grid_points() * number_of_elements, 0.0};
+  // const std::optional<double> singularity{-1.0002499999999999};
+  const std::optional<double> singularity{};
+  const domain::CoordinateMaps::Distribution distribution =
+      singularity.has_value()
+          ? domain::CoordinateMaps::Distribution::Logarithmic
+          : domain::CoordinateMaps::Distribution::Linear;
+  const domain::CoordinateMaps::Interval interval_map(
+      -1, 1, -1, 1, distribution, singularity);
   for (size_t element_index = 0; element_index < number_of_elements;
        element_index += 1) {
-    double lower = segids[element_index].endpoint(Side::Lower);
-    double upper = segids[element_index].endpoint(Side::Upper);
-    domain::CoordinateMaps::Affine affine_map(-1, 1, lower, upper);
-
-    DataVector jacobian_of_element{
+    const double lower =
+        element_ids[element_index].segment_id(0).endpoint(Side::Lower);
+    const double upper =
+        element_ids[element_index].segment_id(0).endpoint(Side::Upper);
+    coordinate_maps[element_index] =
+        domain::make_coordinate_map<Frame::ElementLogical, Frame::Grid>(
+            domain::CoordinateMaps::Affine{-1, 1, lower, upper}, interval_map);
+  }
+  tnsr::I<DataVector, 1, Frame::Grid> grid_coords{
+      mesh_of_one_element.number_of_grid_points() * number_of_elements};
+  Jacobian<DataVector, 1, Frame::ElementLogical, Frame::Grid> jacobian{
+      mesh_of_one_element.number_of_grid_points() * number_of_elements};
+  InverseJacobian<DataVector, 1, Frame::ElementLogical, Frame::Grid>
+      inv_jacobian{mesh_of_one_element.number_of_grid_points() *
+                   number_of_elements};
+  for (size_t element_index = 0; element_index < number_of_elements;
+       element_index += 1) {
+    tnsr::I<DataVector, 1, Frame::Grid> grid_coords_this_element{
         std::next(
-            get(jacobian).data(),
+            get<0>(grid_coords).data(),
             static_cast<std::ptrdiff_t>(
                 element_index * mesh_of_one_element.number_of_grid_points())),
         mesh_of_one_element.number_of_grid_points()};
-    jacobian_of_element = affine_map.jacobian(logical_coords_array)[0];
+    grid_coords_this_element =
+        coordinate_maps[element_index](logical_coords_one_element);
 
-    DataVector inv_jacobian_of_element{
-        std::next(
-            get(inv_jacobian).data(),
-            static_cast<std::ptrdiff_t>(
-                element_index * mesh_of_one_element.number_of_grid_points())),
-        mesh_of_one_element.number_of_grid_points()};
-    inv_jacobian_of_element = affine_map.inv_jacobian(logical_coords_array)[0];
-    for (size_t coord_index = 0;
-         coord_index < mesh_of_one_element.number_of_grid_points();
-         coord_index += 1) {
-      std::array<double, 1> point{};
-      std::array<double, 1> point_to_check{logical_coord[0][coord_index]};
+    Jacobian<DataVector, 1, Frame::ElementLogical, Frame::Grid>
+        jacobian_this_element{};
+    get<0, 0>(jacobian_this_element)
+        .set_data_ref(
+            std::next(get<0, 0>(jacobian).data(),
+                      static_cast<std::ptrdiff_t>(
+                          element_index *
+                          mesh_of_one_element.number_of_grid_points())),
+            mesh_of_one_element.number_of_grid_points());
+    jacobian_this_element =
+        coordinate_maps[element_index].jacobian(logical_coords_one_element);
 
-      point = affine_map(point_to_check);
-      block_logical_coords.get(
-          0)[element_index * mesh_of_one_element.number_of_grid_points() +
-             coord_index] = point[0];
-    }
+    InverseJacobian<DataVector, 1, Frame::ElementLogical, Frame::Grid>
+        inv_jacobian_this_element{};
+    get<0, 0>(inv_jacobian_this_element)
+        .set_data_ref(
+            std::next(get<0, 0>(inv_jacobian).data(),
+                      static_cast<std::ptrdiff_t>(
+                          element_index *
+                          mesh_of_one_element.number_of_grid_points())),
+            mesh_of_one_element.number_of_grid_points());
+    inv_jacobian_this_element =
+        coordinate_maps[element_index].inv_jacobian(logical_coords_one_element);
   }
-
-  //   domain::CoordinateMaps::Distribution distribution =
-  //       domain::CoordinateMaps::Distribution::Logarithmic;
-  domain::CoordinateMaps::Distribution distribution =
-      domain::CoordinateMaps::Distribution::Linear;
-  double singularity = -1.0002499999999999;
-  //   domain::CoordinateMaps::Interval Interval(-1, 1, -1, 1, distribution,
-  //                                             singularity);
-  domain::CoordinateMaps::Interval Interval(-1, 1, -1, 1, distribution);
-
-  tnsr::I<DataVector, 1, Frame::BlockLogical> int_coord_tau{
-      mesh_of_one_element.number_of_grid_points() * number_of_elements, 0.0};
-  for (size_t coord_index = 0;
-       coord_index <
-       mesh_of_one_element.number_of_grid_points() * number_of_elements;
-       coord_index += 1) {
-    std::array<double, 1> point{};
-    std::array<double, 1> point_to_check{
-        block_logical_coords.get(0)[coord_index]};
-    point = Interval(point_to_check);
-
-    int_coord_tau.get(0)[coord_index] = point[0];
-  }
-  const std::array<DataVector, 1> block_logical_coords_array{
-      block_logical_coords.get(0)};
-  Scalar<DataVector> jacobian_tau{
-      Interval.jacobian(block_logical_coords_array)[0]};
-  Scalar<DataVector> inv_jacobian_tau{
-      Interval.inv_jacobian(block_logical_coords_array)[0]};
+  const Scalar<DataVector> det_jacobian = determinant(jacobian);
+  const Scalar<DataVector> det_inv_jacobian = determinant(inv_jacobian);
 
   const double width = 1.0;
   const double p = 2;
@@ -653,7 +645,7 @@ void run(const size_t refinement_level, const size_t points_per_element,
       mesh_of_one_element.number_of_grid_points() * number_of_elements};
 
   const tnsr::I<DataVector, 1, Frame::Inertial> radius{
-      {{sqrt((int_coord_tau.get(0) + 1.0) * 0.5) * R_0}}};
+      {{sqrt((grid_coords.get(0) + 1.0) * 0.5) * R_0}}};
 
   const Scalar<DataVector> psi{amp * pow(get<0>(radius), 2 * q) *
                                exp(-pow(get<0>(radius), p) / pow(width, p))};
@@ -687,10 +679,12 @@ void run(const size_t refinement_level, const size_t points_per_element,
       exponential_filter.filter_matrix(mesh_of_one_element);
   const std::array<std::reference_wrapper<const Matrix>, 1> filter_matrices{
       {std::cref(filter_matrix)}};
+  DataVector integrand_buffer{mesh_of_one_element.number_of_grid_points() *
+                              number_of_elements};
   // compute_delta_integral_logical(&delta, &integrand_buffer,
-  // mesh_of_one_element, phi, pi, jacobian, R_0, jacobian_tau);
+  // mesh_of_one_element, phi, pi, jacobian, R_0);
   // compute_mass_integral(&mass, &matrix_buffer, mesh_of_one_element, phi, pi,
-  //                       jacobian, radius, spacetime_dim, R_0, jacobian_tau);
+  //                       jacobian, radius, spacetime_dim, R_0);
   // compute_metric_function_a_from_mass(&metric_function_a, mass, radius,
   //                                     spacetime_dim);
   // compute_time_derivatives_first_order_2(
@@ -699,19 +693,18 @@ void run(const size_t refinement_level, const size_t points_per_element,
   //   &dt_pi,
   //   &buffer,
   //   mesh_of_one_element, psi,phi_tilde,  pi,phi,metric_function_a,delta,
-  //   gamma2,radius, inv_jacobian, spacetime_dim, R_0, inv_jacobian_tau,
+  //   gamma2,radius, inv_jacobian, spacetime_dim, R_0,
   //   filter_matrices);
   //   compute_time_derivatives_first_order(
   //       &dt_psi, &dt_phi, &dt_pi, &buffer, mesh_of_one_element, psi, phi, pi,
   //       metric_function_a, delta, gamma2, radius, inv_jacobian,
-  //       spacetime_dim, R_0, inv_jacobian_tau);
+  //       spacetime_dim, R_0);
 
   std::array<DataVector, 3> evaluated_vars = integrate_fields_in_time(
-      &dt_psi, &dt_phi, &dt_pi, &buffer, &integrand_buffer, jacobian,
+      &dt_psi, &dt_phi, &dt_pi, &buffer, &integrand_buffer, det_jacobian,
       &matrix_buffer, mesh_of_one_element, psi, phi_tilde, pi, &mass, &delta,
-      &metric_function_a, gamma2, radius, inv_jacobian, spacetime_dim, R_0,
-      refinement_level, BH_formed, jacobian_tau, inv_jacobian_tau,
-      filter_matrices);
+      &metric_function_a, gamma2, radius, det_inv_jacobian, spacetime_dim, R_0,
+      refinement_level, BH_formed, filter_matrices);
 
   // std::cout << "Psi:\n"
   //           << std::setprecision(16) << std::scientific << get(psi) << "\n";
@@ -742,9 +735,12 @@ void run(const size_t refinement_level, const size_t points_per_element,
   //   std::cout << "delta:\n"
   //             << std::setprecision(16) << std::scientific << get(delta) <<
   //             "\n";
-  std::cout << "Radius:\n"
-            << std::setprecision(16) << std::scientific << get<0>(radius)
-            << "\n";
+  // std::cout << "Radius:\n"
+  //           << std::setprecision(16) << std::scientific << get<0>(radius)
+  //           << "\n";
+  std::ofstream of{"Data.txt"};
+  of << std::setprecision(16) << std::scientific << get<0>(radius) << "\n";
+  of << std::setprecision(16) << std::scientific << get(psi) << "\n";
 }
 
 int main(int argc, char** argv) {
