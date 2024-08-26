@@ -9,12 +9,13 @@ Testing:
 
 Parallelization:
   ElementDistribution: NumGridPoints
+# NumberOfThreads: 16
 
 ResourceInfo:
   AvoidGlobalProc0: false
-  Singletons: Auto
+  # Singletons: Auto
 
-InitialData:
+InitialData: &InitialData
   PlaneWave:
     WaveVector: [1.0, 1.0, 1.0]
     Center: [0.0, 0.0, 0.0]
@@ -24,15 +25,15 @@ InitialData:
         Wavenumber: 1.0
         Phase: 0.0
 
-Amr:
-  Criteria:
-  Policies:
-    EnforceTwoToOneBalanceInNormalDirection: true
-    Isotropy: Anisotropic
-    Limits:
-      RefinementLevel: Auto
-      NumGridPoints: Auto
-  Verbosity: Verbose
+# Amr:
+#   Criteria:
+#   Policies:
+#     EnforceTwoToOneBalanceInNormalDirection: true
+#     Isotropy: Anisotropic
+#     Limits:
+#       RefinementLevel: Auto
+#       NumGridPoints: Auto
+#   Verbosity: Verbose
 
 PhaseChangeAndTriggers:
 
@@ -41,18 +42,54 @@ Evolution:
   InitialTimeStep: 0.001
   MinimumTimeStep: 1e-7
   TimeStepper:
-    AdamsBashforth:
-      Order: 3
+    AdamsMoultonPc:
+      Order: 5
+  StepChoosers:
+    - Increase:
+        Factor: 2
+    - ElementSizeCfl:
+        SafetyFactor: 0.9
+    - ErrorControl:
+        AbsoluteTolerance: 1e-8
+        RelativeTolerance: 1e-5
+        MaxFactor: 2
+        MinFactor: 0.25
+        SafetyFactor: 0.95
 
 DomainCreator:
-  Brick:
-    LowerBound: [0.0, 0.0, 0.0]
-    UpperBound: [6.283185307179586, 6.283185307179586, 6.283185307179586]
-    Distribution: [Linear, Linear, Linear]
-    InitialRefinement: [1, 1, 1]
-    InitialGridPoints: [5, 5, 5]
-    TimeDependence: None
-    BoundaryConditions: [Periodic, Periodic, Periodic]
+  # Brick:
+  #   LowerBound: [0.0, 0.0, 0.0]
+  #   UpperBound: [6.283185307179586, 6.283185307179586, 6.283185307179586]
+  #   Distribution: [Linear, Linear, Linear]
+  #   InitialRefinement: [2, 2, 1]
+  #   InitialGridPoints: [6, 6, 6]
+  #   TimeDependence: None
+  #   BoundaryConditions: [Periodic, Periodic, Periodic]
+
+  Sphere:
+    InnerRadius: &InnerRadius 3.14
+    OuterRadius: 6.283185307179586
+    Interior:
+      ExciseWithBoundaryCondition:
+        DirichletAnalytic:
+          AnalyticPrescription: *InitialData
+    InitialRefinement: [[1, 1, 1], [1, 1, 1], [1, 1, 1],
+                        [1, 1, 1], [1, 1, 1], [1, 1, 1],
+                        [0, 0, 0], [0, 0, 0], [0, 0, 0],
+                        [0, 0, 0], [0, 0, 0], [0, 0, 0]]
+    InitialGridPoints: [[7, 7, 7], [7, 7, 7], [7, 7, 7],
+                        [7, 7, 7], [7, 7, 7], [7, 7, 7],
+                        [18, 18, 18], [18, 18, 18], [18, 18, 18],
+                        [18, 18, 18], [18, 18, 18], [18, 18, 18]]
+    UseEquiangularMap: true
+    EquatorialCompression: None
+    RadialPartitioning: [4.7123889804]
+    RadialDistribution: [Linear, Linear]
+    WhichWedges: All
+    TimeDependentMaps: None
+    OuterBoundaryCondition:
+      DirichletAnalytic:
+        AnalyticPrescription: *InitialData
 
 SpatialDiscretization:
   BoundaryCorrection:
@@ -70,21 +107,62 @@ SpatialDiscretization:
 #     BlocksToFilter: All
 
 EventsAndTriggers:
+  # - - Times:
+  #       Specified:
+  #         Values: [&final_time -0.05]
+  #   - - Completion
+  # - Trigger:
+  #     Always
+  #   Events:
+  #     - ChangeSlabSize:
+  #         DelayChange: 0
+  #         StepChoosers:
+  #           - Increase:
+  #               Factor: 1.1
+  #           - StepToTimes:
+  #               Times:
+  #                 Specified:
+  #                   Values: [100]
   - Trigger:
-      Times:
+      Slabs:
         Specified:
-          Values: [&final_time 0.05]
+          Values: [20]
     Events:
       - Completion
-  - Trigger: Always
+  - Trigger:
+      Slabs:
+        EvenlySpaced:
+          Interval: 50
+          Offset: 0
     Events:
-      - ChangeSlabSize:
-          DelayChange: 0
-          StepChoosers:
-            - StepToTimes:
-                Times:
-                  Specified:
-                    Values: [*final_time]
+      - ObserveNorms:
+          SubfileName: Errors
+          TensorsToObserve:
+            - Name: Error(Psi)
+              NormType: L2Norm
+              Components: Sum
+            - Name: Error(Phi)
+              NormType: L2Norm
+              Components: Sum
+            - Name: Error(Pi)
+              NormType: L2Norm
+              Components: Sum
+      - ObserveFields:
+          SubfileName: VolumePsiPiPhiEvery50Slabs
+          VariablesToObserve: ["Psi", "Pi", "Phi"]
+          InterpolateToMesh: None
+          CoordinatesFloatingPointType: Float
+          FloatingPointTypes: [Float, Float, Float]
+  - Trigger:
+      Slabs:
+        EvenlySpaced:
+          Interval: 1
+          Offset: 0
+    Events:
+      - ObserveTimeStep:
+          SubfileName: time_steps
+          PrintTimeToTerminal: true
+          ObservePerCore: false
 
 EventsAndDenseTriggers:
 

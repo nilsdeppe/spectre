@@ -261,7 +261,7 @@ struct EvolutionMetavars {
       Initialization::Actions::InitializeItems<
           Initialization::TimeStepping<EvolutionMetavars, TimeStepperBase>,
           evolution::dg::Initialization::Domain<volume_dim>,
-          ::amr::Initialization::Initialize<volume_dim>,
+          // ::amr::Initialization::Initialize<volume_dim>,
           Initialization::TimeStepperHistory<EvolutionMetavars>>,
       Initialization::Actions::NonconservativeSystem<system>,
       evolution::Initialization::Actions::SetVariables<
@@ -274,8 +274,8 @@ struct EvolutionMetavars {
       evolution::Actions::InitializeRunEventsAndDenseTriggers,
       Parallel::Actions::TerminatePhase>;
 
-  using dg_element_array = DgElementArray<
-      EvolutionMetavars,
+  using dg_element_array = Parallel::DgElementCollection<
+      volume_dim, EvolutionMetavars,
       tmpl::list<
           Parallel::PhaseActions<Parallel::Phase::Initialization,
                                  initialization_actions>,
@@ -288,9 +288,9 @@ struct EvolutionMetavars {
                                  tmpl::list<dg_registration_list,
                                             Parallel::Actions::TerminatePhase>>,
 
-          Parallel::PhaseActions<Parallel::Phase::CheckDomain,
-                                 tmpl::list<::amr::Actions::SendAmrDiagnostics,
-                                            Parallel::Actions::TerminatePhase>>,
+          // Parallel::PhaseActions<Parallel::Phase::CheckDomain,
+          //                    tmpl::list<::amr::Actions::SendAmrDiagnostics,
+          //    Parallel::Actions::TerminatePhase>>,
 
           Parallel::PhaseActions<
               Parallel::Phase::Evolve,
@@ -335,7 +335,7 @@ struct EvolutionMetavars {
   };
 
   using component_list =
-      tmpl::list<::amr::Component<EvolutionMetavars>,
+      tmpl::list<// ::amr::Component<EvolutionMetavars>,
                  observers::Observer<EvolutionMetavars>,
                  observers::ObserverWriter<EvolutionMetavars>,
                  dg_element_array>;

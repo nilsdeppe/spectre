@@ -23,8 +23,9 @@ extern "C" void CkRegisterMainModule() {
        &domain::creators::time_dependence::register_derived_with_charm,
        &domain::FunctionsOfTime::register_derived_with_charm,
        &ScalarWave::BoundaryCorrections::register_derived_with_charm,
-       &register_factory_classes_with_charm<metavariables>,
-       &amr::register_callbacks<metavariables,
-                                typename metavariables::dg_element_array>},
+       &register_factory_classes_with_charm<metavariables>// ,
+       // &amr::register_callbacks<metavariables,
+       //                          typename metavariables::dg_element_array>
+      },
       {});
 }

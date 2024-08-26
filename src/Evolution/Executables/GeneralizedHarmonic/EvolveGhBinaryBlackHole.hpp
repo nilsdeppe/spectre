@@ -247,7 +247,7 @@ struct EvolutionMetavars {
 
   static constexpr bool local_time_stepping =
       TimeStepperBase::local_time_stepping;
-  static constexpr bool use_dg_element_collection = false;
+  static constexpr bool use_dg_element_collection = true;
 
   using initialize_initial_data_dependent_quantities_actions = tmpl::list<
       Actions::MutateApply<gh::gauges::SetPiAndPhiFromConstraints<volume_dim>>,
@@ -529,7 +529,7 @@ struct EvolutionMetavars {
                  Parallel::Phase::InitializeInitialDataDependentQuantities,
                  Parallel::Phase::Register,
                  Parallel::Phase::InitializeTimeStepperHistory,
-                 Parallel::Phase::CheckDomain,
+                 // Parallel::Phase::CheckDomain,
                  Parallel::Phase::Evolve,
                  Parallel::Phase::Exit};
 
@@ -586,8 +586,8 @@ struct EvolutionMetavars {
       control_system::Actions::InitializeMeasurements<control_systems>,
       Parallel::Actions::TerminatePhase>;
 
-  using gh_dg_element_array = DgElementArray<
-      EvolutionMetavars,
+  using gh_dg_element_array = Parallel::DgElementCollection<
+      3, EvolutionMetavars,
       tmpl::flatten<tmpl::list<
           Parallel::PhaseActions<Parallel::Phase::Initialization,
                                  initialization_actions>,
@@ -609,9 +609,9 @@ struct EvolutionMetavars {
           Parallel::PhaseActions<
               Parallel::Phase::InitializeTimeStepperHistory,
               SelfStart::self_start_procedure<step_actions, system>>,
-          Parallel::PhaseActions<Parallel::Phase::CheckDomain,
-                                 tmpl::list<::amr::Actions::SendAmrDiagnostics,
-                                            Parallel::Actions::TerminatePhase>>,
+          // Parallel::PhaseActions<Parallel::Phase::CheckDomain,
+          //                        tmpl::list<::amr::Actions::SendAmrDiagnostics,
+          //                                   Parallel::Actions::TerminatePhase>>,
           Parallel::PhaseActions<
               Parallel::Phase::Evolve,
               tmpl::list<

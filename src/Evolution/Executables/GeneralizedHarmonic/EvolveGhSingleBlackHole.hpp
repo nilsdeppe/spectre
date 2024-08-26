@@ -230,8 +230,8 @@ struct EvolutionMetavars : public GeneralizedHarmonicTemplateBase<3, UseLts> {
       tmpl::back<typename gh_base::template initialization_actions<
           EvolutionMetavars, use_control_systems>>>;
 
-  using gh_dg_element_array = DgElementArray<
-      EvolutionMetavars,
+  using gh_dg_element_array = Parallel::DgElementCollection<
+      3, EvolutionMetavars,
       tmpl::flatten<tmpl::list<
           Parallel::PhaseActions<Parallel::Phase::Initialization,
                                  initialization_actions>,
