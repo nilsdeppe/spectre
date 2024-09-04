@@ -205,7 +205,25 @@ void Rusanov::dg_boundary_terms(
         0.5 * (get(normal_dot_flux_tilde_phi_int) -
                get(normal_dot_flux_tilde_phi_ext)) -
         0.5 * max(get(abs_char_speed_int), get(abs_char_speed_ext)) *
-            (get(tilde_phi_ext) - get(tilde_phi_int));
+            (get(tilde_phi_ext) - get(tilde_phi_int)) +
+        0.25 * (get(tilde_phi_ext) - get(tilde_phi_int)) *
+            (get(normal_dot_flux_tilde_d_int) / get(tilde_d_int) +
+             get(normal_dot_flux_tilde_d_ext) / get(tilde_d_ext));
+
+    for (size_t i = 0; i < 3; ++i) {
+      get(*boundary_correction_tilde_tau) += 0.25 *
+        (get(tilde_phi_ext) - get(tilde_phi_int)) *
+        (tilde_b_int.get(i) * normal_covector_int.get(i) +
+         tilde_b_ext.get(i) * normal_covector_ext.get(i));
+    }
+    for (size_t i = 0; i < 3; ++i) {
+      get(*boundary_correction_tilde_tau) +=
+          0.25 *
+          (tilde_b_int.get(i) * normal_covector_int.get(i) -
+           tilde_b_ext.get(i) * normal_covector_ext.get(i)) *
+          (get(lapse_int) * get(b_dot_sp_velocity_int) +
+           get(lapse_ext) * get(b_dot_sp_velocity_ext));
+    }
 
     for (size_t i = 0; i < 3; ++i) {
       boundary_correction_tilde_s->get(i) =
@@ -219,12 +237,18 @@ void Rusanov::dg_boundary_terms(
           0.5 * max(get(abs_char_speed_int), get(abs_char_speed_ext)) *
               (tilde_b_ext.get(i) - tilde_b_int.get(i));
     }
-  } else {
-    CAPTURE_FOR_ERROR(flux_tilde_d_ext);
-    CAPTURE_FOR_ERROR(flux_tilde_d_int);
-    //    CAPTURE_FOR_ERROR(lapse_ext);
-    //    CAPTURE_FOR_ERROR(tr_velocity_ext);
 
+    for (size_t i = 0; i < 3; ++i){
+      for (size_t j = 0; j < 3; ++j){
+        boundary_correction_tilde_b->get(i) +=
+            0.25 * (tilde_b_ext.get(j) - tilde_b_int.get(j)) *
+            (normal_covector_int.get(j) * flux_tilde_d_int.get(i) /
+                 get(tilde_d_int) +
+             normal_covector_ext.get(j) * flux_tilde_d_ext.get(i) /
+                 get(tilde_d_int));
+      }
+    }
+  } else {
     get(*boundary_correction_tilde_d) =
         -0.5 * (get(normal_dot_flux_tilde_d_int) +
                 get(normal_dot_flux_tilde_d_ext)) -

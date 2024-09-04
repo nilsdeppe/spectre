@@ -569,6 +569,20 @@ struct TimeDerivative {
         reconstruction_order.value_or(std::array<gsl::span<std::uint8_t>, 3>{}),
         false, conormal, ghost_cells_conormal);
 
+    /*
+    std::optional<std::array<Variables<evolved_vars_tags>, 3>>
+        corrections_second_try{};
+    ::fd::cartesian_high_order_fluxes_using_nodes(
+        make_not_null(&corrections_second_try), high_order_corrections,
+        db::get<evolution::dg::subcell::Tags::CellCenteredFlux<
+            evolved_vars_tags, 3>>(*box),
+        db::get<evolution::dg::subcell::Tags::GhostDataForReconstruction<3>>(
+            *box),
+        subcell_mesh, recons.ghost_zone_size(),
+        fd_derivative_order,
+        reconstruction_order.value_or(
+        std::array<gsl::span<std::uint8_t>, 3>{}));*/
+
     // how to get associated tags for a given variable
     //    using b_tag = grmhd::ValenciaDivClean::Tags::TildeB<>;
     //    using m_field_tag = hydro::Tags::MagneticField<DataVector, 3>;
@@ -579,6 +593,8 @@ struct TimeDerivative {
     auto& dt_tilde_phi = get<::Tags::dt<phi_tag>>(*dt_vars_ptr);
 
     auto div_tilde_b = make_with_value<
+          Scalar<DataVector>>(dt_tilde_phi, 0.0);
+    auto test_variable = make_with_value<
           Scalar<DataVector>>(dt_tilde_phi, 0.0);
 
     const auto& cell_centered_det_inv_jacobian = db::get<
