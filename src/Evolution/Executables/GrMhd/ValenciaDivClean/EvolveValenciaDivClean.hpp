@@ -183,6 +183,8 @@
 #include "Utilities/ProtocolHelpers.hpp"
 #include "Utilities/TMPL.hpp"
 
+#include "DataStructures/Tensor/EagerMath/Norms.hpp"
+
 /// \cond
 namespace Frame {
 struct Inertial;
@@ -252,6 +254,8 @@ struct EvolutionMetavars<tmpl::list<InterpolationTargetTags...>,
           typename system::primitive_variables_tag::tags_list,
           typename system::flux_spacetime_variables_tag::tags_list,
           tmpl::list<
+            ::Tags::PointwiseL2NormCompute<
+              hydro::Tags::SpatialVelocity<DataVector, volume_dim>>,
               grmhd::ValenciaDivClean::Tags::
                   ComovingMagneticFieldMagnitudeCompute,
               ::Tags::DivVectorCompute<
