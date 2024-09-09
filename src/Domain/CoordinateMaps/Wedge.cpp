@@ -91,10 +91,6 @@ Wedge<Dim>::Wedge(const double radius_inner, const double radius_outer,
   run_shared_asserts(radius_inner_, radius_outer_, sphericity_inner_,
                      sphericity_outer_, radial_distribution_,
                      orientation_of_wedge_, focal_offset_);
-  ASSERT(opening_angles_ != make_array<Dim - 1>(M_PI_2) ? with_equiangular_map
-                                                        : true,
-         "If using opening angles other than pi/2, then the "
-         "equiangular map option must be turned on.");
 
   if (radial_distribution_ == Distribution::Linear) {
     const double sqrt_dim = sqrt(double{Dim});
@@ -253,12 +249,12 @@ tt::remove_cvref_wrap_t<T> Wedge<Dim>::get_cap_angular_function(
   constexpr auto cap_index = static_cast<size_t>(not FuncIsXi);
   if (opening_angles_.has_value() and
       opening_angles_distribution_.has_value()) {
-    return with_equiangular_map_
-               ? tan(0.5 * opening_angles_.value()[cap_index]) *
-                     tan(0.5 * opening_angles_distribution_.value()[cap_index] *
-                         lowercase_xi_or_eta) /
-                     tan(0.5 * opening_angles_distribution_.value()[cap_index])
-               : lowercase_xi_or_eta;
+    return (with_equiangular_map_
+                ? tan(0.5 * opening_angles_distribution_.value()[cap_index] *
+                      lowercase_xi_or_eta) /
+                      tan(0.5 * opening_angles_distribution_.value()[cap_index])
+                : lowercase_xi_or_eta) *
+           tan(0.5 * opening_angles_.value()[cap_index]);
   } else {
     return with_equiangular_map_ ? tan(M_PI_4 * lowercase_xi_or_eta)
                                  : lowercase_xi_or_eta;
@@ -274,15 +270,16 @@ tt::remove_cvref_wrap_t<T> Wedge<Dim>::get_deriv_cap_angular_function(
   constexpr auto cap_index = static_cast<size_t>(not FuncIsXi);
   if (opening_angles_.has_value() and
       opening_angles_distribution_.has_value()) {
-    return with_equiangular_map_
-               ? 0.5 * opening_angles_distribution_.value()[cap_index] *
-                     tan(0.5 * opening_angles_.value()[cap_index]) /
-                     tan(0.5 *
-                         opening_angles_distribution_.value()[cap_index]) /
-                     square(cos(
-                         0.5 * opening_angles_distribution_.value()[cap_index] *
-                         lowercase_xi_or_eta))
-               : make_with_value<ReturnType>(lowercase_xi_or_eta, 1.0);
+    return (with_equiangular_map_
+                ? 0.5 * opening_angles_distribution_.value()[cap_index] /
+                      tan(0.5 *
+                          opening_angles_distribution_.value()[cap_index]) /
+                      square(
+                          cos(0.5 *
+                              opening_angles_distribution_.value()[cap_index] *
+                              lowercase_xi_or_eta))
+                : make_with_value<ReturnType>(lowercase_xi_or_eta, 1.0)) *
+           tan(0.5 * opening_angles_.value()[cap_index]);
   } else {
     return with_equiangular_map_
                ? M_PI_4 / square(cos(M_PI_4 * lowercase_xi_or_eta))
@@ -637,7 +634,7 @@ std::optional<std::array<double, Dim>> Wedge<Dim>::inverse(
                    atan(tan(0.5 * opening_angles_distribution_.value()[0]) /
                         tan(0.5 * opening_angles_.value()[0]) * cap[0]) /
                    opening_angles_distribution_.value()[0]
-             : cap[0];
+             : cap[0] / tan(0.5 * opening_angles_.value()[0]);
   } else {
     xi = with_equiangular_map_ ? atan(1.0 * cap[0]) / M_PI_4 : cap[0];
   }
@@ -663,7 +660,7 @@ std::optional<std::array<double, Dim>> Wedge<Dim>::inverse(
                     atan(tan(0.5 * opening_angles_distribution_.value()[1]) /
                          tan(0.5 * opening_angles_.value()[1]) * cap[1]) /
                     opening_angles_distribution_.value()[1]
-              : cap[1];
+              : cap[1] / tan(0.5 * opening_angles_.value()[1]);
     } else {
       logical_coords[azimuth_coord] =
           with_equiangular_map_ ? atan(1.0 * cap[1]) / M_PI_4 : cap[1];
