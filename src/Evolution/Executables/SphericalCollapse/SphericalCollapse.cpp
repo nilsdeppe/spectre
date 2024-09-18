@@ -57,10 +57,15 @@ Scalar<DataVector> differential_eq_for_A(
     const Scalar<DataVector>& A,
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
     const size_t spacetime_dim) {
-  Scalar<DataVector> diff_eq{((spacetime_dim - 3) / get<0>(radius)) *
-                                 (1 - get(A)) -
-                             2 * M_PI * get<0>(radius) * get(A) *
-                                 (square(get(pi)) + square(get(phi)))};
+  Scalar<DataVector> diff_eq{get<0>(radius).size()};
+  get(diff_eq)[0] = 0.0;
+  for (size_t i = 1; i < get<0>(radius).size(); i++) {
+    get(diff_eq)[i] =
+        ((spacetime_dim - 3) / get<0>(radius))[i] * (1 - get(A)[i]) -
+        2 * M_PI * get<0>(radius)[i] * get(A)[i] *
+            (square(get(pi)[i]) + square(get(phi)[i]));
+  }
+  //   Scalar<DataVector> diff_eq{};
 
   // Scalar<DataVector> diff_eq{2 * M_PI * get<0>(radius) * get(A) *
   //                                (square(get(pi)) + square(get(phi)))};
@@ -96,6 +101,33 @@ std::vector<ElementId<1>> compute_element_ids(const size_t number_of_elements,
     ElementId element_id(block_id, segid);
     ElementIds.push_back(element_id);
   }
+  return ElementIds;
+}
+std::vector<ElementId<1>> compute_element_ids2(const size_t refinement_level) {
+  const size_t inner_refinement_level = 8;
+  const size_t outer_refinement_level = 4;
+  std::vector<ElementId<1>> ElementIds;
+  const size_t block_id = 0;
+  const size_t number_of_elements = two_to_the(refinement_level);
+  for (size_t j = inner_refinement_level; j >= outer_refinement_level; j--) {
+    for (size_t element_index = (j == inner_refinement_level
+                                     ? 0
+                                     : two_to_the(outer_refinement_level - 1));
+         element_index < two_to_the(outer_refinement_level); element_index++) {
+      // std::cout << j << " " << element_index << "\n";
+
+      std::array<SegmentId, 1> segids{{SegmentId{j, element_index}}};
+      ElementId element_id(block_id, segids);
+      ElementIds.push_back(element_id);
+    }
+  }
+  //   for (size_t i = 0; i < number_of_elements; i++) {
+
+  //     std::array<SegmentId, 1> segids{{SegmentId{refinement_level, i}}};
+
+  //     ElementId element_id(block_id, segids);
+  //     ElementIds.push_back(element_id);
+  //   }
   return ElementIds;
 }
 
@@ -187,7 +219,8 @@ void compute_time_derivatives_first_order_2(
     const double R_0,
     const std::array<std::reference_wrapper<const Matrix>, 1>&
         filter_matrices) {
-  Scalar<DataVector> diff_eq_A{get(psi).size()};
+  Scalar<DataVector> diff_eq_A =
+      differential_eq_for_A(phi, pi, metric_function_a, radius, spacetime_dim);
 
   // std::cout << "phi:\n" << phi << "\n";
   // std::cout << "pi:\n" << pi << "\n";
@@ -209,10 +242,12 @@ void compute_time_derivatives_first_order_2(
 
   std::array<std::reference_wrapper<const Matrix>, 1> logical_diff_matrices{
       {std::cref(Spectral::differentiation_matrix(mesh_of_one_element))}};
-  apply_matrices(make_not_null(&get(buffer4)), logical_diff_matrices,
-                 get(metric_function_a), mesh_of_one_element.extents());
-  get(diff_eq_A) =
-      4 * get<0>(radius) * get(det_inverse_jacobian) * get(buffer4);
+  //   apply_matrices(make_not_null(&get(buffer4)), logical_diff_matrices,
+  //                  get(metric_function_a), mesh_of_one_element.extents());
+  //   get(diff_eq_A)[0] = 0.0;
+
+  //   get(diff_eq_A) =
+  //       4 * get<0>(radius) * get(det_inverse_jacobian) * get(buffer4);
 
   {
     // compute dt_psi
@@ -346,8 +381,7 @@ std::vector<ElementVolumeData> create_data_for_file(
                                       spacetime_dim);
   for (size_t i = 0; i < get<0>(radius).size();
        i = i + mesh_of_one_element.number_of_grid_points()) {
-    ElementId element_id = compute_element_ids(
-        number_of_elements,
+    ElementId element_id = compute_element_ids2(
         refinement_level)[i / mesh_of_one_element.number_of_grid_points()];
     std::vector<TensorComponent> Data;
     const auto add_variable = [&Data](const std::string& name,
@@ -366,8 +400,8 @@ std::vector<ElementVolumeData> create_data_for_file(
                                mesh_of_one_element.number_of_grid_points()};
     DataVector Pi_per_element{&const_cast<double&>(vars[2][i]),
                               mesh_of_one_element.number_of_grid_points()};
-    // DataVector Mass_per_element{&const_cast<double&>(get(*mass)[i]),
-    // mesh_of_one_element.number_of_grid_points()};
+    DataVector Mass_per_element{&const_cast<double&>(get(*mass)[i]),
+                                mesh_of_one_element.number_of_grid_points()};
     DataVector A_per_element{&const_cast<double&>(get(*metric_function_a)[i]),
                              mesh_of_one_element.number_of_grid_points()};
     DataVector Delta_per_element{&const_cast<double&>(get(*delta)[i]),
@@ -378,7 +412,7 @@ std::vector<ElementVolumeData> create_data_for_file(
     add_variable(in_name1, Psi_per_element);
     add_variable(in_name2, Phi_per_element);
     add_variable(in_name3, Pi_per_element);
-    // add_variable(in_name4, Mass_per_element);
+    add_variable(in_name4, Mass_per_element);
     add_variable(in_name5, A_per_element);
     add_variable(in_name6, Delta_per_element);
 
@@ -390,10 +424,12 @@ std::vector<ElementVolumeData> create_data_for_file(
 }
 
 bool find_min_A(const gsl::not_null<Scalar<DataVector>*> metric_function_a,
-                bool BH_formed, const double epsilon) {
+                const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
+                bool BH_formed, const double epsilon, double time) {
   for (size_t index = 0; index < get(*metric_function_a).size(); index++) {
-    if (abs(get(*metric_function_a)[index]) < epsilon) {
-      std::cout << get(*metric_function_a)[index] << "\n";
+    if (abs(get(*metric_function_a)[index]) < epsilon || time > 2.0) {
+      std::cout << "A at min: " << get(*metric_function_a)[index] << "\n";
+      std::cout << "Radius: " << get<0>(radius)[index] << "\n";
       std::cout << "here"
                 << "\n";
       return true;
@@ -429,7 +465,7 @@ std::array<DataVector, 3> integrate_fields_in_time(
       get<0>(radius).size() / mesh_of_one_element.number_of_grid_points();
   StateDopri5 st{};
   std::vector<double> times;
-  const double epsilon = 0.001;
+  const double epsilon = 0.0001;
   double time = 0.0;
   double dt = 0.0;
   const double CFL = 0.1;
@@ -502,7 +538,7 @@ std::array<DataVector, 3> integrate_fields_in_time(
       std::cout << "time" << time << "\n";
     }
 
-    BH_formed = find_min_A(metric_function_a, BH_formed, epsilon);
+    BH_formed = find_min_A(metric_function_a, radius, BH_formed, epsilon, time);
     // BH_formed = true;
     if (BH_formed) {
       if (step % 100 != 0) {
@@ -517,9 +553,13 @@ std::array<DataVector, 3> integrate_fields_in_time(
         write_data_hd5file(VolumeData, obs_id, 0.0, R_0, refinement_level,
                            mesh_of_one_element.number_of_grid_points());
       }
-
-      std::cout << "Black Hole"
-                << "\n";
+      if (time < 15.0) {
+        std::cout << "Black Hole"
+                  << "\n";
+      } else {
+        std::cout << "Not a Black Hole"
+                  << "\n";
+      }
       std::cout << "time:\n" << time << "\n";
       std::cout << "Number of Steps:\n" << step << "\n";
       return vars;
@@ -562,7 +602,8 @@ void run(const size_t refinement_level, const size_t points_per_element,
   const tnsr::I<DataVector, 1, Frame::ElementLogical>
       logical_coords_one_element{logical_coordinates(mesh_of_one_element)};
   const std::vector<ElementId<1>> element_ids =
-      compute_element_ids(number_of_elements, refinement_level);
+      compute_element_ids2(refinement_level);
+
   std::vector<domain::CoordinateMap<Frame::ElementLogical, Frame::Grid,
                                     domain::CoordinateMaps::Affine,
                                     domain::CoordinateMaps::Interval>>
@@ -634,7 +675,7 @@ void run(const size_t refinement_level, const size_t points_per_element,
   const double width = 1.0;
   const double p = 2;
   const double q = 2;
-  const double R_0 = 5.0;
+  const double R_0 = 13.0;
 
   Scalar<DataVector> mass{mesh_of_one_element.number_of_grid_points() *
                           number_of_elements};
