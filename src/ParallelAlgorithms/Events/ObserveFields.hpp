@@ -20,7 +20,7 @@
 #include "DataStructures/DataBox/ValidateSelection.hpp"
 #include "DataStructures/DataVector.hpp"
 #include "DataStructures/FloatingPointType.hpp"
-#include "Domain/Creators/BlockGroups.hpp"
+#include "Domain/Structure/BlockGroups.hpp"
 #include "Domain/Structure/ElementId.hpp"
 #include "Domain/Tags.hpp"
 #include "IO/H5/TensorData.hpp"

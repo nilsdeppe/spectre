@@ -15,7 +15,7 @@
 
 #include "DataStructures/DataBox/DataBox.hpp"
 #include "DataStructures/DataBox/Tag.hpp"
-#include "Domain/Creators/BlockGroups.hpp"
+#include "Domain/Structure/BlockGroups.hpp"
 #include "Domain/Creators/DomainCreator.hpp"
 #include "Domain/Creators/ExpandOverBlocks.hpp"
 #include "Domain/Creators/OptionTags.hpp"
