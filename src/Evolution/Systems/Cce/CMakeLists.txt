@@ -59,28 +59,42 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
+  INTERFACE
+  Actions
+  AnalyticSolutions
+  Charmxx::pup
+  Domain
+  DomainStructure
+  Events
+  EventsAndTriggers
+  Evolution
+  Initialization
+  Observer
+  Parallel
+  ParallelInterpolation
+  Printf
+  SphericalHarmonics
+  SystemUtilities
+
   PRIVATE
   LinearSolver
+
   PUBLIC
-  Boost::boost
   DataStructures
   ErrorHandling
-  GeneralizedHarmonic
   GeneralRelativity
+  GeneralizedHarmonic
   H5
   Interpolation
   LinearOperators
-  Observer
+  OdeIntegration
   Options
-  ParallelInterpolation
-  Printf
   Serialization
   Spectral
   SpinWeightedSphericalHarmonics
+  Time
   Utilities
-  INTERFACE
-  SystemUtilities
-  )
+)
 
 add_dependencies(
   ${LIBRARY}

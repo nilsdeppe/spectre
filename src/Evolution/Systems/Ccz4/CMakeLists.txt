@@ -43,10 +43,15 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
-  DataStructures
+  INTERFACE
+  Evolution
   GeneralRelativity
   Options
+
+  PRIVATE
+  ErrorHandling
+
+  PUBLIC
+  DataStructures
   Utilities
-  INTERFACE
   )

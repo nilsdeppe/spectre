@@ -24,19 +24,22 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
-  ConstitutiveRelations
-  DataStructures
-  Elasticity
-  ErrorHandling
+  INTERFACE
+  InitialDataUtilities
+  LinearOperators
   Options
   Serialization
-  Utilities
+
   PRIVATE
   ElasticityPointwiseFunctions
   GSL::gsl
   Integration
-  INTERFACE
-  AnalyticData
-  Parallel
+
+  PUBLIC
+  Charmxx::pup
+  ConstitutiveRelations
+  DataStructures
+  Elasticity
+  ErrorHandling
+  Utilities
   )

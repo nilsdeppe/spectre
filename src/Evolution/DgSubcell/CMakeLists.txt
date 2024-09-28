@@ -67,24 +67,34 @@ spectre_target_sources(
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
-  DataStructures
-  Domain
-  DomainCreators
-  Interpolation
-  Parallel
-  Spectral
-
   INTERFACE
+  Actions
+  AnalyticData
   Boost::boost
+  CoordinateMaps
+  DiscontinuousGalerkin
+  Domain
   Events
+  FiniteDifference
   FunctionsOfTime
-  Time
+  InitialDataUtilities
+  Parallel
+  SpatialDiscretization
 
   PRIVATE
-  BLAS::BLAS
-  ErrorHandling
   Serialization
+
+  PUBLIC
+  Charmxx::pup
+  DataStructures
+  DomainCreators
+  DomainStructure
+  ErrorHandling
+  Evolution
+  Interpolation
+  Options
+  Spectral
+  Time
   Utilities
   )
 

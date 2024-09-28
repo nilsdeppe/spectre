@@ -1,7 +1,12 @@
 // Distributed under the MIT License.
 // See LICENSE.txt for details.
 
-#include "BNSCenterOfMass.hpp"
+#include "ControlSystem/Measurements/BNSCenterOfMass.hpp"
+
+#include "DataStructures/DataVector.hpp"
+#include "DataStructures/Tensor/Tensor.hpp"
+#include "NumericalAlgorithms/Spectral/Mesh.hpp"
+#include "Utilities/Gsl.hpp"
 
 namespace control_system::measurements {
 

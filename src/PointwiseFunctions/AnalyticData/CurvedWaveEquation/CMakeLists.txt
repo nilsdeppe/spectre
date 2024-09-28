@@ -23,14 +23,14 @@ target_link_libraries(
   ${LIBRARY}
   INTERFACE
   AnalyticData
-  CurvedScalarWave
-  Options
-  ScalarWave
-  PUBLIC
-  DataStructures
-  GeneralRelativity
-  GeneralRelativitySolutions
+
+  PRIVATE
   SpinWeightedSphericalHarmonics
+
+  PUBLIC
+  Charmxx::pup
+  CurvedScalarWave
+  DataStructures
+  Options
   Utilities
-  WaveEquationSolutions
   )

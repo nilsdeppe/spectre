@@ -23,12 +23,14 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
-  DataStructures
+  INTERFACE
+  Charmxx::pup
+  Domain
   Options
   Serialization
-  Utilities
-  INTERFACE
-  Domain
+
+  PUBLIC
+  DataStructures
   Elliptic
+  Utilities
   )

@@ -20,14 +20,17 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
-  Domain
+  INTERFACE
   DomainBoundaryConditions
   DomainCreators
-  DomainStructure
   Options
-  Parallel
-  Utilities
+
   PRIVATE
   Framework
+
+  PUBLIC
+  Charmxx::pup
+  DomainStructure
+  Serialization
+  Utilities
   )

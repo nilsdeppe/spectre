@@ -13,6 +13,15 @@ spectre_target_headers(
   Tags.hpp
   )
 
+target_link_libraries(
+  ${LIBRARY}
+  INTERFACE
+  DataStructures
+  Options
+  Serialization
+  Utilities
+)
+
 add_subdirectory(Burgers)
 add_subdirectory(CurvedWaveEquation)
 add_subdirectory(ForceFree)

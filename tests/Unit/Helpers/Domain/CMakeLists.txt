@@ -9,24 +9,37 @@ set(LIBRARY_SOURCES
 
 add_spectre_library(${LIBRARY} ${SPECTRE_TEST_LIBS_TYPE} ${LIBRARY_SOURCES})
 
+spectre_target_headers(
+  ${LIBRARY}
+  INCLUDE_DIRECTORY ${CMAKE_SOURCE_DIR}/tests/Unit/
+  HEADERS
+  CoordinateMaps/TestMapHelpers.hpp
+  Creators/TestHelpers.hpp
+  Creators/TimeDependence/TestHelpers.hpp
+  DomainTestHelpers.hpp
+  )
+
 target_link_libraries(
   ${LIBRARY}
   INTERFACE
   Boost::boost
   CoordinateMaps
-  FunctionsOfTime
+  DataStructuresHelpers
+  DomainTimeDependence
 
   PRIVATE
-  DomainBoundaryConditionsHelpers
-  DomainCreators
+  DomainBoundaryConditions
   ErrorHandling
-  Framework
   Spectral
 
   PUBLIC
   DataStructures
   Domain
+  DomainBoundaryConditionsHelpers
+  DomainCreators
   DomainStructure
+  Framework
+  FunctionsOfTime
   Utilities
   )
 

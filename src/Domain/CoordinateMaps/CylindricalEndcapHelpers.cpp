@@ -1,7 +1,7 @@
 // Distributed under the MIT License.
 // See LICENSE.txt for details.
 
-#include "CylindricalEndcapHelpers.hpp"
+#include "Domain/CoordinateMaps/CylindricalEndcapHelpers.hpp"
 
 #include <cmath>
 #include <limits>

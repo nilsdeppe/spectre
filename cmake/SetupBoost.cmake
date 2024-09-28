@@ -23,6 +23,7 @@ add_interface_lib_headers(
   TARGET Boost::boost
   HEADERS
   boost/algorithm/string.hpp
+  boost/algorithm/string/join.hpp
   boost/config.hpp
   boost/core/demangle.hpp
   boost/functional/hash.hpp
@@ -31,7 +32,9 @@ add_interface_lib_headers(
   boost/iterator/zip_iterator.hpp
   boost/make_shared.hpp
   boost/math/interpolators/barycentric_rational.hpp
+  boost/math/quaternion.hpp
   boost/math/special_functions/binomial.hpp
+  boost/math/special_functions/sign.hpp
   boost/math/tools/roots.hpp
   boost/multi_array.hpp
   boost/multi_array/base.hpp
@@ -72,7 +75,11 @@ add_interface_lib_headers(
   boost/preprocessor/variadic/elem.hpp
   boost/preprocessor/variadic/to_list.hpp
   boost/range/combine.hpp
+  boost/rational.hpp
   boost/shared_ptr.hpp
+  boost/stacktrace.hpp
+  boost/stacktrace/stacktrace.hpp
+  boost/stacktrace/stacktrace_fwd.hpp
   boost/tuple/tuple.hpp
   boost/tuple/tuple_comparison.hpp
   boost/variant.hpp

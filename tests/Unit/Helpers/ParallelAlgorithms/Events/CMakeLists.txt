@@ -19,6 +19,8 @@ target_link_libraries(
   DataStructures
   Domain
   DomainStructure
+  EventsAndTriggers
+  Framework
   Observer
   Options
   Parallel

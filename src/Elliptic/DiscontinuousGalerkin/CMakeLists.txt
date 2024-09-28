@@ -25,29 +25,28 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
+  INTERFACE
+  AmrProjectors
+  Charmxx::charmxx
+  DomainCreators
+  Elliptic
+  EllipticSystems
+  FunctionsOfTime
+  Options
+  Parallel
+  ParallelAmr
+  Printf
+  SystemUtilities
+
   PUBLIC
   DataStructures
   DiscontinuousGalerkin
   Domain
   DomainStructure
   ErrorHandling
-  FunctionsOfTime
   LinearOperators
-  ParallelAmr
-  Printf
   Spectral
   Utilities
-  INTERFACE
-  Boost::boost
-  DomainCreators
-  Elliptic
-  EllipticSystems
-  Initialization
-  LinearOperators
-  Options
-  Parallel
-  Serialization
-  SystemUtilities
   )
 
 add_subdirectory(Actions)

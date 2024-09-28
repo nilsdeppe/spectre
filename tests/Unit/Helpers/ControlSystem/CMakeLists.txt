@@ -17,11 +17,23 @@ spectre_target_headers(
 target_link_libraries(
   ${LIBRARY}
   INTERFACE
+  Actions
+  Charmxx::pup
   ControlSystem
-  Domain
+  ControlSystemMeasurements
   DataStructures
+  Domain
+  DomainCreators
+  DomainStructure
+  ErrorHandling
+  EventsAndTriggers
+  Framework
+  FunctionsOfTime
   Observer
+  Options
   Parallel
+  Serialization
+  SphericalHarmonics
   Time
   Utilities
   )

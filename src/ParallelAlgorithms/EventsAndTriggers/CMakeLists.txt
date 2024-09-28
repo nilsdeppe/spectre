@@ -30,11 +30,13 @@ target_link_libraries(
   INTERFACE
   DataStructures
   ErrorHandling
-  PUBLIC
   Options
   Parallel
   Serialization
   Utilities
+
+  PUBLIC
+  Charmxx::pup
   )
 
 add_subdirectory(Actions)

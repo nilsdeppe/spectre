@@ -23,9 +23,16 @@ spectre_target_headers(
 target_link_libraries(
   ${LIBRARY}
   INTERFACE
-  DataStructures
-  ErrorHandling
-  PUBLIC
+  AnalyticData
+  Burgers
+  InitialDataUtilities
+  Options
   Serialization
+
+  PRIVATE
+  ErrorHandling
+
+  PUBLIC
+  DataStructures
   Utilities
-  )
+)

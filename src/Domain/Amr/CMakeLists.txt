@@ -34,12 +34,15 @@ spectre_target_headers(
 target_link_libraries(
   ${LIBRARY}
   PRIVATE
-  Domain
+  Charmxx::pup
   DomainStructure
   ErrorHandling
+  Options
   Utilities
   PUBLIC
   Boost::boost
+  DataStructures
+  Spectral
   )
 
 add_subdirectory(Tags)

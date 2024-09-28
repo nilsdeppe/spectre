@@ -161,10 +161,36 @@ endif()
 add_interface_lib_headers(
   TARGET Blaze
   HEADERS
+  blaze/math/AlignmentFlag.h
+  blaze/math/Column.h
+  blaze/math/CompressedMatrix.h
+  blaze/math/CompressedVector.h
   blaze/math/CustomVector.h
+  blaze/math/DenseMatrix.h
+  blaze/math/DenseVector.h
   blaze/math/DynamicMatrix.h
   blaze/math/DynamicVector.h
+  blaze/math/GroupTag.h
+  blaze/math/Matrix.h
+  blaze/math/PaddingFlag.h
+  blaze/math/StaticMatrix.h
+  blaze/math/StaticVector.h
+  blaze/math/Submatrix.h
+  blaze/math/Subvector.h
+  blaze/math/TransposeFlag.h
+  blaze/math/Vector.h
+  blaze/math/constraints/SIMDPack.h
+  blaze/math/lapack/trsv.h
+  blaze/math/traits/MultTrait.h
+  blaze/math/typetraits/IsColumnMajorMatrix.h
+  blaze/math/typetraits/IsDenseMatrix.h
+  blaze/math/typetraits/IsDenseMatrix.h
+  blaze/math/typetraits/IsSparseMatrix.h
+  blaze/math/typetraits/IsVector.h
+  blaze/math/simd/BasicTypes.h
+  blaze/system/Inline.h
   blaze/system/Optimizations.h
+  blaze/system/Vectorization.h
   blaze/system/Version.h
   blaze/util/typetraits/RemoveConst.h
   )

@@ -24,10 +24,9 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
+  INTERFACE
+  Charmxx::pup
   Options
   Serialization
   Utilities
-  INTERFACE
-  ErrorHandling
   )

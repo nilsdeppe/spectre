@@ -23,14 +23,17 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
+  INTERFACE
+  Elliptic
+  GeneralRelativity
+  LinearOperators
+
+  PRIVATE
+  Poisson
+
   PUBLIC
   DataStructures
-  ErrorHandling
-  GeneralRelativity
-  Hydro
   Utilities
-  INTERFACE
-  LinearOperators
-  )
+)
 
 add_subdirectory(BoundaryConditions)

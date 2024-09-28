@@ -32,15 +32,27 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
-  DataStructures
+  INTERFACE
+  AnalyticData
   Domain
-  ErrorHandling
+  DomainCreators
+  EvolutionBoundaryConditions
+  GeneralRelativity
+  Parallel
+  ScalarWave
+  Spectral
+
+  PUBLIC
+  Charmxx::pup
+  DataStructures
+  DiscontinuousGalerkin
+  DomainBoundaryConditions
+  Evolution
   LinearOperators
+  Options
+  ScalarWaveWorldtube
   Serialization
   Utilities
-  INTERFACE
-  GeneralRelativity
   )
 
 add_subdirectory(BoundaryConditions)

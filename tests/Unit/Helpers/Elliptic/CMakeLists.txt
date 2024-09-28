@@ -16,6 +16,11 @@ target_link_libraries(
   ${LIBRARY}
   INTERFACE
   DataStructures
-  Elliptic
+  DataStructuresHelpers
+  DiscontinuousGalerkin
+  EllipticSystems
+  Framework
+  LinearOperators
+  ParallelNonlinearSolver
   Utilities
   )

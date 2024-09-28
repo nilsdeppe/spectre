@@ -22,13 +22,16 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
+  INTERFACE
+  Domain
+  DomainStructure
+  Elliptic
+  LinearOperators
+
   PUBLIC
   ConstitutiveRelations
   DataStructures
-  Domain
   Utilities
-  INTERFACE
-  LinearOperators
   )
 
 add_subdirectory(Actions)

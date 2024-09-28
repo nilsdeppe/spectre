@@ -21,9 +21,9 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
+  PRIVATE
   DataStructures
-  Domain
   ErrorHandling
   Spectral
+  Utilities
   )

@@ -29,26 +29,32 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
+  INTERFACE
+  Domain
+  DomainCreators
+  FunctionsOfTime
+  GeneralRelativity
+  GeneralizedHarmonic
+  Initialization
+  LinearOperators
+  Observer
+  Parallel
+  ParallelInterpolation
+  Printf
+  Spectral
+
+  PRIVATE
+  Charmxx::pup
+
   PUBLIC
   DataStructures
   ErrorHandling
   GrSurfaces
-  FiniteDifference
-  GeneralRelativity
-  LinearAlgebra
   Logging
   Options
-  Printf
   SphericalHarmonics
-  PRIVATE
-  CoordinateMaps
-  Domain
-  INTERFACE
-  Initialization
-  Observer
-  Parallel
-  ParallelInterpolation
-  )
+  Utilities
+)
 
 add_subdirectory(Callbacks)
 add_subdirectory(Python)

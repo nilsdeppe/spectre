@@ -51,21 +51,28 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
+  INTERFACE
+  SphericalHarmonicsIO
+
   PRIVATE
-  DomainStructure
+  GeneralRelativitySolutions
   H5
+  RootFinding
+  Serialization
+
   PUBLIC
+  Boost::boost
   CoordinateMaps
   DataStructures
   Domain
   DomainBoundaryConditions
+  DomainStructure
   DomainTimeDependence
-  GeneralRelativitySolutions
-  SphericalHarmonics
-  SphericalHarmonicsIO
-  INTERFACE
   ErrorHandling
+  FunctionsOfTime
   Options
+  SphericalHarmonics
+  Utilities
   )
 
 add_subdirectory(Python)

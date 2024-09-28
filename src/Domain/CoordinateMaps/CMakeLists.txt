@@ -83,19 +83,23 @@ spectre_target_headers(
 target_link_libraries(
   ${LIBRARY}
   PRIVATE
+  GSL::gsl
+  Logging
+  Options
   RootFinding
+
   PUBLIC
   Boost::boost
+  Charmxx::pup
   DataStructures
   DomainStructure
   ErrorHandling
   FunctionsOfTime
-  GSL::gsl
-  Logging
   MathFunctions
   Serialization
   SphericalHarmonics
-  )
+  Utilities
+)
 
 add_subdirectory(Python)
 add_subdirectory(TimeDependent)

@@ -3,6 +3,8 @@
 
 #include "Domain/BoundaryConditions/None.hpp"
 
+#include <memory>
+
 namespace domain::BoundaryConditions {
 MarkAsNone::~MarkAsNone() = default;
 

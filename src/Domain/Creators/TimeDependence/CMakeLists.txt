@@ -36,14 +36,17 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
+  PRIVATE
+  Charmxx::pup
+  DataStructures
+  FunctionsOfTime
+  GeneralRelativitySolutions
+  Serialization
+
   PUBLIC
   CoordinateMaps
-  DataStructures
   DomainStructure
-  FunctionsOfTime
+  ErrorHandling
   Options
   Utilities
-  PRIVATE
-  GeneralRelativitySolutions
-  ErrorHandling
   )

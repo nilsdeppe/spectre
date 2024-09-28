@@ -22,18 +22,23 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
+  INTERFACE
+  Boost::boost
+  Charmxx::pup
+  Domain
+  DomainCreators
+  Elliptic
+  EllipticDg
+  EllipticSystems
+  ErrorHandling
+  Parallel
+  Serialization
+
   PUBLIC
   DataStructures
-  DomainStructure
   DiscontinuousGalerkin
-  FunctionsOfTime
+  DomainStructure
   ParallelSchwarz
   Spectral
   Utilities
-  INTERFACE
-  Boost::boost
-  Domain
-  Elliptic
-  EllipticDg
-  ErrorHandling
 )

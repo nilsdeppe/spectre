@@ -20,12 +20,19 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
-  ConstitutiveRelations
-  DomainCreators
   INTERFACE
   DataStructures
   Domain
+  DomainStructure
+  Elliptic
+  ErrorHandling
+  Observer
+  Options
   Parallel
+  ParallelAmr
   Utilities
+
+  PUBLIC
+  ConstitutiveRelations
+  DomainCreators
   )

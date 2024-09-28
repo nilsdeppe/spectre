@@ -21,22 +21,23 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
-  LinearSolver
-  Parallel
-  ParallelSchwarz
-  Poisson
-  Serialization
-  Utilities
   INTERFACE
+  Boost::boost
   Convergence
   DataStructures
   Domain
+  DomainCreators
   DomainStructure
   Elliptic
   EllipticDgSubdomainOperator
   ErrorHandling
-  Logging
   Options
   PoissonBoundaryConditions
+
+  PUBLIC
+  LinearSolver
+  ParallelSchwarz
+  Poisson
+  Serialization
+  Utilities
   )

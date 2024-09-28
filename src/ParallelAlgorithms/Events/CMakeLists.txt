@@ -33,23 +33,28 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
-  Charmxx::pup
-  LinearOperators
-  Observer
+  INTERFACE
+  Actions
+  AnalyticSolutions
+  DomainStructure
+  Interpolation
   Options
   Parallel
+  Printf
   Serialization
-  Time
-  Utilities
-  INTERFACE
+  SystemUtilities
+
+  PUBLIC
+  Charmxx::pup
   DataStructures
   Domain
-  DomainStructure
   ErrorHandling
   EventsAndTriggers
+  FunctionsOfTime
   H5
-  Interpolation
-  Printf
+  LinearOperators
+  Observer
   Spectral
+  Time
+  Utilities
   )

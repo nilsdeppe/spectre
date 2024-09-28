@@ -40,16 +40,25 @@ add_dependencies(
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
-  Amr
-  DomainStructure
+  INTERFACE
+  Domain
   Events
   Options
   Parallel
+  ParallelAmr
+  Serialization
+
+  PRIVATE
+  ErrorHandling
+  LinearOperators
+
+  PUBLIC
+  Amr
+  Charmxx::pup
+  DataStructures
+  DomainStructure
   Spectral
   Utilities
-  PRIVATE
-  LinearOperators
   )
 
 add_subdirectory(Tags)

@@ -18,15 +18,20 @@ spectre_target_headers(
   HEADERS
   DenseTrigger.hpp
   EventsAndDenseTriggers.hpp
+  Tags.hpp
   )
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
-  DataStructures
+  INTERFACE
   EventsAndTriggers
-  Options
   Parallel
+
+  PUBLIC
+  Charmxx::pup
+  DataStructures
+  ErrorHandling
+  Options
   Serialization
   Time
   Utilities

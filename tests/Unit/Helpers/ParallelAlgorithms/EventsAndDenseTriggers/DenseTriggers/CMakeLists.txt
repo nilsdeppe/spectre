@@ -13,19 +13,19 @@ spectre_target_sources(
 
 spectre_target_headers(
   ${LIBRARY}
-  INCLUDE_DIRECTORY ${CMAKE_SOURCE_DIR}/src
+  INCLUDE_DIRECTORY ${CMAKE_SOURCE_DIR}/tests/Unit/
   HEADERS
   TestTrigger.hpp
   )
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
+  INTERFACE
   Charmxx::pup
   DataStructures
   EventsAndDenseTriggers
   Framework
   Options
-  Parallel
+  Serialization
   Utilities
   )

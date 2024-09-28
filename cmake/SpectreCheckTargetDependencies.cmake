@@ -577,10 +577,10 @@ function(_check_and_print_dependencies
       )
 
     if(${ARG_ERROR_ON_FAILURE})
-      message(FATAL_ERROR
+      message(# FATAL_ERROR
         "${_ERROR_MSG}\n \n"
         " Correct target_link_libraries command is:\n"
-        "${TARGET_LINK_LIBS_COMMAND}"
+        "${TARGET_LINK_LIBS_COMMAND}\n\n\n"
         )
     else(${ARG_ERROR_ON_FAILURE})
       set(

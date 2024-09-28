@@ -23,14 +23,18 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
+  INTERFACE
+  AnalyticSolutions
+
+  PRIVATE
+  LinearOperators
+
   PUBLIC
   ConstitutiveRelations
   DataStructures
   Domain
   Elasticity
   Utilities
-  PRIVATE
-  LinearOperators
   )
 
 add_subdirectory(ConstitutiveRelations)

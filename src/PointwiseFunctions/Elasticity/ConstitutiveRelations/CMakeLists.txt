@@ -25,9 +25,15 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
-  DataStructures
-  ErrorHandling
+  INTERFACE
   Options
   Serialization
+
+  PRIVATE
+  ErrorHandling
+
+  PUBLIC
+  Charmxx::pup
+  DataStructures
+  Utilities
   )

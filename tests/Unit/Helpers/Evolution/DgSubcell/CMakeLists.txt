@@ -20,10 +20,10 @@ spectre_target_sources(
 
 target_link_libraries(
   ${LIBRARY}
+  PRIVATE
+  Spectral
+  Utilities
+
   PUBLIC
   DataStructures
-  Spectral
-
-  PRIVATE
-  Utilities
   )

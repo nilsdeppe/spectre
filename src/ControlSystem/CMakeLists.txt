@@ -41,27 +41,39 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
+  INTERFACE
+  Actions
   ApparentHorizonFinder
   Boost::boost
-  DataStructures
+  ControlSystemMeasurements
+  CoordinateMaps
   Domain
+  DomainCreators
+  EventsAndDenseTriggers
+  EventsAndTriggers
+  GeneralRelativity
+  Logging
+  Observer
+  Options
+  Parallel
+  ParallelInterpolation
+  Printf
+  Time
+
+  PRIVATE
+  FiniteDifference
+
+  PUBLIC
+  Charmxx::pup
+  DataStructures
   DomainStructure
   ErrorHandling
-  FiniteDifference
   FunctionsOfTime
-  GSL::gsl
-  Interpolation
-  Logging
-  Parallel
-  Printf
-  Serialization
-  Time
-  Utilities
-  INTERFACE
-  Observer
-  PRIVATE
   GrSurfaces
+  Interpolation
+  Serialization
+  SphericalHarmonics
+  Utilities
   )
 
 add_subdirectory(Actions)

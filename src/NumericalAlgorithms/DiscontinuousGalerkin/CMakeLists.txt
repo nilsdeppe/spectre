@@ -37,17 +37,18 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
+  INTERFACE
+  Charmxx::pup
+  Serialization
+  SpatialDiscretization
+
   PUBLIC
-  Boost::boost
   DataStructures
   DomainStructure
   ErrorHandling
   Options
-  Serialization
   Spectral
   Utilities
-  INTERFACE
-  Domain
   )
 
 add_subdirectory(Tags)

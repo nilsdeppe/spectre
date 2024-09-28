@@ -13,6 +13,16 @@ spectre_target_headers(
   Tags.hpp
   )
 
+target_link_libraries(
+  ${LIBRARY}
+  INTERFACE
+  AnalyticData
+  DataStructures
+  Options
+  Serialization
+  Utilities
+)
+
 add_subdirectory(Burgers)
 add_subdirectory(Elasticity)
 add_subdirectory(ForceFree)

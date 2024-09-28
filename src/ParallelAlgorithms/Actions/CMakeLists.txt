@@ -27,12 +27,15 @@ spectre_target_headers(
 target_link_libraries(
   ${LIBRARY}
   INTERFACE
+  Boost::boost
+  Charmxx::pup
   DataStructures
   Domain
-  DomainCreators
   DomainStructure
   ErrorHandling
   FunctionsOfTime
+  Observer
+  Options
   Parallel
   Serialization
   Spectral

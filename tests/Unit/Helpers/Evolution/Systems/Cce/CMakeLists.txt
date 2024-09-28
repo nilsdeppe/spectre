@@ -16,17 +16,25 @@ spectre_target_headers(
   ${LIBRARY}
   INCLUDE_DIRECTORY ${CMAKE_SOURCE_DIR}/tests/Unit
   HEADERS
+  BoundaryTestHelpers.hpp
+  CceComputationTestHelpers.hpp
   KleinGordonBoundaryTestHelpers.hpp
+  WriteToWorldtubeH5.hpp
   )
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
+  INTERFACE
+  Boost::boost
   Cce
-  DataStructures
   DataStructuresHelpers
   Framework
+  GeneralRelativity
+  GeneralRelativitySolutions
   H5
+
+  PUBLIC
+  DataStructures
   Spectral
   SpinWeightedSphericalHarmonics
   Utilities

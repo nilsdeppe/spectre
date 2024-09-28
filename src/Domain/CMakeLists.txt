@@ -62,21 +62,24 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
+  INTERFACE
   Boost::boost
+
+  PRIVATE
+  Charmxx::pup
+  ErrorHandling
+  LinearOperators
+  RootFinding
+  SphericalHarmonics
+
+  PUBLIC
   CoordinateMaps
   DataStructures
-  DomainBoundaryConditions
   DomainStructure
-  ErrorHandling
   FunctionsOfTime
   Options
   Spectral
   Utilities
-  PRIVATE
-  LinearOperators
-  RootFinding
-  SphericalHarmonics
 )
 
 add_subdirectory(Amr)

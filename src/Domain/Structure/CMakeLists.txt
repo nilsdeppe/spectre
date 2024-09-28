@@ -58,9 +58,9 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
-  PRIVATE
-  Boost::boost
   PUBLIC
+  Boost::boost
+  Charmxx::pup
   DataStructures
   ErrorHandling
   Spectral

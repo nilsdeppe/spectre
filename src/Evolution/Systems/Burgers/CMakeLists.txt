@@ -28,23 +28,37 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
+  INTERFACE
+  AnalyticData
+  AnalyticSolutions
+  CoordinateMaps
+  DomainCreators
+  EvolutionBoundaryConditions
+  FunctionsOfTime
+  InitialDataUtilities
+  Options
+  Parallel
+
+  PRIVATE
+  BurgersAnalyticData
+  BurgersSolutions
+  FiniteDifference
+  LinearOperators
+
   PUBLIC
+  Charmxx::pup
   DataStructures
   DgSubcell
   DiscontinuousGalerkin
   Domain
   DomainBoundaryConditions
+  DomainStructure
   ErrorHandling
-  FiniteDifference
-  Options
-  Parallel
+  Evolution
   Serialization
+  Spectral
   Utilities
-  PRIVATE
-  BurgersAnalyticData
-  BurgersSolutions
-  LinearOperators
-  )
+)
 
 add_subdirectory(BoundaryConditions)
 add_subdirectory(BoundaryCorrections)

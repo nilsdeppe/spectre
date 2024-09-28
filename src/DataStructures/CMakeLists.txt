@@ -73,13 +73,16 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
+  INTERFACE
   Blaze
   Boost::boost
+  Serialization
+  Simd
+
+  PUBLIC
   Charmxx::pup
   ErrorHandling
   Options
-  Serialization
   Utilities
   )
 
@@ -88,3 +91,4 @@ add_subdirectory(DataBox)
 add_subdirectory(Python)
 add_subdirectory(Tags)
 add_subdirectory(Tensor)
+add_subdirectory(Variables)

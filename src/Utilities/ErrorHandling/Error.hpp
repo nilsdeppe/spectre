@@ -13,8 +13,6 @@
 #include "Utilities/ErrorHandling/Breakpoint.hpp"
 #include "Utilities/ErrorHandling/Exceptions.hpp"
 #include "Utilities/ErrorHandling/FloatingPointExceptions.hpp"
-#include "Utilities/ForceInline.hpp"
-#include "Utilities/Literals.hpp"
 #include "Utilities/MakeString.hpp"
 #include "Utilities/System/Abort.hpp"
 
@@ -22,9 +20,9 @@ namespace Error_detail {
 // You can't use ScopedFpeState (a non-literal type) in a constexpr
 // function, but you can call another function that uses it.
 template <typename ExceptionTypeToThrow, typename F>
-[[noreturn]] SPECTRE_ALWAYS_INLINE void abort_without_fpes(
-    const char* file, const int line, const char* const pretty_function,
-    F&& message) {
+[[noreturn]] void abort_without_fpes(const char* file, const int line,
+                                     const char* const pretty_function,
+                                     F&& message) {
   const ScopedFpeState disable_fpes(false);
   abort_with_error_message<ExceptionTypeToThrow>(file, line, pretty_function,
                                                  message());

@@ -15,8 +15,9 @@ spectre_target_headers(
 target_link_libraries(
   ${LIBRARY}
   INTERFACE
+  Actions
   DataStructures
-  DiscontinuousGalerkin
+  Evolution
   Parallel
   Printf
   Time

@@ -109,11 +109,48 @@ if(NOT TARGET Stl)
 
     # UNIX/Linux specific headers
     dirent.h
+    emmintrin.h
+    execinfo.h
+    immintrin.h
     libgen.h
+    link.h
     sys/stat.h
     sys/types.h
     unistd.h
     xmmintrin.h
+
+    # C library
+    assert.h
+    complex.h
+    ctype.h
+    errorno.h
+    fenv.h
+    float.h
+    inttypes.h
+    iso646.h
+    limits.h
+    locale.h
+    math.h
+    setjmp.h
+    signal.h
+    stdalign.h
+    stdarg.h
+    stdatomic.h
+    stdbit.h
+    stdbool.h
+    stdckdint.h
+    stddef.h
+    stdint.h
+    stdio.h
+    stdlib.h
+    stdnoreturn.h
+    string.h
+    tgmath.h
+    threads.h
+    time.h
+    uchar.h
+    wchar.h
+    wctype.h
     )
 
   set_property(

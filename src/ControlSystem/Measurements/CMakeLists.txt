@@ -24,14 +24,29 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
-  PUBLIC
+  INTERFACE
   Actions
   ApparentHorizonFinder
+  Charmxx::pup
   ControlSystem
-  DataStructures
+  Domain
+  DomainStructure
+  Events
+  EventsAndTriggers
+  FunctionsOfTime
   GeneralRelativity
-  GeneralizedHarmonic
+  LinearOperators
+  Logging
   Observer
+  Parallel
   ParallelInterpolation
+  Serialization
+  Time
+
+  PRIVATE
+  Spectral
+
+  PUBLIC
+  DataStructures
   Utilities
   )

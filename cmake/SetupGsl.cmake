@@ -22,6 +22,23 @@ file(APPEND
   "GSL version: ${GSL_VERSION}\n"
   )
 
+set_property(
+  TARGET GSL::gsl
+  APPEND
+  PROPERTY
+  PUBLIC_HEADER
+  gsl/gsl_cblas.h
+  gsl/gsl_errno.h
+  gsl/gsl_integration.h
+  gsl/gsl_matrix_double.h
+  gsl/gsl_multifit.h
+  gsl/gsl_multiroots.h
+  gsl/gsl_poly.h
+  gsl/gsl_sf_bessel.h
+  gsl/gsl_spline.h
+  gsl/gsl_vector_double.h
+)
+
 # Link external BLAS library. We don't need the GSL::gslcblas target.
 find_package(BLAS REQUIRED)
 target_link_libraries(

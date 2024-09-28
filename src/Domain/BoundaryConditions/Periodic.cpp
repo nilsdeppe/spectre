@@ -3,6 +3,8 @@
 
 #include "Domain/BoundaryConditions/Periodic.hpp"
 
+#include <memory>
+
 namespace domain::BoundaryConditions {
 MarkAsPeriodic::~MarkAsPeriodic() = default;
 

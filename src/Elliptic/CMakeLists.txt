@@ -14,19 +14,31 @@ spectre_target_headers(
 
 target_link_libraries(
   ${LIBRARY}
-  PRIVATE
-  ErrorHandling
-  Options
   INTERFACE
+  AnalyticSolutions
+  Charmxx::pup
+  Convergence
   DataStructures
   DiscontinuousGalerkin
   Domain
+  DomainBoundaryConditions
+  DomainStructure
+  EllipticDg
   EventsAndTriggers
-  LinearOperators
+  InitialDataUtilities
+  Initialization
+  Logging
+  Parallel
   ParallelAmr
+  ParallelLinearSolver
   Printf
   Serialization
+  Spectral
   Utilities
+
+  PUBLIC
+  ErrorHandling
+  Options
   )
 
 add_subdirectory(Actions)
