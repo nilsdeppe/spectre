@@ -22,6 +22,7 @@
 #include "Parallel/ArrayComponentId.hpp"
 #include "Parallel/Callback.hpp"
 #include "Parallel/GlobalCache.hpp"
+#include "Parallel/Info.hpp"
 #include "Parallel/ParallelComponentHelpers.hpp"
 #include "ParallelAlgorithms/Actions/GetItemFromDistributedObject.hpp"
 #include "Utilities/Algorithm.hpp"
@@ -220,6 +221,10 @@ struct CheckFunctionsOfTimeAreReady {
                   Parallel::Tags::ElementLocations<Dim>>>(
               Parallel::get_parallel_component<ParallelComponent>(cache))
               ->at(array_index));
+      ASSERT(element_location == Parallel::my_node<int>(cache),
+             "Expected to be running on node "
+                 << Parallel::my_node<int>(cache)
+                 << " but the record says it is on node " << element_location);
       ready = domain::functions_of_time_are_ready_threaded_action_callback<
           domain::Tags::FunctionsOfTime,
           Parallel::Actions::PerformAlgorithmOnElement<false>>(
