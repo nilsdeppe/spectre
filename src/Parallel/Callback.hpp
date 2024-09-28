@@ -30,6 +30,7 @@ class Callback : public PUP::able {
   explicit Callback(CkMigrateMessage* msg) : PUP::able(msg) {}
   virtual void invoke() = 0;
   virtual void register_with_charm() = 0;
+  virtual bool is_equal_to(const Callback& rhs) const = 0;
 };
 
 /// Wraps a call to a simple action and its arguments.
@@ -65,6 +66,16 @@ class SimpleActionCallback : public Callback {
     register_classes_with_charm<SimpleActionCallback>();
   }
 
+  bool is_equal_to(const Callback& rhs) const override {
+    const auto* downcast_ptr =
+        dynamic_cast<const SimpleActionCallback*>(&rhs);
+    if (downcast_ptr == nullptr) {
+      return false;
+    }
+    return // proxy_ == downcast_ptr->proxy_ and
+        args_ == downcast_ptr->args_;
+  }
+
  private:
   std::decay_t<Proxy> proxy_{};
   std::tuple<std::decay_t<Args>...> args_{};
@@ -91,6 +102,12 @@ class SimpleActionCallback<SimpleAction, Proxy> : public Callback {
     }
     done_registration = true;
     register_classes_with_charm<SimpleActionCallback>();
+  }
+
+  bool is_equal_to(const Callback& rhs) const override {
+    const auto* downcast_ptr =
+        dynamic_cast<const SimpleActionCallback*>(&rhs);
+    return downcast_ptr != nullptr;
   }
 
  private:
@@ -130,6 +147,16 @@ class ThreadedActionCallback : public Callback {
     register_classes_with_charm<ThreadedActionCallback>();
   }
 
+  bool is_equal_to(const Callback& rhs) const override {
+    const auto* downcast_ptr =
+        dynamic_cast<const ThreadedActionCallback*>(&rhs);
+    if (downcast_ptr == nullptr) {
+      return false;
+    }
+    return  // proxy_ == downcast_ptr->proxy_ and
+        args_ == downcast_ptr->args_;
+  }
+
  private:
   std::decay_t<Proxy> proxy_{};
   std::tuple<std::decay_t<Args>...> args_{};
@@ -158,6 +185,12 @@ class ThreadedActionCallback<ThreadedAction, Proxy> : public Callback {
     register_classes_with_charm<ThreadedActionCallback>();
   }
 
+  bool is_equal_to(const Callback& rhs) const override {
+    const auto* downcast_ptr =
+        dynamic_cast<const ThreadedActionCallback*>(&rhs);
+    return downcast_ptr != nullptr;
+  }
+
  private:
   std::decay_t<Proxy> proxy_{};
 };
@@ -182,6 +215,12 @@ class PerformAlgorithmCallback : public Callback {
     }
     done_registration = true;
     register_classes_with_charm<PerformAlgorithmCallback>();
+  }
+
+  bool is_equal_to(const Callback& rhs) const override {
+    const auto* downcast_ptr =
+        dynamic_cast<const PerformAlgorithmCallback*>(&rhs);
+    return downcast_ptr != nullptr;
   }
 
  private:
