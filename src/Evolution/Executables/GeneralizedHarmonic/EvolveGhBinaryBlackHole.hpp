@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -78,6 +79,7 @@
 #include "Parallel/ArrayCollection/IsDgElementCollection.hpp"
 #include "Parallel/ArrayCollection/SimpleActionOnElement.hpp"
 #include "Parallel/GlobalCache.hpp"
+#include "Parallel/Info.hpp"
 #include "Parallel/Invoke.hpp"
 #include "Parallel/Local.hpp"
 #include "Parallel/MemoryMonitor/MemoryMonitor.hpp"
@@ -649,16 +651,29 @@ struct EvolutionMetavars {
   using control_components =
       control_system::control_components<EvolutionMetavars, control_systems>;
 
+  struct PrintFunctionsOfTime {
+    template <typename ParallelComponent, typename DbTags,
+              typename Metavariables, typename ArrayIndex>
+    static void apply(db::DataBox<DbTags>& /*box*/,
+                      Parallel::GlobalCache<Metavariables>& cache,
+                      const ArrayIndex& /*array_index*/) {
+      const auto& functions_of_time =
+          Parallel::get<::domain::Tags::FunctionsOfTime>(cache);
+
+      const std::string time_bounds =
+          ::domain::FunctionsOfTime::output_time_bounds(functions_of_time);
+
+      Parallel::printf("Node %zu\n%s\n", Parallel::my_node<size_t>(cache),
+                       time_bounds);
+    }
+  };
+
   static void run_deadlock_analysis_simple_actions(
       Parallel::GlobalCache<EvolutionMetavars>& cache,
       const std::vector<std::string>& deadlocked_components) {
-    const auto& functions_of_time =
-        Parallel::get<::domain::Tags::FunctionsOfTime>(cache);
-
-    const std::string time_bounds =
-        ::domain::FunctionsOfTime::output_time_bounds(functions_of_time);
-
-    Parallel::printf("%s\n", time_bounds);
+    Parallel::simple_action<PrintFunctionsOfTime>(
+        Parallel::get_parallel_component<
+            observers::ObserverWriter<EvolutionMetavars>>(cache));
 
     if (alg::count(deadlocked_components,
                    pretty_type::name<gh_dg_element_array>()) == 1) {
