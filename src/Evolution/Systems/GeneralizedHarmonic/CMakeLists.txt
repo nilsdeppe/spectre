@@ -43,7 +43,6 @@ target_link_libraries(
   GeneralRelativity
   GeneralRelativitySolutions
   GhGrMhdAnalyticData
-  GhScalarTensorAnalyticData
   GhGrMhdSolutions
   GhRelativisticEulerSolutions
   IO
