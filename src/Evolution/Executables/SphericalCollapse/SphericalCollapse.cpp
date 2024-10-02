@@ -381,7 +381,8 @@ std::vector<ElementVolumeData> create_data_for_file(
                                       spacetime_dim);
   for (size_t i = 0; i < get<0>(radius).size();
        i = i + mesh_of_one_element.number_of_grid_points()) {
-    ElementId element_id = compute_element_ids2(
+    ElementId element_id = compute_element_ids(
+        number_of_elements,
         refinement_level)[i / mesh_of_one_element.number_of_grid_points()];
     std::vector<TensorComponent> Data;
     const auto add_variable = [&Data](const std::string& name,
@@ -425,9 +426,10 @@ std::vector<ElementVolumeData> create_data_for_file(
 
 bool find_min_A(const gsl::not_null<Scalar<DataVector>*> metric_function_a,
                 const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
-                bool BH_formed, const double epsilon, double time) {
+                bool BH_formed, const double epsilon, double time,
+                const double end_time) {
   for (size_t index = 0; index < get(*metric_function_a).size(); index++) {
-    if (abs(get(*metric_function_a)[index]) < epsilon || time > 2.0) {
+    if (abs(get(*metric_function_a)[index]) < epsilon || time > end_time) {
       std::cout << "A at min: " << get(*metric_function_a)[index] << "\n";
       std::cout << "Radius: " << get<0>(radius)[index] << "\n";
       std::cout << "here"
@@ -454,8 +456,8 @@ std::array<DataVector, 3> integrate_fields_in_time(
     const double gamma2, const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
     const Scalar<DataVector>& det_inverse_jacobian, const size_t spacetime_dim,
     const double R_0, const size_t refinement_level, bool BH_formed,
-    const std::array<std::reference_wrapper<const Matrix>, 1>&
-        filter_matrices) {
+    const std::array<std::reference_wrapper<const Matrix>, 1>& filter_matrices,
+    const double end_time) {
   using Vars = std::array<DataVector, 3>;
 
   Vars vars{get(psi), get(phi_tilde), get(pi)};
@@ -531,14 +533,15 @@ std::array<DataVector, 3> integrate_fields_in_time(
       write_data_hd5file(VolumeData, obs_id, 0.0, R_0, refinement_level,
                          mesh_of_one_element.number_of_grid_points());
     }
-    if (step > 299700) {
-      std::cout << "A" << get(*metric_function_a) << "\n";
-      std::cout << "delta" << get(*delta) << "\n";
-      std::cout << "dt" << dt << "\n";
-      std::cout << "time" << time << "\n";
-    }
 
-    BH_formed = find_min_A(metric_function_a, radius, BH_formed, epsilon, time);
+    if (step == 157500) {
+      std::cout << "A at min: " << get(*metric_function_a) << "\n";
+      std::cout << "Radius: " << get<0>(radius) << "\n";
+      std::cout << "here"
+                << "\n";
+    }
+    BH_formed = find_min_A(metric_function_a, radius, BH_formed, epsilon, time,
+                           end_time);
     // BH_formed = true;
     if (BH_formed) {
       if (step % 100 != 0) {
@@ -553,7 +556,7 @@ std::array<DataVector, 3> integrate_fields_in_time(
         write_data_hd5file(VolumeData, obs_id, 0.0, R_0, refinement_level,
                            mesh_of_one_element.number_of_grid_points());
       }
-      if (time < 15.0) {
+      if (time < end_time) {
         std::cout << "Black Hole"
                   << "\n";
       } else {
@@ -579,9 +582,12 @@ std::array<DataVector, 3> integrate_fields_in_time(
 }
 
 void run(const size_t refinement_level, const size_t points_per_element,
-         const double amp) {
+         const double amp, const double R_0, const double time) {
   domain::creators::register_derived_with_charm();
   const size_t number_of_elements = two_to_the(refinement_level);
+  const std::vector<ElementId<1>> element_ids =
+      compute_element_ids(number_of_elements, refinement_level);
+  // const size_t number_of_elements = element_ids.size();
   const Mesh<1> mesh_of_one_element{points_per_element,
                                     Spectral::Basis::Legendre,
                                     Spectral::Quadrature::GaussLobatto};
@@ -601,8 +607,6 @@ void run(const size_t refinement_level, const size_t points_per_element,
                            number_of_elements};
   const tnsr::I<DataVector, 1, Frame::ElementLogical>
       logical_coords_one_element{logical_coordinates(mesh_of_one_element)};
-  const std::vector<ElementId<1>> element_ids =
-      compute_element_ids2(refinement_level);
 
   std::vector<domain::CoordinateMap<Frame::ElementLogical, Frame::Grid,
                                     domain::CoordinateMaps::Affine,
@@ -675,7 +679,6 @@ void run(const size_t refinement_level, const size_t points_per_element,
   const double width = 1.0;
   const double p = 2;
   const double q = 2;
-  const double R_0 = 13.0;
 
   Scalar<DataVector> mass{mesh_of_one_element.number_of_grid_points() *
                           number_of_elements};
@@ -745,7 +748,7 @@ void run(const size_t refinement_level, const size_t points_per_element,
       &dt_psi, &dt_phi, &dt_pi, &buffer, &integrand_buffer, det_jacobian,
       &matrix_buffer, mesh_of_one_element, psi, phi_tilde, pi, &mass, &delta,
       &metric_function_a, gamma2, radius, det_inv_jacobian, spacetime_dim, R_0,
-      refinement_level, BH_formed, filter_matrices);
+      refinement_level, BH_formed, filter_matrices, time);
 
   // std::cout << "Psi:\n"
   //           << std::setprecision(16) << std::scientific << get(psi) << "\n";
@@ -776,9 +779,10 @@ void run(const size_t refinement_level, const size_t points_per_element,
   //   std::cout << "delta:\n"
   //             << std::setprecision(16) << std::scientific << get(delta) <<
   //             "\n";
-  // std::cout << "Radius:\n"
-  //           << std::setprecision(16) << std::scientific << get<0>(radius)
-  //           << "\n";
+  //   std::cout << "Radius:\n"
+  //             << std::setprecision(16) << std::scientific << get<0>(radius)
+  //             << "\n";
+
   std::ofstream of{"Data.txt"};
   of << std::setprecision(16) << std::scientific << get<0>(radius) << "\n";
   of << std::setprecision(16) << std::scientific << get(psi) << "\n";
@@ -807,7 +811,10 @@ int main(int argc, char** argv) {
                           boost::program_options::value<size_t>()->required(),
                           "Points per element")(
       "amplitude", boost::program_options::value<double>()->required(),
-      "Initial Amplitude");
+      "Initial Amplitude")("outer-boundary",
+                           boost::program_options::value<double>()->required(),
+                           "Outer Boundary R_0")(
+      "time", boost::program_options::value<double>()->required(), "Time T");
 
   boost::program_options::variables_map vars;
 
@@ -819,11 +826,13 @@ int main(int argc, char** argv) {
 
   if (vars.count("help") != 0u or vars.count("input-file") == 0u or
       vars.count("ref") == 0u or vars.count("points") == 0u or
-      vars.count("amplitude") == 0u) {
+      vars.count("amplitude") == 0u or vars.count("outer-boundary") == 0u or
+      vars.count("time") == 0u) {
     Parallel::printf("%s\n", desc);
     return 0;
   }
 
   run(vars["ref"].as<size_t>(), vars["points"].as<size_t>(),
-      vars["amplitude"].as<double>());
+      vars["amplitude"].as<double>(), vars["outer-boundary"].as<double>(),
+      vars["time"].as<double>());
 }
