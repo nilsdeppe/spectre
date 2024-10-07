@@ -58,12 +58,32 @@ class Rk3HesthavenSsp : public TimeStepper {
 
   size_t order() const override;
 
+  /*!
+   * @copydoc TimeStepper::stable_step()
+   *
+   * This time stepper has 1.25637266330916.
+   */
   double stable_step() const override;
 
+  /*!
+   * @copydoc TimeStepper::monotonic()
+   *
+   * This time stepper isn't.
+   */
   bool monotonic() const override;
 
+  /*!
+   * @copydoc TimeStepper::number_of_substeps()
+   *
+   * This time stepper has 3.
+   */
   uint64_t number_of_substeps() const override;
 
+  /*!
+   * @copydoc TimeStepper::number_of_substeps_for_error()
+   *
+   * This time stepper has 3.
+   */
   uint64_t number_of_substeps_for_error() const override;
 
   size_t number_of_past_steps() const override;
