@@ -496,9 +496,8 @@ struct GhValenciaDivCleanTemplateBase<
                   volume_dim, Frame::ElementLogical, Frame::Inertial>,
               ::Events::Tags::ObserverMesh<volume_dim>>,
           gr::Tags::WeylElectricCompute<DataVector, 3, Frame::Inertial>,
-          gr::Tags::Psi4RealCompute<Frame::Inertial>
-
-          >,
+          gr::Tags::Psi4RealCompute<Frame::Inertial>,
+          ::Events::Tags::ObserverMeshVelocity<3>>,
       tmpl::conditional_t<
           use_dg_subcell,
           tmpl::list<evolution::dg::subcell::Tags::TciStatusCompute<volume_dim>,
