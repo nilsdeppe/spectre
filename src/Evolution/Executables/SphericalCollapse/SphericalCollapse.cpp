@@ -221,16 +221,7 @@ void compute_time_derivatives_first_order_2(
         filter_matrices) {
   Scalar<DataVector> diff_eq_A =
       differential_eq_for_A(phi, pi, metric_function_a, radius, spacetime_dim);
-
-  // std::cout << "phi:\n" << phi << "\n";
-  // std::cout << "pi:\n" << pi << "\n";
-  // std::cout << "psi:\n" << psi << "\n";
-  // std::cout << "A:\n" << metric_function_a << "\n";
-  // std::cout << "delta:\n" << metric_function_delta << "\n";
-  // std::cout << "pi:\n" << pi << "\n";
   Scalar<DataVector> diff_eq_delta = differential_eq_for_delta(phi, pi, radius);
-  // Scalar<DataVector> diff_eq_A{get(metric_function_a).size(), 0.0};
-  // Scalar<DataVector> diff_eq_delta{get(metric_function_a).size(), 0.0};
   const double number_of_elements =
       get(pi).size() / mesh_of_one_element.number_of_grid_points();
   Scalar<DataVector> buffer1{mesh_of_one_element.number_of_grid_points() *
@@ -242,12 +233,6 @@ void compute_time_derivatives_first_order_2(
 
   std::array<std::reference_wrapper<const Matrix>, 1> logical_diff_matrices{
       {std::cref(Spectral::differentiation_matrix(mesh_of_one_element))}};
-  //   apply_matrices(make_not_null(&get(buffer4)), logical_diff_matrices,
-  //                  get(metric_function_a), mesh_of_one_element.extents());
-  //   get(diff_eq_A)[0] = 0.0;
-
-  //   get(diff_eq_A) =
-  //       4 * get<0>(radius) * get(det_inverse_jacobian) * get(buffer4);
 
   {
     // compute dt_psi
@@ -282,16 +267,16 @@ void compute_time_derivatives_first_order_2(
     get(*dt_phi_tilde) *= get(det_inverse_jacobian) * (1.0 / square(R_0));
     get(*dt_phi_tilde) -= gamma2 * get(phi_tilde);
   }
-  // DataVector no_filter{get(*dt_psi)};
-  // apply_matrices(make_not_null(&get(*dt_psi)), filter_matrices, no_filter,
-  //                mesh_of_one_element.extents());
-  // no_filter = get(*dt_pi);
-  // apply_matrices(make_not_null(&get(*dt_pi)), filter_matrices, no_filter,
-  //                mesh_of_one_element.extents());
-  // no_filter = get(*dt_phi_tilde);
-  // apply_matrices(make_not_null(&get(*dt_phi_tilde)), filter_matrices,
-  // no_filter,
-  //                mesh_of_one_element.extents());
+  DataVector no_filter{get(*dt_psi)};
+  apply_matrices(make_not_null(&get(*dt_psi)), filter_matrices, no_filter,
+                 mesh_of_one_element.extents());
+  no_filter = get(*dt_pi);
+  apply_matrices(make_not_null(&get(*dt_pi)), filter_matrices, no_filter,
+                 mesh_of_one_element.extents());
+  no_filter = get(*dt_phi_tilde);
+  apply_matrices(make_not_null(&get(*dt_phi_tilde)), filter_matrices, no_filter,
+                 mesh_of_one_element.extents());
+
   for (size_t element = mesh_of_one_element.number_of_grid_points();
        element <
        number_of_elements * mesh_of_one_element.number_of_grid_points() - 1;
