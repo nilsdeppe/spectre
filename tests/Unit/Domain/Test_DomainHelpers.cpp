@@ -304,7 +304,6 @@ void test_wedge_map_generation_against_domain_helpers(
 }
 
 void test_wedge_errors() {
-#ifdef SPECTRE_DEBUG
   CHECK_THROWS_WITH(
       ([]() {
         const double inner_radius = 0.5;
@@ -325,7 +324,6 @@ void test_wedge_errors() {
       Catch::Matchers::ContainsSubstring(
           "If we are using half wedges we must also be using "
           "ShellWedges::All."));
-#endif
 }
 
 void test_six_wedge_directions_equiangular() {
@@ -649,7 +647,6 @@ void test_all_frustum_directions() {
 }
 
 void test_frustrum_errors() {
-#ifdef SPECTRE_DEBUG
   CHECK_THROWS_WITH(
       ([]() {
         const double length_inner_cube = 0.9;
@@ -660,9 +657,11 @@ void test_frustrum_errors() {
             length_inner_cube, length_outer_cube, use_equiangular_map,
             use_equiangular_map, origin_preimage));
       }()),
-      Catch::Matchers::ContainsSubstring(
-          "The outer cube is too small! The inner cubes will "
-          "pierce the surface of the outer cube."));
+      Catch::Matchers::ContainsSubstring("The outer cube") &&
+          Catch::Matchers::ContainsSubstring(
+              " is too small! The inner cubes") &&
+          Catch::Matchers::ContainsSubstring(
+              " will pierce the surface of the outer cube."));
 
   CHECK_THROWS_WITH(
       ([]() {
@@ -677,7 +676,6 @@ void test_frustrum_errors() {
       Catch::Matchers::ContainsSubstring(
           "The current choice for `origin_preimage` results in the "
           "inner cubes piercing the surface of the outer cube."));
-#endif
 }
 
 void test_shell_graph() {

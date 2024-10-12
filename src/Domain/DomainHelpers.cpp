@@ -349,8 +349,9 @@ void set_cartesian_periodic_boundaries(
     const gsl::not_null<
         std::vector<DirectionMap<VolumeDim, BlockNeighbor<VolumeDim>>>*>
         neighbors_of_all_blocks) {
-  ASSERT(orientations_of_all_blocks.size() == corners_of_all_blocks.size(),
-         "Each block must have an OrientationMap relative to an edifice.");
+  if (orientations_of_all_blocks.size() != corners_of_all_blocks.size()) {
+    ERROR("Each block must have an OrientationMap relative to an edifice.");
+  }
   size_t block_id = 0;
   for (auto& block : *neighbors_of_all_blocks) {
     const auto& corners_of_block = corners_of_all_blocks[block_id];
@@ -602,13 +603,17 @@ std::vector<domain::CoordinateMaps::Wedge<3>> sph_wedge_coordinate_maps(
     const std::vector<domain::CoordinateMaps::Distribution>&
         radial_distribution,
     const ShellWedges which_wedges, const double opening_angle) {
-  ASSERT(not use_half_wedges or which_wedges == ShellWedges::All,
-         "If we are using half wedges we must also be using ShellWedges::All.");
-  ASSERT(radial_distribution.size() == 1 + radial_partitioning.size(),
-         "Specify a radial distribution for every spherical shell. You "
-         "specified "
-             << radial_distribution.size() << " items, but the domain has "
-             << 1 + radial_partitioning.size() << " shells.");
+  if (use_half_wedges and which_wedges != ShellWedges::All) {
+    ERROR(
+        "If we are using half wedges we must also be using ShellWedges::All.");
+  }
+  if (radial_distribution.size() != 1 + radial_partitioning.size()) {
+    ERROR(
+        "Specify a radial distribution for every spherical shell. You "
+        "specified "
+        << radial_distribution.size() << " items, but the domain has "
+        << 1 + radial_partitioning.size() << " shells.");
+  }
 
   const auto wedge_orientations = orientations_for_sphere_wrappings();
 
@@ -738,17 +743,22 @@ std::vector<domain::CoordinateMaps::Frustum> frustum_coordinate_maps(
     const domain::CoordinateMaps::Distribution radial_distribution,
     const std::optional<double> distribution_value, const double sphericity,
     const double opening_angle) {
-  ASSERT(length_inner_cube < 0.5 * length_outer_cube,
-         "The outer cube is too small! The inner cubes will pierce the surface "
-         "of the outer cube.");
-  ASSERT(
-      abs(origin_preimage[0]) + length_inner_cube < 0.5 * length_outer_cube and
+  if (length_inner_cube >= 0.5 * length_outer_cube) {
+    ERROR("The outer cube (" << length_outer_cube
+                             << ") is too small! The inner cubes ("
+                             << length_inner_cube
+                             << ") will pierce the surface of the outer cube.");
+  }
+  if (not(abs(origin_preimage[0]) + length_inner_cube <
+              0.5 * length_outer_cube and
           abs(origin_preimage[1]) + length_inner_cube <
               0.5 * length_outer_cube and
           abs(origin_preimage[2]) + 0.5 * length_inner_cube <
-              0.5 * length_outer_cube,
-      "The current choice for `origin_preimage` results in the inner cubes "
-      "piercing the surface of the outer cube.");
+              0.5 * length_outer_cube)) {
+    ERROR(
+        "The current choice for `origin_preimage` results in the inner cubes "
+        "piercing the surface of the outer cube.");
+  }
   const auto frustum_orientations = orientations_for_sphere_wrappings();
   const double lower = 0.5 * length_inner_cube;
   const double top = 0.5 * length_outer_cube;
