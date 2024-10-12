@@ -739,8 +739,10 @@ std::vector<domain::CoordinateMaps::Frustum> frustum_coordinate_maps(
     const std::optional<double> distribution_value, const double sphericity,
     const double opening_angle) {
   ASSERT(length_inner_cube < 0.5 * length_outer_cube,
-         "The outer cube is too small! The inner cubes will pierce the surface "
-         "of the outer cube.");
+         "The outer cube (" << length_outer_cube
+                            << ") is too small! The inner cubes ("
+                            << length_inner_cube
+                            << ") will pierce the surface of the outer cube.");
   ASSERT(
       abs(origin_preimage[0]) + length_inner_cube < 0.5 * length_outer_cube and
           abs(origin_preimage[1]) + length_inner_cube <
