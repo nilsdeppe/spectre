@@ -53,7 +53,6 @@
 
 extern "C" void CkRegisterMainModule(void) {}
 
-constexpr bool use_only_one_r2_block = false;
 constexpr bool use_flat_space = false;
 
 Scalar<DataVector> differential_eq_for_A(
@@ -94,20 +93,8 @@ void compute_delta_integral_logical(
     const Scalar<DataVector>& pi, const Scalar<DataVector>& det_jacobian,
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
     const double one_sided_jacobi_boundary) {
-  if (use_only_one_r2_block) {
-    *integrand_buffer = -4.0 * M_PI * get<0>(radius) *
-                        (square(get(pi)) + square(get(phi))) *
-                        get(det_jacobian);
-
-    for (size_t i = 0; i < mesh_of_one_element.number_of_grid_points(); ++i) {
-      (*integrand_buffer)[i] =
-          -M_PI * (square(get(pi)[i]) + square(get(phi)[i])) *
-          get(det_jacobian)[i] * square(one_sided_jacobi_boundary);
-    }
-  } else {
-    (*integrand_buffer) = -M_PI * (square(get(pi)) + square(get(phi))) *
-                          get(det_jacobian) * square(one_sided_jacobi_boundary);
-  }
+  (*integrand_buffer) = -M_PI * (square(get(pi)) + square(get(phi))) *
+                        get(det_jacobian) * square(one_sided_jacobi_boundary);
 
   std::array<std::reference_wrapper<const Matrix>, 1> matrices{
       {std::cref(Spectral::integration_matrix(mesh_of_one_element))}};
@@ -149,10 +136,7 @@ void compute_mass_integral(
         const size_t index = k + grid * pts_per_element;
         const double sigma =
             0.5 * M_PI * (square(get(pi)[index]) + square(get(phi)[index])) *
-            (((grid == 0 and use_only_one_r2_block) or
-              not use_only_one_r2_block)
-                 ? square(one_sided_jacobi_boundary)
-                 : (4.0 * get<0>(radius)[index]));
+            square(one_sided_jacobi_boundary);
         view[i] += integration_matrix(i, k) * 0.5 * sigma *
                    get(det_jacobian)[index] *
                    pow(get<0>(radius)[index], spacetime_dim - 3);
@@ -252,14 +236,7 @@ void compute_time_derivatives_first_order_2(
   // compute 2nd term of dt_pi
   apply_matrices(make_not_null(&get(*dt_pi)), logical_diff_matrices,
                  get(phi_tilde), mesh_of_one_element.extents());
-  if (use_only_one_r2_block) {
-    for (size_t i = 0; i < mesh_of_one_element.number_of_grid_points(); ++i) {
-      get(*dt_pi)[i] *=
-          (4.0 * get<0>(radius)[i] / square(one_sided_jacobi_boundary));
-    }
-  } else {
-    get(*dt_pi) *= (4.0 * get<0>(radius) / square(one_sided_jacobi_boundary));
-  }
+  get(*dt_pi) *= (4.0 * get<0>(radius) / square(one_sided_jacobi_boundary));
   get(*dt_pi) *= get(det_inverse_jacobian) * get(buffer1);
   get(*dt_pi) += (get(diff_eq_A) * exp(-get(metric_function_delta)) -
                   get(diff_eq_delta) * get(buffer1)) *
@@ -278,17 +255,7 @@ void compute_time_derivatives_first_order_2(
                  get(buffer2), mesh_of_one_element.extents());
   get(*dt_phi_tilde) *= get(
       det_inverse_jacobian);  //  * (1.0 / square(one_sided_jacobi_boundary));
-  if (use_only_one_r2_block) {
-    for (size_t i = 0; i < mesh_of_one_element.number_of_grid_points(); ++i) {
-      get(*dt_phi_tilde)[i] *= (1.0 / square(one_sided_jacobi_boundary));
-    }
-    for (size_t i = mesh_of_one_element.number_of_grid_points();
-         i < get(*dt_phi_tilde).size(); ++i) {
-      get(*dt_phi_tilde)[i] /= (4.0 * get<0>(radius)[i]);
-    }
-  } else {
-    get(*dt_phi_tilde) *= (1.0 / square(one_sided_jacobi_boundary));
-  }
+  get(*dt_phi_tilde) *= (1.0 / square(one_sided_jacobi_boundary));
 
   get(*dt_phi_tilde) -= gamma2 * get(phi_tilde);
 
@@ -308,17 +275,11 @@ void compute_time_derivatives_first_order_2(
        element <
        number_of_elements * mesh_of_one_element.number_of_grid_points() - 1;
        element = element + mesh_of_one_element.number_of_grid_points()) {
-    const double lower_jacobian =
-        (not use_only_one_r2_block or
-                 element == mesh_of_one_element.number_of_grid_points()
-             ? (square(one_sided_jacobi_boundary) /
-                (4.0 * get<0>(radius)[element - 1]))
-             : 1.0) /
-        get(det_inverse_jacobian)[element - 1];
+    const double lower_jacobian = (square(one_sided_jacobi_boundary) /
+                                   (4.0 * get<0>(radius)[element - 1])) /
+                                  get(det_inverse_jacobian)[element - 1];
     const double upper_jacobian =
-        (not use_only_one_r2_block ? (square(one_sided_jacobi_boundary) /
-                                      (4.0 * get<0>(radius)[element]))
-                                   : 1.0) /
+        (square(one_sided_jacobi_boundary) / (4.0 * get<0>(radius)[element])) /
         get(det_inverse_jacobian)[element];
 
     if (false) {
@@ -709,10 +670,7 @@ void run(const size_t refinement_level, const size_t points_per_element,
          const double outer_boundary_radius, const double time) {
   domain::creators::register_derived_with_charm();
   const std::vector<ElementId<1>> element_ids =
-      use_only_one_r2_block
-          ? compute_element_ids(two_to_the(refinement_level), refinement_level)
-          : compute_element_ids2(two_to_the(refinement_level),
-                                 refinement_level);
+      compute_element_ids2(two_to_the(refinement_level), refinement_level);
   const size_t number_of_elements = element_ids.size();
   const Mesh<1> mesh_of_one_element{points_per_element,
                                     Spectral::Basis::Legendre,
@@ -743,19 +701,9 @@ void run(const size_t refinement_level, const size_t points_per_element,
           ? domain::CoordinateMaps::Distribution::Logarithmic
           : domain::CoordinateMaps::Distribution::Linear;
   const domain::CoordinateMaps::Interval interval_map(
-      -1, 1, use_only_one_r2_block ? one_sided_jacobi_boundary : -1.0,
-      use_only_one_r2_block ? outer_boundary_radius : 1.0, distribution,
-      singularity);
-  if (use_only_one_r2_block) {
-    coordinate_maps[0] =
-        domain::make_coordinate_map<Frame::ElementLogical, Frame::Grid>(
-            domain::CoordinateMaps::Affine{-1.0, 1.0, -1.0, 1.0},
-            domain::CoordinateMaps::Interval{
-                -1.0, 1.0, -1.0, 1.0,
-                domain::CoordinateMaps::Distribution::Linear});
-  }
-  for (size_t element_index = (use_only_one_r2_block ? 1 : 0);
-       element_index < number_of_elements; element_index += 1) {
+      -1, 1, -1.0, 1.0, distribution, singularity);
+  for (size_t element_index = 0; element_index < number_of_elements;
+       element_index += 1) {
     const double lower =
         element_ids[element_index].segment_id(0).endpoint(Side::Lower);
     const double upper =
@@ -827,19 +775,7 @@ void run(const size_t refinement_level, const size_t points_per_element,
                        &one_sided_jacobi_boundary]()
       -> tnsr::I<DataVector, 1, Frame::Inertial> {
     DataVector rad = get<0>(grid_coords);
-    if (use_only_one_r2_block) {
-      for (size_t i = 0; i < mesh_of_one_element.number_of_grid_points(); ++i) {
-        rad[i] = sqrt((rad[i] + 1.0) * 0.5) * one_sided_jacobi_boundary;
-      }
-    const double avg_radius_at_boundary =
-        0.5 * (rad[mesh_of_one_element.number_of_grid_points()] +
-               rad[mesh_of_one_element.number_of_grid_points() - 1]);
-    rad[mesh_of_one_element.number_of_grid_points() - 1] =
-        avg_radius_at_boundary;
-    rad[mesh_of_one_element.number_of_grid_points()] = avg_radius_at_boundary;
-    } else {
-      rad = sqrt((rad + 1.0) * 0.5) * one_sided_jacobi_boundary;
-    }
+    rad = sqrt((rad + 1.0) * 0.5) * one_sided_jacobi_boundary;
     return tnsr::I<DataVector, 1, Frame::Inertial>{{rad}};
   }();
 
@@ -957,13 +893,7 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  if (use_only_one_r2_block) {
-    run(vars["ref"].as<size_t>(), vars["points"].as<size_t>(),
-        vars["amplitude"].as<double>(), 0.1,
-        vars["outer-boundary"].as<double>(), vars["time"].as<double>());
-  } else {
-    run(vars["ref"].as<size_t>(), vars["points"].as<size_t>(),
-        vars["amplitude"].as<double>(), vars["outer-boundary"].as<double>(),
-        vars["outer-boundary"].as<double>(), vars["time"].as<double>());
-  }
+  run(vars["ref"].as<size_t>(), vars["points"].as<size_t>(),
+      vars["amplitude"].as<double>(), vars["outer-boundary"].as<double>(),
+      vars["outer-boundary"].as<double>(), vars["time"].as<double>());
 }
