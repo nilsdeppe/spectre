@@ -282,84 +282,25 @@ void compute_time_derivatives_first_order_2(
         (square(one_sided_jacobi_boundary) / (4.0 * get<0>(radius)[element])) /
         get(det_inverse_jacobian)[element];
 
-    if (false) {
-      // spectral collocation.
-      const double lift_factor =
-          -0.5 * static_cast<double>(
-                     (mesh_of_one_element.number_of_grid_points() *
-                      (mesh_of_one_element.number_of_grid_points() - 1)));
-
-      ASSERT(gamma2 == 0.0,
-             "The char fields assume gamma2 is zero. This can be generalized "
-             "if needed.");
-      const double upper_w_plus =
-          get(pi)[element] +
-          4.0 * get<0>(radius)[element] * get(phi_tilde)[element];
-      const double upper_w_minus =
-          get(pi)[element] -
-          4.0 * get<0>(radius)[element] * get(phi_tilde)[element];
-      const double lower_w_plus =
-          get(pi)[element - 1] +
-          4.0 * get<0>(radius)[element - 1] * get(phi_tilde)[element - 1];
-      const double lower_w_minus =
-          get(pi)[element - 1] -
-          4.0 * get<0>(radius)[element - 1] * get(phi_tilde)[element - 1];
-      get(*dt_phi_tilde)[element] += lift_factor / upper_jacobian * 0.5 *
-                                     (upper_w_plus - lower_w_plus) /
-                                     (4.0 * get<0>(radius)[element]);
-      get(*dt_phi_tilde)[element - 1] -= lift_factor / lower_jacobian * 0.5 *
-                                         (upper_w_minus - lower_w_minus) /
-                                         (4.0 * get<0>(radius)[element - 1]);
-      get(*dt_pi)[element] +=
-          lift_factor / upper_jacobian * 0.5 * (upper_w_plus - lower_w_plus);
-      get(*dt_pi)[element - 1] -=
-          lift_factor / lower_jacobian * 0.5 * (upper_w_minus - lower_w_minus);
-
-      // const double phi_tilde_plus =
-      //     -(get(pi)[element] / (4.0 * get<0>(radius)[element]) -
-      //       get(phi_tilde)[element]
-
-      //       - get(pi)[element - 1] / (4.0 * get<0>(radius)[element - 1]) +
-      //       get(phi_tilde)[element - 1]);
-
-      // const double pi_plus =
-      //     get(pi)[element] +
-      //     4.0 * get<0>(radius)[element] * get(phi_tilde)[element]
-
-      //     - get(pi)[element - 1] -
-      //     4.0 * get<0>(radius)[element - 1] * get(phi_tilde)[element - 1];
-
-      // get(*dt_phi_tilde)[element] += lift_factor * 0.5 *
-      // get(buffer1)[element] /
-      //                                upper_jacobian * (phi_tilde_plus);
-      // get(*dt_phi_tilde)[element - 1] -= lift_factor * 0.5 *
-      //                                    get(buffer1)[element] /
-      //                                    lower_jacobian * (phi_tilde_plus);
-      // get(*dt_pi)[element] += lift_factor * 0.5 * get(buffer1)[element] *
-      //                         (pi_plus) / upper_jacobian;
-      // get(*dt_pi)[element - 1] -= lift_factor * 0.5 * get(buffer1)[element] *
-      //                             (pi_plus) / lower_jacobian;
-    } else {
-      // CG
-      //
-      // Note: we assume the weights are the same on both sides. This is true
-      // for uniform p-refinement.
-      //
-      // However, we do still need to weight by the Jacobians on the two sides.
-      get(*dt_psi)[element] = (upper_jacobian * get(*dt_psi)[element] +
-                               lower_jacobian * get(*dt_psi)[element - 1]) /
-                              (lower_jacobian + upper_jacobian);
-      get(*dt_psi)[element - 1] = get(*dt_psi)[element];
-      get(*dt_phi_tilde)[element] =
-          (upper_jacobian * get(*dt_phi_tilde)[element] +
-           lower_jacobian * get(*dt_phi_tilde)[element - 1]) /
-          (lower_jacobian + upper_jacobian);
-      get(*dt_phi_tilde)[element - 1] = get(*dt_phi_tilde)[element];
-      get(*dt_pi)[element] = (upper_jacobian * get(*dt_pi)[element] +
-                              lower_jacobian * get(*dt_pi)[element - 1]) /
-                             (lower_jacobian + upper_jacobian);
-      get(*dt_pi)[element - 1] = get(*dt_pi)[element];
-    }
+    // CG
+    //
+    // Note: we assume the weights are the same on both sides. This is true
+    // for uniform p-refinement.
+    //
+    // However, we do still need to weight by the Jacobians on the two sides.
+    get(*dt_psi)[element] = (upper_jacobian * get(*dt_psi)[element] +
+                             lower_jacobian * get(*dt_psi)[element - 1]) /
+                            (lower_jacobian + upper_jacobian);
+    get(*dt_psi)[element - 1] = get(*dt_psi)[element];
+    get(*dt_phi_tilde)[element] =
+        (upper_jacobian * get(*dt_phi_tilde)[element] +
+         lower_jacobian * get(*dt_phi_tilde)[element - 1]) /
+        (lower_jacobian + upper_jacobian);
+    get(*dt_phi_tilde)[element - 1] = get(*dt_phi_tilde)[element];
+    get(*dt_pi)[element] = (upper_jacobian * get(*dt_pi)[element] +
+                            lower_jacobian * get(*dt_pi)[element - 1]) /
+                           (lower_jacobian + upper_jacobian);
+    get(*dt_pi)[element - 1] = get(*dt_pi)[element];
   }
   const size_t outer_boundary_index = get(psi).size() - 1;
   get(*dt_pi)[outer_boundary_index] =
