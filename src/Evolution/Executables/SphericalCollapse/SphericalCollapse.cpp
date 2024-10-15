@@ -456,13 +456,12 @@ void create_data_for_file(
 
 bool find_min_A(const gsl::not_null<Scalar<DataVector>*> metric_function_a,
                 const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
-                const double epsilon, const double /*time*/) {
+                const double epsilon, const double time) {
   for (size_t index = 0; index < get(*metric_function_a).size(); index++) {
     if (abs(get(*metric_function_a)[index]) < epsilon) {
-      std::cout << "A at min: " << get(*metric_function_a)[index] << "\n";
-      std::cout << "Radius: " << get<0>(radius)[index] << "\n";
-      std::cout << "here"
-                << "\n";
+      std::cout << "Found black hole!!\nRadius: " << get<0>(radius)[index]
+                << "\nTime: " << time
+                << "\nA at horizon: " << get(*metric_function_a)[index] << "\n";
       return true;
     }
   }
@@ -598,12 +597,9 @@ std::array<DataVector, 3> integrate_fields_in_time(
                            one_sided_jacobi_boundary, step, time);
       std::cout << "time: " << time << " step: " << step << " dt: " << dt
                 << "\n";
-    }
-    if (found_black_hole) {
-      std::cout << "Found a black hole!!\n"
-                << "time: " << time << "\n"
-                << "Number of Steps: " << step << "\n";
-      return vars;
+      if (found_black_hole) {
+        return vars;
+      }
     }
 
     dt = compute_adaptive_step_size(*delta, *metric_function_a, radius, CFL);
