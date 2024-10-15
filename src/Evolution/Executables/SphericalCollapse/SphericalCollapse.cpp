@@ -16,6 +16,9 @@
 #include <string>
 
 #include "DataStructures/ApplyMatrices.hpp"
+#include "DataStructures/DataBox/Access.hpp"
+#include "DataStructures/DataBox/DataBox.hpp"
+#include "DataStructures/DataBox/Tag.hpp"
 #include "DataStructures/DataVector.hpp"
 #include "DataStructures/Matrix.hpp"
 #include "DataStructures/Tensor/EagerMath/Determinant.hpp"
@@ -43,6 +46,7 @@
 #include "NumericalAlgorithms/Spectral/LogicalCoordinates.hpp"
 #include "NumericalAlgorithms/Spectral/Mesh.hpp"
 #include "NumericalAlgorithms/Spectral/Spectral.hpp"
+#include "Options/Auto.hpp"
 #include "Parallel/Printf/Printf.hpp"
 #include "Utilities/ConstantExpressions.hpp"
 #include "Utilities/Gsl.hpp"
@@ -52,6 +56,123 @@
 // main module we just have it be empty
 
 extern "C" void CkRegisterMainModule(void) {}
+
+namespace Tags {
+struct Amplitude : db::SimpleTag {
+  using type = double;
+  static constexpr Options::String help = {"The amplitude of the scalar wave."};
+};
+struct Width : db::SimpleTag {
+  using type = double;
+  static constexpr Options::String help = {
+      "The width of the exp(-(r-center)^p/width^p) factor of the Gaussian "
+      "scalar wave."};
+};
+struct ExponentP : db::SimpleTag {
+  using type = double;
+  static constexpr Options::String help = {
+      "The exponent of the exp(-(r-center)^p/width^p) factor of the Gaussian "
+      "scalar wave."};
+};
+struct ExponentQ : db::SimpleTag {
+  using type = double;
+  static constexpr Options::String help = {
+      "The exponent of the r^(2q) factor of the Gaussian scalar wave."};
+};
+struct Center : db::SimpleTag {
+  using type = double;
+  static constexpr Options::String help = {
+      "The radial center of the scalar wave."};
+};
+
+struct Gamma2 : db::SimpleTag {
+  using type = double;
+  static constexpr Options::String help = {
+      "The constraint damping parameter, gamma2."};
+};
+
+struct SpacetimeDimensions : db::SimpleTag {
+  using type = double;
+  static constexpr Options::String help = {
+      "The number of spacetime dimensions. Should generally be an integer, but "
+      "investigating non-integer values may be interesting."};
+};
+struct HorizonFinderTolerance : db::SimpleTag {
+  using type = double;
+  static constexpr Options::String help = {
+      "The value that A needs to reach for us to decide that a black "
+      "hole/horizon has formed. 0.01 is a reasonable value."};
+};
+
+struct InnerRefinementLevel : db::SimpleTag {
+  using type = size_t;
+  static constexpr Options::String help = {"The refinement level at r=0."};
+};
+struct OuterRefinementLevel : db::SimpleTag {
+  using type = size_t;
+  static constexpr Options::String help = {
+      "The refinement level at the outer boundary."};
+};
+struct PointsPerElement : db::SimpleTag {
+  using type = size_t;
+  static constexpr Options::String help = {
+      "The number of grid points per element."};
+};
+struct FilterAlpha : db::SimpleTag {
+  using type = double;
+  static constexpr Options::String help = {
+      "The alpha used in the exponential filter."};
+};
+
+struct FilterHalfPower : db::SimpleTag {
+  using type = size_t;
+  static constexpr Options::String help = {
+      "The half power of the exponential filter."};
+};
+
+struct OuterBoundaryRadius : db::SimpleTag {
+  using type = double;
+  static constexpr Options::String help = {
+      "The radius of the outer boundary."};
+};
+struct FinalTime : db::SimpleTag {
+  using type = double;
+  static constexpr Options::String help = {
+      "The time at which the simulation is ended if no black hole formed."};
+};
+struct CflFactor : db::SimpleTag {
+  using type = double;
+  static constexpr Options::String help = {
+      "The CFL factor used for time integration.."};
+};
+
+struct VolumeDataDirectory : db::SimpleTag {
+  using type = std::string;
+  static constexpr Options::String help = {
+      "The name of the directory into which volume data is written."};
+};
+struct VolumeDataOutputFrequency : db::SimpleTag {
+  using type = size_t;
+  static constexpr Options::String help = {
+      "How many time steps to output data."};
+};
+struct TimePrintFrequency : db::SimpleTag {
+  struct DoNotPrintTimeInfo {};
+  using type = Options::Auto<size_t, DoNotPrintTimeInfo>;
+  static constexpr Options::String help = {
+      "How many time steps to print the current time and time step to screen."};
+};
+
+using options_list =
+    tmpl::list<Amplitude, Width, ExponentP, ExponentQ, Center, Gamma2,
+               SpacetimeDimensions, HorizonFinderTolerance,
+               InnerRefinementLevel, OuterRefinementLevel, PointsPerElement,
+               FilterAlpha, FilterHalfPower, OuterBoundaryRadius, FinalTime,
+               CflFactor, VolumeDataDirectory, VolumeDataOutputFrequency,
+               TimePrintFrequency>;
+}  // namespace Tags
+
+using options_list = Tags::options_list;
 
 /*
  * \brief A very simple ElementId so we are not limited by the refinement
@@ -69,7 +190,7 @@ Scalar<DataVector> differential_eq_for_A(
     const Scalar<DataVector>& phi, const Scalar<DataVector>& pi,
     const Scalar<DataVector>& A,
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
-    const size_t spacetime_dim) {
+    const double spacetime_dim) {
   Scalar<DataVector> diff_eq{get<0>(radius).size()};
   get(diff_eq)[0] = 0.0;
   for (size_t i = 1; i < get<0>(radius).size(); i++) {
@@ -102,9 +223,9 @@ void compute_delta_integral_logical(
     const Mesh<1>& mesh_of_one_element, const Scalar<DataVector>& phi,
     const Scalar<DataVector>& pi, const Scalar<DataVector>& det_jacobian,
     const tnsr::I<DataVector, 1, Frame::Inertial>& /*radius*/,
-    const double one_sided_jacobi_boundary) {
+    const double outer_boundary_radius) {
   (*integrand_buffer) = -M_PI * (square(get(pi)) + square(get(phi))) *
-                        get(det_jacobian) * square(one_sided_jacobi_boundary);
+                        get(det_jacobian) * square(outer_boundary_radius);
 
   std::array<std::reference_wrapper<const Matrix>, 1> matrices{
       {std::cref(Spectral::integration_matrix(mesh_of_one_element))}};
@@ -131,7 +252,7 @@ void compute_mass_integral(
     const Mesh<1>& mesh_of_one_element, const Scalar<DataVector>& phi,
     const Scalar<DataVector>& pi, const Scalar<DataVector>& det_jacobian,
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
-    const size_t spacetime_dim, const double one_sided_jacobi_boundary) {
+    const double spacetime_dim, const double outer_boundary_radius) {
   const size_t pts_per_element = mesh_of_one_element.number_of_grid_points();
   const size_t number_of_grids = get(pi).size() / pts_per_element;
   const Matrix& integration_matrix =
@@ -146,7 +267,7 @@ void compute_mass_integral(
         const size_t index = k + grid * pts_per_element;
         const double sigma =
             0.5 * M_PI * (square(get(pi)[index]) + square(get(phi)[index])) *
-            square(one_sided_jacobi_boundary);
+            square(outer_boundary_radius);
         view[i] += integration_matrix(i, k) * 0.5 * sigma *
                    get(det_jacobian)[index] *
                    pow(get<0>(radius)[index], spacetime_dim - 3);
@@ -168,7 +289,7 @@ void compute_metric_function_a_from_mass(
     const gsl::not_null<Scalar<DataVector>*> metric_function_a,
     const Scalar<DataVector>& mass,
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
-    const size_t spacetime_dim) {
+    const double spacetime_dim) {
   DataVector view_a{&get(*metric_function_a)[1],
                     get(*metric_function_a).size() - 1};
   const DataVector view_mass{&const_cast<double&>(get(mass)[1]),  // NOLINT
@@ -194,9 +315,7 @@ void compute_metric_function_a_from_mass(
  * level is always `2^(outer_refinement_level - 1)`.
  */
 std::vector<ElementId1d> compute_element_ids(
-    const size_t /*number_of_elements*/, const size_t /*refinement_level*/) {
-  const size_t inner_refinement_level = 15;
-  const size_t outer_refinement_level = 4;
+    const size_t inner_refinement_level, const size_t outer_refinement_level) {
   std::vector<ElementId1d> element_ids;
   const size_t block_id = 0;
   for (size_t j = inner_refinement_level; j >= outer_refinement_level; j--) {
@@ -219,8 +338,8 @@ void compute_time_derivatives_first_order_2(
     const Scalar<DataVector>& phi, const Scalar<DataVector>& metric_function_a,
     const Scalar<DataVector>& metric_function_delta, const double gamma2,
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
-    const Scalar<DataVector>& det_inverse_jacobian, const size_t spacetime_dim,
-    const double one_sided_jacobi_boundary,
+    const Scalar<DataVector>& det_inverse_jacobian, const double spacetime_dim,
+    const double outer_boundary_radius,
     const std::array<std::reference_wrapper<const Matrix>, 1>&
         filter_matrices) {
   Scalar<DataVector> diff_eq_A =
@@ -245,7 +364,7 @@ void compute_time_derivatives_first_order_2(
   // compute 2nd term of dt_pi
   apply_matrices(make_not_null(&get(*dt_pi)), logical_diff_matrices,
                  get(phi_tilde), mesh_of_one_element.extents());
-  get(*dt_pi) *= (4.0 * get<0>(radius) / square(one_sided_jacobi_boundary));
+  get(*dt_pi) *= (4.0 * get<0>(radius) / square(outer_boundary_radius));
   get(*dt_pi) *= get(det_inverse_jacobian) * get(buffer1);
   get(*dt_pi) += (get(diff_eq_A) * exp(-get(metric_function_delta)) -
                   get(diff_eq_delta) * get(buffer1)) *
@@ -262,9 +381,9 @@ void compute_time_derivatives_first_order_2(
 
   apply_matrices(make_not_null(&get(*dt_phi_tilde)), logical_diff_matrices,
                  get(buffer2), mesh_of_one_element.extents());
-  get(*dt_phi_tilde) *= get(
-      det_inverse_jacobian);  //  * (1.0 / square(one_sided_jacobi_boundary));
-  get(*dt_phi_tilde) *= (1.0 / square(one_sided_jacobi_boundary));
+  get(*dt_phi_tilde) *=
+      get(det_inverse_jacobian);  //  * (1.0 / square(outer_boundary_radius));
+  get(*dt_phi_tilde) *= (1.0 / square(outer_boundary_radius));
 
   get(*dt_phi_tilde) -= gamma2 * get(phi_tilde);
 
@@ -284,11 +403,11 @@ void compute_time_derivatives_first_order_2(
        element <
        number_of_elements * mesh_of_one_element.number_of_grid_points() - 1;
        element = element + mesh_of_one_element.number_of_grid_points()) {
-    const double lower_jacobian = (square(one_sided_jacobi_boundary) /
-                                   (4.0 * get<0>(radius)[element - 1])) /
-                                  get(det_inverse_jacobian)[element - 1];
+    const double lower_jacobian =
+        (square(outer_boundary_radius) / (4.0 * get<0>(radius)[element - 1])) /
+        get(det_inverse_jacobian)[element - 1];
     const double upper_jacobian =
-        (square(one_sided_jacobi_boundary) / (4.0 * get<0>(radius)[element])) /
+        (square(outer_boundary_radius) / (4.0 * get<0>(radius)[element])) /
         get(det_inverse_jacobian)[element];
 
     // CG
@@ -376,17 +495,17 @@ void create_data_for_file(
     const gsl::not_null<Scalar<DataVector>*> delta,
     const gsl::not_null<Scalar<DataVector>*> metric_function_a,
     const double /*gamma2*/, const Scalar<DataVector>& det_jacobian,
-    const gsl::not_null<Matrix*> matrix_buffer, const size_t spacetime_dim,
-    const double one_sided_jacobi_boundary, const size_t step_number,
-    const double time) {
+    const gsl::not_null<Matrix*> matrix_buffer, const double spacetime_dim,
+    const double outer_boundary_radius, const size_t step_number,
+    const double time, const std::string& volume_data_directory) {
   const Scalar<DataVector> temp_phi{vars[1] * 4 * get<0>(radius)};
   const Scalar<DataVector> temp_pi{vars[2]};
   compute_delta_integral_logical(delta, integrand_buffer, mesh_of_one_element,
                                  temp_phi, temp_pi, det_jacobian, radius,
-                                 one_sided_jacobi_boundary);
+                                 outer_boundary_radius);
   compute_mass_integral(mass, matrix_buffer, mesh_of_one_element, temp_phi,
                         temp_pi, det_jacobian, radius, spacetime_dim,
-                        one_sided_jacobi_boundary);
+                        outer_boundary_radius);
   compute_metric_function_a_from_mass(metric_function_a, *mass, radius,
                                       spacetime_dim);
   std::stringstream data_to_write{};
@@ -400,8 +519,8 @@ void create_data_for_file(
                   << ' ' << get(temp_pi)[i] << ' ' << get(*delta)[i] << ' '
                   << get(*mass)[i] << ' ' << get(*metric_function_a)[i] << "\n";
   }
-  std::ofstream out_file{"./Data/output" + std::to_string(step_number) +
-                         ".txt"};
+  std::ofstream out_file{volume_data_directory + "/Step" +
+                         std::to_string(step_number) + ".txt"};
   out_file << data_to_write.str();
   out_file.close();
   return;
@@ -465,18 +584,16 @@ void create_data_for_file(
       get<0>(radius)[get<0>(radius).size() - 1], time);
 }
 
-bool find_min_A(const gsl::not_null<Scalar<DataVector>*> metric_function_a,
-                const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
-                const double epsilon, const double time) {
+std::optional<double> find_min_A(
+    const gsl::not_null<Scalar<DataVector>*> metric_function_a,
+    const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
+    const double horizon_tolerance) {
   for (size_t index = 0; index < get(*metric_function_a).size(); index++) {
-    if (abs(get(*metric_function_a)[index]) < epsilon) {
-      std::cout << "Found black hole!!\nRadius: " << get<0>(radius)[index]
-                << "\nTime: " << time
-                << "\nA at horizon: " << get(*metric_function_a)[index] << "\n";
-      return true;
+    if (abs(get(*metric_function_a)[index]) < horizon_tolerance) {
+      return get<0>(radius)[index];
     }
   }
-  return false;
+  return std::nullopt;
 }
 
 std::array<DataVector, 3> integrate_fields_in_time(
@@ -489,34 +606,36 @@ std::array<DataVector, 3> integrate_fields_in_time(
     const gsl::not_null<Scalar<DataVector>*> mass,
     const gsl::not_null<Scalar<DataVector>*> delta,
     const gsl::not_null<Scalar<DataVector>*> metric_function_a,
-    const double gamma2, const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
-    const Scalar<DataVector>& det_inverse_jacobian, const size_t spacetime_dim,
-    const double one_sided_jacobi_boundary, const size_t refinement_level,
-    bool found_black_hole,
-    const std::array<std::reference_wrapper<const Matrix>, 1>& filter_matrices,
-    const double end_time) {
+    const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
+    const Scalar<DataVector>& det_inverse_jacobian, const db::Access& box,
+    const std::array<std::reference_wrapper<const Matrix>, 1>&
+        filter_matrices) {
   using Vars = std::array<DataVector, 3>;
-  const size_t observation_frequency = 100;
+  const size_t observation_frequency =
+      get<Tags::VolumeDataOutputFrequency>(box);
+  const std::string& volume_data_directory =
+      get<Tags::VolumeDataDirectory>(box);
+  const std::optional<size_t>& time_print_frequency =
+      get<Tags::TimePrintFrequency>(box);
 
   Vars vars{get(psi), get(phi_tilde), get(pi)};
 
   using StateDopri5 = boost::numeric::odeint::runge_kutta_dopri5<Vars>;
   StateDopri5 st{};
   std::vector<double> times;
-  const double epsilon = 0.01;
+
   double time = 0.0;
   double dt = 0.0;
-  const double CFL = 0.25;
   const bool filter_evolved_vars = false;
   size_t step = 0;
+  std::optional<double> black_hole_radius{};
 
   using std::abs;
-  while (abs(time) < end_time) {
+  while (abs(time) < get<Tags::FinalTime>(box)) {
     auto system = [&mesh_of_one_element, &metric_function_a, &delta, &mass,
-                   &radius, &det_inverse_jacobian, &gamma2, &spacetime_dim,
-                   &integrand_buffer, &det_jacobian, &matrix_buffer,
-                   &one_sided_jacobi_boundary, &filter_matrices, &element_ids,
-                   filter_evolved_vars](
+                   &radius, &det_inverse_jacobian, &integrand_buffer,
+                   &det_jacobian, &matrix_buffer, &box, &filter_matrices,
+                   &element_ids, filter_evolved_vars](
                       const Vars& local_vars, Vars& local_dvars,
                       [[maybe_unused]] const double current_time) {
       (void)filter_evolved_vars;  // silence compiler warning
@@ -572,12 +691,13 @@ std::array<DataVector, 3> integrate_fields_in_time(
 
       compute_delta_integral_logical(
           delta, integrand_buffer, mesh_of_one_element, temp_phi, temp_pi,
-          det_jacobian, radius, one_sided_jacobi_boundary);
+          det_jacobian, radius, get<Tags::OuterBoundaryRadius>(box));
       compute_mass_integral(mass, matrix_buffer, mesh_of_one_element, temp_phi,
-                            temp_pi, det_jacobian, radius, spacetime_dim,
-                            one_sided_jacobi_boundary);
+                            temp_pi, det_jacobian, radius,
+                            get<Tags::SpacetimeDimensions>(box),
+                            get<Tags::OuterBoundaryRadius>(box));
       compute_metric_function_a_from_mass(metric_function_a, *mass, radius,
-                                          spacetime_dim);
+                                          get<Tags::SpacetimeDimensions>(box));
 
       const auto size = get(temp_psi).size();
       Scalar<DataVector> temp_dtpsi{size, 0.0};
@@ -586,34 +706,42 @@ std::array<DataVector, 3> integrate_fields_in_time(
       compute_time_derivatives_first_order_2(
           make_not_null(&temp_dtpsi), make_not_null(&temp_dtphi_tilde),
           make_not_null(&temp_dtpi), mesh_of_one_element, temp_psi,
-          temp_phi_tilde, temp_pi, temp_phi, *metric_function_a, *delta, gamma2,
-          radius, det_inverse_jacobian, spacetime_dim,
-          one_sided_jacobi_boundary, filter_matrices);
+          temp_phi_tilde, temp_pi, temp_phi, *metric_function_a, *delta,
+          get<Tags::Gamma2>(box), radius, det_inverse_jacobian,
+          get<Tags::SpacetimeDimensions>(box),
+          get<Tags::OuterBoundaryRadius>(box), filter_matrices);
 
       local_dvars[0] = get(temp_dtpsi);
       local_dvars[1] = get(temp_dtphi_tilde);
       local_dvars[2] = get(temp_dtpi);
     };
 
-    if constexpr (use_flat_space) {
-      found_black_hole = false;
-    } else {
-      found_black_hole =
-          find_min_A(metric_function_a, radius, epsilon, time);
+    if constexpr (not use_flat_space) {
+      black_hole_radius =
+          find_min_A(metric_function_a, radius,
+                     get<Tags::HorizonFinderTolerance>(box));
     }
-    if (step % observation_frequency == 0 or found_black_hole) {
+    if (step % observation_frequency == 0 or black_hole_radius.has_value()) {
       create_data_for_file(radius, mesh_of_one_element, element_ids, vars,
                            integrand_buffer, mass, delta, metric_function_a,
-                           gamma2, det_jacobian, matrix_buffer, spacetime_dim,
-                           one_sided_jacobi_boundary, step, time);
-      std::cout << "time: " << time << " step: " << step << " dt: " << dt
-                << "\n";
-      if (found_black_hole) {
+                           get<Tags::Gamma2>(box), det_jacobian, matrix_buffer,
+                           get<Tags::SpacetimeDimensions>(box),
+                           get<Tags::OuterBoundaryRadius>(box), step, time,
+                           volume_data_directory);
+      if (black_hole_radius.has_value()) {
+        std::cout << "Found black hole!!\nRadius: " << black_hole_radius.value()
+                  << "\nTime: " << time << "\n";
         return vars;
       }
     }
+    if (time_print_frequency.has_value() and
+        (step % time_print_frequency.value() == 0)) {
+      std::cout << "time: " << time << " step: " << step << " dt: " << dt
+                << "\n";
+    }
 
-    dt = compute_adaptive_step_size(*delta, *metric_function_a, radius, CFL);
+    dt = compute_adaptive_step_size(*delta, *metric_function_a, radius,
+                                    get<Tags::CflFactor>(box));
     st.do_step(system, vars, time, dt);
 
     time = time + dt;
@@ -622,14 +750,13 @@ std::array<DataVector, 3> integrate_fields_in_time(
   return vars;
 }
 
-void run(const size_t refinement_level, const size_t points_per_element,
-         const double amp, const double one_sided_jacobi_boundary,
-         const double outer_boundary_radius, const double time) {
+void run(const db::Access& box) {
   domain::creators::register_derived_with_charm();
   const std::vector<ElementId1d> element_ids =
-      compute_element_ids(two_to_the(refinement_level), refinement_level);
+      compute_element_ids(get<Tags::InnerRefinementLevel>(box),
+                          get<Tags::OuterRefinementLevel>(box));
   const size_t number_of_elements = element_ids.size();
-  const Mesh<1> mesh_of_one_element{points_per_element,
+  const Mesh<1> mesh_of_one_element{get<Tags::PointsPerElement>(box),
                                     Spectral::Basis::Legendre,
                                     Spectral::Quadrature::GaussLobatto};
 
@@ -715,11 +842,6 @@ void run(const size_t refinement_level, const size_t points_per_element,
   const Scalar<DataVector> det_jacobian = determinant(jacobian);
   const Scalar<DataVector> det_inv_jacobian = determinant(inv_jacobian);
 
-  const double width = 1.0;
-  const double p = 2;
-  const double q = 2;
-  const double center = 0.0;
-
   Scalar<DataVector> mass{mesh_of_one_element.number_of_grid_points() *
                           number_of_elements};
   Scalar<DataVector> buffer{mesh_of_one_element.number_of_grid_points() *
@@ -728,22 +850,25 @@ void run(const size_t refinement_level, const size_t points_per_element,
   Scalar<DataVector> metric_function_a{
       mesh_of_one_element.number_of_grid_points() * number_of_elements};
 
-  const auto radius = [&grid_coords, &one_sided_jacobi_boundary]()
-      -> tnsr::I<DataVector, 1, Frame::Inertial> {
-    DataVector rad = get<0>(grid_coords);
-    rad = sqrt((rad + 1.0) * 0.5) * one_sided_jacobi_boundary;
-    return tnsr::I<DataVector, 1, Frame::Inertial>{{rad}};
-  }();
+  const tnsr::I<DataVector, 1, Frame::Inertial> radius{
+      {sqrt((get<0>(grid_coords) + 1.0) * 0.5) *
+       get<Tags::OuterBoundaryRadius>(box)}};
+
+  const double amplitude = get<Tags::Amplitude>(box);
+  const double width = get<Tags::Width>(box);
+  const double p = get<Tags::ExponentP>(box);
+  const double q = get<Tags::ExponentQ>(box);
+  const double center = get<Tags::Center>(box);
 
   const Scalar<DataVector> psi{
-      amp * pow(get<0>(radius), 2 * q) *
+      amplitude * pow(get<0>(radius), 2 * q) *
       exp(-pow(get<0>(radius) - center, p) / pow(width, p))};
   const Scalar<DataVector> phi{
-      -amp * (pow(get<0>(radius), 2 * q - 1)) *
+      -amplitude * (pow(get<0>(radius), 2 * q - 1)) *
       (p * pow(get<0>(radius) - center, p) - 2 * q * pow(width, p)) *
       exp(-pow(get<0>(radius) - center, p) / pow(width, p)) / pow(width, p)};
   const Scalar<DataVector> phi_tilde{
-      -amp * 0.25 * (pow(get<0>(radius), 2 * q - 2)) *
+      -amplitude * 0.25 * (pow(get<0>(radius), 2 * q - 2)) *
       (p * pow(get<0>(radius) - center, p) - 2 * q * pow(width, p)) *
       exp(-pow(get<0>(radius) - center, p) / pow(width, p)) / pow(width, p)};
   const Scalar<DataVector> pi{-get<0>(radius) * get(phi)};
@@ -751,17 +876,11 @@ void run(const size_t refinement_level, const size_t points_per_element,
   Matrix matrix_buffer{mesh_of_one_element.number_of_grid_points(),
                        mesh_of_one_element.number_of_grid_points()};
 
-  const size_t spacetime_dim = 4;
-
-  bool found_black_hole = false;
-  const double gamma2 = 0.0;
-  [[maybe_unused]] const size_t last_point = get(mass).size() - 1;
-
-  const double alpha = 128.0;
-  const unsigned half_power = 64;  // to remove lower mode.
   const long unsigned int FilterIndex = 0;
   Filters::Exponential<FilterIndex> exponential_filter =
-      Filters::Exponential<FilterIndex>(alpha, half_power, true, std::nullopt);
+      Filters::Exponential<FilterIndex>(get<Tags::FilterAlpha>(box),
+                                        get<Tags::FilterHalfPower>(box), true,
+                                        std::nullopt);
   const Matrix& filter_matrix =
       exponential_filter.filter_matrix(mesh_of_one_element);
   const std::array<std::reference_wrapper<const Matrix>, 1> filter_matrices{
@@ -770,18 +889,19 @@ void run(const size_t refinement_level, const size_t points_per_element,
                               number_of_elements};
   compute_delta_integral_logical(&delta, &integrand_buffer, mesh_of_one_element,
                                  phi, pi, det_jacobian, radius,
-                                 one_sided_jacobi_boundary);
-  compute_mass_integral(&mass, &matrix_buffer, mesh_of_one_element, phi, pi,
-                        det_jacobian, radius, spacetime_dim,
-                        one_sided_jacobi_boundary);
+                                 get<Tags::OuterBoundaryRadius>(box));
+  compute_mass_integral(
+      &mass, &matrix_buffer, mesh_of_one_element, phi, pi, det_jacobian, radius,
+      get<Tags::SpacetimeDimensions>(box), get<Tags::OuterBoundaryRadius>(box));
   compute_metric_function_a_from_mass(&metric_function_a, mass, radius,
-                                      spacetime_dim);
+                                      get<Tags::SpacetimeDimensions>(box));
   get(delta) = 0.0;
   get(metric_function_a) = 1.0;
   compute_time_derivatives_first_order_2(
       &dt_psi, &dt_phi_tilde, &dt_pi, mesh_of_one_element, psi, phi_tilde, pi,
-      phi, metric_function_a, delta, gamma2, radius, det_inv_jacobian,
-      spacetime_dim, one_sided_jacobi_boundary, filter_matrices);
+      phi, metric_function_a, delta, get<Tags::Gamma2>(box), radius,
+      det_inv_jacobian, get<Tags::SpacetimeDimensions>(box),
+      get<Tags::OuterBoundaryRadius>(box), filter_matrices);
 
   std::ofstream out_file{"./Data/output.txt"};
   out_file << "# 0 radius\n# 1 psi\n# 2 phi\n# 3 phi_tilde\n# 4 pi\n# 5 delta\n"
@@ -800,12 +920,14 @@ void run(const size_t refinement_level, const size_t points_per_element,
   std::array<DataVector, 3> evaluated_vars = integrate_fields_in_time(
       &integrand_buffer, det_jacobian, &matrix_buffer, mesh_of_one_element,
       element_ids, psi, phi_tilde, pi, &mass, &delta, &metric_function_a,
-      gamma2, radius, det_inv_jacobian, spacetime_dim,
-      one_sided_jacobi_boundary, refinement_level, found_black_hole,
-      filter_matrices, time);
+      radius, det_inv_jacobian, box, filter_matrices);
 }
 
 int main(int argc, char** argv) {
+  Options::Parser<tmpl::remove<options_list, Options::Tags::InputSource>>
+      option_parser(
+          "Input file options for studying spherical gravitational collapse.");
+
   boost::program_options::options_description desc(wrap_text(
       "Spherical gravitational collapse using one-sided Legendre polynomials "
       "at r=0 to analytically regularize the evolution equations. The metric "
@@ -822,16 +944,7 @@ int main(int argc, char** argv) {
       79));
   desc.add_options()("help,h,", "show this help message")(
       "input-file", boost::program_options::value<std::string>()->required(),
-      "input file to use for evolution")(
-      "ref", boost::program_options::value<size_t>()->required(),
-      "Refinement level")("points",
-                          boost::program_options::value<size_t>()->required(),
-                          "Points per element")(
-      "amplitude", boost::program_options::value<double>()->required(),
-      "Initial Amplitude")("outer-boundary",
-                           boost::program_options::value<double>()->required(),
-                           "Radius of the outer boundary")(
-      "time", boost::program_options::value<double>()->required(), "Time T");
+      "input file to use for evolution");
 
   boost::program_options::variables_map vars;
 
@@ -841,15 +954,17 @@ int main(int argc, char** argv) {
           .run(),
       vars);
 
-  if (vars.count("help") != 0u or vars.count("input-file") == 0u or
-      vars.count("ref") == 0u or vars.count("points") == 0u or
-      vars.count("amplitude") == 0u or vars.count("outer-boundary") == 0u or
-      vars.count("time") == 0u) {
-    Parallel::printf("%s\n", desc);
-    return 0;
+  if (vars.count("help") != 0u or vars.count("input-file") == 0u) {
+    Parallel::printf("%s\n%s", desc, option_parser.help());
+    return 1;
   }
 
-  run(vars["ref"].as<size_t>(), vars["points"].as<size_t>(),
-      vars["amplitude"].as<double>(), vars["outer-boundary"].as<double>(),
-      vars["outer-boundary"].as<double>(), vars["time"].as<double>());
+  // Parse out options.
+  option_parser.parse_file(vars["input-file"].as<std::string>());
+  const auto options =
+      option_parser.template apply<options_list>([](auto... args) {
+        return db::create<options_list>(std::move(args)...);
+      });
+
+  run(options);
 }
