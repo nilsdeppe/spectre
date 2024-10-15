@@ -91,7 +91,7 @@ void compute_delta_integral_logical(
     const gsl::not_null<DataVector*> integrand_buffer,
     const Mesh<1>& mesh_of_one_element, const Scalar<DataVector>& phi,
     const Scalar<DataVector>& pi, const Scalar<DataVector>& det_jacobian,
-    const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
+    const tnsr::I<DataVector, 1, Frame::Inertial>& /*radius*/,
     const double one_sided_jacobi_boundary) {
   (*integrand_buffer) = -M_PI * (square(get(pi)) + square(get(phi))) *
                         get(det_jacobian) * square(one_sided_jacobi_boundary);
@@ -335,10 +335,10 @@ double compute_adaptive_step_size(
   return min_adapted_dt;
 }
 
-void write_data_hd5file(std::vector<ElementVolumeData>& volume_data,
+void write_data_hd5file(const std::vector<ElementVolumeData>& volume_data,
                         const observers::ObservationId& observation_id,
                         const double lower_r, const double upper_r,
-                        const size_t refinement_level, const size_t grd_pts) {
+                        const double time) {
   const std::string h5_file_name{"VolumeDataForFields"};
   const std::string input_source{""};
   const std::string subfile_path{"/ElementData"};
@@ -348,28 +348,28 @@ void write_data_hd5file(std::vector<ElementVolumeData>& volume_data,
   auto& volume_file =
       h5_file.try_insert<h5::VolumeData>(subfile_path, version_number);
 
+  // Just write an invalid domain for now.
   domain::creators::Interval interval{std::array{lower_r}, std::array{upper_r},
-                                      std::array{refinement_level},
-                                      std::array{grd_pts}};
+                                      std::array{0_st}, std::array{10_st}};
   Domain<1> domain = interval.create_domain();
   const auto serialized_domain = serialize(domain);
-  volume_file.write_volume_data(observation_id.hash(), observation_id.value(),
-                                std::move(volume_data), serialized_domain);
+  volume_file.write_volume_data(observation_id.hash(), time, volume_data,
+                                serialized_domain);
 }
 
-std::vector<ElementVolumeData> create_data_for_file(
+void create_data_for_file(
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
     const Mesh<1>& mesh_of_one_element,
     const std::vector<ElementId<1>>& element_ids,
-    const std::array<DataVector, 3> vars,
+    const std::array<DataVector, 3>& vars,
     const gsl::not_null<DataVector*> integrand_buffer,
     const gsl::not_null<Scalar<DataVector>*> mass,
     const gsl::not_null<Scalar<DataVector>*> delta,
     const gsl::not_null<Scalar<DataVector>*> metric_function_a,
     const double /*gamma2*/, const Scalar<DataVector>& det_jacobian,
     const gsl::not_null<Matrix*> matrix_buffer, const size_t spacetime_dim,
-    const double one_sided_jacobi_boundary, const size_t step_number) {
-  std::vector<ElementVolumeData> VolumeData;
+    const double one_sided_jacobi_boundary, const size_t step_number,
+    const double time) {
   const Scalar<DataVector> temp_phi{vars[1] * 4 * get<0>(radius)};
   const Scalar<DataVector> temp_pi{vars[2]};
   compute_delta_integral_logical(delta, integrand_buffer, mesh_of_one_element,
@@ -380,19 +380,24 @@ std::vector<ElementVolumeData> create_data_for_file(
                         one_sided_jacobi_boundary);
   compute_metric_function_a_from_mass(metric_function_a, *mass, radius,
                                       spacetime_dim);
-
+  std::stringstream data_to_write{};
+  data_to_write
+      << std::setprecision(18) << std::scientific << "# Time: " << time
+      << "\n# 0 radius\n# 1 psi\n# 2 phi\n# 3 phi_tilde\n# 4 pi\n# 5 delta\n"
+      << "# 6 mass\n# 7 A\n# 8 dt_psi\n# 9 dt_phi_tilde\n# 10 dt_pi\n";
+  for (size_t i = 0; i < get<0>(radius).size(); ++i) {
+    data_to_write << std::setprecision(18) << get<0>(radius)[i] << ' '
+                  << vars[0][i] << ' ' << get(temp_phi)[i] << ' ' << vars[1][i]
+                  << ' ' << get(temp_pi)[i] << ' ' << get(*delta)[i] << ' '
+                  << get(*mass)[i] << ' ' << get(*metric_function_a)[i] << "\n";
+  }
   std::ofstream out_file{"./Data/output" + std::to_string(step_number) +
                          ".txt"};
-  out_file << "# 0 radius\n# 1 psi\n# 2 phi\n# 3 phi_tilde\n# 4 pi\n# 5 delta\n"
-           << "# 6 mass\n# 7 A\n# 8 dt_psi\n# 9 dt_phi_tilde\n# 10 dt_pi\n";
-  for (size_t i = 0; i < get<0>(radius).size(); ++i) {
-    out_file << std::setprecision(18) << get<0>(radius)[i] << ' ' << vars[0][i]
-             << ' ' << get(temp_phi)[i] << ' ' << vars[1][i] << ' '
-             << get(temp_pi)[i] << ' ' << get(*delta)[i] << ' ' << get(*mass)[i]
-             << ' ' << get(*metric_function_a)[i] << "\n";
-  }
+  out_file << data_to_write.str();
   out_file.close();
+  return;
 
+  std::vector<ElementVolumeData> volume_data;
   for (size_t element_i = 0; element_i < element_ids.size(); ++element_i) {
     const ElementId<1>& element_id = element_ids[element_i];
     const size_t grid_i =
@@ -400,7 +405,7 @@ std::vector<ElementVolumeData> create_data_for_file(
     std::vector<TensorComponent> Data;
     const auto add_variable = [&Data](const std::string& name,
                                       const DataVector& variable) {
-      Data.push_back(TensorComponent(name, variable));
+      Data.emplace_back(name, variable);
     };
     const std::string in_name1{"Psi"};
     const std::string in_name2{"Phi"};
@@ -409,25 +414,25 @@ std::vector<ElementVolumeData> create_data_for_file(
     const std::string in_name5{"A"};
     const std::string in_name6{"Delta"};
     const DataVector Psi_per_element{
-        &const_cast<double&>(vars[0][grid_i]),
+        &const_cast<double&>(vars[0][grid_i]),  // NOLINT
         mesh_of_one_element.number_of_grid_points()};
     const DataVector Phi_per_element{
-        &const_cast<double&>(vars[1][grid_i]),
+        &const_cast<double&>(vars[1][grid_i]),  // NOLINT
         mesh_of_one_element.number_of_grid_points()};
     const DataVector Pi_per_element{
-        &const_cast<double&>(vars[2][grid_i]),
+        &const_cast<double&>(vars[2][grid_i]),  // NOLINT
         mesh_of_one_element.number_of_grid_points()};
     const DataVector Mass_per_element{
-        &const_cast<double&>(get(*mass)[grid_i]),
+        &const_cast<double&>(get(*mass)[grid_i]),  // NOLINT
         mesh_of_one_element.number_of_grid_points()};
     const DataVector A_per_element{
-        &const_cast<double&>(get(*metric_function_a)[grid_i]),
+        &const_cast<double&>(get(*metric_function_a)[grid_i]),  // NOLINT
         mesh_of_one_element.number_of_grid_points()};
     const DataVector Delta_per_element{
-        &const_cast<double&>(get(*delta)[grid_i]),
+        &const_cast<double&>(get(*delta)[grid_i]),  // NOLINT
         mesh_of_one_element.number_of_grid_points()};
     const DataVector radius_in_element{
-        &const_cast<double&>(get<0>(radius)[grid_i]),
+        &const_cast<double&>(get<0>(radius)[grid_i]),  // NOLINT
         mesh_of_one_element.number_of_grid_points()};
     add_variable("Radius", radius_in_element);
     add_variable(in_name1, Psi_per_element);
@@ -437,14 +442,21 @@ std::vector<ElementVolumeData> create_data_for_file(
     add_variable(in_name5, A_per_element);
     add_variable(in_name6, Delta_per_element);
 
-    VolumeData.emplace_back(element_id, Data, mesh_of_one_element);
+    volume_data.emplace_back(element_id, Data, mesh_of_one_element);
   }
-  return VolumeData;
+
+  const std::string tag{"ElementData"};
+  // Use the step_number since we can end up taking very small time steps as a
+  // BH forms.
+  write_data_hd5file(
+      volume_data,
+      observers::ObservationId{static_cast<double>(step_number), tag}, 0.0,
+      get<0>(radius)[get<0>(radius).size() - 1], time);
 }
 
 bool find_min_A(const gsl::not_null<Scalar<DataVector>*> metric_function_a,
                 const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
-                const double epsilon, double time) {
+                const double epsilon, const double /*time*/) {
   for (size_t index = 0; index < get(*metric_function_a).size(); index++) {
     if (abs(get(*metric_function_a)[index]) < epsilon) {
       std::cout << "A at min: " << get(*metric_function_a)[index] << "\n";
@@ -497,12 +509,17 @@ std::array<DataVector, 3> integrate_fields_in_time(
                    filter_evolved_vars](
                       const Vars& local_vars, Vars& local_dvars,
                       [[maybe_unused]] const double current_time) {
-      Scalar<DataVector> temp_psi{const_cast<DataVector&>(local_vars[0]).data(),
-                                  local_vars[0].size()};
+      (void)filter_evolved_vars;  // silence compiler warning
+
+      Scalar<DataVector> temp_psi{
+          const_cast<DataVector&>(local_vars[0]).data(),  // NOLINT
+          local_vars[0].size()};
       Scalar<DataVector> temp_phi_tilde{
-          const_cast<DataVector&>(local_vars[1]).data(), local_vars[1].size()};
-      Scalar<DataVector> temp_pi{const_cast<DataVector&>(local_vars[2]).data(),
-                                 local_vars[2].size()};
+          const_cast<DataVector&>(local_vars[1]).data(),  // NOLINT
+          local_vars[1].size()};
+      Scalar<DataVector> temp_pi{
+          const_cast<DataVector&>(local_vars[2]).data(),  // NOLINT
+          local_vars[2].size()};
 
       if (filter_evolved_vars) {
         DataVector no_filter{get(temp_psi)};
@@ -575,20 +592,12 @@ std::array<DataVector, 3> integrate_fields_in_time(
           find_min_A(metric_function_a, radius, epsilon, time);
     }
     if (step % observation_frequency == 0 or found_black_hole) {
-      std::string tag{"ElementData"};
-      const observers::ObservationId obs_id =
-          observers::ObservationId(time, tag);
-      std::vector<ElementVolumeData> VolumeData = create_data_for_file(
-          radius, mesh_of_one_element, element_ids, vars, integrand_buffer,
-          mass, delta, metric_function_a, gamma2, det_jacobian, matrix_buffer,
-          spacetime_dim, one_sided_jacobi_boundary, step);
-
+      create_data_for_file(radius, mesh_of_one_element, element_ids, vars,
+                           integrand_buffer, mass, delta, metric_function_a,
+                           gamma2, det_jacobian, matrix_buffer, spacetime_dim,
+                           one_sided_jacobi_boundary, step, time);
       std::cout << "time: " << time << " step: " << step << " dt: " << dt
                 << "\n";
-
-      write_data_hd5file(VolumeData, obs_id, 0.0, one_sided_jacobi_boundary,
-                         refinement_level,
-                         mesh_of_one_element.number_of_grid_points());
     }
     if (found_black_hole) {
       std::cout << "Found a black hole!!\n"
@@ -601,7 +610,7 @@ std::array<DataVector, 3> integrate_fields_in_time(
     st.do_step(system, vars, time, dt);
 
     time = time + dt;
-    step = step + 1;
+    ++step;
   }
   return vars;
 }
@@ -712,8 +721,7 @@ void run(const size_t refinement_level, const size_t points_per_element,
   Scalar<DataVector> metric_function_a{
       mesh_of_one_element.number_of_grid_points() * number_of_elements};
 
-  const auto radius = [&grid_coords, &mesh_of_one_element,
-                       &one_sided_jacobi_boundary]()
+  const auto radius = [&grid_coords, &one_sided_jacobi_boundary]()
       -> tnsr::I<DataVector, 1, Frame::Inertial> {
     DataVector rad = get<0>(grid_coords);
     rad = sqrt((rad + 1.0) * 0.5) * one_sided_jacobi_boundary;
