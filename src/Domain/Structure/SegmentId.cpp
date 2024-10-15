@@ -12,8 +12,6 @@
 
 SegmentId::SegmentId(const size_t refinement_level, const size_t index)
     : refinement_level_(refinement_level), index_(index) {
-  ASSERT(refinement_level < max_refinement_level,
-         "Refinement level out of bounds: " << refinement_level);
   ASSERT(index < two_to_the(refinement_level),
          "index = " << index << ", refinement_level = " << refinement_level);
 }
