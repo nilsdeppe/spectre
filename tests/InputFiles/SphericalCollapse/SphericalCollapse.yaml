@@ -1,0 +1,36 @@
+# Distributed under the MIT License.
+# See LICENSE.txt for details.
+
+Executable: SphericalCollapse
+Testing:
+  Check: parse;execute
+  Timeout: 8
+  Priority: High
+ExpectedOutput:
+
+---
+
+Amplitude: 0.3
+Width: 1.0
+ExponentP: 2.0
+ExponentQ: 2.0
+Center: 0.0
+
+Gamma2: 0.0
+SpacetimeDimensions: 4.0
+HorizonFinderTolerance: 0.01
+
+InnerRefinementLevel: 18
+OuterRefinementLevel: 8
+PointsPerElement: 4
+FilterAlpha: 64.0
+FilterHalfPower: 128
+OuterBoundaryRadius: 10.0
+FinalTime: 10.0
+CflFactor: 0.25
+
+VolumeDataDirectory: ./Data/
+VolumeDataOutputFrequency: 1000
+TimePrintFrequency: 100
+
+UseFlatSpace: True
