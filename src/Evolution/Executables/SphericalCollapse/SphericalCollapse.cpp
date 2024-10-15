@@ -736,7 +736,7 @@ std::array<DataVector, 3> integrate_fields_in_time(
                            volume_data_directory);
       if (black_hole_radius.has_value()) {
         std::cout << "Found black hole!!\nRadius: " << black_hole_radius.value()
-                  << "\nTime: " << time << "\n";
+                  << "\nTime: " << time << "\nStep: " << step << "\n";
         return vars;
       }
     }
