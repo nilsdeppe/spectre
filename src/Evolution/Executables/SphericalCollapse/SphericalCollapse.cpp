@@ -635,8 +635,8 @@ void run(const size_t refinement_level, const size_t points_per_element,
                                     domain::CoordinateMaps::Interval>>
       coordinate_maps{element_ids.size()};
 
-  const std::optional<double> singularity{-1.002499999999999};
-  // const std::optional<double> singularity{};
+  // const std::optional<double> singularity{-1.002499999999999};
+  const std::optional<double> singularity{};
   const domain::CoordinateMaps::Distribution distribution =
       singularity.has_value()
           ? domain::CoordinateMaps::Distribution::Logarithmic
