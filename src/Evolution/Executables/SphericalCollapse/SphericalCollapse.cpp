@@ -53,6 +53,16 @@
 
 extern "C" void CkRegisterMainModule(void) {}
 
+/*
+ * \brief A very simple ElementId so we are not limited by the refinement
+ * levels that are realistic for a 3d code. In 1d you can afford much higher
+ * refinement.
+ */
+struct ElementId1d {
+  size_t block_id;
+  SegmentId segment_id;
+};
+
 constexpr bool use_flat_space = false;
 
 Scalar<DataVector> differential_eq_for_A(
@@ -183,19 +193,18 @@ void compute_metric_function_a_from_mass(
  * we go self-similarly inwards. This means the outer index of each refinement
  * level is always `2^(outer_refinement_level - 1)`.
  */
-std::vector<ElementId<1>> compute_element_ids2(
+std::vector<ElementId1d> compute_element_ids(
     const size_t /*number_of_elements*/, const size_t /*refinement_level*/) {
-  const size_t inner_refinement_level = 11;
+  const size_t inner_refinement_level = 15;
   const size_t outer_refinement_level = 4;
-  std::vector<ElementId<1>> element_ids;
+  std::vector<ElementId1d> element_ids;
   const size_t block_id = 0;
   for (size_t j = inner_refinement_level; j >= outer_refinement_level; j--) {
     for (size_t element_index = (j == inner_refinement_level
                                      ? 0
                                      : two_to_the(outer_refinement_level - 1));
          element_index < two_to_the(outer_refinement_level); element_index++) {
-      ElementId element_id(block_id, std::array{SegmentId{j, element_index}});
-      element_ids.push_back(element_id);
+      element_ids.emplace_back(block_id, SegmentId{j, element_index});
     }
   }
   return element_ids;
@@ -360,7 +369,7 @@ void write_data_hd5file(const std::vector<ElementVolumeData>& volume_data,
 void create_data_for_file(
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
     const Mesh<1>& mesh_of_one_element,
-    const std::vector<ElementId<1>>& element_ids,
+    const std::vector<ElementId1d>& element_ids,
     const std::array<DataVector, 3>& vars,
     const gsl::not_null<DataVector*> integrand_buffer,
     const gsl::not_null<Scalar<DataVector>*> mass,
@@ -399,7 +408,9 @@ void create_data_for_file(
 
   std::vector<ElementVolumeData> volume_data;
   for (size_t element_i = 0; element_i < element_ids.size(); ++element_i) {
-    const ElementId<1>& element_id = element_ids[element_i];
+    const ElementId<1>& element_id{
+        element_ids[element_i].block_id,
+        std::array{element_ids[element_i].segment_id}};
     const size_t grid_i =
         element_i * mesh_of_one_element.number_of_grid_points();
     std::vector<TensorComponent> Data;
@@ -473,7 +484,7 @@ std::array<DataVector, 3> integrate_fields_in_time(
     const Scalar<DataVector>& det_jacobian,
     const gsl::not_null<Matrix*> matrix_buffer,
     const Mesh<1>& mesh_of_one_element,
-    const std::vector<ElementId<1>>& element_ids, const Scalar<DataVector>& psi,
+    const std::vector<ElementId1d>& element_ids, const Scalar<DataVector>& psi,
     const Scalar<DataVector>& phi_tilde, const Scalar<DataVector>& pi,
     const gsl::not_null<Scalar<DataVector>*> mass,
     const gsl::not_null<Scalar<DataVector>*> delta,
@@ -615,8 +626,8 @@ void run(const size_t refinement_level, const size_t points_per_element,
          const double amp, const double one_sided_jacobi_boundary,
          const double outer_boundary_radius, const double time) {
   domain::creators::register_derived_with_charm();
-  const std::vector<ElementId<1>> element_ids =
-      compute_element_ids2(two_to_the(refinement_level), refinement_level);
+  const std::vector<ElementId1d> element_ids =
+      compute_element_ids(two_to_the(refinement_level), refinement_level);
   const size_t number_of_elements = element_ids.size();
   const Mesh<1> mesh_of_one_element{points_per_element,
                                     Spectral::Basis::Legendre,
@@ -651,9 +662,9 @@ void run(const size_t refinement_level, const size_t points_per_element,
   for (size_t element_index = 0; element_index < number_of_elements;
        element_index += 1) {
     const double lower =
-        element_ids[element_index].segment_id(0).endpoint(Side::Lower);
+        element_ids[element_index].segment_id.endpoint(Side::Lower);
     const double upper =
-        element_ids[element_index].segment_id(0).endpoint(Side::Upper);
+        element_ids[element_index].segment_id.endpoint(Side::Upper);
     coordinate_maps[element_index] =
         domain::make_coordinate_map<Frame::ElementLogical, Frame::Grid>(
             domain::CoordinateMaps::Affine{-1.0, 1.0, lower, upper},
