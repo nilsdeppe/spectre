@@ -163,13 +163,19 @@ struct TimePrintFrequency : db::SimpleTag {
       "How many time steps to print the current time and time step to screen."};
 };
 
+struct UseFlatSpace : db::SimpleTag {
+  using type = bool;
+  static constexpr Options::String help = {
+      "Use a flat spacetime instead of a dynamic one."};
+};
+
 using options_list =
     tmpl::list<Amplitude, Width, ExponentP, ExponentQ, Center, Gamma2,
                SpacetimeDimensions, HorizonFinderTolerance,
                InnerRefinementLevel, OuterRefinementLevel, PointsPerElement,
                FilterAlpha, FilterHalfPower, OuterBoundaryRadius, FinalTime,
                CflFactor, VolumeDataDirectory, VolumeDataOutputFrequency,
-               TimePrintFrequency>;
+               TimePrintFrequency, UseFlatSpace>;
 }  // namespace Tags
 
 using options_list = Tags::options_list;
@@ -184,7 +190,7 @@ struct ElementId1d {
   SegmentId segment_id;
 };
 
-constexpr bool use_flat_space = false;
+static bool use_flat_space = false;
 
 Scalar<DataVector> differential_eq_for_A(
     const Scalar<DataVector>& phi, const Scalar<DataVector>& pi,
@@ -199,7 +205,7 @@ Scalar<DataVector> differential_eq_for_A(
         2 * M_PI * get<0>(radius)[i] * get(A)[i] *
             (square(get(pi)[i]) + square(get(phi)[i]));
 
-    if constexpr (use_flat_space) {
+    if (use_flat_space) {
       get(diff_eq)[i] = 0.0;
     }
   }
@@ -211,7 +217,7 @@ Scalar<DataVector> differential_eq_for_delta(
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius) {
   Scalar<DataVector> diff_eq{-4 * M_PI * get<0>(radius) *
                              (square(get(pi)) + square(get(phi)))};
-  if constexpr (use_flat_space) {
+  if (use_flat_space) {
     get(diff_eq) = 0.0;
   }
   return diff_eq;
@@ -241,7 +247,7 @@ void compute_delta_integral_logical(
     view += get(*delta)[grid_index - 1];
   }
 
-  if constexpr (use_flat_space) {
+  if (use_flat_space) {
     get(*delta) = 0.0;
   }
 }
@@ -280,7 +286,7 @@ void compute_mass_integral(
     lapack::general_matrix_linear_solve(make_not_null(&view), matrix_buffer);
   }
 
-  if constexpr (use_flat_space) {
+  if (use_flat_space) {
     get(*mass) = 0.0;
   }
 }
@@ -716,7 +722,7 @@ std::array<DataVector, 3> integrate_fields_in_time(
       local_dvars[2] = get(temp_dtpi);
     };
 
-    if constexpr (not use_flat_space) {
+    if (not use_flat_space) {
       black_hole_radius =
           find_min_A(metric_function_a, radius,
                      get<Tags::HorizonFinderTolerance>(box));
@@ -965,6 +971,8 @@ int main(int argc, char** argv) {
       option_parser.template apply<options_list>([](auto... args) {
         return db::create<options_list>(std::move(args)...);
       });
+
+  use_flat_space = get<Tags::UseFlatSpace>(options);
 
   run(options);
 }
