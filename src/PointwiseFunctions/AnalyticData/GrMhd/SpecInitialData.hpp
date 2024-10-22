@@ -5,6 +5,7 @@
 
 #include <Exporter.hpp>  // The SpEC Exporter
 #include <memory>
+#include <string>
 
 #include "DataStructures/CachedTempBuffer.hpp"
 #include "Evolution/NumericInitialData.hpp"
@@ -53,6 +54,10 @@ class SpecInitialData : public evolution::initial_data::InitialData,
  public:
   using equation_of_state_type =
       EquationsOfState::EquationOfState<true, ThermodynamicDim>;
+
+  static std::string name() {
+    return "SpecInitialData" + std::to_string(ThermodynamicDim) + "d";
+  }
 
   template <typename DataType>
   using tags = tmpl::append<
