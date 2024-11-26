@@ -28,7 +28,7 @@
 
 namespace gh {
 template <size_t Dim>
-void TimeDerivative<Dim>::apply(
+evolution::dg::TimeDerivativeDecisions<Dim> TimeDerivative<Dim>::apply(
     const gsl::not_null<tnsr::aa<DataVector, Dim>*> dt_spacetime_metric,
     const gsl::not_null<tnsr::aa<DataVector, Dim>*> dt_pi,
     const gsl::not_null<tnsr::iaa<DataVector, Dim>*> dt_phi,
@@ -404,6 +404,7 @@ void TimeDerivative<Dim>::apply(
       }
     }
   }
+  return {true};
 }
 }  // namespace gh
 
