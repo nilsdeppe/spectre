@@ -32,10 +32,12 @@ template <size_t ThermodynamicDim>
 SpecInitialData<ThermodynamicDim>::SpecInitialData(
     std::string data_directory,
     std::unique_ptr<equation_of_state_type> equation_of_state,
-    const double density_cutoff, const std::optional<double> electron_fraction)
+    const double density_cutoff, const double atmosphere_density,
+    const std::optional<double> electron_fraction)
     : data_directory_(std::move(data_directory)),
       equation_of_state_(std::move(equation_of_state)),
       density_cutoff_(density_cutoff),
+      atmosphere_density_(atmosphere_density),
       electron_fraction_(electron_fraction),
       spec_exporter_(std::make_unique<spec::Exporter>(
           sys::procs_on_node(sys::my_node()), data_directory_,
@@ -53,6 +55,7 @@ SpecInitialData<ThermodynamicDim>& SpecInitialData<ThermodynamicDim>::operator=(
   data_directory_ = rhs.data_directory_;
   equation_of_state_ = rhs.equation_of_state_->get_clone();
   density_cutoff_ = rhs.density_cutoff_;
+  atmosphere_density_ = rhs.atmosphere_density_;
   electron_fraction_ = rhs.electron_fraction_;
   spec_exporter_ =
       std::make_unique<spec::Exporter>(sys::procs_on_node(sys::my_node()),
@@ -76,6 +79,7 @@ void SpecInitialData<ThermodynamicDim>::pup(PUP::er& p) {
   p | data_directory_;
   p | equation_of_state_;
   p | density_cutoff_;
+  p | atmosphere_density_;
   p | electron_fraction_;
   if (p.isUnpacking()) {
     spec_exporter_ =
@@ -93,9 +97,18 @@ tuples::tagged_tuple_from_typelist<typename SpecInitialData<
     ThermodynamicDim>::template interpolated_tags<DataType>>
 SpecInitialData<ThermodynamicDim>::interpolate_from_spec(
     const tnsr::I<DataType, 3>& x) const {
-  return io::interpolate_from_spec<interpolated_tags<DataType>>(
-      make_not_null(spec_exporter_.get()), x,
-      static_cast<size_t>(sys::my_local_rank()));
+  auto interpolated_data =
+      io::interpolate_from_spec<interpolated_tags<DataType>>(
+          make_not_null(spec_exporter_.get()), x,
+          static_cast<size_t>(sys::my_local_rank()));
+  DataType& rest_mass_density =
+      get(get<hydro::Tags::RestMassDensity<DataType>>(interpolated_data));
+  for (size_t i = 0; i < get_size(rest_mass_density); ++i) {
+    if (get_element(rest_mass_density, i) < density_cutoff_) {
+      get_element(rest_mass_density, i) = atmosphere_density_;
+    }
+  }
+  return interpolated_data;
 }
 
 template <size_t ThermodynamicDim>
