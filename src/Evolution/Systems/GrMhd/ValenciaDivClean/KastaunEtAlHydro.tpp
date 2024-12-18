@@ -39,9 +39,8 @@ class FunctionOfZ {
               const double electron_fraction, const EosType& equation_of_state,
               const double lorentz_max)
       : q_(tau / rest_mass_density_times_lorentz_factor),
-        r_squared_(momentum_density_squared /
-                   square(rest_mass_density_times_lorentz_factor)),
-        r_(std::sqrt(r_squared_)),
+        r_(std::sqrt(momentum_density_squared /
+                     square(rest_mass_density_times_lorentz_factor))),
         rest_mass_density_times_lorentz_factor_(
             rest_mass_density_times_lorentz_factor),
         electron_fraction_(electron_fraction),
@@ -75,17 +74,16 @@ class FunctionOfZ {
     }
   }
 
-  std::pair<double, double> root_bracket();
+  std::pair<double, double> root_bracket() const;
 
   Primitives primitives(double z) const;
 
   double operator()(double z) const;
 
-  bool has_no_root() { return state_is_unphysical_; };
+  bool has_no_root() const { return state_is_unphysical_; }
 
  private:
   double q_;
-  double r_squared_;
   double r_;
   bool state_is_unphysical_ = false;
   const double rest_mass_density_times_lorentz_factor_;
@@ -95,8 +93,8 @@ class FunctionOfZ {
 
 template <typename EosType, bool EnforcePhysicality>
 std::pair<double, double>
-FunctionOfZ<EosType, EnforcePhysicality>::root_bracket() {
-  auto k = r_ / (q_ + 1.);
+FunctionOfZ<EosType, EnforcePhysicality>::root_bracket() const {
+  const auto k = r_ / (q_ + 1.);
 
   const double rho_min = equation_of_state_.rest_mass_density_lower_bound();
 
@@ -108,17 +106,17 @@ FunctionOfZ<EosType, EnforcePhysicality>::root_bracket() {
   }
 
   // Compute bounds (C23)
-  double lower_bound = 0.5 * k / std::sqrt(std::abs(1. - 0.25 * k * k));
+  const double lower_bound = 0.5 * k / std::sqrt(std::abs(1. - 0.25 * k * k));
   // Ensure that upper_bound does not become degenerate when k ~ 0
   // Empirically, an offset of 1.e-8 has worked well.
-  double upper_bound = 1.e-8 + k / std::sqrt(std::abs(1. - k * k));
+  const double upper_bound = 1.e-8 + k / std::sqrt(std::abs(1. - k * k));
 
   return {lower_bound, upper_bound};
 }
 
 template <typename EosType, bool EnforcePhysicality>
 Primitives FunctionOfZ<EosType, EnforcePhysicality>::primitives(
-    double z) const {
+    const double z) const {
   // Compute Lorentz factor, note that z = lorentz * v
   const double w_hat = std::sqrt(1. + z * z);
 
@@ -158,20 +156,21 @@ Primitives FunctionOfZ<EosType, EnforcePhysicality>::primitives(
     // 1d-EOS. Instead, we recover the primitives and then reset the
     // specific internal energy and specific enthalpy using the EOS.
     p_hat =
-        get(equation_of_state_.pressure_from_density(Scalar<double>(rho_hat)));
+        get(equation_of_state_.pressure_from_density(Scalar<double>{rho_hat}));
   } else if constexpr (EosType::thermodynamic_dim == 2) {
     p_hat = get(equation_of_state_.pressure_from_density_and_energy(
-        Scalar<double>(rho_hat), Scalar<double>(epsilon_hat)));
+        Scalar<double>{rho_hat}, Scalar<double>{epsilon_hat}));
   } else if constexpr (EosType::thermodynamic_dim == 3) {
     p_hat = get(equation_of_state_.pressure_from_density_and_energy(
-        Scalar<double>(rho_hat), Scalar<double>(epsilon_hat),
-        Scalar<double>(electron_fraction_)));
+        Scalar<double>{rho_hat}, Scalar<double>{epsilon_hat},
+        Scalar<double>{electron_fraction_}));
   }
   return Primitives{rho_hat, w_hat, p_hat, epsilon_hat};
 }
 
 template <typename EosType, bool EnforcePhysicality>
-double FunctionOfZ<EosType, EnforcePhysicality>::operator()(double z) const {
+double FunctionOfZ<EosType, EnforcePhysicality>::operator()(
+    const double z) const {
   const auto [rho_hat, w_hat, p_hat, epsilon_hat] = primitives(z);
   // Equation (C5)
   const double a_hat = p_hat / (rho_hat * (1.0 + epsilon_hat));
@@ -193,7 +192,7 @@ std::optional<PrimitiveRecoveryData> KastaunEtAlHydro::apply(
     const grmhd::ValenciaDivClean::PrimitiveFromConservativeOptions&
         primitive_from_conservative_options) {
   // Master function see Equation (44)
-  auto f_of_z =
+  const auto f_of_z =
       KastaunEtAlHydro_detail::FunctionOfZ<EosType, EnforcePhysicality>{
           tau,
           momentum_density_squared,
@@ -233,7 +232,7 @@ std::optional<PrimitiveRecoveryData> KastaunEtAlHydro::apply(
       pressure,
       specific_internal_energy,
       (rest_mass_density * (1. + specific_internal_energy) + pressure) *
-          (1. + z * z),
+          square(lorentz_factor),
       electron_fraction};
 }
 }  // namespace grmhd::ValenciaDivClean::PrimitiveRecoverySchemes
