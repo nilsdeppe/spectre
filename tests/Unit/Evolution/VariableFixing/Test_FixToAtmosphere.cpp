@@ -142,9 +142,10 @@ void test_variable_fixer(
 
 template <size_t Dim>
 void test_variable_fixer() {
+  using Vlo = VariableFixing::FixToAtmosphere<Dim>::VelocityLimitingOptions;
   // Test for representative 1-d equation of state
-  VariableFixing::FixToAtmosphere<Dim> variable_fixer{1.e-12, 3.e-12, 1.e-11,
-                                                      1.e-4};
+  VariableFixing::FixToAtmosphere<Dim> variable_fixer{
+      1.e-12, 3.e-12, Vlo{0.0, 1.e-4, 3.e-12, 1.e-11}};
   EquationsOfState::PolytropicFluid<true> polytrope{1.0, 2.0};
   test_variable_fixer<Dim>(variable_fixer, polytrope);
   test_serialization(variable_fixer);
@@ -153,8 +154,11 @@ void test_variable_fixer() {
       TestHelpers::test_creation<VariableFixing::FixToAtmosphere<Dim>>(
           "DensityOfAtmosphere: 1.0e-12\n"
           "DensityCutoff: 3.0e-12\n"
-          "TransitionDensityCutoff: 1.0e-11\n"
-          "MaxVelocityMagnitude: 1.0e-4\n");
+          "VelocityLimiting:\n"
+          "  AtmosphereMaxVelocity: 0\n"
+          "  NearAtmosphereMaxVelocity: 1.0e-4\n"
+          "  AtmosphereDensityCutoff: 3.0e-12\n"
+          "  TransitionDensityBound: 1.0e-11\n");
   test_variable_fixer(fixer_from_options, polytrope);
 
   // Test for representative 2-d equation of state

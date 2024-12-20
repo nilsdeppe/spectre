@@ -5,8 +5,10 @@
 
 #include <cstddef>
 #include <limits>
+#include <optional>
 
 #include "DataStructures/Tensor/TypeAliases.hpp"
+#include "Options/Auto.hpp"
 #include "Options/Context.hpp"
 #include "Options/String.hpp"
 #include "PointwiseFunctions/GeneralRelativity/Tags.hpp"
@@ -35,23 +37,7 @@ namespace VariableFixing {
  * (DensityOfAtmosphere), and the pressure, and specific internal energy (for
  * one-dimensional equations of state) are adjusted to satisfy the equation of
  * state.  For a two-dimensional equation of state, the specific internal energy
- * is set to zero. In addition, the spatial velocity is set to zero, and the
- * Lorentz factor is set to one.
- *
- * If the rest mass density is above \f$\rho_{\textrm{cutoff}}\f$ but below
- * \f$\rho_{\textrm{transition}}\f$ (TransitionDensityCutoff) then the velocity
- * is rescaled such that
- *
- * \f{align*}{
- * \sqrt{v^i v_i}\le \frac{(\rho-\rho_{\textrm{cutoff}})}
- * {(\rho_{\textrm{transition}} - \rho_{\textrm{cutoff}})} v_{\max}
- * \f}
- *
- * where \f$v_{\max}\f$ (MaxVelocityMagnitude) is the maximum allowed magnitude
- * of the velocity. This prescription follows Appendix 2.d of
- * \cite Muhlberger2014pja Note that we require
- * \f$\rho_{\textrm{transition}}\in(\rho_{\textrm{cutoff}},
- *  10\rho_{\textrm{atm}}]\f$
+ * is set to zero.
  */
 template <size_t Dim>
 class FixToAtmosphere {
@@ -70,34 +56,92 @@ class FixToAtmosphere {
     static constexpr Options::String help = {
         "Density to impose atmosphere at. Must be >= rho_atm"};
   };
-  /// \brief For densities between DensityOfAtmosphere and
-  /// TransitionDensityCutoff the velocity is transitioned away from atmosphere
-  /// to avoid abrupt cutoffs.
-  ///
-  /// This value must not be larger than `10 * DensityOfAtmosphere`.
-  struct TransitionDensityCutoff {
-    using type = double;
-    static type lower_bound() { return 0.0; }
+
+  /*!
+   * \brief Limit the velocity in and near the atmosphere.
+   *
+   * Let $v_{\max}$ be the maximum magnitude of the
+   * velocity \textit{near} the atmosphere, which we typically set to $10^{-4}$.
+   * We let $v_{\mathrm{atm}}$ be the maximum magnitude of the velocity
+   * \textit{in} the atmosphere, which we typically set to $0$. We then define
+   * the maximum magnitude of the spatial velocity to be
+   *
+   * \f{align*}{
+   *   \tilde{v}
+   *   &=\begin{cases}
+   *     v_{\mathrm{atm}}, & \mathrm{if}\; \rho < \rho_{v^-} \   \
+   *     v_{\mathrm{atm}} + \left(v_{\max} - v_{\mathrm{atm}}\right)
+   *     \frac{\rho - \rho_{v^-}}{\rho_{v^+} - \rho_{v^-}},
+   *                       & \mathrm{if}\;\rho_{v^-} \le \rho < \rho_{v^+}
+   *   \end{cases}
+   * \f}
+   *
+   * We then rescale the velocity by
+   *
+   * \f{align*}{
+   *   v^i\to v^i\frac{\tilde{v}}{\sqrt{v^i\gamma_{ij}v^j}}.
+   * \f}
+   */
+  struct VelocityLimitingOptions {
+    struct AtmosphereMaxVelocity {
+      using type = double;
+      static constexpr Options::String help = {
+          "The maximum velocity magnitude IN the atmosphere. Typically set to "
+          "0."};
+    };
+
+    struct NearAtmosphereMaxVelocity {
+      using type = double;
+      static constexpr Options::String help = {
+          "The maximum velocity magnitude NEAR the atmosphere. Typically set "
+          "to 1e-4."};
+    };
+
+    struct AtmosphereDensityCutoff {
+      using type = double;
+      static constexpr Options::String help = {
+          "The rest mass density cutoff below which the velocity magnitude is "
+          "limited to AtmosphereMaxVelocity. Typically set to "
+          "(10 or 20)*DensityOfAtmosphere."};
+    };
+
+    struct TransitionDensityBound {
+      using type = double;
+      static constexpr Options::String help = {
+          "The rest mass density above which no velocity limiting is done. "
+          "Between "
+          "this value and AtmosphereDensityCutoff a linear transition in the "
+          "maximum magnitude of the velocity between AtmosphereMaxVelocity and "
+          "NearAtmosphereMaxVelocity is done. Typically set to "
+          "10*AtmosphereDensityCutoff."};
+    };
+    using options = tmpl::list<AtmosphereMaxVelocity, NearAtmosphereMaxVelocity,
+                               AtmosphereDensityCutoff, TransitionDensityBound>;
     static constexpr Options::String help = {
-        "For densities between DensityOfAtmosphere and TransitionDensityCutoff "
-        "the velocity is transitioned away from atmosphere to avoid abrupt "
-        "cutoffs.\n\n"
-        "This value must not be larger than 10 * DensityOfAtmosphere."};
+        "Limit the velocity in and near the atmosphere."};
+
+    // NOLINTNEXTLINE(google-runtime-references)
+    void pup(PUP::er& p);
+
+    bool operator==(const VelocityLimitingOptions& rhs) const;
+    bool operator!=(const VelocityLimitingOptions& rhs) const;
+
+    double atmosphere_max_velocity{
+        std::numeric_limits<double>::signaling_NaN()};
+    double near_atmosphere_max_velocity{
+        std::numeric_limits<double>::signaling_NaN()};
+    double atmosphere_density_cutoff{
+        std::numeric_limits<double>::signaling_NaN()};
+    double transition_density_bound{
+        std::numeric_limits<double>::signaling_NaN()};
   };
-  /// \brief The maximum magnitude of the velocity when the density is below
-  /// `TransitionDensityCutoff`
-  struct MaxVelocityMagnitude {
-    using type = double;
-    static type lower_bound() { return 0.0; }
-    static type upper_bound() { return 1.0; }
-    static constexpr Options::String help = {
-        "The maximum sqrt(v^i v^j gamma_{ij}) allowed when the density is "
-        "below TransitionDensityCutoff."};
+  struct VelocityLimiting {
+    using type = Options::Auto<VelocityLimitingOptions>;
+    static constexpr Options::String help = VelocityLimitingOptions::help;
   };
 
   using options =
-      tmpl::list<DensityOfAtmosphere, DensityCutoff, TransitionDensityCutoff,
-                 MaxVelocityMagnitude>;
+      tmpl::list<DensityOfAtmosphere, DensityCutoff, VelocityLimiting>;
   static constexpr Options::String help = {
       "If the rest mass density is below DensityCutoff, it is set\n"
       "to DensityOfAtmosphere, and the pressure, and specific internal energy\n"
@@ -108,8 +152,7 @@ class FixToAtmosphere {
       "factor is set to one.\n"};
 
   FixToAtmosphere(double density_of_atmosphere, double density_cutoff,
-                  double transition_density_cutoff,
-                  double max_velocity_magnitude,
+                  std::optional<VelocityLimitingOptions> velocity_limiting,
                   const Options::Context& context = {});
 
   FixToAtmosphere() = default;
@@ -160,7 +203,7 @@ class FixToAtmosphere {
           equation_of_state,
       size_t grid_index) const;
 
-  void set_to_magnetic_free_transition(
+  void apply_velocity_limit(
       gsl::not_null<tnsr::I<DataVector, Dim, Frame::Inertial>*>
           spatial_velocity,
       gsl::not_null<Scalar<DataVector>*> lorentz_factor,
@@ -175,9 +218,7 @@ class FixToAtmosphere {
 
   double density_of_atmosphere_{std::numeric_limits<double>::signaling_NaN()};
   double density_cutoff_{std::numeric_limits<double>::signaling_NaN()};
-  double transition_density_cutoff_{
-      std::numeric_limits<double>::signaling_NaN()};
-  double max_velocity_magnitude_{std::numeric_limits<double>::signaling_NaN()};
+  std::optional<VelocityLimitingOptions> velocity_limiting_{std::nullopt};
 };
 
 template <size_t Dim>

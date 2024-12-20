@@ -4,24 +4,25 @@
 #include "Evolution/VariableFixing/FixToAtmosphere.hpp"
 
 #include <limits>
+#include <optional>
 #include <pup.h>
 
 #include "DataStructures/DataVector.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Options/ParseError.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
+#include "Utilities/Serialization/PupStlCpp17.hpp"
 
 namespace VariableFixing {
 
 template <size_t Dim>
 FixToAtmosphere<Dim>::FixToAtmosphere(
     const double density_of_atmosphere, const double density_cutoff,
-    const double transition_density_cutoff, const double max_velocity_magnitude,
+    const std::optional<VelocityLimitingOptions> velocity_limiting,
     const Options::Context& context)
     : density_of_atmosphere_(density_of_atmosphere),
       density_cutoff_(density_cutoff),
-      transition_density_cutoff_(transition_density_cutoff),
-      max_velocity_magnitude_(max_velocity_magnitude) {
+      velocity_limiting_(velocity_limiting) {
   if (density_of_atmosphere_ > density_cutoff_) {
     PARSE_ERROR(context, "The cutoff density ("
                              << density_cutoff_
@@ -29,18 +30,55 @@ FixToAtmosphere<Dim>::FixToAtmosphere(
                                 "density value in the atmosphere ("
                              << density_of_atmosphere_ << ')');
   }
-  if (transition_density_cutoff_ < density_of_atmosphere_ or
-      transition_density_cutoff_ > 10.0 * density_of_atmosphere_) {
-    PARSE_ERROR(context, "The transition density must be in ["
-                             << density_of_atmosphere_ << ", "
-                             << 10 * density_of_atmosphere_ << "], but is "
-                             << transition_density_cutoff_);
-  }
-  if (transition_density_cutoff_ <= density_cutoff_) {
-    PARSE_ERROR(context, "The transition density cutoff ("
-                             << transition_density_cutoff_
-                             << ") must be bigger than the density cutoff ("
-                             << density_cutoff_ << ")");
+
+  if (velocity_limiting_.has_value()) {
+    if (velocity_limiting_->atmosphere_max_velocity < 0.0) {
+      PARSE_ERROR(context,
+                  "The AtmosphereMaxVelocity must be non-negative but is "
+                      << velocity_limiting_->atmosphere_max_velocity);
+    }
+    if (velocity_limiting_->near_atmosphere_max_velocity < 0.0) {
+      PARSE_ERROR(context,
+                  "The NearAtmosphereMaxVelocity must be non-negative but is "
+                      << velocity_limiting_->near_atmosphere_max_velocity);
+    }
+    if (velocity_limiting_->atmosphere_max_velocity >
+        velocity_limiting_->near_atmosphere_max_velocity) {
+      PARSE_ERROR(context,
+                  "The AtmosphereMaxVelocity ("
+                      << velocity_limiting_->atmosphere_max_velocity
+                      << ") must be smaller NearAtmosphereMaxVelocity ("
+                      << velocity_limiting_->near_atmosphere_max_velocity
+                      << ").");
+    }
+    if (velocity_limiting_->atmosphere_density_cutoff < 0.0) {
+      PARSE_ERROR(context,
+                  "The AtmosphereDensityCutoff must be non-negative but is "
+                      << velocity_limiting_->atmosphere_density_cutoff);
+    }
+    if (velocity_limiting_->transition_density_bound < 0.0) {
+      PARSE_ERROR(context,
+                  "The TransitionDensityBound must be non-negative but is "
+                      << velocity_limiting_->transition_density_bound);
+    }
+    if (velocity_limiting_->atmosphere_density_cutoff <
+        density_of_atmosphere_) {
+      PARSE_ERROR(
+          context,
+          "The AtmosphereDensityCutoff ("
+              << velocity_limiting_->atmosphere_density_cutoff
+              << ") must be greater than or equal to the DensityOfAtmosphere ("
+              << density_of_atmosphere_ << ").");
+    }
+    if (velocity_limiting_->transition_density_bound <
+        velocity_limiting_->atmosphere_density_cutoff) {
+      PARSE_ERROR(context, "The TransitionDensityBound ("
+                               << velocity_limiting_->transition_density_bound
+                               << ") must be greater than or equal to the "
+                                  "AtmosphereDensityCutoff ("
+                               << velocity_limiting_->atmosphere_density_cutoff
+                               << ").");
+    }
   }
 }
 
@@ -49,8 +87,7 @@ template <size_t Dim>
 void FixToAtmosphere<Dim>::pup(PUP::er& p) {
   p | density_of_atmosphere_;
   p | density_cutoff_;
-  p | transition_density_cutoff_;
-  p | max_velocity_magnitude_;
+  p | velocity_limiting_;
 }
 
 template <size_t Dim>
@@ -72,14 +109,10 @@ void FixToAtmosphere<Dim>::operator()(
       set_density_to_atmosphere(rest_mass_density, specific_internal_energy,
                                 temperature, pressure, electron_fraction,
                                 equation_of_state, i);
-      for (size_t d = 0; d < Dim; ++d) {
-        spatial_velocity->get(d)[i] = 0.0;
-      }
-      get(*lorentz_factor)[i] = 1.0;
-    } else if (UNLIKELY(rest_mass_density->get()[i] <
-                        transition_density_cutoff_)) {
-      set_to_magnetic_free_transition(spatial_velocity, lorentz_factor,
-                                      *rest_mass_density, spatial_metric, i);
+    }
+    if (velocity_limiting_.has_value()) {
+      apply_velocity_limit(spatial_velocity, lorentz_factor, *rest_mass_density,
+                           spatial_metric, i);
     }
 
     // For 2D & 3D EoS, we also need to limit the temperature / energy
@@ -179,13 +212,30 @@ void FixToAtmosphere<Dim>::set_density_to_atmosphere(
 }
 
 template <size_t Dim>
-void FixToAtmosphere<Dim>::set_to_magnetic_free_transition(
+void FixToAtmosphere<Dim>::apply_velocity_limit(
     const gsl::not_null<tnsr::I<DataVector, Dim, Frame::Inertial>*>
         spatial_velocity,
     const gsl::not_null<Scalar<DataVector>*> lorentz_factor,
     const Scalar<DataVector>& rest_mass_density,
     const tnsr::ii<DataVector, Dim, Frame::Inertial>& spatial_metric,
     const size_t grid_index) const {
+  if (get(rest_mass_density)[grid_index] >
+      velocity_limiting_->transition_density_bound) {
+    return;
+  }
+
+  if (get(rest_mass_density)[grid_index] <
+      velocity_limiting_->atmosphere_density_cutoff) {
+    for (size_t i = 0; i < Dim; ++i) {
+      spatial_velocity->get(i)[grid_index] =
+          velocity_limiting_->atmosphere_max_velocity;
+    }
+    if (LIKELY(velocity_limiting_->atmosphere_max_velocity == 0.0)) {
+      get(*lorentz_factor)[grid_index] = 1.0;
+      return;
+    }
+  }
+
   double magnitude_of_velocity = 0.0;
   for (size_t j = 0; j < Dim; ++j) {
     magnitude_of_velocity += spatial_velocity->get(j)[grid_index] *
@@ -197,15 +247,24 @@ void FixToAtmosphere<Dim>::set_to_magnetic_free_transition(
                                spatial_metric.get(j, k)[grid_index];
     }
   }
+  if (UNLIKELY(get(rest_mass_density)[grid_index] <
+               velocity_limiting_->atmosphere_density_cutoff)) {
+    // Note: magnitude_of_velocity is squared still.
+    get(*lorentz_factor)[grid_index] = 1.0 / sqrt(1.0 - magnitude_of_velocity);
+    return;
+  }
   magnitude_of_velocity = sqrt(magnitude_of_velocity);
-  const double scale_factor =
-      (get(rest_mass_density)[grid_index] - density_cutoff_) /
-      (transition_density_cutoff_ - density_cutoff_);
-  if (const double max_mag_of_velocity = scale_factor * max_velocity_magnitude_;
+  const double scale_factor = (get(rest_mass_density)[grid_index] -
+                               velocity_limiting_->atmosphere_density_cutoff) /
+                              (velocity_limiting_->transition_density_bound -
+                               velocity_limiting_->atmosphere_density_cutoff);
+  if (const double max_mag_of_velocity =
+          scale_factor * velocity_limiting_->near_atmosphere_max_velocity;
       magnitude_of_velocity > max_mag_of_velocity) {
+    const double one_over_max_mag_of_velocity = 1.0 / magnitude_of_velocity;
     for (size_t j = 0; j < Dim; ++j) {
       spatial_velocity->get(j)[grid_index] *=
-          max_mag_of_velocity / magnitude_of_velocity;
+          max_mag_of_velocity * one_over_max_mag_of_velocity;
     }
     get(*lorentz_factor)[grid_index] =
         1.0 / sqrt(1.0 - max_mag_of_velocity * max_mag_of_velocity);
@@ -217,14 +276,36 @@ bool operator==(const FixToAtmosphere<Dim>& lhs,
                 const FixToAtmosphere<Dim>& rhs) {
   return lhs.density_of_atmosphere_ == rhs.density_of_atmosphere_ and
          lhs.density_cutoff_ == rhs.density_cutoff_ and
-         lhs.transition_density_cutoff_ == rhs.transition_density_cutoff_ and
-         lhs.max_velocity_magnitude_ == rhs.max_velocity_magnitude_;
+         lhs.velocity_limiting_ == rhs.velocity_limiting_;
 }
 
 template <size_t Dim>
 bool operator!=(const FixToAtmosphere<Dim>& lhs,
                 const FixToAtmosphere<Dim>& rhs) {
   return not(lhs == rhs);
+}
+
+template <size_t Dim>
+void FixToAtmosphere<Dim>::VelocityLimitingOptions::pup(PUP::er& p) {
+  p | atmosphere_max_velocity;
+  p | near_atmosphere_max_velocity;
+  p | atmosphere_density_cutoff;
+  p | transition_density_bound;
+}
+
+template <size_t Dim>
+bool FixToAtmosphere<Dim>::VelocityLimitingOptions::operator==(
+    const VelocityLimitingOptions& rhs) const {
+  return atmosphere_max_velocity == rhs.atmosphere_max_velocity and
+         near_atmosphere_max_velocity == rhs.near_atmosphere_max_velocity and
+         atmosphere_density_cutoff == rhs.atmosphere_density_cutoff and
+         transition_density_bound == rhs.transition_density_bound;
+}
+
+template <size_t Dim>
+bool FixToAtmosphere<Dim>::VelocityLimitingOptions::operator!=(
+    const VelocityLimitingOptions& rhs) const {
+  return not(*this == rhs);
 }
 
 #define DIM(data) BOOST_PP_TUPLE_ELEM(0, data)
