@@ -140,8 +140,91 @@ class FixToAtmosphere {
     static constexpr Options::String help = VelocityLimitingOptions::help;
   };
 
-  using options =
-      tmpl::list<DensityOfAtmosphere, DensityCutoff, VelocityLimiting>;
+  /*!
+   * \brief Options for limiting the temperature in the atmosphere by
+   * effectively limiting the polytropic constant, with a generalization for
+   * finite temperature equations of state.
+   *
+   *
+   */
+  struct KappaLimitingOptions {
+    struct DensityLowerBound {
+      using type = double;
+      static type lower_bound() { return 0.0; }
+      static constexpr Options::String help = {
+          "Below this value we set T=T_min if |T-T_min|<EplisonKappaMinus "
+          "|T|. Typically set to about a factor of 20 larger than the "
+          "atmosphere density."};
+    };
+    struct EplisonKappaMinus {
+      using type = double;
+      static constexpr Options::String help = {
+          "Used to limit the temperature in conjunction with "
+          "DensityLowerBound. See that text for the formula. Typically set "
+          "to 1.0e-3."};
+    };
+    struct DensityUpperBound {
+      using type = double;
+      static type lower_bound() { return 0.0; }
+      static constexpr Options::String help = {
+          "The density below which we limit the by limiting the pressure (at "
+          "fixed rho, Y_e) to 'p(T)<p_min kappa_max'. Typically set a factor "
+          "of 10 larger than DensityLowerBound."};
+    };
+    struct EpsilonKappaMax {
+      using type = double;
+      static constexpr Options::String help = {
+          "The epsilon factor in the KappaMax computation multiplying the "
+          "transition factor. Typically set to 0.01."};
+    };
+    struct EpsilonKappaPlusMinus {
+      using type = double;
+      static type lower_bound() { return 1.0; }
+      static constexpr Options::String help = {
+          "When `DensityUpperBound>EpsilonKappaPlusMinus DensityLowerBound` "
+          "then KappaMax is computed using a linear transition of the "
+          "density. Typically set to 1.1."};
+    };
+    struct LimitAboveDensityUpperBound {
+      using type = bool;
+      static constexpr Options::String help = {
+          "If true then we limit the temperature using the KappaMax procedure "
+          "at all densities above DensityUpperBound, but with "
+          "`KappaMax=1+EplisonKappaMax`. Typically set to False."};
+    };
+    using options =
+        tmpl::list<DensityLowerBound, EplisonKappaMinus, DensityUpperBound,
+                   EpsilonKappaMax, EpsilonKappaPlusMinus,
+                   LimitAboveDensityUpperBound>;
+    static constexpr Options::String help = {
+        "If set then we apply a limiting precodure on the temperature near the "
+        "atmosphere based on essentially limiting the polytropic constant in a "
+        "Gamma-law equation of state."};
+
+    // NOLINTNEXTLINE(google-runtime-references)
+    void pup(PUP::er& p);
+
+    bool operator==(const KappaLimitingOptions& rhs) const;
+    bool operator!=(const KappaLimitingOptions& rhs) const;
+
+    double density_lower_bound{std::numeric_limits<double>::signaling_NaN()};
+    double eplison_kappa_minus{std::numeric_limits<double>::signaling_NaN()};
+    double density_upper_bound{std::numeric_limits<double>::signaling_NaN()};
+    double epsilon_kappa_max{std::numeric_limits<double>::signaling_NaN()};
+    double epsilon_kappa_plus_minus{
+        std::numeric_limits<double>::signaling_NaN()};
+    bool limit_above_density_upper_bound{false};
+  };
+  /// \brief If set then we apply a limiting precodure on the temperature near
+  /// the atmosphere based on essentially limiting the polytropic constant in a
+  /// Gamma-law equation of state.
+  struct KappaLimiting {
+    using type = Options::Auto<KappaLimitingOptions>;
+    static constexpr Options::String help = KappaLimitingOptions::help;
+  };
+
+  using options = tmpl::list<DensityOfAtmosphere, DensityCutoff,
+                             VelocityLimiting, KappaLimiting>;
   static constexpr Options::String help = {
       "If the rest mass density is below DensityCutoff, it is set\n"
       "to DensityOfAtmosphere, and the pressure, and specific internal energy\n"
@@ -153,6 +236,7 @@ class FixToAtmosphere {
 
   FixToAtmosphere(double density_of_atmosphere, double density_cutoff,
                   std::optional<VelocityLimitingOptions> velocity_limiting,
+                  std::optional<KappaLimitingOptions> kappa_limiting,
                   const Options::Context& context = {});
 
   FixToAtmosphere() = default;
@@ -211,6 +295,15 @@ class FixToAtmosphere {
       const tnsr::ii<DataVector, Dim, Frame::Inertial>& spatial_metric,
       size_t grid_index) const;
 
+  template <size_t ThermodynamicDim>
+  bool apply_kappa_limit(
+      gsl::not_null<Scalar<DataVector>*> temperature,
+      const Scalar<DataVector>& rest_mass_density,
+      const Scalar<DataVector>& electron_fraction,
+      const EquationsOfState::EquationOfState<true, ThermodynamicDim>&
+          equation_of_state,
+      size_t grid_index) const;
+
   template <size_t SpatialDim>
   // NOLINTNEXTLINE(readability-redundant-declaration)
   friend bool operator==(const FixToAtmosphere<SpatialDim>& lhs,
@@ -219,6 +312,7 @@ class FixToAtmosphere {
   double density_of_atmosphere_{std::numeric_limits<double>::signaling_NaN()};
   double density_cutoff_{std::numeric_limits<double>::signaling_NaN()};
   std::optional<VelocityLimitingOptions> velocity_limiting_{std::nullopt};
+  std::optional<KappaLimitingOptions> kappa_limiting_{std::nullopt};
 };
 
 template <size_t Dim>
