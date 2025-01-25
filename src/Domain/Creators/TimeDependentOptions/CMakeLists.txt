@@ -7,6 +7,7 @@ spectre_target_sources(
   BinaryCompactObject.cpp
   ExpansionMap.cpp
   FromVolumeFile.cpp
+  GridCenters.cpp
   RotationMap.cpp
   ShapeMap.cpp
   Sphere.cpp
@@ -20,6 +21,7 @@ spectre_target_headers(
   BinaryCompactObject.hpp
   ExpansionMap.hpp
   FromVolumeFile.hpp
+  GridCenters.hpp
   RotationMap.hpp
   ShapeMap.hpp
   Sphere.hpp
