@@ -244,6 +244,7 @@ std::string create_option_string(
     const double outer_radius) {
   const std::string time_dependence{
       add_time_dependence ? "  TimeDependentMaps:\n"
+                            "    GridCenters: None\n"
                             "    InitialTime: 1.0\n"
                             "    ExpansionMap: None\n"
                             "    RotationMap:\n"
@@ -418,7 +419,8 @@ TimeDepOptions construct_time_dependent_options() {
           8_st,
           std::nullopt,
           {{initial_size_B_coefs[0][0], initial_size_B_coefs[1][0],
-            initial_size_B_coefs[1][0]}}}};
+            initial_size_B_coefs[1][0]}}},
+      std::nullopt};
 }
 
 void test_parse_errors() {
@@ -484,7 +486,7 @@ void test_parse_errors() {
               0.0, std::nullopt,
               domain::creators::time_dependent_options::RotationMapOptions<
                   false>{std::array{0.0, 0.0, 0.0}},
-              std::nullopt, std::nullopt, std::nullopt},
+              std::nullopt, std::nullopt, std::nullopt, std::nullopt},
           create_inner_boundary_condition(), create_outer_boundary_condition(),
           Options::Context{false, {}, 1, 1}),
       Catch::Matchers::ContainsSubstring(

@@ -453,7 +453,8 @@ license() {
               'eos.*' \
               'RotatingStarId.dat$' \
               'RotatingStarId_Hybrid.dat$' \
-              'support/TeXLive/texlive.profile' && \
+              'support/TeXLive/texlive.profile' \
+              'tests/InputFiles/GrMhd/GhValenciaDivClean/EvolutionParameters.perl'&& \
         ! staged_grep -q "Distributed under the MIT License" "$1"
 }
 license_report() {

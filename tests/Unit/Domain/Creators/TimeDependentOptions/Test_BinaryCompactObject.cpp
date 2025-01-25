@@ -188,7 +188,7 @@ void test(const bool include_expansion, const bool include_rotation,
     CHECK_THROWS_WITH(
         (TimeDependentMapOptions<IsCylindrical>{
             initial_time, exp_map_options, rot_map_options, trans_map_options,
-            shape_map_a_options, shape_map_b_options}),
+            shape_map_a_options, shape_map_b_options, std::nullopt}),
         Catch::Matchers::ContainsSubstring(
             "Time dependent map options were specified, but all options "
             "were 'None'. If you don't want time dependent maps, specify "
@@ -199,7 +199,8 @@ void test(const bool include_expansion, const bool include_rotation,
 
   TimeDependentMapOptions<IsCylindrical> time_dep_options{
       initial_time,      exp_map_options,     rot_map_options,
-      trans_map_options, shape_map_a_options, shape_map_b_options};
+      trans_map_options, shape_map_a_options, shape_map_b_options,
+      std::nullopt};
 
   CHECK(time_dep_options.has_distorted_frame_options(domain::ObjectLabel::A) ==
         include_shape_a);
@@ -582,7 +583,8 @@ void test_errors() {
           time_dependent_options::ShapeMapOptions<
               not IsCylindrical, domain::ObjectLabel::A>{1, {}},
           time_dependent_options::ShapeMapOptions<
-              not IsCylindrical, domain::ObjectLabel::B>{8, {}}}),
+              not IsCylindrical, domain::ObjectLabel::B>{8, {}},
+          std::nullopt}),
       Catch::Matchers::ContainsSubstring("Initial LMax for object"));
   CHECK_THROWS_WITH(
       (TimeDependentMapOptions<IsCylindrical>{
@@ -590,11 +592,12 @@ void test_errors() {
           time_dependent_options::ShapeMapOptions<
               not IsCylindrical, domain::ObjectLabel::A>{6, {}},
           time_dependent_options::ShapeMapOptions<
-              not IsCylindrical, domain::ObjectLabel::B>{0, {}}}),
+              not IsCylindrical, domain::ObjectLabel::B>{0, {}},
+          std::nullopt}),
       Catch::Matchers::ContainsSubstring("Initial LMax for object"));
   CHECK_THROWS_WITH((TimeDependentMapOptions<IsCylindrical>{
                         1.0, std::nullopt, std::nullopt, std::nullopt,
-                        std::nullopt, std::nullopt}),
+                        std::nullopt, std::nullopt, std::nullopt}),
                     Catch::Matchers::ContainsSubstring(
                         "Time dependent map options were "
                         "specified, but all options were 'None'."));
@@ -616,6 +619,7 @@ void test_errors() {
               time_dependent_options::ShapeMapOptions<not IsCylindrical,
                                                       domain::ObjectLabel::A>{
                   8, std::nullopt},
+              std::nullopt,
               std::nullopt};
           time_dep_opts.build_maps(
               std::array{std::array{5.0, 0.0, 0.0}, std::array{-5.0, 0.0, 0.0}},
@@ -654,7 +658,8 @@ void test_worldtube_fots() {
       time_dependent_options::ShapeMapOptions<true, domain::ObjectLabel::A>{
           2, {}, std::make_optional(size_a_opts)},
       time_dependent_options::ShapeMapOptions<true, domain::ObjectLabel::B>{
-          2, {}, std::make_optional(size_b_opts)}};
+          2, {}, std::make_optional(size_b_opts)},
+      std::nullopt};
   const auto fots = worldtube_options.create_functions_of_time<true>({});
   CHECK(not fots.contains("Translation"));
 

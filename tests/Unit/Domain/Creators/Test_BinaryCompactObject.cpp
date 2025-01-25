@@ -403,6 +403,7 @@ std::string create_option_string(
   const std::string time_dependence{
       add_time_dependence
           ? "  TimeDependentMaps:\n"
+            "    GridCenters: None\n"
             "    InitialTime: 1.0\n"
             "    ExpansionMap: \n"
             "      InitialValues: [1.0, -0.1, 0.0]\n"
@@ -879,7 +880,8 @@ void test_kerr_horizon_conforming() {
                          KerrSchildFromBoyerLindquist{mass_A, spin_A}},
           HardcodedShape<domain::ObjectLabel::B>{
               32_st, domain::creators::time_dependent_options::
-                         KerrSchildFromBoyerLindquist{mass_B, spin_B}}}};
+                         KerrSchildFromBoyerLindquist{mass_B, spin_B}},
+          std::nullopt}};
   const auto domain = domain_creator.create_domain();
   const auto functions_of_time = domain_creator.functions_of_time();
   // Set up coordinates on an ellipsoid of constant Boyer-Lindquist radius

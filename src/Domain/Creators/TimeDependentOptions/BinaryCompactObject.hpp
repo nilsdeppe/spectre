@@ -18,6 +18,7 @@
 #include "Domain/CoordinateMaps/TimeDependent/Shape.hpp"
 #include "Domain/CoordinateMaps/TimeDependent/ShapeMapTransitionFunctions/ShapeMapTransitionFunction.hpp"
 #include "Domain/Creators/TimeDependentOptions/ExpansionMap.hpp"
+#include "Domain/Creators/TimeDependentOptions/GridCenters.hpp"
 #include "Domain/Creators/TimeDependentOptions/RotationMap.hpp"
 #include "Domain/Creators/TimeDependentOptions/ShapeMap.hpp"
 #include "Domain/Creators/TimeDependentOptions/TranslationMap.hpp"
@@ -173,10 +174,15 @@ struct TimeDependentMapOptions {
   template <domain::ObjectLabel Object>
   using ShapeMapOptionType = typename ShapeMapOptions<Object>::type::value_type;
 
+  using GridCentersOptions = time_dependent_options::GridCentersOptions;
+  using GridCentersOptionType =
+      typename GridCentersOptions::type::value_type;
+
   using options =
       tmpl::list<InitialTime, ExpansionMapOptions, RotationMapOptions,
                  TranslationMapOptions, ShapeMapOptions<domain::ObjectLabel::A>,
-                 ShapeMapOptions<domain::ObjectLabel::B>>;
+                 ShapeMapOptions<domain::ObjectLabel::B>,
+                 GridCentersOptions>;
   static constexpr Options::String help{
       "The options for all time dependent maps in a binary compact object "
       "domain. Specify 'None' to not use any time dependent maps."};
@@ -189,6 +195,7 @@ struct TimeDependentMapOptions {
       TranslationMapOptionType translation_map_options,
       ShapeMapOptionType<domain::ObjectLabel::A> shape_options_A,
       ShapeMapOptionType<domain::ObjectLabel::B> shape_options_B,
+      GridCentersOptionType grid_centers,
       const Options::Context& context = {});
 
   /*!
@@ -203,6 +210,7 @@ struct TimeDependentMapOptions {
    * - Translation: `PiecewisePolynomial<3>`
    * - SizeA/B: `PiecewisePolynomial<3>`
    * - ShapeA/B: `PiecewisePolynomial<2>`
+   * - GridCenters: `PiecewisePolynomial<2>`
    *
    *  When `UseWorldtube` is set to true, they are
    *
@@ -328,6 +336,7 @@ struct TimeDependentMapOptions {
   inline static const std::array<std::string, 2> size_names{{"SizeA", "SizeB"}};
   inline static const std::array<std::string, 2> shape_names{
       {"ShapeA", "ShapeB"}};
+  inline static const std::string grid_centers_name{"GridCenters"};
 
  private:
   static size_t get_index(domain::ObjectLabel object);
@@ -338,6 +347,7 @@ struct TimeDependentMapOptions {
   TranslationMapOptionType translation_map_options_;
   ShapeMapOptionType<domain::ObjectLabel::A> shape_options_A_{};
   ShapeMapOptionType<domain::ObjectLabel::B> shape_options_B_{};
+  GridCentersOptionType grid_centers_options_{};
   std::array<std::optional<double>, 2> deformed_radii_{};
 
   // Maps

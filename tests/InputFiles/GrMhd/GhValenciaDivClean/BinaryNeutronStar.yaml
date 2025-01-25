@@ -6,6 +6,7 @@ Testing:
   Check: parse
   Timeout: 8
   Priority: High
+  CopyFiles: EvolutionParameters.perl
 
 ---
 
@@ -74,6 +75,9 @@ DomainCreator:
         InitialValues: [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
       ShapeMapA: None
       ShapeMapB: None
+      GridCenters:
+        ScaleInspiralRateBy: 0.8
+        SpecEvolutionParametersPerlFile: ./EvolutionParameters.perl
 
 VariableFixing:
   FixConservatives:
