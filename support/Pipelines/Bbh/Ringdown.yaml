@@ -125,12 +125,13 @@ EvolutionSystem:
           Center: [0.0, 0.0, 0.0]
         Gaussian2:
           Amplitude: 0.1
-          Width: 100.0
+          Width: 100.
           Center: [0.0, 0.0, 0.0]
         Gaussian3:
           Amplitude: 0.0
           Width: 100.0
           Center: [0.0, 0.0, 0.0]
+        MovementMethod: ExpansionFactor
     DampingFunctionGamma1:
       Constant:
         Value: -1.0
@@ -149,6 +150,7 @@ EvolutionSystem:
           Amplitude: 0.0
           Width: 100.0
           Center: [0.0, 0.0, 0.0]
+        MovementMethod: ExpansionFactor
 
 Filtering:
   ExpFilter0:
