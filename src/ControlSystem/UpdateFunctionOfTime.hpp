@@ -10,6 +10,7 @@
 #include <unordered_set>
 #include <utility>
 
+#include "ControlSystem/Tags/IsActiveMap.hpp"
 #include "DataStructures/DataBox/DataBox.hpp"
 #include "DataStructures/DataVector.hpp"
 #include "Domain/FunctionsOfTime/FunctionOfTime.hpp"
@@ -110,7 +111,7 @@ struct UpdateAggregator {
    * \brief Checks if `insert` has been called for all control systems that this
    * class was constructed with.
    */
-  bool is_ready() const;
+  bool is_ready(const std::unordered_map<std::string, bool>& active_map) const;
 
   /*!
    * \brief Returns a sorted concatenation of the control system names this
@@ -128,7 +129,8 @@ struct UpdateAggregator {
    * true. It also must be called before `combined_measurement_expiration_time`.
    */
   std::unordered_map<std::string, std::pair<DataVector, double>>
-  combined_fot_expiration_times() const;
+  combined_fot_expiration_times(
+      const std::unordered_map<std::string, bool>& active_map) const;
 
   /*!
    * \brief Once `is_ready` is true, returns a `std::pair` containing the
@@ -141,7 +143,8 @@ struct UpdateAggregator {
    * must be called after `combined_fot_expiration_times`. This function clears
    * all stored data when it is called.
    */
-  std::pair<double, double> combined_measurement_expiration_time();
+  std::pair<double, double> combined_measurement_expiration_time(
+      const std::unordered_map<std::string, bool>& active_map);
 
   /// \cond
   void pup(PUP::er& p);
@@ -211,12 +214,14 @@ struct AggregateUpdate {
                       new_measurement_expiration_time,
                       std::move(control_signal), new_fot_expiration_time);
 
-    if (aggregator.is_ready()) {
+    if (aggregator.is_ready(get<Tags::IsActiveMap>(cache))) {
       std::unordered_map<std::string, std::pair<DataVector, double>>
           combined_fot_expiration_times =
-              aggregator.combined_fot_expiration_times();
+              aggregator.combined_fot_expiration_times(
+                  get<Tags::IsActiveMap>(cache));
       const std::pair<double, double> combined_measurement_expiration_time =
-          aggregator.combined_measurement_expiration_time();
+          aggregator.combined_measurement_expiration_time(
+              get<Tags::IsActiveMap>(cache));
 
       Parallel::mutate<Tags::MeasurementTimescales, UpdateSingleFunctionOfTime>(
           cache, combined_name, old_measurement_expiration_time,
