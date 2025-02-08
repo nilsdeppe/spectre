@@ -3,6 +3,10 @@
 
 #include "Framework/TestingFramework.hpp"
 
+#include <sstream>
+#include <string>
+
+#include "DataStructures/DataVector.hpp"
 #include "Evolution/DgSubcell/Mesh.hpp"
 #include "NumericalAlgorithms/Spectral/Basis.hpp"
 #include "NumericalAlgorithms/Spectral/Mesh.hpp"
@@ -10,6 +14,23 @@
 #include "NumericalAlgorithms/Spectral/Spectral.hpp"
 
 namespace {
+void print_comparison_point_computation() {
+  // Prints the grid spacing an FD points for different options of choosing
+  // the "right" number of FD points for the number of DG points.
+  std::stringstream ss;
+  for (size_t i = 5; i < 12; ++i) {
+    const Mesh<1> dg_mesh{i, Spectral::Basis::Legendre,
+                          Spectral::Quadrature::GaussLobatto};
+    const DataVector& collocation_pts = Spectral::collocation_points(dg_mesh);
+    ss << dg_mesh.extents(0) << ' '
+       << 2.0 / std::abs(collocation_pts[1] - collocation_pts[0]) << " "
+       << (2 * dg_mesh.extents(0) - 1) << '\n';
+  }
+  const std::string str = ss.str();
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
+  std::printf("%s\n", str.c_str());
+}
+
 template <Spectral::Basis BasisType, Spectral::Quadrature QuadratureType>
 void test_mesh() {
   constexpr size_t min_num_pts =
@@ -108,4 +129,5 @@ SPECTRE_TEST_CASE("Unit.Evolution.Subcell.FD.Mesh", "[Evolution][Unit]") {
   test_mesh<Spectral::Basis::Legendre, Spectral::Quadrature::Gauss>();
   test_mesh<Spectral::Basis::Chebyshev, Spectral::Quadrature::GaussLobatto>();
   test_mesh<Spectral::Basis::Chebyshev, Spectral::Quadrature::Gauss>();
+  print_comparison_point_computation();
 }
