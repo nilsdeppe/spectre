@@ -12,6 +12,7 @@ add_spectre_executable(
 target_link_libraries(
   ${EXECUTABLE}
   PRIVATE
+  Amr
   Boost::boost
   Boost::program_options
   DataStructures
