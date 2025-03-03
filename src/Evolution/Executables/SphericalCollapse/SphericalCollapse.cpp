@@ -562,39 +562,42 @@ determine_bad_truncation_error(const DataVector variable_to_check,
         // }
         ++index_old;
         ++index_new;
+      } else if (changed[index_old] == 1) {
+        std::cout << "here"
+                  << "\n";
+        //   // TODO: Create matrices for both lower and upper projection
+
+        std::array<std::reference_wrapper<const Matrix>, 2> matrices{
+            {std::cref(Spectral::projection_matrix_parent_to_child(
+                 mesh_of_one_element, mesh_of_one_element,
+                 Spectral::ChildSize::LowerHalf)),
+             std::cref(Spectral::projection_matrix_parent_to_child(
+                 mesh_of_one_element, mesh_of_one_element,
+                 Spectral::ChildSize::UpperHalf))}};
+
+        for (size_t i = 0; i < 2; ++i) {  // loop over lower & upper
+          DataVector view_old{
+              &vars[var_index]
+                   [index_old * mesh_of_one_element.number_of_grid_points()],
+              mesh_of_one_element.number_of_grid_points()};
+          DataVector view_new{
+              &new_vars_copy[var_index]
+                            [index_new *
+                             mesh_of_one_element.number_of_grid_points()],
+              mesh_of_one_element.number_of_grid_points()};
+
+          apply_matrices(make_not_null(&view_new),
+                         std::array<Matrix, 1>{matrices[i].get()}, view_old,
+                         mesh_of_one_element.extents());
+
+          ++index_new;
+        }
+        ++index_old;
+      } else {
+        // assert(coarsening);
+        index_old += 2;
+        ++index_new;
       }
-      // else if (changed[index_old] == 1) {
-      //   // TODO: Create matrices for both lower and upper projection
-
-      //   std::array<std::reference_wrapper<const Matrix>, 2> matrices{{
-      //       std::cref(Spectral::projection_matrix_parent_to_child(
-      //           mesh_of_one_element, mesh_of_one_element,
-      //           Spectral::ChildSize::LowerHalf)),
-      //       std::cref(Spectral::projection_matrix_parent_to_child(
-      //           mesh_of_one_element, mesh_of_one_element,
-      //           Spectral::ChildSize::UpperHalf))
-      //   }};
-
-      //   for (size_t i = 0; i < 2; ++i) { // loop over lower & upper
-      //       DataVector view_old{&vars[var_index][index_old *
-      //       mesh_of_one_element.number_of_grid_points()],
-      //       mesh_of_one_element.number_of_grid_points()}; DataVector
-      //       view_new{&new_vars_copy[var_index][index_new *
-      //       mesh_of_one_element.number_of_grid_points()],
-      //       mesh_of_one_element.number_of_grid_points()};
-
-      //       apply_matrices(make_not_null(&view_new), std::array<Matrix,
-      //       1>{matrices[i].get()}, view_old, mesh_of_one_element.extents());
-
-      //     ++index_new;
-      //   }
-      //   ++index_old;
-      // }
-      // else {
-      //   // assert(coarsening);
-      //   index_old += 2;
-      //   ++index_new;
-      // }
     }
   }
   using MyVariant =
@@ -1150,7 +1153,7 @@ std::array<DataVector, 3> integrate_fields_in_time(
     };
 
     if (not use_flat_space) {
-      black_hole_radius = find_min_A(metric_function_a, radius,
+      black_hole_radius = find_min_A(metric_function_a, mutable_radius,
                                      get<Tags::HorizonFinderTolerance>(box));
     }
     if (step % observation_frequency == 0 or black_hole_radius.has_value()) {
@@ -1200,17 +1203,24 @@ std::array<DataVector, 3> integrate_fields_in_time(
                                        mesh_of_one_element, box, vars);
     element_ids = std::get<std::vector<ElementId1d>>(returned_vec[0]);
     vars = std::get<std::array<DataVector, 3>>(returned_vec[1]);
-    // vars = new_vars;
-    size_t new_number_of_elements = element_ids.size();
+
+    number_of_elements = element_ids.size();
     tnsr::I<DataVector, 1, Frame::Grid> new_grid_coords =
-        initialize_grid_coords(element_ids, new_number_of_elements,
+        initialize_grid_coords(element_ids, number_of_elements,
                                mesh_of_one_element);
-    std::array<const Scalar<DataVector>, 2> determinants = create_jacobians(
-        mesh_of_one_element, element_ids, new_number_of_elements);
+    std::array<const Scalar<DataVector>, 2> determinants =
+        create_jacobians(mesh_of_one_element, element_ids, number_of_elements);
     mutable_det_jacobian = determinants[0];
     mutable_det_inverse_jacobian = determinants[1];
     get<0>(mutable_radius) = sqrt((get<0>(new_grid_coords) + 1.0) * 0.5) *
                              get<Tags::OuterBoundaryRadius>(box);
+    get(*metric_function_a)
+        .destructive_resize(mesh_of_one_element.number_of_grid_points() *
+                            number_of_elements);
+    get(*delta).destructive_resize(mesh_of_one_element.number_of_grid_points() *
+                                   number_of_elements);
+    get(*mass).destructive_resize(mesh_of_one_element.number_of_grid_points() *
+                                  number_of_elements);
   }
   std::cout << "time " << time << "\n";
   return vars;
