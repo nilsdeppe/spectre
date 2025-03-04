@@ -518,7 +518,7 @@ determine_bad_truncation_error(const DataVector variable_to_check,
                                   box) < condition2;
 
     if (refine) {
-      // std::cout <<"here" << '\n';
+      std::cout << "here" << '\n';
       // refine more (add children)
       changed.push_back(1);
       for (size_t ind = 0; ind < child_ids.size(); ind += 1) {
@@ -541,11 +541,22 @@ determine_bad_truncation_error(const DataVector variable_to_check,
       new_elements.push_back(element_ids[element_index]);
     }
   }
+  bool equality = new_elements.size() == element_ids.size();
+  size_t sum1 = 0;
+  std::cout << equality << "\n";
   std::array<DataVector, 3> new_vars_copy = vars;
-  for (size_t index_old = 0, index_new = 0; index_old < element_ids.size();) {
-    for (size_t var_index = 0; var_index < 3; ++var_index) {
+  std::array<DataVector, 3> new_vars;
+  new_vars_copy[0].destructive_resize(
+      mesh_of_one_element.number_of_grid_points() * new_elements.size());
+  new_vars_copy[1].destructive_resize(
+      mesh_of_one_element.number_of_grid_points() * new_elements.size());
+  new_vars_copy[2].destructive_resize(
+      mesh_of_one_element.number_of_grid_points() * new_elements.size());
+  for (size_t var_index = 0; var_index < 3; ++var_index) {
+    for (size_t index_old = 0, index_new = 0; index_old < element_ids.size();) {
       // std::cout << changed << '\n';
       if (changed[index_old] == 0) {
+        // std::cout << "after" <<"\n";
         DataVector view_old{
             &vars[var_index]
                  [index_old * mesh_of_one_element.number_of_grid_points()],
@@ -559,12 +570,13 @@ determine_bad_truncation_error(const DataVector variable_to_check,
         view_new = view_old;
 
         // std::cout <<"here" << '\n';
-        // }
+        // };
+
         ++index_old;
         ++index_new;
+        ++sum1;
       } else if (changed[index_old] == 1) {
-        std::cout << "here"
-                  << "\n";
+        // std::cout << changed << "\n";
         //   // TODO: Create matrices for both lower and upper projection
 
         std::array<std::reference_wrapper<const Matrix>, 2> matrices{
@@ -580,18 +592,27 @@ determine_bad_truncation_error(const DataVector variable_to_check,
               &vars[var_index]
                    [index_old * mesh_of_one_element.number_of_grid_points()],
               mesh_of_one_element.number_of_grid_points()};
+          std::cout << index_new * mesh_of_one_element.number_of_grid_points()
+                    << "\n";
           DataVector view_new{
               &new_vars_copy[var_index]
                             [index_new *
                              mesh_of_one_element.number_of_grid_points()],
               mesh_of_one_element.number_of_grid_points()};
+          // std::cout << var_index << "\n";
+
+          // std::cout << new_vars_copy[var_index]<< "\n";
 
           apply_matrices(make_not_null(&view_new),
                          std::array<Matrix, 1>{matrices[i].get()}, view_old,
                          mesh_of_one_element.extents());
+          // if (var_index ==0){std::cout << new_vars_copy[var_index]<< "\n";
+          // std::cout << view_new<< "\n";}
 
           ++index_new;
+          ++sum1;
         }
+
         ++index_old;
       } else {
         // assert(coarsening);
@@ -600,19 +621,18 @@ determine_bad_truncation_error(const DataVector variable_to_check,
       }
     }
   }
+
   using MyVariant =
       std::variant<std::vector<ElementId1d>, std::array<DataVector, 3>>;
-
+  std::cout << sum1 << "\n";
   std::vector<MyVariant> vec;
   vec.push_back(new_elements);
   vec.push_back(new_vars_copy);
+  // std::cout << "checking sizes" <<"\n";
+  // std::cout<<new_vars_copy[0].size()<< "\n";
+  // std::cout<<new_elements.size()<< "\n";
 
   return vec;
-
-  // this function will check whether at a given timestep, a particular element
-  // is bad for "ANY" variable. If it is, then it will divide the element
-  // further and create a new element_id list. then, it will create a new
-  // jacobian and reinitialise all the variables
 }
 void compute_time_derivatives_first_order_2(
     const gsl::not_null<Scalar<DataVector>*> dt_psi,
