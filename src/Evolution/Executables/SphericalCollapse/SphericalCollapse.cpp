@@ -543,7 +543,9 @@ determine_bad_truncation_error(const DataVector variable_to_check,
   }
   bool equality = new_elements.size() == element_ids.size();
   size_t sum1 = 0;
-  std::cout << equality << "\n";
+  if (equality == 0) {
+    std::cout << vars[2] << "\n";
+  }
   std::array<DataVector, 3> new_vars_copy = vars;
   std::array<DataVector, 3> new_vars;
   new_vars_copy[0].destructive_resize(
@@ -592,8 +594,9 @@ determine_bad_truncation_error(const DataVector variable_to_check,
               &vars[var_index]
                    [index_old * mesh_of_one_element.number_of_grid_points()],
               mesh_of_one_element.number_of_grid_points()};
-          std::cout << index_new * mesh_of_one_element.number_of_grid_points()
-                    << "\n";
+          // std::cout << index_new *
+          // mesh_of_one_element.number_of_grid_points()
+          //           << "\n";
           DataVector view_new{
               &new_vars_copy[var_index]
                             [index_new *
@@ -624,7 +627,7 @@ determine_bad_truncation_error(const DataVector variable_to_check,
 
   using MyVariant =
       std::variant<std::vector<ElementId1d>, std::array<DataVector, 3>>;
-  std::cout << sum1 << "\n";
+  // std::cout << sum1 << "\n";
   std::vector<MyVariant> vec;
   vec.push_back(new_elements);
   vec.push_back(new_vars_copy);
@@ -771,6 +774,9 @@ double compute_adaptive_step_size(
   }
 
   min_adapted_dt = CFL_safety_factor * min_adapted_dt;
+  if (min_adapted_dt > 1) {
+    std::cout << get(metric_function_a) << "\n";
+  }
   // std::cout << min_adapted_dt << "\n";
   return min_adapted_dt;
 }
@@ -1025,9 +1031,11 @@ void create_data_for_file(
 
 std::optional<double> find_min_A(
     const gsl::not_null<Scalar<DataVector>*> metric_function_a,
-    const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
+    tnsr::I<DataVector, 1, Frame::Inertial>& radius,
     const double horizon_tolerance) {
   for (size_t index = 0; index < get(*metric_function_a).size(); index++) {
+    // std::cout <<"metric value" << "\n";
+    // std::cout << abs(get(*metric_function_a)[index]) << "\n";
     if (abs(get(*metric_function_a)[index]) < horizon_tolerance) {
       return get<0>(radius)[index];
     }
@@ -1075,12 +1083,6 @@ std::array<DataVector, 3> integrate_fields_in_time(
   Scalar<DataVector> mutable_det_inverse_jacobian = det_inverse_jacobian;
   Scalar<DataVector> mutable_det_jacobian = det_jacobian;
   tnsr::I<DataVector, 1, Frame::Inertial> mutable_radius = radius;
-  // gsl::not_null<Scalar<DataVector>*> mutable_delta = delta;
-  // gsl::not_null<Scalar<DataVector>*> mutable_metric_function_a =
-  // metric_function_a; gsl::not_null<Scalar<DataVector>*> mutable_mass = mass;
-  // gsl::not_null<DataVector*> mutable_integrand_buffer = integrand_buffer;
-  // // Matrix mutable_matrix_buffer = matrix_buffer;
-  // gsl::not_null<Matrix*> mutable_matrix_buffer = matrix_buffer;
 
   using std::abs;
   while (abs(time) <= (get<Tags::FinalTime>(box))) {
@@ -1154,6 +1156,7 @@ std::array<DataVector, 3> integrate_fields_in_time(
       compute_metric_function_a_from_mass(
           metric_function_a, *mass, mutable_radius,
           get<Tags::SpacetimeDimensions>(box), intermediate);
+      // std::cout<< get(*metric_function_a) << "\n";
 
       const auto size = get(temp_psi).size();
       Scalar<DataVector> temp_dtpsi{size, 0.0};
@@ -1173,6 +1176,8 @@ std::array<DataVector, 3> integrate_fields_in_time(
     };
 
     if (not use_flat_space) {
+      // if (number_of_elements == 49){std::cout<<get(*mass) << "\n";}
+
       black_hole_radius = find_min_A(metric_function_a, mutable_radius,
                                      get<Tags::HorizonFinderTolerance>(box));
     }
@@ -1234,6 +1239,7 @@ std::array<DataVector, 3> integrate_fields_in_time(
     mutable_det_inverse_jacobian = determinants[1];
     get<0>(mutable_radius) = sqrt((get<0>(new_grid_coords) + 1.0) * 0.5) *
                              get<Tags::OuterBoundaryRadius>(box);
+    // if (number_of_elements ==49){std::cout<<vars[0]<< "\n";}
     get(*metric_function_a)
         .destructive_resize(mesh_of_one_element.number_of_grid_points() *
                             number_of_elements);
@@ -1241,6 +1247,21 @@ std::array<DataVector, 3> integrate_fields_in_time(
                                    number_of_elements);
     get(*mass).destructive_resize(mesh_of_one_element.number_of_grid_points() *
                                   number_of_elements);
+    Scalar<DataVector> phi_new{vars[1] * 4 * get<0>(mutable_radius)};
+    Scalar<DataVector> pi_new{vars[2]};
+    compute_delta_integral_logical(
+        delta, integrand_buffer, mesh_of_one_element, phi_new, pi_new,
+        mutable_det_jacobian, mutable_radius,
+        get<Tags::OuterBoundaryRadius>(box), intermediate);
+    compute_mass_integral(mass, matrix_buffer, mesh_of_one_element, phi_new,
+                          pi_new, mutable_det_jacobian, mutable_radius,
+                          get<Tags::SpacetimeDimensions>(box),
+                          get<Tags::OuterBoundaryRadius>(box), intermediate);
+    compute_metric_function_a_from_mass(
+        metric_function_a, *mass, mutable_radius,
+        get<Tags::SpacetimeDimensions>(box), intermediate);
+    std::cout << number_of_elements << "\n";
+    //  std::cout <<dt << "\n";
   }
   std::cout << "time " << time << "\n";
   return vars;
