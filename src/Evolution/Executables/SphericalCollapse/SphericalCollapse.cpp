@@ -227,6 +227,7 @@ make_coordinate_map(const size_t number_of_elements,
             domain::CoordinateMaps::Affine{-1.0, 1.0, lower, upper},
             interval_map);
   }
+  // std::cout << "is it this vector(3)" << "\n";
   return coordinate_maps;
 }
 tnsr::I<DataVector, 1, Frame::Grid> initialize_grid_coords(
@@ -251,6 +252,7 @@ tnsr::I<DataVector, 1, Frame::Grid> initialize_grid_coords(
     grid_coords_this_element =
         coordinate_maps[element_index](logical_coords_one_element);
   }
+
   return grid_coords;
 }
 std::array<const Scalar<DataVector>, 2> create_jacobians(
@@ -458,35 +460,22 @@ float truncation_error_estimate(const DataVector variable_to_check,
   return std::abs(abs_error) /
          (abs_tolerance + std::abs(rel_error) * rel_tolerance);
 }
-/*
- * \brief Create `ElementId`s in a non-uniform manner from
- * `inner_refinement_level` to the `outer_refinement_level`.
- *
- * The outer half of the elements are at the `outer_refinement_level`, then
- * we go self-similarly inwards. This means the outer index of each refinement
- * level is always `2^(outer_refinement_level - 1)`.
- */
-std::vector<ElementId1d> compute_element_ids(
-    const size_t inner_refinement_level, const size_t outer_refinement_level) {
-  std::vector<ElementId1d> element_ids;
-  const size_t block_id = 0;
-  for (size_t j = inner_refinement_level; j >= outer_refinement_level; j--) {
-    for (size_t element_index = (j == inner_refinement_level
-                                     ? 0
-                                     : two_to_the(outer_refinement_level - 1));
-         element_index < two_to_the(outer_refinement_level); element_index++) {
-      element_ids.emplace_back(block_id, SegmentId{j, element_index});
-    }
-  }
-  return element_ids;
+float truncation_error_estimate_test(const DataVector variable_to_check,
+                                     const Mesh<1>& mesh_of_one_element,
+                                     const size_t element_index,
+                                     const size_t number_of_elements,
+                                     const db::Access& box) {
+  float val = 1.1;
+  return val;
 }
+
 std::vector<std::variant<std::vector<ElementId1d>, std::array<DataVector, 3>>>
-determine_bad_truncation_error(const DataVector variable_to_check,
-                               const size_t number_of_elements,
-                               std::vector<ElementId1d> element_ids,
-                               const Mesh<1>& mesh_of_one_element,
-                               const db::Access& box,
-                               std::array<DataVector, 3> vars) {
+determine_bad_truncation_error_test(const DataVector variable_to_check,
+                                    const size_t number_of_elements,
+                                    std::vector<ElementId1d> element_ids,
+                                    const Mesh<1>& mesh_of_one_element,
+                                    const db::Access& box,
+                                    std::array<DataVector, 3> vars) {
   // need to define this "condition1"
   std::vector<ElementId1d> new_elements{};
 
@@ -509,16 +498,16 @@ determine_bad_truncation_error(const DataVector variable_to_check,
     const double condition1 = 1;
     const double condition2 = 1e-8;
     const bool refine =
-        truncation_error_estimate(variable_to_check, mesh_of_one_element,
-                                  element_index, number_of_elements,
-                                  box) > condition1;
+        truncation_error_estimate_test(variable_to_check, mesh_of_one_element,
+                                       element_index, number_of_elements,
+                                       box) > condition1;
     const bool coarse =
-        truncation_error_estimate(variable_to_check, mesh_of_one_element,
-                                  element_index, number_of_elements,
-                                  box) < condition2;
+        truncation_error_estimate_test(variable_to_check, mesh_of_one_element,
+                                       element_index, number_of_elements,
+                                       box) < condition2;
 
     if (refine) {
-      std::cout << "here" << '\n';
+      // std::cout << "here" << '\n';
       // refine more (add children)
       changed.push_back(1);
       for (size_t ind = 0; ind < child_ids.size(); ind += 1) {
@@ -544,12 +533,18 @@ determine_bad_truncation_error(const DataVector variable_to_check,
   bool equality = new_elements.size() == element_ids.size();
   size_t sum1 = 0;
   if (equality == 0) {
-    std::cout << vars[2] << "\n";
+    // // std::cout << vars[2] << "\n";
+    // std::cout << changed << "\n";
+    // std::cout << "unequal" << "\n";
+    // std::cout << new_elements.size() << "\n";
+    // std::cout << element_ids.size() << "\n";
   }
+
   std::array<DataVector, 3> new_vars_copy = vars;
-  std::array<DataVector, 3> new_vars;
+  // std::array<DataVector, 3> new_vars;
   new_vars_copy[0].destructive_resize(
       mesh_of_one_element.number_of_grid_points() * new_elements.size());
+  // std::cout << "new vars size" << new_vars_copy[0].size() << "\n";
   new_vars_copy[1].destructive_resize(
       mesh_of_one_element.number_of_grid_points() * new_elements.size());
   new_vars_copy[2].destructive_resize(
@@ -578,7 +573,11 @@ determine_bad_truncation_error(const DataVector variable_to_check,
         ++index_new;
         ++sum1;
       } else if (changed[index_old] == 1) {
-        // std::cout << changed << "\n";
+        // std::cout << "new" << "\n";
+        // std::cout << index_new << "\n";
+        // std::cout << "old" << "\n";
+        // std::cout << index_old << "\n";
+        // std::cout << changed<< "\n";
         //   // TODO: Create matrices for both lower and upper projection
 
         std::array<std::reference_wrapper<const Matrix>, 2> matrices{
@@ -636,6 +635,272 @@ determine_bad_truncation_error(const DataVector variable_to_check,
   // std::cout<<new_elements.size()<< "\n";
 
   return vec;
+}
+
+/*
+ * \brief Create `ElementId`s in a non-uniform manner from
+ * `inner_refinement_level` to the `outer_refinement_level`.
+ *
+ * The outer half of the elements are at the `outer_refinement_level`, then
+ * we go self-similarly inwards. This means the outer index of each refinement
+ * level is always `2^(outer_refinement_level - 1)`.
+ */
+std::vector<ElementId1d> compute_element_ids(
+    const size_t inner_refinement_level, const size_t outer_refinement_level) {
+  std::vector<ElementId1d> element_ids;
+  const size_t block_id = 0;
+  for (size_t j = inner_refinement_level; j >= outer_refinement_level; j--) {
+    for (size_t element_index = (j == inner_refinement_level
+                                     ? 0
+                                     : two_to_the(outer_refinement_level - 1));
+         element_index < two_to_the(outer_refinement_level); element_index++) {
+      element_ids.emplace_back(block_id, SegmentId{j, element_index});
+    }
+  }
+  // std::cout << "is it this vector(4)" << "\n";
+  return element_ids;
+}
+std::vector<std::variant<std::vector<ElementId1d>, std::array<DataVector, 3>>>
+determine_bad_truncation_error(const DataVector variable_to_check,
+                               const size_t number_of_elements,
+                               std::vector<ElementId1d> element_ids,
+                               const Mesh<1>& mesh_of_one_element,
+                               const db::Access& box,
+                               std::array<DataVector, 3> vars) {
+  // need to define this "condition1"
+  std::vector<ElementId1d> new_elements{};
+  size_t sum_refine = 0;
+  size_t sum_nochange = 0;
+  std::cout << "check1" << number_of_elements << "\n";
+  std::cout << "check2" << element_ids.size() << "\n";
+  std::vector<int> changed{};
+  bool max_reached = false;
+  // 0: nothing changed, 1: refined, 2: coarsened
+  for (size_t element_index = 0; element_index < number_of_elements;
+       element_index += 1) {
+    // bool changed_any_element = false;
+    ElementId<1> element_id_1d{0, {{element_ids[element_index].segment_id}}};
+    ElementId<1> parent_id =
+        amr::id_of_parent(element_id_1d, std::array{amr::Flag::Join});
+    std::vector<ElementId<1>> child_ids =
+        amr::ids_of_children(element_id_1d, std::array{amr::Flag::Split});
+    SegmentId sibling_segid = element_id_1d.segment_id(0).id_of_sibling();
+    ElementId1d sibling_id = ElementId1d(0, sibling_segid);
+
+    auto it = std::find(element_ids.begin(), element_ids.end(), sibling_id);
+
+    size_t index_of_sibling = std::distance(element_ids.begin(), it);
+    const double condition1 = 5;
+    const double condition2 = 1e-8;
+    const bool refine =
+        truncation_error_estimate(variable_to_check, mesh_of_one_element,
+                                  element_index, number_of_elements,
+                                  box) > condition1;
+    // const bool refine =true;
+    // const bool coarse = false;
+
+    const bool coarse =
+        truncation_error_estimate(variable_to_check, mesh_of_one_element,
+                                  element_index, number_of_elements,
+                                  box) < condition2;
+    if ((element_ids[element_index].segment_id.refinement_level() <
+         ElementId<1>::max_refinement_level) &&
+        std::all_of(child_ids.begin(), child_ids.end(),
+                    [](const ElementId<1>& id) {
+                      return id.segment_id(0).refinement_level() <
+                             ElementId<1>::max_refinement_level;
+                    })) {
+      // std::cout << "lower_Refine" << "\n";
+      // std::cout << (element_ids[element_index].segment_id).refinement_level()
+      // << "\n";
+      if (refine) {
+        std::cout << "here" << '\n';
+        // refine more (add children)
+        changed.push_back(1);
+        for (size_t ind = 0; ind < child_ids.size(); ind += 1) {
+          ElementId1d child_id{0, child_ids[ind].segment_id(0)};
+          new_elements.push_back(child_id);
+          sum_refine += 1;
+        }
+
+      }
+      // else if (coarse){
+      //   // refine less (combine to get parent)
+      // changed.push_back(2);
+      //   // element_ids.erase(element_ids.begin() + element_index);
+      //   // element_ids.erase(element_ids.begin() + index_of_sibling);
+      //   ElementId1d parent_id_new{0, parent_id.segment_id(0)};
+      //   new_elements.push_back(parent_id_new);
+
+      // }
+      else if (!refine) {
+        changed.push_back(0);
+        new_elements.push_back(element_ids[element_index]);
+        sum_nochange += 1;
+      }
+    } else {
+      max_reached = true;
+    }
+  }
+  if (max_reached == true) {
+    new_elements = element_ids;
+    changed = std::vector<int>(new_elements.size(), 0);
+  }
+  std::cout << "refined_sum" << sum_refine << "\n";
+  std::cout << "no_change/-sum" << sum_nochange << "\n";
+  bool equality = new_elements.size() == element_ids.size();
+  size_t sum1 = 0;
+  if (equality == 0) {
+    // std::cout << vars[2] << "\n";
+    std::cout << changed << "\n";
+    std::cout << "unequal"
+              << "\n";
+    std::cout << new_elements.size() << "\n";
+    std::cout << element_ids.size() << "\n";
+  }
+
+  std::array<DataVector, 3> new_vars_copy = vars;
+  // if (changed.size() ==0) { std::cout << "here for no change" << "\n";
+  //   new_elements = element_ids;}
+  // std::array<DataVector, 3> new_vars;
+
+  std::cout << "working"
+            << "\n";
+  new_vars_copy[0].destructive_resize(
+      mesh_of_one_element.number_of_grid_points() * new_elements.size());
+  std::cout << "new vars size" << new_vars_copy[0].size() / 10 << "\n";
+  new_vars_copy[1].destructive_resize(
+      mesh_of_one_element.number_of_grid_points() * new_elements.size());
+  new_vars_copy[2].destructive_resize(
+      mesh_of_one_element.number_of_grid_points() * new_elements.size());
+  for (size_t var_index = 0; var_index < 3; ++var_index) {
+    for (size_t index_old = 0, index_new = 0; index_old < element_ids.size();) {
+      std::cout << element_ids.size() << index_old << "\n";
+      std::cout << changed.size() << "\n";
+      // std::cout << changed << '\n';
+      if (changed[index_old] == 0) {
+        std::cout << "after"
+                  << "\n";
+        DataVector view_old{
+            &vars[var_index]
+                 [index_old * mesh_of_one_element.number_of_grid_points()],
+            mesh_of_one_element.number_of_grid_points()};
+        // std::cout <<"here" << '\n';
+        DataVector view_new{
+            &new_vars_copy[var_index][index_new * mesh_of_one_element
+                                                      .number_of_grid_points()],
+            mesh_of_one_element.number_of_grid_points()};
+        // std::cout <<"here" << '\n';
+        view_new = view_old;
+
+        // std::cout <<"here" << '\n';
+        // };
+
+        ++index_old;
+        ++index_new;
+        ++sum1;
+      } else if (changed[index_old] == 1) {
+        std::cout << "new"
+                  << "\n";
+        std::cout << index_new << "\n";
+        std::cout << "old"
+                  << "\n";
+        std::cout << index_old << "\n";
+        std::cout << changed << "\n";
+        //   // TODO: Create matrices for both lower and upper projection
+
+        std::array<std::reference_wrapper<const Matrix>, 2> matrices{
+            {std::cref(Spectral::projection_matrix_parent_to_child(
+                 mesh_of_one_element, mesh_of_one_element,
+                 Spectral::ChildSize::LowerHalf)),
+             std::cref(Spectral::projection_matrix_parent_to_child(
+                 mesh_of_one_element, mesh_of_one_element,
+                 Spectral::ChildSize::UpperHalf))}};
+
+        for (size_t i = 0; i < 2; ++i) {  // loop over lower & upper
+          DataVector view_old{
+              &vars[var_index]
+                   [index_old * mesh_of_one_element.number_of_grid_points()],
+              mesh_of_one_element.number_of_grid_points()};
+          // std::cout << index_new *
+          // mesh_of_one_element.number_of_grid_points()
+          //           << "\n";
+          DataVector view_new{
+              &new_vars_copy[var_index]
+                            [index_new *
+                             mesh_of_one_element.number_of_grid_points()],
+              mesh_of_one_element.number_of_grid_points()};
+          // std::cout << var_index << "\n";
+
+          // std::cout << new_vars_copy[var_index]<< "\n";
+
+          apply_matrices(make_not_null(&view_new),
+                         std::array<Matrix, 1>{matrices[i].get()}, view_old,
+                         mesh_of_one_element.extents());
+          // if (var_index ==0){std::cout << new_vars_copy[var_index]<< "\n";
+          // std::cout << view_new<< "\n";}
+
+          ++index_new;
+          ++sum1;
+        }
+
+        ++index_old;
+      }
+      // else {
+      //   // assert(coarsening);
+      //   index_old += 2;
+      //   ++index_new;
+      // }
+    }
+  }
+
+  using MyVariant =
+      std::variant<std::vector<ElementId1d>, std::array<DataVector, 3>>;
+  // std::cout << sum1 << "\n";
+  std::vector<MyVariant> vec;
+  vec.push_back(new_elements);
+  vec.push_back(new_vars_copy);
+  // std::cout << "checking sizes" <<"\n";
+  // std::cout<<new_vars_copy[0].size()<< "\n";
+  // std::cout<<new_elements.size()<< "\n";
+
+  return vec;
+}
+void analytic_test(const Mesh<1>& mesh_of_one_element,
+                   const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
+                   const db::Access& box) {
+  const size_t num_elements = 10;
+
+  const double domain_length = 1.0;
+
+  std::vector<ElementId1d> element_ids;
+  for (size_t i = 0; i < num_elements; ++i) {
+    element_ids.emplace_back(0, SegmentId(0, i));
+  }
+
+  auto psi_analytic = [](double x) { return sin(M_PI * x); };
+  auto phi_analytic = [](double x) { return M_PI * cos(M_PI * x); };
+
+  std::array<DataVector, 3> vars;
+  vars[0] = DataVector(
+      num_elements * mesh_of_one_element.number_of_grid_points(), 0.0);
+  vars[1] = DataVector(
+      num_elements * mesh_of_one_element.number_of_grid_points(), 0.0);
+  vars[2] = DataVector(
+      num_elements * mesh_of_one_element.number_of_grid_points(), 0.0);
+
+  for (size_t i = 0; i < get<0>(radius).size(); i++) {
+    vars[0][i] = psi_analytic(get<0>(radius)[i]);
+    vars[1][i] = phi_analytic(get<0>(radius)[i]);
+    vars[2][i] = get<0>(radius)[i] * vars[1][i];
+  }
+
+  std::vector<std::variant<std::vector<ElementId1d>, std::array<DataVector, 3>>>
+      refined_result = determine_bad_truncation_error_test(
+          vars[1], num_elements, element_ids, mesh_of_one_element, box, vars);
+  element_ids = std::get<std::vector<ElementId1d>>(refined_result[0]);
+
+  vars = std::get<std::array<DataVector, 3>>(refined_result[1]);
 }
 void compute_time_derivatives_first_order_2(
     const gsl::not_null<Scalar<DataVector>*> dt_psi,
@@ -862,13 +1127,13 @@ void create_data_for_file(
   out_file << data_to_write.str();
   out_file.close();
 
-  std::stringstream mass_data_to_write{};
-  mass_data_to_write << std::setprecision(18) << std::scientific << time;
-  mass_data_to_write << std::setprecision(18) << get(*mass)[-1] << "\n";
-  std::ofstream mass_file;
-  mass_file.open(volume_data_directory + "/Mass.txt", std::ios::app);
-  mass_file << mass_data_to_write.str();
-  mass_file.close();
+  // std::stringstream mass_data_to_write{};
+  // mass_data_to_write << std::setprecision(18) << std::scientific << time;
+  // mass_data_to_write << std::setprecision(18) << get(*mass)[-1] << "\n";
+  // std::ofstream mass_file;
+  // mass_file.open(volume_data_directory + "/Mass.txt", std::ios::app);
+  // mass_file << mass_data_to_write.str();
+  // mass_file.close();
 
   std::stringstream truncation_error_data{};
   truncation_error_data
@@ -1066,8 +1331,8 @@ std::array<DataVector, 3> integrate_fields_in_time(
 
   Vars vars{get(psi), get(phi_tilde), get(pi)};
 
-  using StateDopri5 = boost::numeric::odeint::runge_kutta_dopri5<Vars>;
-  StateDopri5 st{};
+  // using StateDopri5 = boost::numeric::odeint::runge_kutta_dopri5<Vars>;
+  // StateDopri5 st{};
   std::vector<double> times;
 
   double time = 0.0;
@@ -1086,6 +1351,17 @@ std::array<DataVector, 3> integrate_fields_in_time(
 
   using std::abs;
   while (abs(time) <= (get<Tags::FinalTime>(box))) {
+    using StateDopri5 = boost::numeric::odeint::runge_kutta_dopri5<Vars>;
+    StateDopri5 st{};
+    // std::cout << "size_check" << "\n";
+    // std::cout<< get(*metric_function_a).size() << "\n";
+    // std::cout<< get(*delta).size() << "\n";
+    // std::cout<< get(*mass).size() << "\n";
+    // std::cout<< get(mutable_det_inverse_jacobian).size() << "\n";
+    // std::cout<< get(mutable_det_jacobian).size() << "\n";
+    // std::cout<< (*integrand_buffer).size() << "\n";
+    // std::cout<< get<0>(mutable_radius).size() << "\n";
+    // std::cout << element_ids.size() << "\n";
     auto system = [&mesh_of_one_element, &metric_function_a, &delta, &mass,
                    &mutable_radius, &mutable_det_inverse_jacobian,
                    &integrand_buffer, &mutable_det_jacobian, &matrix_buffer,
@@ -1141,6 +1417,7 @@ std::array<DataVector, 3> integrate_fields_in_time(
               get(temp_pi)[i * mesh_of_one_element.number_of_grid_points()];
         }
       }
+      // std::cout << "size_check" << "\n";
 
       Scalar<DataVector> temp_phi{get(temp_phi_tilde) * 4 *
                                   get<0>(mutable_radius)};
@@ -1159,6 +1436,7 @@ std::array<DataVector, 3> integrate_fields_in_time(
       // std::cout<< get(*metric_function_a) << "\n";
 
       const auto size = get(temp_psi).size();
+      // std::cout << size << "\n";
       Scalar<DataVector> temp_dtpsi{size, 0.0};
       Scalar<DataVector> temp_dtphi_tilde{size, 0.0};
       Scalar<DataVector> temp_dtpi{size, 0.0};
@@ -1183,6 +1461,7 @@ std::array<DataVector, 3> integrate_fields_in_time(
     }
     if (step % observation_frequency == 0 or black_hole_radius.has_value()) {
       std::cout << "The step is: " << step << "\n";
+      std::cout << "no of elements is: " << number_of_elements << "\n";
       create_data_for_file(mutable_radius, mesh_of_one_element, element_ids,
                            vars, integrand_buffer, mass, delta,
                            metric_function_a, get<Tags::Gamma2>(box),
@@ -1226,9 +1505,13 @@ std::array<DataVector, 3> integrate_fields_in_time(
     std::vector<MyVariant> returned_vec =
         determine_bad_truncation_error(vars[2], number_of_elements, element_ids,
                                        mesh_of_one_element, box, vars);
-    element_ids = std::get<std::vector<ElementId1d>>(returned_vec[0]);
-    vars = std::get<std::array<DataVector, 3>>(returned_vec[1]);
 
+    element_ids = std::get<std::vector<ElementId1d>>(returned_vec[0]);
+
+    vars = std::get<std::array<DataVector, 3>>(returned_vec[1]);
+    bool x = vars[0].size() / 10 == element_ids.size();
+    // std::cout << number_of_elements << "\n";
+    std::cout << x << "\n";
     number_of_elements = element_ids.size();
     tnsr::I<DataVector, 1, Frame::Grid> new_grid_coords =
         initialize_grid_coords(element_ids, number_of_elements,
@@ -1247,8 +1530,25 @@ std::array<DataVector, 3> integrate_fields_in_time(
                                    number_of_elements);
     get(*mass).destructive_resize(mesh_of_one_element.number_of_grid_points() *
                                   number_of_elements);
+    (*integrand_buffer)
+        .destructive_resize(mesh_of_one_element.number_of_grid_points() *
+                            number_of_elements);
+
     Scalar<DataVector> phi_new{vars[1] * 4 * get<0>(mutable_radius)};
     Scalar<DataVector> pi_new{vars[2]};
+    //    for (size_t element = mesh_of_one_element.number_of_grid_points();
+    //  element <
+    //  number_of_elements * mesh_of_one_element.number_of_grid_points() - 1;
+    //  element = element + mesh_of_one_element.number_of_grid_points()){
+    //   get(phi_new)[element] = (get(phi_new)[element] + get(phi_new)[element -
+    //   1])/2; get(pi_new)[element] = (get(pi_new)[element] +
+    //   get(pi_new)[element - 1])/2;
+    //  }
+    // make sure element boundaries are averaged
+    // smaller time step works?
+    // check nan and print before and after
+    // smaller CFL factor
+
     compute_delta_integral_logical(
         delta, integrand_buffer, mesh_of_one_element, phi_new, pi_new,
         mutable_det_jacobian, mutable_radius,
@@ -1260,7 +1560,9 @@ std::array<DataVector, 3> integrate_fields_in_time(
     compute_metric_function_a_from_mass(
         metric_function_a, *mass, mutable_radius,
         get<Tags::SpacetimeDimensions>(box), intermediate);
-    std::cout << number_of_elements << "\n";
+    // std::cout << number_of_elements << "\n";
+
+    // std::cout << "vector sizes match" << "\n";
     //  std::cout <<dt << "\n";
   }
   std::cout << "time " << time << "\n";
@@ -1379,36 +1681,7 @@ void run(const db::Access& box) {
       &integrand_buffer, det_jacobian, &matrix_buffer, mesh_of_one_element,
       element_ids, psi, phi_tilde, pi, &mass, &delta, &metric_function_a,
       radius, det_inv_jacobian, box, filter_matrices);
-  const Scalar<DataVector> temp_phi{evaluated_vars[1] * 4 * get<0>(radius)};
-  const Scalar<DataVector> temp_pi{evaluated_vars[2]};
-  const Scalar<DataVector> temp_psi{evaluated_vars[0]};
-  const Scalar<DataVector> temp_phi_tilde{evaluated_vars[1]};
-  compute_delta_integral_logical(&delta, &integrand_buffer, mesh_of_one_element,
-                                 temp_phi, temp_pi, det_jacobian, radius,
-                                 get<Tags::OuterBoundaryRadius>(box), false);
-  compute_mass_integral(&mass, &matrix_buffer, mesh_of_one_element, temp_phi,
-                        temp_pi, det_jacobian, radius,
-                        get<Tags::SpacetimeDimensions>(box),
-                        get<Tags::OuterBoundaryRadius>(box), false);
-  compute_metric_function_a_from_mass(&metric_function_a, mass, radius,
-                                      get<Tags::SpacetimeDimensions>(box),
-                                      false);
-  const std::string& volume_data_directory =
-      get<Tags::VolumeDataDirectory>(box);
-  std::ofstream out_file{volume_data_directory + "/final_output_run.txt"};
-  out_file << "# 0 radius\n# 1 psi\n# 2 phi\n# 3 phi_tilde\n# 4 pi\n# 5 delta\n"
-           << "# 6 mass\n# 7 A\n# 8 dt_psi\n# 9 dt_phi_tilde\n# 10 dt_pi\n"
-           << "# 11 det_jacobian\n";
-  for (size_t i = 0; i < get<0>(radius).size(); ++i) {
-    out_file << std::setprecision(18) << get<0>(radius)[i] << ' '
-             << get(temp_psi)[i] << ' ' << get(temp_phi)[i] << ' '
-             << get(temp_phi_tilde)[i] << ' ' << get(temp_pi)[i] << ' '
-             << get(delta)[i] << ' ' << get(mass)[i] << ' '
-             << get(metric_function_a)[i] << ' ' << get(dt_psi)[i] << ' '
-             << get(dt_phi_tilde)[i] << ' ' << get(dt_pi)[i] << ' '
-             << get(det_inv_jacobian)[i] << "\n";
-  }
-  out_file.close();
+
 }
 
 int main(int argc, char** argv) {
