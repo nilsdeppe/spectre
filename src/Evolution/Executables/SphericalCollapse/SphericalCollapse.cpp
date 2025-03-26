@@ -31,7 +31,7 @@
 #include "Domain/CoordinateMaps/CoordinateMap.tpp"
 #include "Domain/CoordinateMaps/Distribution.hpp"
 #include "Domain/CoordinateMaps/Interval.hpp"
-#include "Domain/Creators/Interval.hpp"
+// #include "Domain/Creators/Interval.hpp"
 #include "Domain/Creators/RegisterDerivedWithCharm.hpp"
 #include "Domain/ElementToBlockLogicalMap.hpp"
 #include "Domain/Structure/ChildSize.hpp"
@@ -735,44 +735,44 @@ determine_bad_truncation_error(const DataVector variable_to_check,
         truncation_error_estimate(variable_to_check, mesh_of_one_element,
                                   element_index, number_of_elements,
                                   box) < condition2;
-    // if ((element_ids[element_index].segment_id.refinement_level() <
-    //      ElementId<1>::max_refinement_level) &&
-    //     std::all_of(child_ids.begin(), child_ids.end(),
-    //                 [](const ElementId<1>& id) {
-    //                   return id.segment_id(0).refinement_level() <
-    //                          ElementId<1>::max_refinement_level;
-    //                 })) {
-    // std::cout << "lower_Refine" << "\n";
-    // std::cout << (element_ids[element_index].segment_id).refinement_level()
-    // << "\n";
-    if (refine) {
-      // std::cout << "here" << '\n';
-      // refine more (add children)
-      changed.push_back(1);
-      for (size_t ind = 0; ind < child_ids.size(); ind += 1) {
-        // ElementId1d child_id{0, child_ids[ind].segment_id(0)};
-        new_elements.push_back(child_ids[ind]);
-        sum_refine += 1;
+    const size_t max_refinement_level = 20;
+    if ((element_ids[element_index].segment_id.refinement_level() <
+         max_refinement_level) &&
+        std::all_of(
+            child_ids.begin(), child_ids.end(), [](const ElementId1d& id) {
+              return id.segment_id.refinement_level() < max_refinement_level;
+            })) {
+      // std::cout << "lower_Refine" << "\n";
+      // std::cout << (element_ids[element_index].segment_id).refinement_level()
+      // << "\n";
+      if (refine) {
+        // std::cout << "here" << '\n';
+        // refine more (add children)
+        changed.push_back(1);
+        for (size_t ind = 0; ind < child_ids.size(); ind += 1) {
+          // ElementId1d child_id{0, child_ids[ind].segment_id(0)};
+          new_elements.push_back(child_ids[ind]);
+          sum_refine += 1;
+        }
+
       }
+      // else if (coarse){
+      //   // refine less (combine to get parent)
+      // changed.push_back(2);
+      //   // element_ids.erase(element_ids.begin() + element_index);
+      //   // element_ids.erase(element_ids.begin() + index_of_sibling);
+      //   ElementId1d parent_id_new{0, parent_id.segment_id(0)};
+      //   new_elements.push_back(parent_id_new);
 
+      // }
+      else if (!refine) {
+        changed.push_back(0);
+        new_elements.push_back(element_ids[element_index]);
+        sum_nochange += 1;
+      }
+    } else {
+      max_reached = true;
     }
-    // else if (coarse){
-    //   // refine less (combine to get parent)
-    // changed.push_back(2);
-    //   // element_ids.erase(element_ids.begin() + element_index);
-    //   // element_ids.erase(element_ids.begin() + index_of_sibling);
-    //   ElementId1d parent_id_new{0, parent_id.segment_id(0)};
-    //   new_elements.push_back(parent_id_new);
-
-    // }
-    else if (!refine) {
-      changed.push_back(0);
-      new_elements.push_back(element_ids[element_index]);
-      sum_nochange += 1;
-    }
-    // } else {
-    //   max_reached = true;
-    // }
   }
   if (max_reached == true) {
     new_elements = element_ids;
@@ -1078,27 +1078,28 @@ double compute_adaptive_step_size(
   return min_adapted_dt;
 }
 
-void write_data_hd5file(const std::vector<ElementVolumeData>& volume_data,
-                        const observers::ObservationId& observation_id,
-                        const double lower_r, const double upper_r,
-                        const double time) {
-  const std::string h5_file_name{"VolumeDataForFields"};
-  const std::string input_source{""};
-  const std::string subfile_path{"/ElementData"};
-  const uint32_t version_number = 0;
-  h5::H5File<h5::AccessType::ReadWrite> h5_file{h5_file_name + ".h5"s, true,
-                                                input_source};
-  auto& volume_file =
-      h5_file.try_insert<h5::VolumeData>(subfile_path, version_number);
+// void write_data_hd5file(const std::vector<ElementVolumeData>& volume_data,
+//                         const observers::ObservationId& observation_id,
+//                         const double lower_r, const double upper_r,
+//                         const double time) {
+//   const std::string h5_file_name{"VolumeDataForFields"};
+//   const std::string input_source{""};
+//   const std::string subfile_path{"/ElementData"};
+//   const uint32_t version_number = 0;
+//   h5::H5File<h5::AccessType::ReadWrite> h5_file{h5_file_name + ".h5"s, true,
+//                                                 input_source};
+//   auto& volume_file =
+//       h5_file.try_insert<h5::VolumeData>(subfile_path, version_number);
 
-  // Just write an invalid domain for now.
-  domain::creators::Interval interval{std::array{lower_r}, std::array{upper_r},
-                                      std::array{0_st}, std::array{10_st}};
-  Domain<1> domain = interval.create_domain();
-  const auto serialized_domain = serialize(domain);
-  volume_file.write_volume_data(observation_id.hash(), time, volume_data,
-                                serialized_domain);
-}
+//   // Just write an invalid domain for now.
+//   domain::creators::Interval interval{std::array{lower_r},
+//   std::array{upper_r},
+//                                       std::array{0_st}, std::array{10_st}};
+//   Domain<1> domain = interval.create_domain();
+//   const auto serialized_domain = serialize(domain);
+//   volume_file.write_volume_data(observation_id.hash(), time, volume_data,
+//                                 serialized_domain);
+// }
 
 void create_data_for_file(
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
