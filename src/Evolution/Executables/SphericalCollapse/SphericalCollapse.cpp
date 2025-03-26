@@ -198,6 +198,38 @@ struct ElementId1d {
                other.segment_id;  // Adjust comparison as per actual structure
   }
 };
+std::ostream& operator<<(std::ostream& os, const ElementId1d& id) {
+  return os << "(" << id.block_id << "," << id.segment_id << ")";
+}
+
+template <size_t VolumeDim>
+ElementId1d id_of_parent(const ElementId1d& element_id,
+                         const std::array<amr::Flag, VolumeDim>& flags) {
+  using ::operator<<;
+  ASSERT(alg::count(flags, amr::Flag::Join) > 0,
+         "Element " << element_id << " is not joining given flags " << flags);
+  ASSERT(alg::count(flags, amr::Flag::Split) == 0,
+         "Splitting and joining an Element is not supported");
+
+  return {element_id.block_id, element_id.segment_id.id_of_parent()};
+}
+
+template <size_t VolumeDim>
+std::vector<ElementId1d> ids_of_children(
+    const ElementId1d& element_id,
+    const std::array<amr::Flag, VolumeDim>& flags) {
+  using ::operator<<;
+  ASSERT(alg::count(flags, amr::Flag::Split) > 0,
+         "Element " << element_id << " has no children given flags " << flags);
+  ASSERT(alg::count(flags, amr::Flag::Join) == 0,
+         "Splitting and joining an Element is not supported");
+  const size_t block_id = element_id.block_id;
+  // const size_t grid_index = element_id.grid_index();
+  if constexpr (VolumeDim == 1) {
+    return {{block_id, {{element_id.segment_id.id_of_child(Side::Lower)}}},
+            {block_id, {{element_id.segment_id.id_of_child(Side::Upper)}}}};
+  }
+}
 std::vector<domain::CoordinateMap<Frame::ElementLogical, Frame::Grid,
                                   domain::CoordinateMaps::Affine,
                                   domain::CoordinateMaps::Interval>>
@@ -484,12 +516,13 @@ determine_bad_truncation_error_test(const DataVector variable_to_check,
   for (size_t element_index = 0; element_index < number_of_elements;
        element_index += 1) {
     // bool changed_any_element = false;
-    ElementId<1> element_id_1d{0, {{element_ids[element_index].segment_id}}};
-    ElementId<1> parent_id =
-        amr::id_of_parent(element_id_1d, std::array{amr::Flag::Join});
-    std::vector<ElementId<1>> child_ids =
-        amr::ids_of_children(element_id_1d, std::array{amr::Flag::Split});
-    SegmentId sibling_segid = element_id_1d.segment_id(0).id_of_sibling();
+    // ElementId<1> element_id_1d{0, {{element_ids[element_index].segment_id}}};
+    ElementId1d parent_id =
+        id_of_parent(element_ids[element_index], std::array{amr::Flag::Join});
+    std::vector<ElementId1d> child_ids = ids_of_children(
+        element_ids[element_index], std::array{amr::Flag::Split});
+    SegmentId sibling_segid =
+        (element_ids[element_index]).segment_id.id_of_sibling();
     ElementId1d sibling_id = ElementId1d(0, sibling_segid);
 
     auto it = std::find(element_ids.begin(), element_ids.end(), sibling_id);
@@ -511,8 +544,8 @@ determine_bad_truncation_error_test(const DataVector variable_to_check,
       // refine more (add children)
       changed.push_back(1);
       for (size_t ind = 0; ind < child_ids.size(); ind += 1) {
-        ElementId1d child_id{0, child_ids[ind].segment_id(0)};
-        new_elements.push_back(child_id);
+        // ElementId1d child_id{0, child_ids[ind].segment_id(0)};
+        new_elements.push_back(child_ids[ind]);
       }
 
     }
@@ -532,13 +565,13 @@ determine_bad_truncation_error_test(const DataVector variable_to_check,
   }
   bool equality = new_elements.size() == element_ids.size();
   size_t sum1 = 0;
-  if (equality == 0) {
-    // // std::cout << vars[2] << "\n";
-    // std::cout << changed << "\n";
-    // std::cout << "unequal" << "\n";
-    // std::cout << new_elements.size() << "\n";
-    // std::cout << element_ids.size() << "\n";
-  }
+  // if (equality == 0) {
+  //   // // std::cout << vars[2] << "\n";
+  //   // std::cout << changed << "\n";
+  //   // std::cout << "unequal" << "\n";
+  //   // std::cout << new_elements.size() << "\n";
+  //   // std::cout << element_ids.size() << "\n";
+  // }
 
   std::array<DataVector, 3> new_vars_copy = vars;
   // std::array<DataVector, 3> new_vars;
@@ -671,22 +704,21 @@ determine_bad_truncation_error(const DataVector variable_to_check,
   std::vector<ElementId1d> new_elements{};
   size_t sum_refine = 0;
   size_t sum_nochange = 0;
-  std::cout << "check1" << number_of_elements << "\n";
-  std::cout << "check2" << element_ids.size() << "\n";
+  // std::cout << "check1" << number_of_elements << "\n";
+  // std::cout << "check2" << element_ids.size() << "\n";
   std::vector<int> changed{};
   bool max_reached = false;
   // 0: nothing changed, 1: refined, 2: coarsened
   for (size_t element_index = 0; element_index < number_of_elements;
        element_index += 1) {
     // bool changed_any_element = false;
-    ElementId<1> element_id_1d{0, {{element_ids[element_index].segment_id}}};
-    ElementId<1> parent_id =
-        amr::id_of_parent(element_id_1d, std::array{amr::Flag::Join});
-    std::vector<ElementId<1>> child_ids =
-        amr::ids_of_children(element_id_1d, std::array{amr::Flag::Split});
-    SegmentId sibling_segid = element_id_1d.segment_id(0).id_of_sibling();
+    ElementId1d parent_id =
+        id_of_parent(element_ids[element_index], std::array{amr::Flag::Join});
+    std::vector<ElementId1d> child_ids = ids_of_children(
+        element_ids[element_index], std::array{amr::Flag::Split});
+    SegmentId sibling_segid =
+        (element_ids[element_index]).segment_id.id_of_sibling();
     ElementId1d sibling_id = ElementId1d(0, sibling_segid);
-
     auto it = std::find(element_ids.begin(), element_ids.end(), sibling_id);
 
     size_t index_of_sibling = std::distance(element_ids.begin(), it);
@@ -703,44 +735,44 @@ determine_bad_truncation_error(const DataVector variable_to_check,
         truncation_error_estimate(variable_to_check, mesh_of_one_element,
                                   element_index, number_of_elements,
                                   box) < condition2;
-    if ((element_ids[element_index].segment_id.refinement_level() <
-         ElementId<1>::max_refinement_level) &&
-        std::all_of(child_ids.begin(), child_ids.end(),
-                    [](const ElementId<1>& id) {
-                      return id.segment_id(0).refinement_level() <
-                             ElementId<1>::max_refinement_level;
-                    })) {
-      // std::cout << "lower_Refine" << "\n";
-      // std::cout << (element_ids[element_index].segment_id).refinement_level()
-      // << "\n";
-      if (refine) {
-        std::cout << "here" << '\n';
-        // refine more (add children)
-        changed.push_back(1);
-        for (size_t ind = 0; ind < child_ids.size(); ind += 1) {
-          ElementId1d child_id{0, child_ids[ind].segment_id(0)};
-          new_elements.push_back(child_id);
-          sum_refine += 1;
-        }
-
+    // if ((element_ids[element_index].segment_id.refinement_level() <
+    //      ElementId<1>::max_refinement_level) &&
+    //     std::all_of(child_ids.begin(), child_ids.end(),
+    //                 [](const ElementId<1>& id) {
+    //                   return id.segment_id(0).refinement_level() <
+    //                          ElementId<1>::max_refinement_level;
+    //                 })) {
+    // std::cout << "lower_Refine" << "\n";
+    // std::cout << (element_ids[element_index].segment_id).refinement_level()
+    // << "\n";
+    if (refine) {
+      // std::cout << "here" << '\n';
+      // refine more (add children)
+      changed.push_back(1);
+      for (size_t ind = 0; ind < child_ids.size(); ind += 1) {
+        // ElementId1d child_id{0, child_ids[ind].segment_id(0)};
+        new_elements.push_back(child_ids[ind]);
+        sum_refine += 1;
       }
-      // else if (coarse){
-      //   // refine less (combine to get parent)
-      // changed.push_back(2);
-      //   // element_ids.erase(element_ids.begin() + element_index);
-      //   // element_ids.erase(element_ids.begin() + index_of_sibling);
-      //   ElementId1d parent_id_new{0, parent_id.segment_id(0)};
-      //   new_elements.push_back(parent_id_new);
 
-      // }
-      else if (!refine) {
-        changed.push_back(0);
-        new_elements.push_back(element_ids[element_index]);
-        sum_nochange += 1;
-      }
-    } else {
-      max_reached = true;
     }
+    // else if (coarse){
+    //   // refine less (combine to get parent)
+    // changed.push_back(2);
+    //   // element_ids.erase(element_ids.begin() + element_index);
+    //   // element_ids.erase(element_ids.begin() + index_of_sibling);
+    //   ElementId1d parent_id_new{0, parent_id.segment_id(0)};
+    //   new_elements.push_back(parent_id_new);
+
+    // }
+    else if (!refine) {
+      changed.push_back(0);
+      new_elements.push_back(element_ids[element_index]);
+      sum_nochange += 1;
+    }
+    // } else {
+    //   max_reached = true;
+    // }
   }
   if (max_reached == true) {
     new_elements = element_ids;
@@ -1681,7 +1713,6 @@ void run(const db::Access& box) {
       &integrand_buffer, det_jacobian, &matrix_buffer, mesh_of_one_element,
       element_ids, psi, phi_tilde, pi, &mass, &delta, &metric_function_a,
       radius, det_inv_jacobian, box, filter_matrices);
-
 }
 
 int main(int argc, char** argv) {
