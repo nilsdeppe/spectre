@@ -12,9 +12,11 @@
 #include <iterator>
 #include <limits>
 #include <string>
+#include <tuple>
 #include <typeinfo>
 #include <variant>
 #include "DataStructures/ApplyMatrices.hpp"
+#include "DataStructures/Blaze/IntegerPow.hpp"
 #include "DataStructures/DataBox/Access.hpp"
 #include "DataStructures/DataBox/DataBox.hpp"
 #include "DataStructures/DataBox/Tag.hpp"
@@ -215,7 +217,7 @@ ElementId1d id_of_parent(const ElementId1d& element_id,
 }
 
 template <size_t VolumeDim>
-std::vector<ElementId1d> ids_of_children(
+std::array<ElementId1d, 2> ids_of_children(
     const ElementId1d& element_id,
     const std::array<amr::Flag, VolumeDim>& flags) {
   using ::operator<<;
@@ -226,15 +228,15 @@ std::vector<ElementId1d> ids_of_children(
   const size_t block_id = element_id.block_id;
   // const size_t grid_index = element_id.grid_index();
   if constexpr (VolumeDim == 1) {
-    return {{block_id, {{element_id.segment_id.id_of_child(Side::Lower)}}},
-            {block_id, {{element_id.segment_id.id_of_child(Side::Upper)}}}};
+    return {{{block_id, {{element_id.segment_id.id_of_child(Side::Lower)}}},
+             {block_id, {{element_id.segment_id.id_of_child(Side::Upper)}}}}};
   }
 }
 std::vector<domain::CoordinateMap<Frame::ElementLogical, Frame::Grid,
                                   domain::CoordinateMaps::Affine,
                                   domain::CoordinateMaps::Interval>>
 make_coordinate_map(const size_t number_of_elements,
-                    std::vector<ElementId1d> element_ids) {
+                    std::vector<ElementId1d>& element_ids) {
   std::vector<domain::CoordinateMap<Frame::ElementLogical, Frame::Grid,
                                     domain::CoordinateMaps::Affine,
                                     domain::CoordinateMaps::Interval>>
@@ -263,7 +265,7 @@ make_coordinate_map(const size_t number_of_elements,
   return coordinate_maps;
 }
 tnsr::I<DataVector, 1, Frame::Grid> initialize_grid_coords(
-    std::vector<ElementId1d> element_ids, const size_t number_of_elements,
+    std::vector<ElementId1d>& element_ids, const size_t number_of_elements,
     const Mesh<1>& mesh_of_one_element) {
   const tnsr::I<DataVector, 1, Frame::ElementLogical>
       logical_coords_one_element{logical_coordinates(mesh_of_one_element)};
@@ -288,7 +290,7 @@ tnsr::I<DataVector, 1, Frame::Grid> initialize_grid_coords(
   return grid_coords;
 }
 std::array<const Scalar<DataVector>, 2> create_jacobians(
-    const Mesh<1>& mesh_of_one_element, std::vector<ElementId1d> element_ids,
+    const Mesh<1>& mesh_of_one_element, std::vector<ElementId1d>& element_ids,
     const size_t number_of_elements) {
   const tnsr::I<DataVector, 1, Frame::ElementLogical>
       logical_coords_one_element{logical_coordinates(mesh_of_one_element)};
@@ -336,7 +338,7 @@ std::array<const Scalar<DataVector>, 2> create_jacobians(
   return dets;
 }
 static bool use_flat_space = false;
-const DataVector read_element_data(const DataVector quantity,
+const DataVector read_element_data(const DataVector& quantity,
                                    const Mesh<1>& mesh_of_one_element,
                                    const size_t element_index,
                                    const size_t number_of_elements) {
@@ -438,7 +440,8 @@ void compute_mass_integral(
             square(outer_boundary_radius);
         view[i] += integration_matrix(i, k) * 0.5 * sigma *
                    get(det_jacobian)[index] *
-                   pow(get<0>(radius)[index], spacetime_dim - 3);
+                   integer_pow(get<0>(radius)[index],
+                               static_cast<int>(spacetime_dim) - 3);
         matrix_buffer->operator()(i, k) =
             (i == k ? 1.0 : 0.0) +
             integration_matrix(i, k) * sigma * get(det_jacobian)[index];
@@ -468,206 +471,32 @@ void compute_metric_function_a_from_mass(
       get<0>(radius).size() - 1};
 
   get(*metric_function_a)[0] = 1.0;
-  view_a = 1.0 - 2.0 * view_mass / pow(view_radius, spacetime_dim - 3);
-  for (size_t i = 1; i < get(mass).size(); ++i) {
-    get(*metric_function_a)[i] =
-        1.0 - 2.0 * get(mass)[i] / pow(get<0>(radius)[i], spacetime_dim - 3.0);
-  }
+  view_a =
+      1.0 - 2.0 * view_mass /
+                integer_pow(view_radius, static_cast<int>(spacetime_dim) - 3);
+  // for (size_t i = 1; i < get(mass).size(); ++i) {
+  //   get(*metric_function_a)[i] =
+  //       1.0 - 2.0 * get(mass)[i] / pow(get<0>(radius)[i], spacetime_dim
+  //       - 3.0);
+  // }
 }
-float truncation_error_estimate(const DataVector variable_to_check,
-                                const Mesh<1>& mesh_of_one_element,
-                                const size_t element_index,
-                                const size_t number_of_elements,
-                                const db::Access& box) {
-  float abs_error = PowerMonitors::absolute_truncation_error(
+double truncation_error_estimate(const DataVector& variable_to_check,
+                                 const Mesh<1>& mesh_of_one_element,
+                                 const size_t element_index,
+                                 const size_t number_of_elements,
+                                 const db::Access& box) {
+  double abs_error = PowerMonitors::absolute_truncation_error(
       read_element_data(variable_to_check, mesh_of_one_element, element_index,
                         number_of_elements),
       mesh_of_one_element)[0];
-  float rel_error = PowerMonitors::relative_truncation_error(
+  double rel_error = PowerMonitors::relative_truncation_error(
       read_element_data(variable_to_check, mesh_of_one_element, element_index,
                         number_of_elements),
       mesh_of_one_element)[0];
-  float rel_tolerance = 1e-5;
-  float abs_tolerance = 1e-6 * get<Tags::Amplitude>(box);
+  double rel_tolerance = 1e-5;
+  double abs_tolerance = 1e-6 * get<Tags::Amplitude>(box);
   return std::abs(abs_error) /
          (abs_tolerance + std::abs(rel_error) * rel_tolerance);
-}
-float truncation_error_estimate_test(const DataVector variable_to_check,
-                                     const Mesh<1>& mesh_of_one_element,
-                                     const size_t element_index,
-                                     const size_t number_of_elements,
-                                     const db::Access& box) {
-  float val = 1.1;
-  return val;
-}
-
-std::vector<std::variant<std::vector<ElementId1d>, std::array<DataVector, 3>>>
-determine_bad_truncation_error_test(const DataVector variable_to_check,
-                                    const size_t number_of_elements,
-                                    std::vector<ElementId1d> element_ids,
-                                    const Mesh<1>& mesh_of_one_element,
-                                    const db::Access& box,
-                                    std::array<DataVector, 3> vars) {
-  // need to define this "condition1"
-  std::vector<ElementId1d> new_elements{};
-
-  std::vector<int> changed{};
-  // 0: nothing changed, 1: refined, 2: coarsened
-  for (size_t element_index = 0; element_index < number_of_elements;
-       element_index += 1) {
-    // bool changed_any_element = false;
-    // ElementId<1> element_id_1d{0, {{element_ids[element_index].segment_id}}};
-    ElementId1d parent_id =
-        id_of_parent(element_ids[element_index], std::array{amr::Flag::Join});
-    std::vector<ElementId1d> child_ids = ids_of_children(
-        element_ids[element_index], std::array{amr::Flag::Split});
-    SegmentId sibling_segid =
-        (element_ids[element_index]).segment_id.id_of_sibling();
-    ElementId1d sibling_id = ElementId1d(0, sibling_segid);
-
-    auto it = std::find(element_ids.begin(), element_ids.end(), sibling_id);
-
-    size_t index_of_sibling = std::distance(element_ids.begin(), it);
-    const double condition1 = 1;
-    const double condition2 = 1e-8;
-    const bool refine =
-        truncation_error_estimate_test(variable_to_check, mesh_of_one_element,
-                                       element_index, number_of_elements,
-                                       box) > condition1;
-    const bool coarse =
-        truncation_error_estimate_test(variable_to_check, mesh_of_one_element,
-                                       element_index, number_of_elements,
-                                       box) < condition2;
-
-    if (refine) {
-      // std::cout << "here" << '\n';
-      // refine more (add children)
-      changed.push_back(1);
-      for (size_t ind = 0; ind < child_ids.size(); ind += 1) {
-        // ElementId1d child_id{0, child_ids[ind].segment_id(0)};
-        new_elements.push_back(child_ids[ind]);
-      }
-
-    }
-    // else if (coarse){
-    //   // refine less (combine to get parent)
-    // changed.push_back(2);
-    //   // element_ids.erase(element_ids.begin() + element_index);
-    //   // element_ids.erase(element_ids.begin() + index_of_sibling);
-    //   ElementId1d parent_id_new{0, parent_id.segment_id(0)};
-    //   new_elements.push_back(parent_id_new);
-
-    // }
-    else {
-      changed.push_back(0);
-      new_elements.push_back(element_ids[element_index]);
-    }
-  }
-  bool equality = new_elements.size() == element_ids.size();
-  size_t sum1 = 0;
-  // if (equality == 0) {
-  //   // // std::cout << vars[2] << "\n";
-  //   // std::cout << changed << "\n";
-  //   // std::cout << "unequal" << "\n";
-  //   // std::cout << new_elements.size() << "\n";
-  //   // std::cout << element_ids.size() << "\n";
-  // }
-
-  std::array<DataVector, 3> new_vars_copy = vars;
-  // std::array<DataVector, 3> new_vars;
-  new_vars_copy[0].destructive_resize(
-      mesh_of_one_element.number_of_grid_points() * new_elements.size());
-  // std::cout << "new vars size" << new_vars_copy[0].size() << "\n";
-  new_vars_copy[1].destructive_resize(
-      mesh_of_one_element.number_of_grid_points() * new_elements.size());
-  new_vars_copy[2].destructive_resize(
-      mesh_of_one_element.number_of_grid_points() * new_elements.size());
-  for (size_t var_index = 0; var_index < 3; ++var_index) {
-    for (size_t index_old = 0, index_new = 0; index_old < element_ids.size();) {
-      // std::cout << changed << '\n';
-      if (changed[index_old] == 0) {
-        // std::cout << "after" <<"\n";
-        DataVector view_old{
-            &vars[var_index]
-                 [index_old * mesh_of_one_element.number_of_grid_points()],
-            mesh_of_one_element.number_of_grid_points()};
-        // std::cout <<"here" << '\n';
-        DataVector view_new{
-            &new_vars_copy[var_index][index_new * mesh_of_one_element
-                                                      .number_of_grid_points()],
-            mesh_of_one_element.number_of_grid_points()};
-        // std::cout <<"here" << '\n';
-        view_new = view_old;
-
-        // std::cout <<"here" << '\n';
-        // };
-
-        ++index_old;
-        ++index_new;
-        ++sum1;
-      } else if (changed[index_old] == 1) {
-        // std::cout << "new" << "\n";
-        // std::cout << index_new << "\n";
-        // std::cout << "old" << "\n";
-        // std::cout << index_old << "\n";
-        // std::cout << changed<< "\n";
-        //   // TODO: Create matrices for both lower and upper projection
-
-        std::array<std::reference_wrapper<const Matrix>, 2> matrices{
-            {std::cref(Spectral::projection_matrix_parent_to_child(
-                 mesh_of_one_element, mesh_of_one_element,
-                 Spectral::ChildSize::LowerHalf)),
-             std::cref(Spectral::projection_matrix_parent_to_child(
-                 mesh_of_one_element, mesh_of_one_element,
-                 Spectral::ChildSize::UpperHalf))}};
-
-        for (size_t i = 0; i < 2; ++i) {  // loop over lower & upper
-          DataVector view_old{
-              &vars[var_index]
-                   [index_old * mesh_of_one_element.number_of_grid_points()],
-              mesh_of_one_element.number_of_grid_points()};
-          // std::cout << index_new *
-          // mesh_of_one_element.number_of_grid_points()
-          //           << "\n";
-          DataVector view_new{
-              &new_vars_copy[var_index]
-                            [index_new *
-                             mesh_of_one_element.number_of_grid_points()],
-              mesh_of_one_element.number_of_grid_points()};
-          // std::cout << var_index << "\n";
-
-          // std::cout << new_vars_copy[var_index]<< "\n";
-
-          apply_matrices(make_not_null(&view_new),
-                         std::array<Matrix, 1>{matrices[i].get()}, view_old,
-                         mesh_of_one_element.extents());
-          // if (var_index ==0){std::cout << new_vars_copy[var_index]<< "\n";
-          // std::cout << view_new<< "\n";}
-
-          ++index_new;
-          ++sum1;
-        }
-
-        ++index_old;
-      } else {
-        // assert(coarsening);
-        index_old += 2;
-        ++index_new;
-      }
-    }
-  }
-
-  using MyVariant =
-      std::variant<std::vector<ElementId1d>, std::array<DataVector, 3>>;
-  // std::cout << sum1 << "\n";
-  std::vector<MyVariant> vec;
-  vec.push_back(new_elements);
-  vec.push_back(new_vars_copy);
-  // std::cout << "checking sizes" <<"\n";
-  // std::cout<<new_vars_copy[0].size()<< "\n";
-  // std::cout<<new_elements.size()<< "\n";
-
-  return vec;
 }
 
 /*
@@ -693,8 +522,10 @@ std::vector<ElementId1d> compute_element_ids(
   // std::cout << "is it this vector(4)" << "\n";
   return element_ids;
 }
-std::vector<std::variant<std::vector<ElementId1d>, std::array<DataVector, 3>>>
-determine_bad_truncation_error(const DataVector variable_to_check,
+// std::vector<std::variant<std::vector<ElementId1d>, std::array<DataVector,
+// 3>>>
+std::tuple<std::vector<ElementId1d>, std::array<DataVector, 3>, size_t>
+determine_bad_truncation_error(const DataVector& variable_to_check,
                                const size_t number_of_elements,
                                std::vector<ElementId1d> element_ids,
                                const Mesh<1>& mesh_of_one_element,
@@ -707,6 +538,7 @@ determine_bad_truncation_error(const DataVector variable_to_check,
   // std::cout << "check1" << number_of_elements << "\n";
   // std::cout << "check2" << element_ids.size() << "\n";
   std::vector<int> changed{};
+  size_t changed_val = 0;
   bool max_reached = false;
   // 0: nothing changed, 1: refined, 2: coarsened
   for (size_t element_index = 0; element_index < number_of_elements;
@@ -714,7 +546,7 @@ determine_bad_truncation_error(const DataVector variable_to_check,
     // bool changed_any_element = false;
     ElementId1d parent_id =
         id_of_parent(element_ids[element_index], std::array{amr::Flag::Join});
-    std::vector<ElementId1d> child_ids = ids_of_children(
+    std::array<ElementId1d, 2> child_ids = ids_of_children(
         element_ids[element_index], std::array{amr::Flag::Split});
     SegmentId sibling_segid =
         (element_ids[element_index]).segment_id.id_of_sibling();
@@ -735,24 +567,18 @@ determine_bad_truncation_error(const DataVector variable_to_check,
         truncation_error_estimate(variable_to_check, mesh_of_one_element,
                                   element_index, number_of_elements,
                                   box) < condition2;
-    const size_t max_refinement_level = 20;
+    const size_t max_refinement_level = 28;
     if ((element_ids[element_index].segment_id.refinement_level() <
          max_refinement_level) &&
         std::all_of(
             child_ids.begin(), child_ids.end(), [](const ElementId1d& id) {
               return id.segment_id.refinement_level() < max_refinement_level;
             })) {
-      // std::cout << "lower_Refine" << "\n";
-      // std::cout << (element_ids[element_index].segment_id).refinement_level()
-      // << "\n";
       if (refine) {
-        // std::cout << "here" << '\n';
-        // refine more (add children)
         changed.push_back(1);
         for (size_t ind = 0; ind < child_ids.size(); ind += 1) {
-          // ElementId1d child_id{0, child_ids[ind].segment_id(0)};
           new_elements.push_back(child_ids[ind]);
-          sum_refine += 1;
+          changed_val += 1;
         }
 
       }
@@ -768,7 +594,7 @@ determine_bad_truncation_error(const DataVector variable_to_check,
       else if (!refine) {
         changed.push_back(0);
         new_elements.push_back(element_ids[element_index]);
-        sum_nochange += 1;
+        // sum_nochange += 1;
       }
     } else {
       max_reached = true;
@@ -777,163 +603,90 @@ determine_bad_truncation_error(const DataVector variable_to_check,
   if (max_reached == true) {
     new_elements = element_ids;
     changed = std::vector<int>(new_elements.size(), 0);
-  }
-  std::cout << "refined_sum" << sum_refine << "\n";
-  std::cout << "no_change/-sum" << sum_nochange << "\n";
-  bool equality = new_elements.size() == element_ids.size();
-  size_t sum1 = 0;
-  if (equality == 0) {
-    // std::cout << vars[2] << "\n";
-    std::cout << changed << "\n";
-    std::cout << "unequal"
-              << "\n";
-    std::cout << new_elements.size() << "\n";
-    std::cout << element_ids.size() << "\n";
+    changed_val = 0;
   }
 
-  std::array<DataVector, 3> new_vars_copy = vars;
-  // if (changed.size() ==0) { std::cout << "here for no change" << "\n";
-  //   new_elements = element_ids;}
-  // std::array<DataVector, 3> new_vars;
+  // check if changed is all 0, no refinement change
+  if (changed_val != 0) {
+    std::array<DataVector, 3> new_vars_copy = vars;
 
-  std::cout << "working"
-            << "\n";
-  new_vars_copy[0].destructive_resize(
-      mesh_of_one_element.number_of_grid_points() * new_elements.size());
-  std::cout << "new vars size" << new_vars_copy[0].size() / 10 << "\n";
-  new_vars_copy[1].destructive_resize(
-      mesh_of_one_element.number_of_grid_points() * new_elements.size());
-  new_vars_copy[2].destructive_resize(
-      mesh_of_one_element.number_of_grid_points() * new_elements.size());
-  for (size_t var_index = 0; var_index < 3; ++var_index) {
-    for (size_t index_old = 0, index_new = 0; index_old < element_ids.size();) {
-      std::cout << element_ids.size() << index_old << "\n";
-      std::cout << changed.size() << "\n";
-      // std::cout << changed << '\n';
-      if (changed[index_old] == 0) {
-        std::cout << "after"
-                  << "\n";
-        DataVector view_old{
-            &vars[var_index]
-                 [index_old * mesh_of_one_element.number_of_grid_points()],
-            mesh_of_one_element.number_of_grid_points()};
-        // std::cout <<"here" << '\n';
-        DataVector view_new{
-            &new_vars_copy[var_index][index_new * mesh_of_one_element
-                                                      .number_of_grid_points()],
-            mesh_of_one_element.number_of_grid_points()};
-        // std::cout <<"here" << '\n';
-        view_new = view_old;
+    new_vars_copy[0].destructive_resize(
+        mesh_of_one_element.number_of_grid_points() * new_elements.size());
 
-        // std::cout <<"here" << '\n';
-        // };
-
-        ++index_old;
-        ++index_new;
-        ++sum1;
-      } else if (changed[index_old] == 1) {
-        std::cout << "new"
-                  << "\n";
-        std::cout << index_new << "\n";
-        std::cout << "old"
-                  << "\n";
-        std::cout << index_old << "\n";
-        std::cout << changed << "\n";
-        //   // TODO: Create matrices for both lower and upper projection
-
-        std::array<std::reference_wrapper<const Matrix>, 2> matrices{
-            {std::cref(Spectral::projection_matrix_parent_to_child(
-                 mesh_of_one_element, mesh_of_one_element,
-                 Spectral::ChildSize::LowerHalf)),
-             std::cref(Spectral::projection_matrix_parent_to_child(
-                 mesh_of_one_element, mesh_of_one_element,
-                 Spectral::ChildSize::UpperHalf))}};
-
-        for (size_t i = 0; i < 2; ++i) {  // loop over lower & upper
+    new_vars_copy[1].destructive_resize(
+        mesh_of_one_element.number_of_grid_points() * new_elements.size());
+    new_vars_copy[2].destructive_resize(
+        mesh_of_one_element.number_of_grid_points() * new_elements.size());
+    for (size_t var_index = 0; var_index < 3; ++var_index) {
+      for (size_t index_old = 0, index_new = 0;
+           index_old < element_ids.size();) {
+        if (changed[index_old] == 0) {
           DataVector view_old{
               &vars[var_index]
                    [index_old * mesh_of_one_element.number_of_grid_points()],
               mesh_of_one_element.number_of_grid_points()};
-          // std::cout << index_new *
-          // mesh_of_one_element.number_of_grid_points()
-          //           << "\n";
+
           DataVector view_new{
               &new_vars_copy[var_index]
                             [index_new *
                              mesh_of_one_element.number_of_grid_points()],
               mesh_of_one_element.number_of_grid_points()};
-          // std::cout << var_index << "\n";
 
-          // std::cout << new_vars_copy[var_index]<< "\n";
+          view_new = view_old;
 
-          apply_matrices(make_not_null(&view_new),
-                         std::array<Matrix, 1>{matrices[i].get()}, view_old,
-                         mesh_of_one_element.extents());
-          // if (var_index ==0){std::cout << new_vars_copy[var_index]<< "\n";
-          // std::cout << view_new<< "\n";}
-
+          ++index_old;
           ++index_new;
-          ++sum1;
+
+        } else if (changed[index_old] == 1) {
+          std::array<std::reference_wrapper<const Matrix>, 2> matrices{
+              {std::cref(Spectral::projection_matrix_parent_to_child(
+                   mesh_of_one_element, mesh_of_one_element,
+                   Spectral::ChildSize::LowerHalf)),
+               std::cref(Spectral::projection_matrix_parent_to_child(
+                   mesh_of_one_element, mesh_of_one_element,
+                   Spectral::ChildSize::UpperHalf))}};
+
+          for (size_t i = 0; i < 2; ++i) {  // loop over lower & upper
+            DataVector view_old{
+                &vars[var_index]
+                     [index_old * mesh_of_one_element.number_of_grid_points()],
+                mesh_of_one_element.number_of_grid_points()};
+            // std::cout << index_new *
+            // mesh_of_one_element.number_of_grid_points()
+            //           << "\n";
+            DataVector view_new{
+                &new_vars_copy[var_index]
+                              [index_new *
+                               mesh_of_one_element.number_of_grid_points()],
+                mesh_of_one_element.number_of_grid_points()};
+            // std::cout << var_index << "\n";
+
+            // std::cout << new_vars_copy[var_index]<< "\n";
+
+            apply_matrices(make_not_null(&view_new),
+                           std::array<Matrix, 1>{matrices[i].get()}, view_old,
+                           mesh_of_one_element.extents());
+            // if (var_index ==0){std::cout << new_vars_copy[var_index]<< "\n";
+            // std::cout << view_new<< "\n";}
+
+            ++index_new;
+          }
+
+          ++index_old;
         }
-
-        ++index_old;
+        // else {
+        //   // assert(coarsening);
+        //   index_old += 2;
+        //   ++index_new;
+        // }
       }
-      // else {
-      //   // assert(coarsening);
-      //   index_old += 2;
-      //   ++index_new;
-      // }
     }
+    return std::make_tuple(new_elements, new_vars_copy, changed_val);
+  } else {
+    return std::make_tuple(element_ids, vars, changed_val);
   }
-
-  using MyVariant =
-      std::variant<std::vector<ElementId1d>, std::array<DataVector, 3>>;
-  // std::cout << sum1 << "\n";
-  std::vector<MyVariant> vec;
-  vec.push_back(new_elements);
-  vec.push_back(new_vars_copy);
-  // std::cout << "checking sizes" <<"\n";
-  // std::cout<<new_vars_copy[0].size()<< "\n";
-  // std::cout<<new_elements.size()<< "\n";
-
-  return vec;
 }
-void analytic_test(const Mesh<1>& mesh_of_one_element,
-                   const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
-                   const db::Access& box) {
-  const size_t num_elements = 10;
 
-  const double domain_length = 1.0;
-
-  std::vector<ElementId1d> element_ids;
-  for (size_t i = 0; i < num_elements; ++i) {
-    element_ids.emplace_back(0, SegmentId(0, i));
-  }
-
-  auto psi_analytic = [](double x) { return sin(M_PI * x); };
-  auto phi_analytic = [](double x) { return M_PI * cos(M_PI * x); };
-
-  std::array<DataVector, 3> vars;
-  vars[0] = DataVector(
-      num_elements * mesh_of_one_element.number_of_grid_points(), 0.0);
-  vars[1] = DataVector(
-      num_elements * mesh_of_one_element.number_of_grid_points(), 0.0);
-  vars[2] = DataVector(
-      num_elements * mesh_of_one_element.number_of_grid_points(), 0.0);
-
-  for (size_t i = 0; i < get<0>(radius).size(); i++) {
-    vars[0][i] = psi_analytic(get<0>(radius)[i]);
-    vars[1][i] = phi_analytic(get<0>(radius)[i]);
-    vars[2][i] = get<0>(radius)[i] * vars[1][i];
-  }
-
-  std::vector<std::variant<std::vector<ElementId1d>, std::array<DataVector, 3>>>
-      refined_result = determine_bad_truncation_error_test(
-          vars[1], num_elements, element_ids, mesh_of_one_element, box, vars);
-  element_ids = std::get<std::vector<ElementId1d>>(refined_result[0]);
-
-  vars = std::get<std::array<DataVector, 3>>(refined_result[1]);
-}
 void compute_time_derivatives_first_order_2(
     const gsl::not_null<Scalar<DataVector>*> dt_psi,
     const gsl::not_null<Scalar<DataVector>*> dt_phi_tilde,
@@ -1173,7 +926,7 @@ void create_data_for_file(
       << std::setprecision(18) << "# Time: " << time
       << "\n# 1 psi\n# 2 phi\n# 3 phi_tilde\n# 4 pi\n# 5 delta\n"
       << "# 6 mass\n# 7 A\n";
-  std::cout << number_of_elements << "\n";
+  // std::cout << number_of_elements << "\n";
   for (size_t element_index = 0; element_index < number_of_elements;
        element_index += 1) {
     truncation_error_data
@@ -1335,6 +1088,7 @@ std::optional<double> find_min_A(
     // std::cout <<"metric value" << "\n";
     // std::cout << abs(get(*metric_function_a)[index]) << "\n";
     if (abs(get(*metric_function_a)[index]) < horizon_tolerance) {
+      std::cout << "A: " << abs(get(*metric_function_a)[index]) << "\n";
       return get<0>(radius)[index];
     }
   }
@@ -1532,67 +1286,57 @@ std::array<DataVector, 3> integrate_fields_in_time(
 
     time = time + dt;
     ++step;
-    using MyVariant =
-        std::variant<std::vector<ElementId1d>, std::array<DataVector, 3>>;
+    // using MyVariant =
+    //     std::variant<std::vector<ElementId1d>, std::array<DataVector, 3>>;
     // std::array<DataVector, 3> new_vars;
-    std::vector<MyVariant> returned_vec =
-        determine_bad_truncation_error(vars[2], number_of_elements, element_ids,
-                                       mesh_of_one_element, box, vars);
+    std::tuple<std::vector<ElementId1d>, std::array<DataVector, 3>, size_t>
+        returned_vec = determine_bad_truncation_error(
+            vars[2], number_of_elements, element_ids, mesh_of_one_element, box,
+            vars);
 
-    element_ids = std::get<std::vector<ElementId1d>>(returned_vec[0]);
+    element_ids = std::get<0>(returned_vec);
 
-    vars = std::get<std::array<DataVector, 3>>(returned_vec[1]);
-    bool x = vars[0].size() / 10 == element_ids.size();
-    // std::cout << number_of_elements << "\n";
-    std::cout << x << "\n";
+    vars = std::get<1>(returned_vec);
+    size_t changed_val = std::get<2>(returned_vec);
     number_of_elements = element_ids.size();
-    tnsr::I<DataVector, 1, Frame::Grid> new_grid_coords =
-        initialize_grid_coords(element_ids, number_of_elements,
-                               mesh_of_one_element);
-    std::array<const Scalar<DataVector>, 2> determinants =
-        create_jacobians(mesh_of_one_element, element_ids, number_of_elements);
-    mutable_det_jacobian = determinants[0];
-    mutable_det_inverse_jacobian = determinants[1];
-    get<0>(mutable_radius) = sqrt((get<0>(new_grid_coords) + 1.0) * 0.5) *
-                             get<Tags::OuterBoundaryRadius>(box);
-    // if (number_of_elements ==49){std::cout<<vars[0]<< "\n";}
-    get(*metric_function_a)
-        .destructive_resize(mesh_of_one_element.number_of_grid_points() *
-                            number_of_elements);
-    get(*delta).destructive_resize(mesh_of_one_element.number_of_grid_points() *
-                                   number_of_elements);
-    get(*mass).destructive_resize(mesh_of_one_element.number_of_grid_points() *
-                                  number_of_elements);
-    (*integrand_buffer)
-        .destructive_resize(mesh_of_one_element.number_of_grid_points() *
-                            number_of_elements);
+    if (changed_val != 0) {
+      tnsr::I<DataVector, 1, Frame::Grid> new_grid_coords =
+          initialize_grid_coords(element_ids, number_of_elements,
+                                 mesh_of_one_element);
+      std::array<const Scalar<DataVector>, 2> determinants = create_jacobians(
+          mesh_of_one_element, element_ids, number_of_elements);
+      mutable_det_jacobian = determinants[0];
+      mutable_det_inverse_jacobian = determinants[1];
+      get<0>(mutable_radius) = sqrt((get<0>(new_grid_coords) + 1.0) * 0.5) *
+                               get<Tags::OuterBoundaryRadius>(box);
+      // if (number_of_elements ==49){std::cout<<vars[0]<< "\n";}
+      get(*metric_function_a)
+          .destructive_resize(mesh_of_one_element.number_of_grid_points() *
+                              number_of_elements);
+      get(*delta).destructive_resize(
+          mesh_of_one_element.number_of_grid_points() * number_of_elements);
+      get(*mass).destructive_resize(
+          mesh_of_one_element.number_of_grid_points() * number_of_elements);
+      (*integrand_buffer)
+          .destructive_resize(mesh_of_one_element.number_of_grid_points() *
+                              number_of_elements);
 
-    Scalar<DataVector> phi_new{vars[1] * 4 * get<0>(mutable_radius)};
-    Scalar<DataVector> pi_new{vars[2]};
-    //    for (size_t element = mesh_of_one_element.number_of_grid_points();
-    //  element <
-    //  number_of_elements * mesh_of_one_element.number_of_grid_points() - 1;
-    //  element = element + mesh_of_one_element.number_of_grid_points()){
-    //   get(phi_new)[element] = (get(phi_new)[element] + get(phi_new)[element -
-    //   1])/2; get(pi_new)[element] = (get(pi_new)[element] +
-    //   get(pi_new)[element - 1])/2;
-    //  }
-    // make sure element boundaries are averaged
-    // smaller time step works?
-    // check nan and print before and after
-    // smaller CFL factor
+      Scalar<DataVector> phi_new{vars[1] * 4 * get<0>(mutable_radius)};
+      Scalar<DataVector> pi_new{vars[2]};
 
-    compute_delta_integral_logical(
-        delta, integrand_buffer, mesh_of_one_element, phi_new, pi_new,
-        mutable_det_jacobian, mutable_radius,
-        get<Tags::OuterBoundaryRadius>(box), intermediate);
-    compute_mass_integral(mass, matrix_buffer, mesh_of_one_element, phi_new,
-                          pi_new, mutable_det_jacobian, mutable_radius,
-                          get<Tags::SpacetimeDimensions>(box),
-                          get<Tags::OuterBoundaryRadius>(box), intermediate);
-    compute_metric_function_a_from_mass(
-        metric_function_a, *mass, mutable_radius,
-        get<Tags::SpacetimeDimensions>(box), intermediate);
+      compute_delta_integral_logical(
+          delta, integrand_buffer, mesh_of_one_element, phi_new, pi_new,
+          mutable_det_jacobian, mutable_radius,
+          get<Tags::OuterBoundaryRadius>(box), intermediate);
+      compute_mass_integral(mass, matrix_buffer, mesh_of_one_element, phi_new,
+                            pi_new, mutable_det_jacobian, mutable_radius,
+                            get<Tags::SpacetimeDimensions>(box),
+                            get<Tags::OuterBoundaryRadius>(box), intermediate);
+      compute_metric_function_a_from_mass(
+          metric_function_a, *mass, mutable_radius,
+          get<Tags::SpacetimeDimensions>(box), intermediate);
+    }
+
     // std::cout << number_of_elements << "\n";
 
     // std::cout << "vector sizes match" << "\n";
