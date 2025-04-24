@@ -797,19 +797,11 @@ double compute_adaptive_step_size(
   double min_adapted_dt = 1.0e300;
 
   for (size_t i = 1; i < get(delta).size() - 1; i++) {
-    double dt = 0.0;
-
     if ((get<0>(radius)[i + 1] - get<0>(radius)[i]) >
         1.0e-14 * get<0>(radius)[i]) {
-      // std::cout << i << "\n";
-      // std::cout << "delta[" << i << "] = " << get(delta)[i]
-      // << ", A[" << i << "] = " << get(metric_function_a)[i] << std::endl;
-      dt = (get<0>(radius)[i + 1] - get<0>(radius)[i]) * exp(get(delta)[i]) /
-           get(metric_function_a)[i];
-      if (dt < min_adapted_dt) {
-        // std::cout <<"here" << "\n";
-        min_adapted_dt = dt;
-      }
+      min_adapted_dt = std::min(
+          min_adapted_dt, (get<0>(radius)[i + 1] - get<0>(radius)[i]) *
+                              exp(get(delta)[i]) / get(metric_function_a)[i]);
     }
   }
 
@@ -817,7 +809,6 @@ double compute_adaptive_step_size(
   if (min_adapted_dt > 1) {
     std::cout << get(metric_function_a) << "\n";
   }
-  // std::cout << min_adapted_dt << "\n";
   return min_adapted_dt;
 }
 
