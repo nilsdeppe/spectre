@@ -790,13 +790,17 @@ void compute_time_derivatives_first_order_2(
 }
 
 double compute_adaptive_step_size(
-    const Scalar<DataVector>& delta,
+    const Mesh<1>& mesh, const Scalar<DataVector>& delta,
     const Scalar<DataVector>& metric_function_a,
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
     const double CFL_safety_factor) {
   double min_adapted_dt = 1.0e300;
 
-  for (size_t i = 1; i < get(delta).size() - 1; i++) {
+  const size_t num_pts = mesh.number_of_grid_points();
+  const size_t num_elements = get(delta).size() / num_pts;
+  for (size_t element_index = 0; element_index < num_elements;
+       ++element_index) {
+    const size_t i = (element_index + 1) * num_pts - 2;
     if ((get<0>(radius)[i + 1] - get<0>(radius)[i]) >
         1.0e-14 * get<0>(radius)[i]) {
       min_adapted_dt = std::min(
@@ -804,6 +808,16 @@ double compute_adaptive_step_size(
                               exp(get(delta)[i]) / get(metric_function_a)[i]);
     }
   }
+
+  // for (size_t i = 1; i < get(delta).size() - 1; i++) {
+  //   if ((get<0>(radius)[i + 1] - get<0>(radius)[i]) >
+  //       1.0e-14 * get<0>(radius)[i]) {
+  //     min_adapted_dt = std::min(
+  //         min_adapted_dt, (get<0>(radius)[i + 1] - get<0>(radius)[i]) *
+  //                             exp(get(delta)[i]) /
+  //                             get(metric_function_a)[i]);
+  //   }
+  // }
 
   min_adapted_dt = CFL_safety_factor * min_adapted_dt;
   if (min_adapted_dt > 1) {
@@ -1256,7 +1270,8 @@ std::array<DataVector, 3> integrate_fields_in_time(
                 << "\n";
     }
 
-    dt = compute_adaptive_step_size(*delta, *metric_function_a, mutable_radius,
+    dt = compute_adaptive_step_size(mesh_of_one_element, *delta,
+                                    *metric_function_a, mutable_radius,
                                     get<Tags::CflFactor>(box));
     if (dt == 0.0) {
       std::cout << "dt " << dt << "\n";
