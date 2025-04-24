@@ -683,69 +683,97 @@ void compute_time_derivatives_first_order_2(
     const gsl::not_null<Scalar<DataVector>*> dt_pi,
     const Mesh<1>& mesh_of_one_element, const Scalar<DataVector>& psi,
     const Scalar<DataVector>& phi_tilde, const Scalar<DataVector>& pi,
-    const Scalar<DataVector>& phi, const Scalar<DataVector>& metric_function_a,
+    [[maybe_unused]] const Scalar<DataVector>& phi,
+    const Scalar<DataVector>& metric_function_a,
     const Scalar<DataVector>& metric_function_delta, const double gamma2,
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
     const Scalar<DataVector>& det_inverse_jacobian, const double spacetime_dim,
     const double outer_boundary_radius,
     const std::array<std::reference_wrapper<const Matrix>, 1>& filter_matrices,
     [[maybe_unused]] const bool intermediate) {
-  Scalar<DataVector> diff_eq_A = differential_eq_for_A(
-      phi, pi, metric_function_a, radius, spacetime_dim, intermediate);
-  Scalar<DataVector> diff_eq_delta =
-      differential_eq_for_delta(phi, pi, radius, intermediate);
+  // Scalar<DataVector> diff_eq_A = differential_eq_for_A(
+  //     phi, pi, metric_function_a, radius, spacetime_dim, intermediate);
+  // Scalar<DataVector> diff_eq_delta =
+  //     differential_eq_for_delta(phi, pi, radius, intermediate);
+  const size_t num_pts = get(pi).size();
   const size_t number_of_elements =
-      get(pi).size() / mesh_of_one_element.number_of_grid_points();
-  Scalar<DataVector> buffer1{mesh_of_one_element.number_of_grid_points() *
-                             number_of_elements};
-  Scalar<DataVector> buffer2{mesh_of_one_element.number_of_grid_points() *
-                             number_of_elements};
-  Scalar<DataVector> buffer4{mesh_of_one_element.number_of_grid_points() *
-                             number_of_elements};
+      num_pts / mesh_of_one_element.number_of_grid_points();
+  // Scalar<DataVector> buffer1{mesh_of_one_element.number_of_grid_points() *
+  //                            number_of_elements};
+
+  // We can extend this once the dt_VARS are contiguous so that we can operate
+  // on all evolved variables at once.
+  DataVector full_buffer{num_pts * 4};
+  Scalar<DataVector> buffer2{full_buffer.data(), num_pts};
+  Scalar<DataVector> buf_dt_psi{
+      std::next(full_buffer.data(), static_cast<std::ptrdiff_t>(num_pts)),
+      num_pts};
+  Scalar<DataVector> buf_dt_phi_tilde{
+      std::next(full_buffer.data(), static_cast<std::ptrdiff_t>(2 * num_pts)),
+      num_pts};
+  Scalar<DataVector> buf_dt_pi{
+      std::next(full_buffer.data(), static_cast<std::ptrdiff_t>(3 * num_pts)),
+      num_pts};
+  // Scalar<DataVector> buffer4{mesh_of_one_element.number_of_grid_points() *
+  //                            number_of_elements};
 
   std::array<std::reference_wrapper<const Matrix>, 1> logical_diff_matrices{
       {std::cref(Spectral::differentiation_matrix(mesh_of_one_element))}};
 
   // compute dt_psi
-  get(buffer1) = get(metric_function_a) * exp(-get(metric_function_delta));
-  get(*dt_psi) = get(buffer1) * get(pi);
+  // get(buffer1) = get(metric_function_a) * exp(-get(metric_function_delta));
+  // get(*dt_psi) = get(buffer1) * get(pi);
+
+  // get(*dt_psi) = get(metric_function_a) * exp(-get(metric_function_delta));
+  get(buf_dt_psi) = get(metric_function_a) * exp(-get(metric_function_delta));
 
   // compute 2nd term of dt_pi
-  apply_matrices(make_not_null(&get(*dt_pi)), logical_diff_matrices,
-                 get(phi_tilde), mesh_of_one_element.extents());
-  get(*dt_pi) *= (4.0 * get<0>(radius) / square(outer_boundary_radius));
-  get(*dt_pi) *= get(det_inverse_jacobian) * get(buffer1);
-  get(*dt_pi) += (get(diff_eq_A) * exp(-get(metric_function_delta)) -
-                  get(diff_eq_delta) * get(buffer1)) *
-                 *get(phi_tilde);
-  get(*dt_pi) *= 4.0 * get<0>(radius);
+  get(buffer2) = get(buf_dt_psi) * get(phi_tilde);
+  apply_matrices(make_not_null(&get(buf_dt_pi)), logical_diff_matrices,
+                 get(buffer2), mesh_of_one_element.extents());
+  // 16 because other factor of 4 from tilde_phi
+  get(buf_dt_pi) *= square(4.0 / outer_boundary_radius) *
+                    square(get<0>(radius)) * get(det_inverse_jacobian);
+
+  // A form that expands the partial derivative out
+  // apply_matrices(make_not_null(&get(*dt_pi)), logical_diff_matrices,
+  //                get(phi_tilde), mesh_of_one_element.extents());
+  // get(*dt_pi) *= (4.0 * get<0>(radius) / square(outer_boundary_radius));
+  // get(*dt_pi) *= get(det_inverse_jacobian) * get(*dt_psi);
+  // get(*dt_pi) += (get(diff_eq_A) * exp(-get(metric_function_delta)) -
+  //                 get(diff_eq_delta) * get(*dt_psi)) *
+  //                *get(phi_tilde);
+  // get(*dt_pi) *= 4.0 * get<0>(radius);
 
   // compute 1st term of dt_pi
-  get(*dt_pi) += 4.0 * (spacetime_dim - 1.0) * get(buffer1) *
-                 get(phi_tilde);  // adding in the first term
-                                  // of the expansion
+  get(buf_dt_pi) += 4.0 * (spacetime_dim - 1.0) * get(buf_dt_psi) *
+                    get(phi_tilde);  // adding in the first term
+                                     // of the expansion
 
   // compute dt_phi_tilde
-  get(buffer2) = get(buffer1) * get(pi) + gamma2 * get(psi);
+  get(buf_dt_psi) *= get(pi);
+  get(buffer2) = get(buf_dt_psi) + gamma2 * get(psi);
 
-  apply_matrices(make_not_null(&get(*dt_phi_tilde)), logical_diff_matrices,
+  apply_matrices(make_not_null(&get(buf_dt_phi_tilde)), logical_diff_matrices,
                  get(buffer2), mesh_of_one_element.extents());
-  get(*dt_phi_tilde) *=
+  get(buf_dt_phi_tilde) *=
       get(det_inverse_jacobian);  //  * (1.0 / square(outer_boundary_radius));
-  get(*dt_phi_tilde) *= (1.0 / square(outer_boundary_radius));
+  get(buf_dt_phi_tilde) *= (1.0 / square(outer_boundary_radius));
 
-  get(*dt_phi_tilde) -= gamma2 * get(phi_tilde);
+  get(buf_dt_phi_tilde) -= gamma2 * get(phi_tilde);
 
   {
-    DataVector pre_filter_data{get(*dt_psi)};
+    // DataVector& pre_filter_data = get(buffer2);
+    // pre_filter_data = get(*dt_psi);
+    // DataVector pre_filter_data{get(*dt_psi)};
     apply_matrices(make_not_null(&get(*dt_psi)), filter_matrices,
-                   pre_filter_data, mesh_of_one_element.extents());
-    pre_filter_data = get(*dt_pi);
-    apply_matrices(make_not_null(&get(*dt_pi)), filter_matrices,
-                   pre_filter_data, mesh_of_one_element.extents());
-    pre_filter_data = get(*dt_phi_tilde);
+                   get(buf_dt_psi), mesh_of_one_element.extents());
+    // pre_filter_data = get(*dt_pi);
+    apply_matrices(make_not_null(&get(*dt_pi)), filter_matrices, get(buf_dt_pi),
+                   mesh_of_one_element.extents());
+    // pre_filter_data = get(*dt_phi_tilde);
     apply_matrices(make_not_null(&get(*dt_phi_tilde)), filter_matrices,
-                   pre_filter_data, mesh_of_one_element.extents());
+                   get(buf_dt_phi_tilde), mesh_of_one_element.extents());
   }
 
   for (size_t element = mesh_of_one_element.number_of_grid_points();
