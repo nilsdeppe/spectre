@@ -1139,6 +1139,8 @@ std::array<DataVector, 3> integrate_fields_in_time(
   Scalar<DataVector> mutable_det_inverse_jacobian = det_inverse_jacobian;
   Scalar<DataVector> mutable_det_jacobian = det_jacobian;
   tnsr::I<DataVector, 1, Frame::Inertial> mutable_radius = radius;
+  DataVector no_filter{};
+  Scalar<DataVector> temp_phi{};
 
   using std::abs;
   while (abs(time) <= (get<Tags::FinalTime>(box))) {
@@ -1157,6 +1159,7 @@ std::array<DataVector, 3> integrate_fields_in_time(
                    &mutable_radius, &mutable_det_inverse_jacobian,
                    &integrand_buffer, &mutable_det_jacobian, &matrix_buffer,
                    &box, &filter_matrices, &element_ids, filter_evolved_vars,
+                   &no_filter, &temp_phi,
                    intermediate](const Vars& local_vars, Vars& local_dvars,
                                  [[maybe_unused]] const double current_time) {
       (void)filter_evolved_vars;  // silence compiler warning
@@ -1173,7 +1176,10 @@ std::array<DataVector, 3> integrate_fields_in_time(
           local_vars[2].size()};
 
       if (filter_evolved_vars) {
-        DataVector no_filter{get(temp_psi)};
+        if (no_filter.size() != get(temp_psi).size()) {
+          no_filter.destructive_resize(get(temp_psi).size());
+        }
+        no_filter = get(temp_psi);
         apply_matrices(make_not_null(&get(temp_psi)), filter_matrices,
                        no_filter, mesh_of_one_element.extents());
         no_filter = get(temp_pi);
@@ -1208,10 +1214,12 @@ std::array<DataVector, 3> integrate_fields_in_time(
               get(temp_pi)[i * mesh_of_one_element.number_of_grid_points()];
         }
       }
-      // std::cout << "size_check" << "\n";
 
-      Scalar<DataVector> temp_phi{get(temp_phi_tilde) * 4 *
-                                  get<0>(mutable_radius)};
+      if (const size_t expected_size = get(temp_phi_tilde).size();
+          get(temp_phi).size() != expected_size) {
+        get(temp_phi).destructive_resize(expected_size);
+      }
+      get(temp_phi) = 4 * get(temp_phi_tilde) * get<0>(mutable_radius);
 
       compute_delta_integral_logical(
           delta, integrand_buffer, mesh_of_one_element, temp_phi, temp_pi,
@@ -1224,13 +1232,16 @@ std::array<DataVector, 3> integrate_fields_in_time(
       compute_metric_function_a_from_mass(
           metric_function_a, *mass, mutable_radius,
           get<Tags::SpacetimeDimensions>(box), intermediate);
-      // std::cout<< get(*metric_function_a) << "\n";
 
       const auto size = get(temp_psi).size();
-      // std::cout << size << "\n";
-      Scalar<DataVector> temp_dtpsi{size, 0.0};
-      Scalar<DataVector> temp_dtphi_tilde{size, 0.0};
-      Scalar<DataVector> temp_dtpi{size, 0.0};
+      if (local_dvars[0].size() != size) {
+        for (DataVector&  t : local_dvars) {
+          t.destructive_resize(size);
+        }
+      }
+      Scalar<DataVector> temp_dtpsi{local_dvars[0].data(), size};
+      Scalar<DataVector> temp_dtphi_tilde{local_dvars[1].data(), size};
+      Scalar<DataVector> temp_dtpi{local_dvars[2].data(), size};
       compute_time_derivatives_first_order_2(
           make_not_null(&temp_dtpsi), make_not_null(&temp_dtphi_tilde),
           make_not_null(&temp_dtpi), mesh_of_one_element, temp_psi,
@@ -1238,10 +1249,6 @@ std::array<DataVector, 3> integrate_fields_in_time(
           get<Tags::Gamma2>(box), mutable_radius, mutable_det_inverse_jacobian,
           get<Tags::SpacetimeDimensions>(box),
           get<Tags::OuterBoundaryRadius>(box), filter_matrices, intermediate);
-
-      local_dvars[0] = get(temp_dtpsi);
-      local_dvars[1] = get(temp_dtphi_tilde);
-      local_dvars[2] = get(temp_dtpi);
     };
 
     if (not use_flat_space) {
