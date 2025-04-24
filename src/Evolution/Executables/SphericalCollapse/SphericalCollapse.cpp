@@ -338,10 +338,10 @@ std::array<const Scalar<DataVector>, 2> create_jacobians(
   return dets;
 }
 static bool use_flat_space = false;
-const DataVector read_element_data(const DataVector& quantity,
-                                   const Mesh<1>& mesh_of_one_element,
-                                   const size_t element_index,
-                                   const size_t number_of_elements) {
+const DataVector read_element_data(
+    const DataVector& quantity, const Mesh<1>& mesh_of_one_element,
+    const size_t element_index,
+    [[maybe_unused]] const size_t number_of_elements) {
   const DataVector view{mesh_of_one_element.number_of_grid_points()};
   make_const_view(make_not_null(&view), quantity,
                   element_index * mesh_of_one_element.number_of_grid_points(),
@@ -465,7 +465,7 @@ void compute_metric_function_a_from_mass(
     const gsl::not_null<Scalar<DataVector>*> metric_function_a,
     const Scalar<DataVector>& mass,
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
-    const double spacetime_dim, const bool intermediate) {
+    const double spacetime_dim) {
   DataVector view_a{&get(*metric_function_a)[1],
                     get(*metric_function_a).size() - 1};
   const DataVector view_mass{&const_cast<double&>(get(mass)[1]),  // NOLINT
@@ -537,8 +537,6 @@ determine_bad_truncation_error(const DataVector& variable_to_check,
                                std::array<DataVector, 3> vars) {
   // need to define this "condition1"
   std::vector<ElementId1d> new_elements{};
-  size_t sum_refine = 0;
-  size_t sum_nochange = 0;
   // std::cout << "check1" << number_of_elements << "\n";
   // std::cout << "check2" << element_ids.size() << "\n";
   std::vector<int> changed{};
@@ -548,18 +546,10 @@ determine_bad_truncation_error(const DataVector& variable_to_check,
   for (size_t element_index = 0; element_index < number_of_elements;
        element_index += 1) {
     // bool changed_any_element = false;
-    ElementId1d parent_id =
-        id_of_parent(element_ids[element_index], std::array{amr::Flag::Join});
     std::array<ElementId1d, 2> child_ids = ids_of_children(
         element_ids[element_index], std::array{amr::Flag::Split});
-    SegmentId sibling_segid =
-        (element_ids[element_index]).segment_id.id_of_sibling();
-    ElementId1d sibling_id = ElementId1d(0, sibling_segid);
-    auto it = std::find(element_ids.begin(), element_ids.end(), sibling_id);
 
-    size_t index_of_sibling = std::distance(element_ids.begin(), it);
     const double condition1 = 5;
-    const double condition2 = 1e-8;
     const bool refine =
         truncation_error_estimate(variable_to_check, mesh_of_one_element,
                                   element_index, number_of_elements,
@@ -567,10 +557,6 @@ determine_bad_truncation_error(const DataVector& variable_to_check,
     // const bool refine =true;
     // const bool coarse = false;
 
-    const bool coarse =
-        truncation_error_estimate(variable_to_check, mesh_of_one_element,
-                                  element_index, number_of_elements,
-                                  box) < condition2;
     const size_t max_refinement_level = 28;
     if ((element_ids[element_index].segment_id.refinement_level() <
          max_refinement_level) &&
@@ -703,7 +689,7 @@ void compute_time_derivatives_first_order_2(
     const Scalar<DataVector>& det_inverse_jacobian, const double spacetime_dim,
     const double outer_boundary_radius,
     const std::array<std::reference_wrapper<const Matrix>, 1>& filter_matrices,
-    const bool intermediate) {
+    [[maybe_unused]] const bool intermediate) {
   Scalar<DataVector> diff_eq_A = differential_eq_for_A(
       phi, pi, metric_function_a, radius, spacetime_dim, intermediate);
   Scalar<DataVector> diff_eq_delta =
@@ -861,7 +847,7 @@ double compute_adaptive_step_size(
 void create_data_for_file(
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
     const Mesh<1>& mesh_of_one_element,
-    const std::vector<ElementId1d>& element_ids,
+    [[maybe_unused]] const std::vector<ElementId1d>& element_ids,
     const std::array<DataVector, 3>& vars,
     const gsl::not_null<DataVector*> integrand_buffer,
     const gsl::not_null<Scalar<DataVector>*> mass,
@@ -887,7 +873,7 @@ void create_data_for_file(
                         temp_pi, det_jacobian, radius, spacetime_dim,
                         outer_boundary_radius, intermediate);
   compute_metric_function_a_from_mass(metric_function_a, *mass, radius,
-                                      spacetime_dim, intermediate);
+                                      spacetime_dim);
   const auto size = get(temp_psi).size();
   Scalar<DataVector> temp_dtpsi{size, 0.0};
   Scalar<DataVector> temp_dtphi_tilde{size, 0.0};
@@ -1159,12 +1145,11 @@ std::array<DataVector, 3> integrate_fields_in_time(
                    &mutable_radius, &mutable_det_inverse_jacobian,
                    &integrand_buffer, &mutable_det_jacobian, &matrix_buffer,
                    &box, &filter_matrices, &element_ids, filter_evolved_vars,
-                   &no_filter, &temp_phi,
-                   intermediate](const Vars& local_vars, Vars& local_dvars,
-                                 [[maybe_unused]] const double current_time) {
+                   &no_filter,
+                   &temp_phi](const Vars& local_vars, Vars& local_dvars,
+                              [[maybe_unused]] const double current_time) {
       (void)filter_evolved_vars;  // silence compiler warning
       // std::array<const Scalar<DataVector>,7>
-      size_t number_of_elements = element_ids.size();
       Scalar<DataVector> temp_psi{
           const_cast<DataVector&>(local_vars[0]).data(),  // NOLINT
           local_vars[0].size()};
@@ -1231,7 +1216,7 @@ std::array<DataVector, 3> integrate_fields_in_time(
                             get<Tags::OuterBoundaryRadius>(box), intermediate);
       compute_metric_function_a_from_mass(
           metric_function_a, *mass, mutable_radius,
-          get<Tags::SpacetimeDimensions>(box), intermediate);
+          get<Tags::SpacetimeDimensions>(box));
 
       const auto size = get(temp_psi).size();
       if (local_dvars[0].size() != size) {
@@ -1345,7 +1330,7 @@ std::array<DataVector, 3> integrate_fields_in_time(
                             get<Tags::OuterBoundaryRadius>(box), intermediate);
       compute_metric_function_a_from_mass(
           metric_function_a, *mass, mutable_radius,
-          get<Tags::SpacetimeDimensions>(box), intermediate);
+          get<Tags::SpacetimeDimensions>(box));
     }
 
     // std::cout << number_of_elements << "\n";
@@ -1444,8 +1429,7 @@ void run(const db::Access& box) {
                         get<Tags::SpacetimeDimensions>(box),
                         get<Tags::OuterBoundaryRadius>(box), intermediate);
   compute_metric_function_a_from_mass(&metric_function_a, mass, radius,
-                                      get<Tags::SpacetimeDimensions>(box),
-                                      intermediate);
+                                      get<Tags::SpacetimeDimensions>(box));
   // get(delta) = 0.0;
   // get(mass) = 1.0;
 
