@@ -427,6 +427,8 @@ void compute_mass_integral(
   const size_t number_of_grids = get(pi).size() / pts_per_element;
   const Matrix& integration_matrix =
       Spectral::integration_matrix(mesh_of_one_element);
+  static std::vector<int> ipiv_cache(
+      Spectral::maximum_number_of_points<Spectral::Basis::Legendre>);
   for (size_t grid = 0; grid < number_of_grids; ++grid) {
     DataVector view{&get(*mass)[grid * pts_per_element], pts_per_element};
     const double boundary_condition =
@@ -448,7 +450,9 @@ void compute_mass_integral(
       }
     }
     // Solve the linear system A m = b for m (the mass)
-    lapack::general_matrix_linear_solve(make_not_null(&view), matrix_buffer);
+    // NOTE: Can't use Cholesky because the matrix is not symmetric .
+    lapack::general_matrix_linear_solve(
+        make_not_null(&view), make_not_null(&ipiv_cache), matrix_buffer);
   }
   if (intermediate) {
     if (use_flat_space) {
