@@ -1129,9 +1129,9 @@ std::array<DataVector, 3> integrate_fields_in_time(
   Scalar<DataVector> temp_phi{};
 
   using std::abs;
+  using StateDopri5 = boost::numeric::odeint::runge_kutta_dopri5<Vars>;
+  StateDopri5 st{};
   while (abs(time) <= (get<Tags::FinalTime>(box))) {
-    using StateDopri5 = boost::numeric::odeint::runge_kutta_dopri5<Vars>;
-    StateDopri5 st{};
     // std::cout << "size_check" << "\n";
     // std::cout<< get(*metric_function_a).size() << "\n";
     // std::cout<< get(*delta).size() << "\n";
@@ -1331,6 +1331,7 @@ std::array<DataVector, 3> integrate_fields_in_time(
       compute_metric_function_a_from_mass(
           metric_function_a, *mass, mutable_radius,
           get<Tags::SpacetimeDimensions>(box));
+      st = StateDopri5{};
     }
 
     // std::cout << number_of_elements << "\n";
