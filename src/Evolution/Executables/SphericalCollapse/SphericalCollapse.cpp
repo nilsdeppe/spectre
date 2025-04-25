@@ -451,6 +451,7 @@ void basic_lu(const gsl::not_null<Matrix*> alu,
 void compute_mass_integral(
     const gsl::not_null<Scalar<DataVector>*> mass,
     const gsl::not_null<Matrix*> matrix_buffer,
+    const DataVector& negative_two_sigma,
     const Mesh<1>& mesh_of_one_element, const Scalar<DataVector>& phi,
     const Scalar<DataVector>& pi, const Scalar<DataVector>& det_jacobian,
     const tnsr::I<DataVector, 1, Frame::Inertial>& radius,
@@ -467,20 +468,19 @@ void compute_mass_integral(
     const double boundary_condition =
         grid == 0 ? 0.0 : get(*mass)[grid * pts_per_element - 1];
     for (size_t i = 0; i < pts_per_element; ++i) {
-      view[i] = boundary_condition;
+      double sum = boundary_condition;  // Use to avoid indexing into view when
+                                        // SPECTRE_DEBUG=ON
       for (size_t k = 0; k < pts_per_element; ++k) {
         const size_t index = k + grid * pts_per_element;
-        const double sigma =
-            0.5 * M_PI * (square(get(pi)[index]) + square(get(phi)[index])) *
-            square(outer_boundary_radius);
-        view[i] += integration_matrix(i, k) * 0.5 * sigma *
-                   get(det_jacobian)[index] *
-                   integer_pow(get<0>(radius)[index],
-                               static_cast<int>(spacetime_dim) - 3);
-        matrix_buffer->operator()(i, k) =
-            (i == k ? 1.0 : 0.0) +
-            integration_matrix(i, k) * sigma * get(det_jacobian)[index];
+        const double int_sigma =
+            -0.5 * negative_two_sigma[index] * integration_matrix(i, k);
+        sum += 0.5 * int_sigma *
+               integer_pow(get<0>(radius)[index],
+                           static_cast<int>(spacetime_dim) - 3);
+        matrix_buffer->operator()(i, k) = int_sigma;
       }
+      matrix_buffer->operator()(i, i) += 1.0;
+      view[i] = sum;
     }
     // Solve the linear system A m = b for m (the mass)
     // NOTE: Can't use Cholesky because the matrix is not symmetric .
@@ -936,9 +936,10 @@ void create_data_for_file(
   compute_delta_integral_logical(delta, integrand_buffer, mesh_of_one_element,
                                  temp_phi, temp_pi, det_jacobian, radius,
                                  outer_boundary_radius, intermediate);
-  compute_mass_integral(mass, matrix_buffer, mesh_of_one_element, temp_phi,
-                        temp_pi, det_jacobian, radius, spacetime_dim,
-                        outer_boundary_radius, intermediate);
+  compute_mass_integral(mass, matrix_buffer, *integrand_buffer,
+                        mesh_of_one_element, temp_phi, temp_pi, det_jacobian,
+                        radius, spacetime_dim, outer_boundary_radius,
+                        intermediate);
   compute_metric_function_a_from_mass(metric_function_a, *mass, radius,
                                       spacetime_dim);
   const auto size = get(temp_psi).size();
@@ -1277,8 +1278,9 @@ std::array<DataVector, 3> integrate_fields_in_time(
           delta, integrand_buffer, mesh_of_one_element, temp_phi, temp_pi,
           mutable_det_jacobian, mutable_radius,
           get<Tags::OuterBoundaryRadius>(box), intermediate);
-      compute_mass_integral(mass, matrix_buffer, mesh_of_one_element, temp_phi,
-                            temp_pi, mutable_det_jacobian, mutable_radius,
+      compute_mass_integral(mass, matrix_buffer, *integrand_buffer,
+                            mesh_of_one_element, temp_phi, temp_pi,
+                            mutable_det_jacobian, mutable_radius,
                             get<Tags::SpacetimeDimensions>(box),
                             get<Tags::OuterBoundaryRadius>(box), intermediate);
       compute_metric_function_a_from_mass(
@@ -1392,8 +1394,9 @@ std::array<DataVector, 3> integrate_fields_in_time(
           delta, integrand_buffer, mesh_of_one_element, phi_new, pi_new,
           mutable_det_jacobian, mutable_radius,
           get<Tags::OuterBoundaryRadius>(box), intermediate);
-      compute_mass_integral(mass, matrix_buffer, mesh_of_one_element, phi_new,
-                            pi_new, mutable_det_jacobian, mutable_radius,
+      compute_mass_integral(mass, matrix_buffer, *integrand_buffer,
+                            mesh_of_one_element, phi_new, pi_new,
+                            mutable_det_jacobian, mutable_radius,
                             get<Tags::SpacetimeDimensions>(box),
                             get<Tags::OuterBoundaryRadius>(box), intermediate);
       compute_metric_function_a_from_mass(
@@ -1493,8 +1496,8 @@ void run(const db::Access& box) {
   compute_delta_integral_logical(
       &delta, &integrand_buffer, mesh_of_one_element, phi, pi, det_jacobian,
       radius, get<Tags::OuterBoundaryRadius>(box), intermediate);
-  compute_mass_integral(&mass, &matrix_buffer, mesh_of_one_element, phi, pi,
-                        det_jacobian, radius,
+  compute_mass_integral(&mass, &matrix_buffer, integrand_buffer,
+                        mesh_of_one_element, phi, pi, det_jacobian, radius,
                         get<Tags::SpacetimeDimensions>(box),
                         get<Tags::OuterBoundaryRadius>(box), intermediate);
   compute_metric_function_a_from_mass(&metric_function_a, mass, radius,
