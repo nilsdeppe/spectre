@@ -415,6 +415,39 @@ void compute_delta_integral_logical(
   }
 }
 
+void basic_lu(const gsl::not_null<Matrix*> alu,
+              const gsl::not_null<DataVector*> b) {
+  const size_t n = alu->columns();
+  for (size_t j = 0; j < alu->columns(); ++j) {
+    for (size_t i = 0; i <= j; ++i) {
+      for (size_t k = 0; k < i; ++k) {
+        (*alu)(i, j) -= (k == i ? 1.0 : (*alu)(i, k)) * (*alu)(j, k);
+      }
+    }
+    for (size_t i = j + 1; i < alu->rows(); ++i) {
+      for (size_t k = 0; k < j; ++k) {
+        (*alu)(i, j) -= (k == i ? 1.0 : (*alu)(i, k)) * (*alu)(j, k);
+      }
+      (*alu)(i, j) /= (*alu)(j, j);
+    }
+  }
+  // Now alu is the alphas and betas of the LU decomp
+  for (size_t i = 0; i < n; i++) {
+    double sum = (*b)[i];
+    for (size_t j = 0; j < i; j++) {
+      sum -= (*alu)(i, j) * (*b)[j];
+    }
+    (*b)[i] = sum;
+  }
+  for (size_t i = n-1; i < n; i--) {
+    double sum = (*b)[i];
+    for (size_t j = i + 1; j < n; j++) {
+      sum -= (*alu)(i, j) * (*b)[j];
+    }
+    (*b)[i] = sum / (*alu)(i, i);
+  }
+}
+
 void compute_mass_integral(
     const gsl::not_null<Scalar<DataVector>*> mass,
     const gsl::not_null<Matrix*> matrix_buffer,
@@ -451,8 +484,9 @@ void compute_mass_integral(
     }
     // Solve the linear system A m = b for m (the mass)
     // NOTE: Can't use Cholesky because the matrix is not symmetric .
-    lapack::general_matrix_linear_solve(
-        make_not_null(&view), make_not_null(&ipiv_cache), matrix_buffer);
+    basic_lu(matrix_buffer, make_not_null(&view));
+    // lapack::general_matrix_linear_solve(
+    //     make_not_null(&view), make_not_null(&ipiv_cache), matrix_buffer);
   }
   if (intermediate) {
     if (use_flat_space) {
