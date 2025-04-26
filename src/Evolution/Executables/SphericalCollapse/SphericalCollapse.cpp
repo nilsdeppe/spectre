@@ -243,13 +243,10 @@ make_coordinate_map(const size_t number_of_elements,
       coordinate_maps{number_of_elements};
 
   // const std::optional<double> singularity{-1.002499999999999};
-  const std::optional<double> singularity{};
   const domain::CoordinateMaps::Distribution distribution =
-      singularity.has_value()
-          ? domain::CoordinateMaps::Distribution::Logarithmic
-          : domain::CoordinateMaps::Distribution::Linear;
+      domain::CoordinateMaps::Distribution::Linear;
   const domain::CoordinateMaps::Interval interval_map(
-      -1, 1, -1.0, 1.0, distribution, singularity);
+      -1, 1, -1.0, 1.0, distribution, std::nullopt);
   for (size_t element_index = 0; element_index < number_of_elements;
        element_index += 1) {
     const double lower =
@@ -289,7 +286,7 @@ tnsr::I<DataVector, 1, Frame::Grid> initialize_grid_coords(
 
   return grid_coords;
 }
-std::array<const Scalar<DataVector>, 2> create_jacobians(
+std::array<Scalar<DataVector>, 2> create_jacobians(
     const Mesh<1>& mesh_of_one_element, std::vector<ElementId1d>& element_ids,
     const size_t number_of_elements) {
   const tnsr::I<DataVector, 1, Frame::ElementLogical>
@@ -316,8 +313,10 @@ std::array<const Scalar<DataVector>, 2> create_jacobians(
                           element_index *
                           mesh_of_one_element.number_of_grid_points())),
             mesh_of_one_element.number_of_grid_points());
-    jacobian_this_element =
-        coordinate_maps[element_index].jacobian(logical_coords_one_element);
+    get<0, 0>(jacobian_this_element) =
+        1.0 / static_cast<double>(two_to_the(
+                  element_ids[element_index].segment_id.refinement_level()));
+    // coordinate_maps[element_index].jacobian(logical_coords_one_element);
 
     InverseJacobian<DataVector, 1, Frame::ElementLogical, Frame::Grid>
         inv_jacobian_this_element{};
@@ -328,14 +327,11 @@ std::array<const Scalar<DataVector>, 2> create_jacobians(
                           element_index *
                           mesh_of_one_element.number_of_grid_points())),
             mesh_of_one_element.number_of_grid_points());
-    inv_jacobian_this_element =
-        coordinate_maps[element_index].inv_jacobian(logical_coords_one_element);
+    get<0, 0>(inv_jacobian_this_element) =
+        1.0 / get<0, 0>(jacobian_this_element);
   }
-  const Scalar<DataVector> det_jacobian = determinant(jacobian);
-  const Scalar<DataVector> det_inv_jacobian = determinant(inv_jacobian);
-  std::array<const Scalar<DataVector>, 2> dets{det_jacobian, det_inv_jacobian};
-
-  return dets;
+  return {Scalar<DataVector>{std::move(get<0, 0>(jacobian))},
+          Scalar<DataVector>{std::move(get<0, 0>(inv_jacobian))}};
 }
 static bool use_flat_space = false;
 const DataVector read_element_data(
@@ -1369,7 +1365,7 @@ std::array<DataVector, 3> integrate_fields_in_time(
       tnsr::I<DataVector, 1, Frame::Grid> new_grid_coords =
           initialize_grid_coords(element_ids, number_of_elements,
                                  mesh_of_one_element);
-      std::array<const Scalar<DataVector>, 2> determinants = create_jacobians(
+      std::array<Scalar<DataVector>, 2> determinants = create_jacobians(
           mesh_of_one_element, element_ids, number_of_elements);
       mutable_det_jacobian = determinants[0];
       mutable_det_inverse_jacobian = determinants[1];
@@ -1442,10 +1438,8 @@ void run(const db::Access& box) {
   tnsr::I<DataVector, 1, Frame::Grid> grid_coords = initialize_grid_coords(
       element_ids, number_of_elements, mesh_of_one_element);
 
-  std::array<const Scalar<DataVector>, 2> determinants =
+  const auto [det_jacobian, det_inv_jacobian] =
       create_jacobians(mesh_of_one_element, element_ids, number_of_elements);
-  const Scalar<DataVector> det_jacobian = determinants[0];
-  const Scalar<DataVector> det_inv_jacobian = determinants[1];
 
   Scalar<DataVector> mass{mesh_of_one_element.number_of_grid_points() *
                           number_of_elements};
