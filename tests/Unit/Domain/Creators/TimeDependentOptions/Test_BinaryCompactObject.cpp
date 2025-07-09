@@ -204,8 +204,7 @@ void test(const bool include_expansion, const bool include_rotation,
   }
 
   if (include_grid_centers) {
-    grid_centers_options = typename GridCentersOptions<
-        IsCylindrical>::value_type{
+    grid_centers_options = typename time_dependent_options::GridCentersOptions{
         unit_test_src_path() +
             "/../InputFiles/GrMhd/GhValenciaDivClean/EvolutionParameters.perl",
         1.0};
@@ -324,7 +323,10 @@ void test(const bool include_expansion, const bool include_rotation,
   GridCentersFoT grid_centers{};
   if (include_grid_centers) {
     grid_centers = GridCentersFoT{
-        initial_time, grid_centers_options.value().initial_values,
+        initial_time,
+        std::get<time_dependent_options::GridCentersOptions>(
+            grid_centers_options.value())
+            .initial_values,
         expiration_times.at(
             TimeDependentMapOptions<IsCylindrical>::grid_centers_name)};
   }

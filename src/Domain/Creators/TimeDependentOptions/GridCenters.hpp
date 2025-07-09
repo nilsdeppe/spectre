@@ -6,8 +6,10 @@
 #include <array>
 #include <optional>
 #include <string>
+#include <variant>
 
 #include "DataStructures/DataVector.hpp"
+#include "Domain/Creators/TimeDependentOptions/FromVolumeFile.hpp"
 #include "Domain/FunctionsOfTime/FunctionOfTime.hpp"
 #include "Options/Auto.hpp"
 #include "Options/Context.hpp"
@@ -25,7 +27,8 @@ namespace domain::creators::time_dependent_options {
  * alias, `name()` function, and \p help string.
  */
 struct GridCentersOptions {
-  using type = Options::Auto<GridCentersOptions, Options::AutoLabel::None>;
+  using type = Options::Auto<std::variant<GridCentersOptions, FromVolumeFile>,
+                             Options::AutoLabel::None>;
   static std::string name() { return "GridCenters"; }
 
   struct SpecEvolutionParametersPerlFile {
@@ -65,6 +68,7 @@ struct GridCentersOptions {
  * options, initial time, and expiration time.
  */
 std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime> get_grid_centers(
-    const GridCentersOptions& grid_centers_options, double initial_time,
-    double expiration_time);
+    const std::variant<GridCentersOptions, FromVolumeFile>&
+        grid_centers_options,
+    double initial_time, double expiration_time);
 }  // namespace domain::creators::time_dependent_options

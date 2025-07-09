@@ -93,9 +93,37 @@ GridCentersOptions::GridCentersOptions(
 }
 
 std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime> get_grid_centers(
-    const GridCentersOptions& grid_centers_options,
+    const std::variant<GridCentersOptions, FromVolumeFile>&
+        grid_centers_options,
     const double initial_time, const double expiration_time) {
-  return std::make_unique<domain::FunctionsOfTime::PiecewisePolynomial<2>>(
-      initial_time, grid_centers_options.initial_values, expiration_time);
+  const std::string name = "GridCenters";
+
+  if (std::holds_alternative<FromVolumeFile>(grid_centers_options)) {
+    const auto& from_vol_file = std::get<FromVolumeFile>(grid_centers_options);
+    auto volume_fot =
+        from_vol_file.retrieve_function_of_time({name}, initial_time);
+
+    // It must be a PiecewisePolynomial
+    if (UNLIKELY(dynamic_cast<domain::FunctionsOfTime::PiecewisePolynomial<2>*>(
+                     volume_fot.at(name).get()) == nullptr)) {
+      ERROR_NO_TRACE(
+          "GridCenters function of time read from volume data is not a "
+          "PiecewisePolynomial<2>. Cannot use it to initialize the translation "
+          "map.");
+    }
+
+    if (from_vol_file.replay()) {
+      return std::move(volume_fot.at(name));
+    } else {
+      return volume_fot.at(name)->create_at_time(initial_time, expiration_time);
+    }
+
+  } else if (std::holds_alternative<GridCentersOptions>(grid_centers_options)) {
+    return std::make_unique<domain::FunctionsOfTime::PiecewisePolynomial<2>>(
+        initial_time,
+        std::get<GridCentersOptions>(grid_centers_options).initial_values,
+        expiration_time);
+  }
+  ERROR("Unknown GridCenters.");
 }
 }  // namespace domain::creators::time_dependent_options
