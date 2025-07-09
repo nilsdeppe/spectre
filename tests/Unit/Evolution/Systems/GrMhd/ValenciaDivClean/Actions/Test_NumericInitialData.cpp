@@ -199,6 +199,8 @@ void test_numeric_initial_data(const NumericInitialData& initial_data,
   for (size_t d = 0; d < 3; ++d) {
     u_i.get(d) *= get(W);
   }
+  get<hydro::Tags::Temperature<DataVector>>(inbox) =
+      get<hydro::Tags::Temperature<DataVector>>(tov_vars);
   get<hydro::Tags::ElectronFraction<DataVector>>(inbox) =
       get<hydro::Tags::ElectronFraction<DataVector>>(tov_vars);
   get<hydro::Tags::MagneticField<DataVector, 3>>(inbox) =
@@ -242,13 +244,14 @@ SPECTRE_TEST_CASE("Unit.Evolution.Systems.ValenciaDivClean.NumericInitialData",
   register_factory_classes_with_charm<Metavariables>();
   EquationsOfState::register_derived_with_charm();
   test_numeric_initial_data(
-      NumericInitialData{"TestInitialData.h5",
-                         "VolumeData",
-                         0.,
-                         {1.0e-9},
-                         false,
-                         {"CustomRho", "CustomUi", "CustomYe", "CustomB"},
-                         1.e-14},
+      NumericInitialData{
+          "TestInitialData.h5",
+          "VolumeData",
+          0.,
+          {1.0e-9},
+          false,
+          {"CustomRho", "CustomUi", "CustomT", "CustomYe", "CustomB"},
+          1.e-14},
       "NumericInitialData:\n"
       "  FileGlob: TestInitialData.h5\n"
       "  Subgroup: VolumeData\n"
@@ -258,6 +261,7 @@ SPECTRE_TEST_CASE("Unit.Evolution.Systems.ValenciaDivClean.NumericInitialData",
       "  Variables:\n"
       "    RestMassDensity: CustomRho\n"
       "    LowerSpatialFourVelocity: CustomUi\n"
+      "    Temperature: CustomT\n"
       "    ElectronFraction: CustomYe\n"
       "    MagneticField: CustomB\n"
       "  DensityCutoff: 1.e-14");
@@ -267,7 +271,7 @@ SPECTRE_TEST_CASE("Unit.Evolution.Systems.ValenciaDivClean.NumericInitialData",
                          0.,
                          std::nullopt,
                          false,
-                         {"CustomRho", "CustomUi", 0.15, 0.},
+                         {"CustomRho", "CustomUi", 0., 0.15, 0.},
                          1.e-14},
       "NumericInitialData:\n"
       "  FileGlob: TestInitialData.h5\n"
@@ -278,6 +282,7 @@ SPECTRE_TEST_CASE("Unit.Evolution.Systems.ValenciaDivClean.NumericInitialData",
       "  Variables:\n"
       "    RestMassDensity: CustomRho\n"
       "    LowerSpatialFourVelocity: CustomUi\n"
+      "    Temperature: 0.\n"
       "    ElectronFraction: 0.15\n"
       "    MagneticField: 0.\n"
       "  DensityCutoff: 1.e-14");
