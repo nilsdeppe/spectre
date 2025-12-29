@@ -1209,7 +1209,7 @@ module load gsl/${_GSL_VERSION}
 # Blaze Begin
 ################################################################
 cd $dep_dir
-_BLAZE_VERSION=3.8
+_BLAZE_VERSION=3.8.2
 LOCATION=${INSTALL_GCC_LOCATION}/blaze/${_BLAZE_VERSION}
 if [ -d ${LOCATION} ]; then
     echo "Blaze version ${_BLAZE_VERSION} already installed"
@@ -1221,6 +1221,13 @@ else
     make install
     cd ../
     rm -rf ./blaze.tar.gz ./blaze-${_BLAZE_VERSION}
+    if [ "$_BLAZE_VERSION" = "3.8.2" ]; then
+        echo "Patching version file."
+        sed -i 's/^#define BLAZE_MINOR_VERSION 9$/#define BLAZE_MINOR_VERSION 8/' \
+            ${LOCATION}/include/blaze/system/Version.h
+        sed -i 's/^#define BLAZE_PATCH_VERSION 0$/#define BLAZE_PATCH_VERSION 2/' \
+            ${LOCATION}/include/blaze/system/Version.h
+    fi
     chmod -R 555 ${LOCATION}
 fi
 
@@ -1246,11 +1253,11 @@ proc ModulesHelp { } {
         puts stderr "\tPrepends \$apps_path/include to CPATH"
         puts stderr "\tPrepends \$apps_path/ to CMAKE_PREFIX_PATH"
         puts stderr ""
-        puts stderr "\tSets up your environment to use header-only library Blaze (v3.8)"
+        puts stderr "\tSets up your environment to use header-only library Blaze (v3.8.2)"
         puts stderr ""
 }
 
-module-whatis   "Sets up your environment so you can use the header-only library Blaze (v3.8)"
+module-whatis   "Sets up your environment so you can use the header-only library Blaze (v3.8.2)"
 
 set     dotversion      3.2.6
 
