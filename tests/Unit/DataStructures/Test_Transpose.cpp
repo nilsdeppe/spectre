@@ -33,9 +33,31 @@ using two_vars = tmpl::list<Var1<Dim>, Var2>;
 
 template <size_t Dim>
 using one_var = tmpl::list<Var1<Dim>>;
+
+void test_transpose(const size_t rows, const size_t cols) {
+  INFO("Testing " << rows << "x" << cols << " transpose");
+  DataVector matrix(rows * cols);
+  std::iota(matrix.begin(), matrix.end(), 1.0);
+  CAPTURE(matrix);
+  DataVector expected(rows * cols);
+  for (size_t i = 0; i < rows; ++i) {
+    for (size_t j = 0; j < cols; ++j) {
+      expected[i * cols + j] = matrix[j * rows + i];
+    }
+  }
+  CHECK(transpose(matrix, rows, cols) == expected);
+}
 }  // namespace
 
 SPECTRE_TEST_CASE("Unit.DataStructures.Transpose", "[DataStructures][Unit]") {
+  const size_t min_size = 2;
+  const size_t max_size = 32;
+  for (size_t rows = min_size; rows < max_size + 1; ++rows) {
+    for (size_t cols = min_size; cols < max_size + 1; ++cols) {
+      test_transpose(rows, cols);
+    }
+  }
+
   // clang-format off
   // [transpose_matrix]
   const DataVector matrix{ 1.,  2.,  3.,

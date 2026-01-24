@@ -51,6 +51,16 @@ template <typename T>
 T make_sequence() {
   return detail::make_sequence_impl<T>(std::make_index_sequence<size<T>()>{});
 }
+
+template <class T>
+mask_type_t<T> mask_from_bool(const bool value) noexcept {
+  if constexpr (std::is_fundamental_v<T>) {
+    return value;
+  } else {
+    return mask_type_t<T>::from_mask(
+        value ? std::numeric_limits<uint64_t>::max() : 0);
+  }
+}
 }  // namespace xsimd
 
 namespace std {
@@ -333,6 +343,11 @@ template <typename Arch = void, typename T>
 void store_unaligned(T* mem, const T& val) {
   static_assert(std::is_arithmetic_v<T>);
   *mem = val;
+}
+
+template <class T>
+bool mask_from_bool(const bool value) noexcept {
+  return value;
 }
 }  // namespace simd
 #endif

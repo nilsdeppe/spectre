@@ -550,13 +550,13 @@ std::pair<T, T> toms748_solve(F f, const T& ax, const T& bx, const T& fax,
  *                            `max_iterations` iterations.
  */
 template <bool AssumeFinite = false, typename Function, typename T>
-T toms748(const Function& f, const T lower_bound, const T upper_bound,
-          const T f_at_lower_bound, const T f_at_upper_bound,
-          const simd::scalar_type_t<T> absolute_tolerance,
-          const simd::scalar_type_t<T> relative_tolerance,
-          const size_t max_iterations = 100,
-          const simd::mask_type_t<T> ignore_filter =
-              static_cast<simd::mask_type_t<T>>(0)) {
+T toms748(
+    const Function& f, const T lower_bound, const T upper_bound,
+    const T f_at_lower_bound, const T f_at_upper_bound,
+    const simd::scalar_type_t<T> absolute_tolerance,
+    const simd::scalar_type_t<T> relative_tolerance,
+    const size_t max_iterations = 100,
+    const simd::mask_type_t<T> ignore_filter = simd::mask_from_bool<T>(false)) {
   ASSERT(relative_tolerance >
              std::numeric_limits<simd::scalar_type_t<T>>::epsilon(),
          "The relative tolerance is too small. Got "
@@ -607,12 +607,12 @@ T toms748(const Function& f, const T lower_bound, const T upper_bound,
  * that products like `fa * fb` are also finite.
  */
 template <bool AssumeFinite = false, typename Function, typename T>
-T toms748(const Function& f, const T lower_bound, const T upper_bound,
-          const simd::scalar_type_t<T> absolute_tolerance,
-          const simd::scalar_type_t<T> relative_tolerance,
-          const size_t max_iterations = 100,
-          const simd::mask_type_t<T> ignore_filter =
-              static_cast<simd::mask_type_t<T>>(0)) {
+T toms748(
+    const Function& f, const T lower_bound, const T upper_bound,
+    const simd::scalar_type_t<T> absolute_tolerance,
+    const simd::scalar_type_t<T> relative_tolerance,
+    const size_t max_iterations = 100,
+    const simd::mask_type_t<T> ignore_filter = simd::mask_from_bool<T>(false)) {
   return toms748<AssumeFinite>(
       f, lower_bound, upper_bound, f(lower_bound), f(upper_bound),
       absolute_tolerance, relative_tolerance, max_iterations, ignore_filter);
