@@ -65,27 +65,34 @@ void do_print_to_file(const std::string& file,
 namespace Parallel {
 namespace detail {
 void send_message(const bool error, const std::vector<char>& message) {
+#if defined(SPECTRE_USE_CHARM)
   if (printer_chare_is_set and sys::my_node() != 0) {
     printer_chare[0].print(error, message);
-  } else {
+  } else
+#endif
+  {
     do_print(error, message);
   }
 }
 
 void send_message_to_file(const std::string& file,
                           const std::vector<char>& message) {
+#if defined(SPECTRE_USE_CHARM)
   // Unlike in send_message, we always print through the printer
   // chare, even on node 0.  The thread-safety of the stdio functions
   // is on a per-stream basis, and all threads share the same stdout
   // and stderr, but not the stream for any random file we open.
   if (printer_chare_is_set) {
     printer_chare[0].print_to_file(file, message);
-  } else {
+  } else
+#endif
+  {
     do_print_to_file(file, message);
   }
 }
 }  // namespace detail
 
+#if defined(SPECTRE_USE_CHARM)
 void PrinterChare::print(const bool error, const std::vector<char>& message) {
   do_print(error, message);
 }
@@ -104,6 +111,9 @@ void PrinterChare::register_with_charm() {
 CProxy_PrinterChare printer_chare;
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 bool printer_chare_is_set;
+#endif
 }  // namespace Parallel
 
+#if defined(SPECTRE_USE_CHARM)
 #include "Parallel/Printf/Printf.def.h"
+#endif

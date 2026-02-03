@@ -6,6 +6,8 @@
 
 #pragma once
 
+#if defined(SPECTRE_USE_CHARM)
+
 #include <array>
 #include <boost/program_options.hpp>
 #include <charm++.h>
@@ -1089,3 +1091,4 @@ void Main<Metavariables>::update_const_global_cache_from_input_file() {
 #define CK_TEMPLATES_ONLY
 #include "Parallel/Main.def.h"
 #undef CK_TEMPLATES_ONLY
+#endif

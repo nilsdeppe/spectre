@@ -12,6 +12,7 @@
 #include "Utilities/StdHelpers.hpp"
 #include "Utilities/System/ParallelInfo.hpp"
 
+#if defined(SPECTRE_USE_CHARM)
 void Informer::print_startup_info(CkArgMsg* msg) {
   std::stringstream ss{};
   for (int i = 0; i < msg->argc - 1; i++) {
@@ -33,6 +34,7 @@ void Informer::print_startup_info(CkArgMsg* msg) {
 
   Parallel::printf("%s\n", info_from_build());
 }
+#endif
 
 void Informer::print_exit_info() {
   Parallel::printf(

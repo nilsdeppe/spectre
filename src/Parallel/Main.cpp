@@ -3,6 +3,8 @@
 
 #include "Parallel/Main.hpp"
 
+#if defined(SPECTRE_USE_CHARM)
+
 #include <algorithm>
 #include <cstddef>
 #include <iterator>
@@ -66,3 +68,4 @@ void check_future_checkpoint_dirs_available(
   }
 }
 }  // namespace Parallel::detail
+#endif

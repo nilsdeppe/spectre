@@ -20,6 +20,7 @@
 #include "Utilities/Requires.hpp"
 #include "Utilities/TypeTraits/IsStreamable.hpp"
 
+#if defined(SPECTRE_USE_CHARM)
 /// \cond
 namespace PUP {
 class er;
@@ -27,6 +28,7 @@ class er;
 /// \endcond
 
 #include "Parallel/Printf/Printf.decl.h"
+#endif
 
 namespace Parallel {
 namespace detail {
@@ -152,6 +154,7 @@ inline void fprintf(const std::string& file, const std::string& format,
       file, detail::format_message(format, std::forward<Args>(args)...));
 }
 
+#if defined(SPECTRE_USE_CHARM)
 /// Chare outputting all Parallel::printf results.
 class PrinterChare : public CBase_PrinterChare {
  public:
@@ -175,4 +178,5 @@ class PrinterChare : public CBase_PrinterChare {
 extern CProxy_PrinterChare printer_chare;
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 extern bool printer_chare_is_set;
+#endif
 }  // namespace Parallel

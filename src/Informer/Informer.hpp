@@ -7,7 +7,9 @@
 #pragma once
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 class CkArgMsg;
+#endif
 /// \endcond
 
 /// \ingroup LoggingGroup
@@ -31,7 +33,9 @@ class Informer {
   /// ```
   ///
   /// only `MyExecutable` and onwards will be printed.
+#if defined(SPECTRE_USE_CHARM)
   static void print_startup_info(CkArgMsg* msg);
+#endif
 
   /// Print useful information at the end of a simulation.
   static void print_exit_info();

@@ -8,33 +8,115 @@
 #include "Utilities/System/ParallelInfo.hpp"
 
 namespace sys {
-int number_of_procs() { return CkNumPes(); }
-
-int my_proc() { return CkMyPe(); }
-
-int number_of_nodes() { return CkNumNodes(); }
-
-int my_node() { return CkMyNode(); }
-
-int procs_on_node([[maybe_unused]] const int node_index) {
-  return CkNodeSize(node_index);
+int number_of_procs() {
+#if defined(SPECTRE_USE_CHARM)
+  return CkNumPes();
+#elif defined(SPECTRE_USE_FINDUS)
+  throw std::runtime_error{"Unimplemented"};
+  return -1;
+#else
+#error "Must use either Charm++ or findus"
+#endif
 }
 
-int my_local_rank() { return CkMyRank(); }
+int my_proc() {
+#if defined(SPECTRE_USE_CHARM)
+  return CkMyPe();
+#elif defined(SPECTRE_USE_FINDUS)
+  throw std::runtime_error{"Unimplemented"};
+  return -1;
+#else
+#error "Must use either Charm++ or findus"
+#endif
+}
+
+int number_of_nodes() {
+#if defined(SPECTRE_USE_CHARM)
+  return CkNumNodes();
+#elif defined(SPECTRE_USE_FINDUS)
+  throw std::runtime_error{"Unimplemented"};
+  return -1;
+#else
+#error "Must use either Charm++ or findus"
+#endif
+}
+
+int my_node() {
+#if defined(SPECTRE_USE_CHARM)
+  return CkMyNode();
+#elif defined(SPECTRE_USE_FINDUS)
+  throw std::runtime_error{"Unimplemented"};
+  return -1;
+#else
+#error "Must use either Charm++ or findus"
+#endif
+}
+
+int procs_on_node([[maybe_unused]] const int node_index) {
+#if defined(SPECTRE_USE_CHARM)
+  return CkNodeSize(node_index);
+#elif defined(SPECTRE_USE_FINDUS)
+  throw std::runtime_error{"Unimplemented"};
+  return -1;
+#else
+#error "Must use either Charm++ or findus"
+#endif
+}
+
+int my_local_rank() {
+#if defined(SPECTRE_USE_CHARM)
+  return CkMyRank();
+#elif defined(SPECTRE_USE_FINDUS)
+  throw std::runtime_error{"Unimplemented"};
+  return -1;
+#else
+#error "Must use either Charm++ or findus"
+#endif
+}
 
 int first_proc_on_node([[maybe_unused]] const int node_index) {
+#if defined(SPECTRE_USE_CHARM)
   return CkNodeFirst(node_index);
+#elif defined(SPECTRE_USE_FINDUS)
+  throw std::runtime_error{"Unimplemented"};
+  return -1;
+#else
+#error "Must use either Charm++ or findus"
+#endif
 }
 
 int node_of([[maybe_unused]] const int proc_index) {
+#if defined(SPECTRE_USE_CHARM)
   return CkNodeOf(proc_index);
+#elif defined(SPECTRE_USE_FINDUS)
+  throw std::runtime_error{"Unimplemented"};
+  return -1;
+#else
+#error "Must use either Charm++ or findus"
+#endif
 }
 
 int local_rank_of([[maybe_unused]] const int proc_index) {
+#if defined(SPECTRE_USE_CHARM)
   return CkRankOf(proc_index);
+#elif defined(SPECTRE_USE_FINDUS)
+  throw std::runtime_error{"Unimplemented"};
+  return -1;
+#else
+#error "Must use either Charm++ or findus"
+#endif
 }
 
-double wall_time() { return CkWallTimer(); }
+double wall_time() {
+#if defined(SPECTRE_USE_CHARM)
+  return CkWallTimer();
+#elif defined(SPECTRE_USE_FINDUS)
+  throw std::runtime_error{"Unimplemented"};
+  return -1.0;
+#else
+#error "Must use either Charm++ or findus"
+#endif
+}
 
 std::string pretty_wall_time(const double total_seconds) {
   // Subseconds don't really matter so just ignore them. This gives nice round
