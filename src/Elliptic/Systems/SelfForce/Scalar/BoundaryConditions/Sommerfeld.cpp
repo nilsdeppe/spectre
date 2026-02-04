@@ -23,8 +23,6 @@ Sommerfeld::Sommerfeld(const double black_hole_mass,
       m_mode_number_(m_mode_number),
       hyperboloidal_slicing_(hyperboloidal_slicing) {}
 
-Sommerfeld::Sommerfeld(CkMigrateMessage* m) : Base(m) {}
-
 std::unique_ptr<domain::BoundaryConditions::BoundaryCondition>
 Sommerfeld::get_clone() const {
   return std::make_unique<Sommerfeld>(*this);

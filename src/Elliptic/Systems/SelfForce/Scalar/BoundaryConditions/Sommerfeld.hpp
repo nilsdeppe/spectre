@@ -86,7 +86,6 @@ class Sommerfeld : public elliptic::BoundaryConditions::BoundaryCondition<2> {
   bool hyperboloidal_slicing() const { return hyperboloidal_slicing_; }
 
   /// \cond
-  explicit Sommerfeld(CkMigrateMessage* m);
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(Sommerfeld);
   /// \endcond

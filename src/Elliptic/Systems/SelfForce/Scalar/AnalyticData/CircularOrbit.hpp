@@ -154,7 +154,6 @@ class CircularOrbit : public elliptic::analytic_data::Background,
       int m_mode_number,
       std::optional<std::array<double, 4>> hyperboloidal_slicing_transitions);
 
-  explicit CircularOrbit(CkMigrateMessage* m);
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(CircularOrbit);
 

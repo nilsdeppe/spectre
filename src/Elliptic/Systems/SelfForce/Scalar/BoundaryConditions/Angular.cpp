@@ -12,8 +12,6 @@ namespace ScalarSelfForce::BoundaryConditions {
 
 Angular::Angular(int m_mode_number) : m_mode_number_(m_mode_number) {}
 
-Angular::Angular(CkMigrateMessage* m) : Base(m) {}
-
 void Angular::apply(
     const gsl::not_null<Scalar<ComplexDataVector>*> field,
     const gsl::not_null<Scalar<ComplexDataVector>*> n_dot_field_gradient,
