@@ -228,6 +228,7 @@ void AnalyticSolution<System, Dim, tmpl::list<FieldTags...>,
   p | boundary_condition_types_;
 }
 
+#if defined(SPECTRE_USE_CHARM)
 /// \cond
 template <typename System, size_t Dim, typename... FieldTags,
           typename... FluxTags>
@@ -235,5 +236,5 @@ PUP::able::PUP_ID AnalyticSolution<System, Dim, tmpl::list<FieldTags...>,
                                    tmpl::list<FluxTags...>>::my_PUP_ID =
     0;  // NOLINT
 /// \endcond
-
+#endif  // SPECTRE_USE_CHARM
 }  // namespace elliptic::BoundaryConditions
