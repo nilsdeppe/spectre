@@ -41,7 +41,9 @@ DirichletAnalytic<tmpl::list<NeutrinoSpecies...>>::DirichletAnalytic(
 
 template <typename... NeutrinoSpecies>
 void DirichletAnalytic<tmpl::list<NeutrinoSpecies...>>::pup(PUP::er& p) {
+#if defined(SPECTRE_USE_CHARM)
   BoundaryCondition<tmpl::list<NeutrinoSpecies...>>::pup(p);
+#endif  // SPECTRE_USE_CHARM
   p | analytic_prescription_;
 }
 

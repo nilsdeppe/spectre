@@ -30,7 +30,11 @@ namespace ForceFree::BoundaryConditions {
  * are directed out of the domain; no boundary data is altered by this boundary
  * condition.
  */
-class DemandOutgoingCharSpeeds final : public BoundaryCondition {
+class DemandOutgoingCharSpeeds final
+    : public BoundaryCondition,
+      public virtual SPECTRE_CHARM_DERIVED(
+          SINGLE_ARG(DemandOutgoingCharSpeeds),
+          SINGLE_ARG(domain::BoundaryConditions::BoundaryCondition)) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help{

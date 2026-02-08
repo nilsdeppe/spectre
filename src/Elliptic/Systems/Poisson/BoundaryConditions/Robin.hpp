@@ -27,7 +27,9 @@ namespace Poisson::BoundaryConditions {
 /// boundary condition is imposed as Neumann-type (i.e. on \f$n_i \nabla^i u\f$)
 /// if \f$|b| > 0\f$ and as Dirichlet-type (i.e. on \f$u\f$) if \f$b = 0\f$.
 template <size_t Dim>
-class Robin : public elliptic::BoundaryConditions::BoundaryCondition<Dim> {
+class Robin : public elliptic::BoundaryConditions::BoundaryCondition<Dim>,
+              public virtual SPECTRE_CHARM_DERIVED(
+                  Robin<Dim>, domain::BoundaryConditions::BoundaryCondition) {
  private:
   using Base = elliptic::BoundaryConditions::BoundaryCondition<Dim>;
 

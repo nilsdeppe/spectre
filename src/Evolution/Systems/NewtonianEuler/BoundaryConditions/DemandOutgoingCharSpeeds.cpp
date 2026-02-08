@@ -30,8 +30,10 @@ DemandOutgoingCharSpeeds<Dim>::get_clone() const {
 }
 
 template <size_t Dim>
-void DemandOutgoingCharSpeeds<Dim>::pup(PUP::er& p) {
+void DemandOutgoingCharSpeeds<Dim>::pup([[maybe_unused]] PUP::er& p) {
+#if defined(SPECTRE_USE_CHARM)
   BoundaryCondition<Dim>::pup(p);
+#endif  // SPECTRE_USE_CHARM
 }
 
 #if defined(SPECTRE_USE_CHARM)

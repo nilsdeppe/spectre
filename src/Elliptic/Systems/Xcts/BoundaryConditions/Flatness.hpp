@@ -37,7 +37,10 @@ namespace Xcts::BoundaryConditions {
  * \tparam EnabledEquations The subset of XCTS equations that are being solved
  */
 template <Xcts::Equations EnabledEquations>
-class Flatness : public elliptic::BoundaryConditions::BoundaryCondition<3> {
+class Flatness : public elliptic::BoundaryConditions::BoundaryCondition<3>,
+                 public virtual SPECTRE_CHARM_DERIVED(
+                     Flatness<EnabledEquations>,
+                     domain::BoundaryConditions::BoundaryCondition) {
  private:
   using Base = elliptic::BoundaryConditions::BoundaryCondition<3>;
 

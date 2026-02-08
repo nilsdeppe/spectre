@@ -20,8 +20,7 @@
 namespace gh::BoundaryConditions {
 template <size_t Dim>
 DirichletAnalytic<Dim>::DirichletAnalytic(const DirichletAnalytic& rhs)
-    : BoundaryCondition<Dim>{dynamic_cast<const BoundaryCondition<Dim>&>(rhs)},
-      analytic_prescription_(rhs.analytic_prescription_->get_clone()) {}
+    : analytic_prescription_(rhs.analytic_prescription_->get_clone()) {}
 
 template <size_t Dim>
 DirichletAnalytic<Dim>& DirichletAnalytic<Dim>::operator=(
@@ -46,7 +45,9 @@ DirichletAnalytic<Dim>::get_clone() const {
 
 template <size_t Dim>
 void DirichletAnalytic<Dim>::pup(PUP::er& p) {
+#if defined(SPECTRE_USE_CHARM)
   BoundaryCondition<Dim>::pup(p);
+#endif  // SPECTRE_USE_CHARM
   p | analytic_prescription_;
 }
 

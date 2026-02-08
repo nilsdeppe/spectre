@@ -28,7 +28,9 @@ namespace ScalarSelfForce::BoundaryConditions {
  *   &\partial_{\cos\theta} \Psi_{m=0} = 0
  * \end{align}
  */
-class Angular : public elliptic::BoundaryConditions::BoundaryCondition<2> {
+class Angular : public elliptic::BoundaryConditions::BoundaryCondition<2>,
+                public virtual SPECTRE_CHARM_DERIVED(
+                    Angular, domain::BoundaryConditions::BoundaryCondition) {
  private:
   using Base = elliptic::BoundaryConditions::BoundaryCondition<2>;
 

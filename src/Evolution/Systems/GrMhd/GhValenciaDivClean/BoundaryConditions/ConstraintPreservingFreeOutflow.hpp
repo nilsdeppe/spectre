@@ -38,7 +38,11 @@ namespace grmhd::GhValenciaDivClean::BoundaryConditions {
  * reason is that some care and experimentation is necessary to impose the
  * boundary condition correctly on FD.
  */
-class ConstraintPreservingFreeOutflow final : public BoundaryCondition {
+class ConstraintPreservingFreeOutflow final
+    : public BoundaryCondition,
+      public virtual SPECTRE_CHARM_DERIVED(
+          SINGLE_ARG(ConstraintPreservingFreeOutflow),
+          SINGLE_ARG(domain::BoundaryConditions::BoundaryCondition)) {
  public:
   using options =
       typename gh::BoundaryConditions::ConstraintPreservingBjorhus<3>::options;

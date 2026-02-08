@@ -22,7 +22,9 @@ class DataVector;
 namespace Punctures::BoundaryConditions {
 
 /// Impose asymptotic flatness boundary conditions $\partial_r(ru)=0$
-class Flatness : public elliptic::BoundaryConditions::BoundaryCondition<3> {
+class Flatness : public elliptic::BoundaryConditions::BoundaryCondition<3>,
+                 public virtual SPECTRE_CHARM_DERIVED(
+                     Flatness, domain::BoundaryConditions::BoundaryCondition) {
  private:
   using Base = elliptic::BoundaryConditions::BoundaryCondition<3>;
 

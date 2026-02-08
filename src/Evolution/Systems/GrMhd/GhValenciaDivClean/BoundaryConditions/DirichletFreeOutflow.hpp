@@ -57,7 +57,11 @@ namespace grmhd::GhValenciaDivClean::BoundaryConditions {
  * variables.
  */
 template <typename System>
-class DirichletFreeOutflow final : public BoundaryCondition {
+class DirichletFreeOutflow final
+    : public BoundaryCondition,
+      public virtual SPECTRE_CHARM_DERIVED(
+          SINGLE_ARG(DirichletFreeOutflow<System>),
+          SINGLE_ARG(domain::BoundaryConditions::BoundaryCondition)) {
  private:
   template <typename T>
   using Flux = ::Tags::Flux<T, tmpl::size_t<3>, Frame::Inertial>;

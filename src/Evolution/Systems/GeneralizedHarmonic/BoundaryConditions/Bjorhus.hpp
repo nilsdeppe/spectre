@@ -100,7 +100,11 @@ namespace gh::BoundaryConditions {
  * boundary.
  */
 template <size_t Dim>
-class ConstraintPreservingBjorhus final : public BoundaryCondition<Dim> {
+class ConstraintPreservingBjorhus final
+    : public BoundaryCondition<Dim>,
+      public virtual SPECTRE_CHARM_DERIVED(
+          SINGLE_ARG(ConstraintPreservingBjorhus<Dim>),
+          SINGLE_ARG(domain::BoundaryConditions::BoundaryCondition)) {
  public:
   struct TypeOptionTag {
     using type = detail::ConstraintPreservingBjorhusType;
