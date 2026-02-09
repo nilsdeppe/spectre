@@ -6,6 +6,9 @@ spectre_define_test_timeout_factor_option(STANDALONE "standalone")
 # Helper function to set up a CMake target for a test executable.  It
 # can safely be called multiple times for the same executable.
 function(add_standalone_test_executable EXECUTABLE_NAME)
+  if (NOT "${SPECTRE_PARALLEL_LIB}" STREQUAL "charm")
+    return()
+  endif()
   add_dependencies(test-executables ${EXECUTABLE_NAME})
 
   if (TARGET ${EXECUTABLE_NAME})

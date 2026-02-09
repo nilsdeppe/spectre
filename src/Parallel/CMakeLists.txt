@@ -1,8 +1,13 @@
 # Distributed under the MIT License.
 # See LICENSE.txt for details.
 
-add_charm_module(GlobalCache)
-add_charm_module(Main)
+if ("${SPECTRE_PARALLEL_LIB}" STREQUAL "charm")
+  add_charm_module(GlobalCache)
+  add_charm_module(Main)
+else()
+  add_library(module_GlobalCache INTERFACE)
+  add_library(module_Main INTERFACE)
+endif()
 
 set(LIBRARY Parallel)
 
@@ -85,13 +90,17 @@ target_link_libraries(
   Utilities
   )
 
-add_dependencies(
-  ${LIBRARY}
-  module_GlobalCache
-  module_Main          # GlobalCache module depends on Main module
+if ("${SPECTRE_PARALLEL_LIB}" STREQUAL "charm")
+  add_dependencies(
+    ${LIBRARY}
+    module_GlobalCache
+    module_Main          # GlobalCache module depends on Main module
   )
+endif()
 
-add_subdirectory(Algorithms)
+if ("${SPECTRE_PARALLEL_LIB}" STREQUAL "charm")
+  add_subdirectory(Algorithms)
+endif()
 add_subdirectory(ArrayCollection)
 add_subdirectory(MemoryMonitor)
 add_subdirectory(PhaseControl)

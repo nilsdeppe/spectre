@@ -1,23 +1,25 @@
 # Distributed under the MIT License.
 # See LICENSE.txt for details.
 
-set(LIBRARY "Test_DgMessages")
+if (SPECTRE_USE_CHARM)
+  set(LIBRARY "Test_DgMessages")
 
-set(LIBRARY_SOURCES
-  Test_BoundaryMessage.cpp
-  Test_InboxTags.cpp
+  set(LIBRARY_SOURCES
+    Test_BoundaryMessage.cpp
+    Test_InboxTags.cpp
   )
 
-add_test_library(${LIBRARY} "${LIBRARY_SOURCES}" WITH_CHARM)
+  add_test_library(${LIBRARY} "${LIBRARY_SOURCES}" WITH_CHARM)
 
-target_link_libraries(
-  ${LIBRARY}
-  PRIVATE
-  DataStructuresHelpers
-  DiscontinuousGalerkin
-  DomainStructure
-  Evolution
-  Spectral
-  Time
-  Utilities
+  target_link_libraries(
+    ${LIBRARY}
+    PRIVATE
+    DataStructuresHelpers
+    DiscontinuousGalerkin
+    DomainStructure
+    Evolution
+    Spectral
+    Time
+    Utilities
   )
+endif()

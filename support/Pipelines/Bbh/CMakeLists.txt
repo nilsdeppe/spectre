@@ -21,9 +21,12 @@ spectre_python_add_module(
 # Create a target to compile all executables for this pipeline
 set(PIPELINE_TARGET bbh)
 add_custom_target(${PIPELINE_TARGET})
-add_dependencies(
-  ${PIPELINE_TARGET}
-  EvolveGhBinaryBlackHole
-  EvolveGhSingleBlackHole
-  SolveXcts
+if (TARGET EvolveGhBinaryBlackHole AND TARGET EvolveGhSingleBlackHole
+    AND TARGET SolveXcts)
+  add_dependencies(
+    ${PIPELINE_TARGET}
+    EvolveGhBinaryBlackHole
+    EvolveGhSingleBlackHole
+    SolveXcts
   )
+endif()

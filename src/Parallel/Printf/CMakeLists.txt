@@ -1,7 +1,9 @@
 # Distributed under the MIT License.
 # See LICENSE.txt for details.
 
-add_charm_module(Printf)
+if ("${SPECTRE_PARALLEL_LIB}" STREQUAL "charm")
+  add_charm_module(Printf)
+endif()
 
 set(LIBRARY Printf)
 
@@ -30,7 +32,9 @@ target_link_libraries(
   SystemUtilities
   )
 
-add_dependencies(
-  ${LIBRARY}
-  module_Printf
+if ("${SPECTRE_PARALLEL_LIB}" STREQUAL "charm")
+  add_dependencies(
+    ${LIBRARY}
+    module_Printf
   )
+endif()

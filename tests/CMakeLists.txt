@@ -3,5 +3,7 @@
 
 add_subdirectory(support)
 add_subdirectory(tools)
-add_subdirectory(InputFiles)
+if ("${SPECTRE_PARALLEL_LIB}" STREQUAL "charm")
+  add_subdirectory(InputFiles)
+endif()
 add_subdirectory(Unit)

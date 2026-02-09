@@ -1,10 +1,14 @@
 # Distributed under the MIT License.
 # See LICENSE.txt for details.
 
-# Unit test executables can use this module if they want to run in a Charm++
-# environment. They just have to add `WITH_CHARM` when calling
-# `add_test_library`.
-add_charm_module(TestMainCharm)
+if ("${SPECTRE_PARALLEL_LIB}" STREQUAL "charm")
+  # Unit test executables can use this module if they want to run in a Charm++
+  # environment. They just have to add `WITH_CHARM` when calling
+  # `add_test_library`.
+  add_charm_module(TestMainCharm)
+else()
+  add_library(module_TestMainCharm INTERFACE)
+endif()
 
 # Set include directory for all targets in this directory
 include_directories(${CMAKE_SOURCE_DIR}/tests/Unit)
@@ -24,8 +28,10 @@ add_subdirectory(IO)
 add_subdirectory(Informer)
 add_subdirectory(NumericalAlgorithms)
 add_subdirectory(Options)
-add_subdirectory(Parallel)
-add_subdirectory(ParallelAlgorithms)
+if ("${SPECTRE_PARALLEL_LIB}" STREQUAL "charm")
+  add_subdirectory(Parallel)
+  add_subdirectory(ParallelAlgorithms)
+endif()
 add_subdirectory(PointwiseFunctions)
 add_subdirectory(ArchitectureVectorization)
 add_subdirectory(Time)
