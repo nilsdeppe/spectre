@@ -12,6 +12,13 @@
 #include "Utilities/TypeTraits.hpp"
 
 /// \cond
+#if not defined(SPECTRE_USE_CHARM)
+struct CProxy_ArrayElement;
+struct CProxyElement_ArrayElement;
+struct CProxy_IrrGroup;
+struct CProxy_NodeGroup;
+#endif
+
 namespace Parallel::Algorithms {
 struct Array;
 struct Singleton;
