@@ -36,4 +36,22 @@ SPECTRE_TEST_CASE("Unit.FiniteDifference.DerivativeOrder",
       "8 MidpointAndNode");
   test_construct_from_options<fd::DerivativeOrder::TenMnd>(
       "10 MidpointAndNode");
+  test_construct_from_options<fd::DerivativeOrder::FourMd>("4 Midpoint");
+  test_construct_from_options<fd::DerivativeOrder::SixMd>("6 Midpoint");
+  test_construct_from_options<fd::DerivativeOrder::EightMd>("8 Midpoint");
+  test_construct_from_options<fd::DerivativeOrder::TenMd>("10 Midpoint");
+
+  // Test fd_order() helper
+  CHECK(fd::fd_order(fd::DerivativeOrder::Two) == 2);
+  CHECK(fd::fd_order(fd::DerivativeOrder::FourMnd) == 4);
+  CHECK(fd::fd_order(fd::DerivativeOrder::FourMd) == 4);
+  CHECK(fd::fd_order(fd::DerivativeOrder::SixMnd) == 6);
+  CHECK(fd::fd_order(fd::DerivativeOrder::SixMd) == 6);
+  CHECK(fd::fd_order(fd::DerivativeOrder::EightMnd) == 8);
+  CHECK(fd::fd_order(fd::DerivativeOrder::EightMd) == 8);
+  CHECK(fd::fd_order(fd::DerivativeOrder::TenMnd) == 10);
+  CHECK(fd::fd_order(fd::DerivativeOrder::TenMd) == 10);
+  CHECK(fd::fd_order(fd::DerivativeOrder::OneHigherThanRecons) == -1);
+  CHECK(fd::fd_order(fd::DerivativeOrder::OneHigherThanReconsButFiveToFour) ==
+        -2);
 }

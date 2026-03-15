@@ -11,6 +11,7 @@
 #include "Evolution/DgSubcell/Tags/SubcellOptions.hpp"
 #include "Evolution/DgSubcell/Tags/SubcellSolver.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/FiniteDifference/Reconstructor.hpp"
+#include "NumericalAlgorithms/FiniteDifference/DerivativeOrder.hpp"
 #include "Options/String.hpp"
 #include "Utilities/ErrorHandling/Error.hpp"
 #include "Utilities/TMPL.hpp"
@@ -40,27 +41,23 @@ struct Reconstructor : db::SimpleTag {
   static type create_from_options(
       const type& reconstructor,
       const ::evolution::dg::subcell::SubcellOptions& subcell_options) {
-    if (static_cast<int>(subcell_options.finite_difference_derivative_order()) <
+    if (::fd::fd_order(subcell_options.finite_difference_derivative_order()) <
             0 and
         not reconstructor->supports_adaptive_order()) {
       ERROR_NO_TRACE(
           "Cannot use adaptive finite difference derivative order with "
           "specified reconstructor.");
     }
-    if ((static_cast<int>(
-             subcell_options.finite_difference_derivative_order()) /
-             2 -
-         1) > static_cast<int>(reconstructor->ghost_zone_size())) {
-      ERROR_NO_TRACE(
-          "The derivative order chosen ("
-          << subcell_options.finite_difference_derivative_order()
-          << ") requires more ghost zones ("
-          << (static_cast<int>(
-                  subcell_options.finite_difference_derivative_order()) /
-                  2 -
-              1)
-          << ") than the reconstructor sends, "
-          << reconstructor->ghost_zone_size());
+    const int fd_order_val =
+        ::fd::fd_order(subcell_options.finite_difference_derivative_order());
+    if ((fd_order_val / 2 - 1) >
+        static_cast<int>(reconstructor->ghost_zone_size())) {
+      ERROR_NO_TRACE("The derivative order chosen ("
+                     << subcell_options.finite_difference_derivative_order()
+                     << ") requires more ghost zones ("
+                     << (fd_order_val / 2 - 1)
+                     << ") than the reconstructor sends, "
+                     << reconstructor->ghost_zone_size());
     }
     return reconstructor->get_clone();
   }

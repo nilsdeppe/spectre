@@ -28,6 +28,14 @@ std::ostream& operator<<(std::ostream& os, DerivativeOrder der_order) {
       return os << "8 MidpointAndNode";
     case DerivativeOrder::TenMnd:
       return os << "10 MidpointAndNode";
+    case DerivativeOrder::FourMd:
+      return os << "4 Midpoint";
+    case DerivativeOrder::SixMd:
+      return os << "6 Midpoint";
+    case DerivativeOrder::EightMd:
+      return os << "8 Midpoint";
+    case DerivativeOrder::TenMd:
+      return os << "10 Midpoint";
     default:
       ERROR("Unknown value for DerivativeOrder");
   };
@@ -55,6 +63,14 @@ Options::create_from_yaml<fd::DerivativeOrder>::create<void>(
     return fd::DerivativeOrder::EightMnd;
   } else if (type_read == get_output(fd::DerivativeOrder::TenMnd)) {
     return fd::DerivativeOrder::TenMnd;
+  } else if (type_read == get_output(fd::DerivativeOrder::FourMd)) {
+    return fd::DerivativeOrder::FourMd;
+  } else if (type_read == get_output(fd::DerivativeOrder::SixMd)) {
+    return fd::DerivativeOrder::SixMd;
+  } else if (type_read == get_output(fd::DerivativeOrder::EightMd)) {
+    return fd::DerivativeOrder::EightMd;
+  } else if (type_read == get_output(fd::DerivativeOrder::TenMd)) {
+    return fd::DerivativeOrder::TenMd;
   }
   PARSE_ERROR(
       options.context(),
@@ -63,5 +79,6 @@ Options::create_from_yaml<fd::DerivativeOrder>::create<void>(
           << get_output(fd::DerivativeOrder::OneHigherThanRecons) << "', '"
           << get_output(fd::DerivativeOrder::OneHigherThanReconsButFiveToFour)
           << "', '2', '4 MidpointAndNode', '6 MidpointAndNode', "
-             "'8 MidpointAndNode', or '10 MidpointAndNode'.");
+             "'8 MidpointAndNode', '10 MidpointAndNode', "
+             "'4 Midpoint', '6 Midpoint', '8 Midpoint', or '10 Midpoint'.");
 }

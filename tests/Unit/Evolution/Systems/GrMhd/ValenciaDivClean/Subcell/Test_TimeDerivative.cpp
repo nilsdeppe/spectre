@@ -162,8 +162,8 @@ std::array<double, 5> test(const size_t num_dg_pts,
           3.8, std::nullopt, 4.0,
           ::fd::reconstruction::FallbackReconstructorType::MonotonisedCentral,
           true};
-  REQUIRE((static_cast<int>(fd_derivative_order) < 0 or
-           (static_cast<size_t>(fd_derivative_order) / 2 <=
+  REQUIRE((::fd::fd_order(fd_derivative_order) < 0 or
+           (static_cast<size_t>(::fd::fd_order(fd_derivative_order)) / 2 <=
             recons.ghost_zone_size())));
 
   const grmhd::Solutions::BondiMichel soln{1.0, 5.0, 0.05, 1.4, 2.0};
@@ -477,7 +477,7 @@ std::array<double, 5> test(const size_t num_dg_pts,
 
   subcell::TimeDerivative::apply(make_not_null(&box));
 
-  if (static_cast<int>(fd_derivative_order) < 0) {
+  if (::fd::fd_order(fd_derivative_order) < 0) {
     CHECK(db::get<evolution::dg::subcell::Tags::ReconstructionOrder<3>>(box)
               .has_value());
   } else {

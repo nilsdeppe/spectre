@@ -131,7 +131,7 @@ struct TimeDerivative {
         reconstruction_order_data{};
     std::optional<std::array<gsl::span<std::uint8_t>, 3>>
         reconstruction_order{};
-    if (static_cast<int>(fd_derivative_order) < 0) {
+    if (::fd::fd_order(fd_derivative_order) < 0) {
       reconstruction_order_data = make_array<3>(std::vector<std::uint8_t>(
           (subcell_mesh.extents(0) + 2) * subcell_mesh.extents(1) *
               subcell_mesh.extents(2),

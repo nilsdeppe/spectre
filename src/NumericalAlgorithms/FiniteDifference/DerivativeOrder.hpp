@@ -33,10 +33,48 @@ enum class DerivativeOrder : int {
   /// \brief Use 8th order midpoint-and-node-to-node-difference derivatives
   EightMnd = 8,
   /// \brief Use 10th order midpoint-and-node-to-node-difference derivatives
-  TenMnd = 10
+  TenMnd = 10,
+  /// \brief Use 4th order midpoint-only derivatives
+  FourMd = 14,
+  /// \brief Use 6th order midpoint-only derivatives
+  SixMd = 16,
+  /// \brief Use 8th order midpoint-only derivatives
+  EightMd = 18,
+  /// \brief Use 10th order midpoint-only derivatives
+  TenMd = 20
 };
 
 std::ostream& operator<<(std::ostream& os, DerivativeOrder der_order);
+
+/// Returns the FD order corresponding to a `DerivativeOrder` value.
+///
+/// For adaptive orders (`OneHigherThanRecons` and
+/// `OneHigherThanReconsButFiveToFour`) the raw negative int value is returned.
+constexpr int fd_order(const DerivativeOrder der_order) {
+  switch (der_order) {
+    case DerivativeOrder::OneHigherThanRecons:
+      return static_cast<int>(DerivativeOrder::OneHigherThanRecons);
+    case DerivativeOrder::OneHigherThanReconsButFiveToFour:
+      return static_cast<int>(
+          DerivativeOrder::OneHigherThanReconsButFiveToFour);
+    case DerivativeOrder::Two:
+      return 2;
+    case DerivativeOrder::FourMnd:
+    case DerivativeOrder::FourMd:
+      return 4;
+    case DerivativeOrder::SixMnd:
+    case DerivativeOrder::SixMd:
+      return 6;
+    case DerivativeOrder::EightMnd:
+    case DerivativeOrder::EightMd:
+      return 8;
+    case DerivativeOrder::TenMnd:
+    case DerivativeOrder::TenMd:
+      return 10;
+    default:
+      return static_cast<int>(der_order);
+  }
+}
 }  // namespace fd
 
 template <>

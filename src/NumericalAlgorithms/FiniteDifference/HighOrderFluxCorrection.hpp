@@ -100,12 +100,12 @@ void cartesian_high_order_fluxes_using_nodes(
         reconstruction_order = {}) {
   using std::min;
   constexpr int max_correction_order = 10;
-  static_assert(static_cast<int>(DerivOrder) <= max_correction_order);
-  constexpr size_t stencil_size = static_cast<int>(DerivOrder) < 0
-                                      ? 8
-                                      : (static_cast<size_t>(DerivOrder) - 2);
+  static_assert(fd::fd_order(DerivOrder) <= max_correction_order);
+  constexpr int deriv_order_int = fd::fd_order(DerivOrder);
+  constexpr size_t stencil_size =
+      deriv_order_int < 0 ? 8 : (static_cast<size_t>(deriv_order_int) - 2);
   const size_t correction_width =
-      min(static_cast<size_t>(DerivOrder) / 2 - 1,
+      min(static_cast<size_t>(deriv_order_int) / 2 - 1,
           min(number_of_ghost_cells, stencil_size / 2));
   ASSERT(correction_width <= number_of_ghost_cells,
          "The width of the derivative correction ("
@@ -114,7 +114,7 @@ void cartesian_high_order_fluxes_using_nodes(
              << number_of_ghost_cells);
   ASSERT(alg::all_of(reconstruction_order,
                      [](const auto& t) { return not t.empty(); }) or
-             static_cast<int>(DerivOrder) > 0,
+             deriv_order_int > 0,
          "For adaptive derivative orders the reconstruction_order must be set");
   for (size_t dim = 0; dim < Dim; ++dim) {
     gsl::at(*high_order_boundary_corrections_in_logical_direction, dim)
@@ -228,7 +228,7 @@ void cartesian_high_order_fluxes_using_nodes(
 
             size_t lower_neighbor_index = std::numeric_limits<size_t>::max();
             size_t upper_neighbor_index = std::numeric_limits<size_t>::max();
-            if constexpr (static_cast<int>(DerivOrder) < 0) {
+            if constexpr (deriv_order_int < 0) {
               Index<Dim> lower_n{};
               Index<Dim> upper_n{};
               if constexpr (dim == 0) {
@@ -262,8 +262,8 @@ void cartesian_high_order_fluxes_using_nodes(
                   collapsed_index(upper_n, reconstruction_extents);
             }
 
-            if (static_cast<int>(DerivOrder) >= 10 or
-                (static_cast<int>(DerivOrder) < 0 and
+            if (deriv_order_int >= 10 or
+                (deriv_order_int < 0 and
                  min(recons_order[lower_neighbor_index],
                      recons_order[upper_neighbor_index]) >= 9)) {
               correction -=
@@ -287,8 +287,8 @@ void cartesian_high_order_fluxes_using_nodes(
                    409.6 * second_order_var_correction[storage_index]
                                                       [face_storage_index]);
             }
-            if (static_cast<int>(DerivOrder) >= 8 or
-                (static_cast<int>(DerivOrder) < 0 and
+            if (deriv_order_int >= 8 or
+                (deriv_order_int < 0 and
                  min(recons_order[lower_neighbor_index],
                      recons_order[upper_neighbor_index]) >= 7)) {
               correction +=
@@ -310,8 +310,8 @@ void cartesian_high_order_fluxes_using_nodes(
                        second_order_var_correction[storage_index]
                                                   [face_storage_index]);
             }
-            if (static_cast<int>(DerivOrder) >= 6 or
-                (static_cast<int>(DerivOrder) < 0 and
+            if (deriv_order_int >= 6 or
+                (deriv_order_int < 0 and
                  min(recons_order[lower_neighbor_index],
                      recons_order[upper_neighbor_index]) >=
                      (DerivOrder ==
@@ -331,8 +331,8 @@ void cartesian_high_order_fluxes_using_nodes(
                    16.0 * second_order_var_correction[storage_index]
                                                      [face_storage_index]);
             }
-            if (static_cast<int>(DerivOrder) >= 4 or
-                (static_cast<int>(DerivOrder) < 0 and
+            if (deriv_order_int >= 4 or
+                (deriv_order_int < 0 and
                  min(recons_order[lower_neighbor_index],
                      recons_order[upper_neighbor_index]) >= 3)) {
               correction +=
@@ -436,6 +436,11 @@ void cartesian_high_order_fluxes_using_nodes(
           cell_centered_inertial_flux, ghost_cell_inertial_flux, subcell_mesh,
           number_of_ghost_cells, reconstruction_order);
       break;
+    case DerivativeOrder::FourMd:
+    case DerivativeOrder::SixMd:
+    case DerivativeOrder::EightMd:
+    case DerivativeOrder::TenMd:
+      ERROR("Midpoint-only derivatives not yet implemented");
     default:
       ERROR("Unsupported correction order " << derivative_order);
   };
