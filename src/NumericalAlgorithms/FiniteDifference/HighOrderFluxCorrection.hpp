@@ -408,29 +408,29 @@ void cartesian_high_order_fluxes_using_nodes(
           cell_centered_inertial_flux, ghost_cell_inertial_flux, subcell_mesh,
           number_of_ghost_cells, reconstruction_order);
       break;
-    case DerivativeOrder::Four:
-      cartesian_high_order_fluxes_using_nodes<DerivativeOrder::Four>(
+    case DerivativeOrder::FourMnd:
+      cartesian_high_order_fluxes_using_nodes<DerivativeOrder::FourMnd>(
           high_order_boundary_corrections_in_logical_direction,
           second_order_boundary_corrections_in_logical_direction,
           cell_centered_inertial_flux, ghost_cell_inertial_flux, subcell_mesh,
           number_of_ghost_cells, reconstruction_order);
       break;
-    case DerivativeOrder::Six:
-      cartesian_high_order_fluxes_using_nodes<DerivativeOrder::Six>(
+    case DerivativeOrder::SixMnd:
+      cartesian_high_order_fluxes_using_nodes<DerivativeOrder::SixMnd>(
           high_order_boundary_corrections_in_logical_direction,
           second_order_boundary_corrections_in_logical_direction,
           cell_centered_inertial_flux, ghost_cell_inertial_flux, subcell_mesh,
           number_of_ghost_cells, reconstruction_order);
       break;
-    case DerivativeOrder::Eight:
-      cartesian_high_order_fluxes_using_nodes<DerivativeOrder::Eight>(
+    case DerivativeOrder::EightMnd:
+      cartesian_high_order_fluxes_using_nodes<DerivativeOrder::EightMnd>(
           high_order_boundary_corrections_in_logical_direction,
           second_order_boundary_corrections_in_logical_direction,
           cell_centered_inertial_flux, ghost_cell_inertial_flux, subcell_mesh,
           number_of_ghost_cells, reconstruction_order);
       break;
-    case DerivativeOrder::Ten:
-      cartesian_high_order_fluxes_using_nodes<DerivativeOrder::Ten>(
+    case DerivativeOrder::TenMnd:
+      cartesian_high_order_fluxes_using_nodes<DerivativeOrder::TenMnd>(
           high_order_boundary_corrections_in_logical_direction,
           second_order_boundary_corrections_in_logical_direction,
           cell_centered_inertial_flux, ghost_cell_inertial_flux, subcell_mesh,

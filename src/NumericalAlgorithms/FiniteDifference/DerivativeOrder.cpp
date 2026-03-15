@@ -20,14 +20,14 @@ std::ostream& operator<<(std::ostream& os, DerivativeOrder der_order) {
       return os << "OneHigherThanReconsButFiveToFour";
     case DerivativeOrder::Two:
       return os << "2";
-    case DerivativeOrder::Four:
-      return os << "4";
-    case DerivativeOrder::Six:
-      return os << "6";
-    case DerivativeOrder::Eight:
-      return os << "8";
-    case DerivativeOrder::Ten:
-      return os << "10";
+    case DerivativeOrder::FourMnd:
+      return os << "4 MidpointAndNode";
+    case DerivativeOrder::SixMnd:
+      return os << "6 MidpointAndNode";
+    case DerivativeOrder::EightMnd:
+      return os << "8 MidpointAndNode";
+    case DerivativeOrder::TenMnd:
+      return os << "10 MidpointAndNode";
     default:
       ERROR("Unknown value for DerivativeOrder");
   };
@@ -47,14 +47,14 @@ Options::create_from_yaml<fd::DerivativeOrder>::create<void>(
     return fd::DerivativeOrder::OneHigherThanReconsButFiveToFour;
   } else if (type_read == get_output(fd::DerivativeOrder::Two)) {
     return fd::DerivativeOrder::Two;
-  } else if (type_read == get_output(fd::DerivativeOrder::Four)) {
-    return fd::DerivativeOrder::Four;
-  } else if (type_read == get_output(fd::DerivativeOrder::Six)) {
-    return fd::DerivativeOrder::Six;
-  } else if (type_read == get_output(fd::DerivativeOrder::Eight)) {
-    return fd::DerivativeOrder::Eight;
-  } else if (type_read == get_output(fd::DerivativeOrder::Ten)) {
-    return fd::DerivativeOrder::Ten;
+  } else if (type_read == get_output(fd::DerivativeOrder::FourMnd)) {
+    return fd::DerivativeOrder::FourMnd;
+  } else if (type_read == get_output(fd::DerivativeOrder::SixMnd)) {
+    return fd::DerivativeOrder::SixMnd;
+  } else if (type_read == get_output(fd::DerivativeOrder::EightMnd)) {
+    return fd::DerivativeOrder::EightMnd;
+  } else if (type_read == get_output(fd::DerivativeOrder::TenMnd)) {
+    return fd::DerivativeOrder::TenMnd;
   }
   PARSE_ERROR(
       options.context(),
@@ -62,5 +62,6 @@ Options::create_from_yaml<fd::DerivativeOrder>::create<void>(
           << type_read << "\" to DerivativeOrder. Must be one of '"
           << get_output(fd::DerivativeOrder::OneHigherThanRecons) << "', '"
           << get_output(fd::DerivativeOrder::OneHigherThanReconsButFiveToFour)
-          << "', 2, 4, 6, 8, or 10.");
+          << "', '2', '4 MidpointAndNode', '6 MidpointAndNode', "
+             "'8 MidpointAndNode', or '10 MidpointAndNode'.");
 }

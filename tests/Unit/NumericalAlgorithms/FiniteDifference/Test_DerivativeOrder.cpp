@@ -29,8 +29,11 @@ SPECTRE_TEST_CASE("Unit.FiniteDifference.DerivativeOrder",
       fd::DerivativeOrder::OneHigherThanReconsButFiveToFour>(
       "OneHigherThanReconsButFiveToFour");
   test_construct_from_options<fd::DerivativeOrder::Two>("2");
-  test_construct_from_options<fd::DerivativeOrder::Four>("4");
-  test_construct_from_options<fd::DerivativeOrder::Six>("6");
-  test_construct_from_options<fd::DerivativeOrder::Eight>("8");
-  test_construct_from_options<fd::DerivativeOrder::Ten>("10");
+  test_construct_from_options<fd::DerivativeOrder::FourMnd>(
+      "4 MidpointAndNode");
+  test_construct_from_options<fd::DerivativeOrder::SixMnd>("6 MidpointAndNode");
+  test_construct_from_options<fd::DerivativeOrder::EightMnd>(
+      "8 MidpointAndNode");
+  test_construct_from_options<fd::DerivativeOrder::TenMnd>(
+      "10 MidpointAndNode");
 }

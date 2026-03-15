@@ -91,7 +91,7 @@ void test_impl(const std::vector<double>& expected_values,
       SubcellOptions(
           expected_values[0], static_cast<size_t>(expected_values[1]),
           expected_values[2], expected_values[3], false, false, recons_method,
-          false, std::nullopt, ::fd::DerivativeOrder::Four, 1, 1, 1) ==
+          false, std::nullopt, ::fd::DerivativeOrder::FourMnd, 1, 1, 1) ==
       SubcellOptions(
           expected_values[0], static_cast<size_t>(expected_values[1]),
           expected_values[2], expected_values[3], false, false, recons_method,
@@ -175,7 +175,7 @@ SPECTRE_TEST_CASE("Unit.Evolution.Subcell.SubcellOptions",
                          static_cast<size_t>(expected_values[1]),
                          expected_values[2], expected_values[3], true, true,
                          fd::ReconstructionMethod::DimByDim, true, std::nullopt,
-                         ::fd::DerivativeOrder::Four, 1, 1, 1, 2, 8);
+                         ::fd::DerivativeOrder::FourMnd, 1, 1, 1, 2, 8);
   const SubcellOptions deserialized_options =
       serialize_and_deserialize(options);
   CHECK(options == deserialized_options);
@@ -198,7 +198,7 @@ SPECTRE_TEST_CASE("Unit.Evolution.Subcell.SubcellOptions",
                        "  UseHalo: true\n"
                        "  OnlyDgBlocksAndGroups: None\n"
                        "SubcellToDgReconstructionMethod: DimByDim\n"
-                       "FiniteDifferenceDerivativeOrder: 4\n"
+                       "FiniteDifferenceDerivativeOrder: 4 MidpointAndNode\n"
                        "FdInterpolationOrder: 2\n"
                        "LtsStepsPerSlab: 8"));
 
@@ -223,6 +223,10 @@ SPECTRE_TEST_CASE("Unit.Evolution.Subcell.SubcellOptions",
       "  AlwaysUseSubcells: true\n"
       "  EnableExtensionDirections: true\n"
       "  UseHalo: true\n";
+  const std::string opts_end =
+      "SubcellToDgReconstructionMethod: DimByDim\n"
+      "FiniteDifferenceDerivativeOrder: 4 MidpointAndNode\n"
+      "FdInterpolationOrder: 2\n";
   CHECK_THROWS_WITH(
       SubcellOptions(TestHelpers::test_option_tag<OptionTags::SubcellOptions,
                                                   Metavariables<false>>(

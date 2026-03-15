@@ -305,8 +305,8 @@ SPECTRE_TEST_CASE("Unit.FiniteDifference.CartesianHighOrderFluxCorrection",
                   "[Unit][NumericalAlgorithms]") {
   using DO = fd::DerivativeOrder;
   for (const fd::DerivativeOrder correction_order :
-       {DO::Two, DO::Four, DO::Six, DO::Eight, DO::Ten, DO::OneHigherThanRecons,
-        DO::OneHigherThanReconsButFiveToFour}) {
+       {DO::Two, DO::FourMnd, DO::SixMnd, DO::EightMnd, DO::TenMnd,
+        DO::OneHigherThanRecons, DO::OneHigherThanReconsButFiveToFour}) {
     test<1>(correction_order);
     test<2>(correction_order);
     test<3>(correction_order);

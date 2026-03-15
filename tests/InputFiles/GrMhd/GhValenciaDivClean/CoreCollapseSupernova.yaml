@@ -164,7 +164,7 @@ SpatialDiscretization:
         UseHalo: false
         OnlyDgBlocksAndGroups: None
       SubcellToDgReconstructionMethod: DimByDim
-      FiniteDifferenceDerivativeOrder: 6
+      FiniteDifferenceDerivativeOrder: 6 MidpointAndNode
       FdInterpolationOrder: 1
     TciOptions:
       MinimumValueOfD: 1.0e-15

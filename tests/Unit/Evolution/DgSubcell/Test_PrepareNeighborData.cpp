@@ -364,7 +364,7 @@ SPECTRE_TEST_CASE("Unit.Evolution.Subcell.PrepareNeighborData",
   for (const auto& [all_neighbors_are_doing_dg, fd_deriv_order] :
        cartesian_product(std::array{true, false},
                          std::array{::fd::DerivativeOrder::Two,
-                                    ::fd::DerivativeOrder::Four})) {
+                                    ::fd::DerivativeOrder::FourMnd})) {
     test<1>(all_neighbors_are_doing_dg, fd_deriv_order);
     test<2>(all_neighbors_are_doing_dg, fd_deriv_order);
     test<3>(all_neighbors_are_doing_dg, fd_deriv_order);
