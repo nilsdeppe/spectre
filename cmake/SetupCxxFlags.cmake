@@ -20,6 +20,47 @@ option(SPECTRE_OPTIMIZE_SIZE "Optimize for executable size instead of speed"
 
 option(SPECTRE_DEBUG_Og "Compile Debug builds with -Og instead of -O0" ON)
 
+# -ffunction-sections / -fdata-sections place each function and data symbol in
+# its own object-file section. Combined with the linker's --gc-sections flag
+# (or -dead_strip on macOS), the linker can then walk the reference graph from
+# all live roots and discard every section that is not reachable, eliminating
+# dead code and data from the final binary.
+#
+# This is particularly valuable in Debug builds, where the compiler performs
+# little or no intra-procedural dead-code elimination on its own.
+#
+# Caveats:
+#  - Object files are slightly larger because each function/datum gets its own
+#    section header.
+#  - Compile time may increase marginally due to the extra section metadata.
+#  - Link-time analysis work increases, but total link time is typically
+#    neutral or improved for large binaries because less data flows through
+#    subsequent link stages.
+#  - Charm++ relies on static-initializer side-effects for entry-method
+#    registration. GNU ld and lld both treat .init_array / .ctors sections as
+#    GC roots, so those initializers survive garbage collection in practice.
+#  - On macOS, ld64 does not support --gc-sections; the equivalent flag is
+#    -dead_strip, which is selected automatically below.
+option(SPECTRE_GC_SECTIONS
+  "Reduce binary size by placing each function/data in its own section and \
+garbage-collecting unreferenced sections at link time \
+(-ffunction-sections -fdata-sections + --gc-sections / -dead_strip)"
+  ON)
+
+if(SPECTRE_GC_SECTIONS)
+  set_property(TARGET SpectreFlags
+    APPEND PROPERTY
+    INTERFACE_COMPILE_OPTIONS
+    $<$<COMPILE_LANGUAGE:C>:-ffunction-sections -fdata-sections>
+    $<$<COMPILE_LANGUAGE:CXX>:-ffunction-sections -fdata-sections>
+    $<$<COMPILE_LANGUAGE:Fortran>:-ffunction-sections -fdata-sections>)
+  if(APPLE)
+    target_link_options(SpectreFlags INTERFACE -Wl,-dead_strip)
+  else()
+    target_link_options(SpectreFlags INTERFACE -Wl,--gc-sections)
+  endif()
+endif()
+
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(SPECTRE_DEBUG ON)
 endif()

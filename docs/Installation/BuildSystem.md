@@ -216,6 +216,24 @@ alphabetical order):
     (default is `OFF`)
 - SPECTRE_Fortran_STATIC_LIBS (default: `OFF`)
   - Use static version of `libgfortran` and `libquadmath`.
+- SPECTRE_GC_SECTIONS
+  - Reduce binary size by placing each function and data symbol in its own
+    object-file section (`-ffunction-sections -fdata-sections`) and then
+    garbage-collecting unreferenced sections at link time. The linker walks
+    the reference graph from all live roots (entry points, static
+    initializers, exported symbols) and discards everything unreachable,
+    eliminating dead code and data from the final binary without changing
+    runtime behavior. This is especially effective in Debug builds where the
+    compiler itself performs little dead-code elimination.
+  - On Linux (GNU ld / lld) this adds `-Wl,--gc-sections`; on macOS it uses
+    the ld64 equivalent `-Wl,-dead_strip`.
+  - Slightly increases compile time (extra section metadata) and individual
+    object-file sizes; net effect on link time is typically neutral or
+    positive for large binaries.
+  - Disable with `SPECTRE_GC_SECTIONS=OFF` if you encounter link-time issues
+    caused by unreferenced symbols that must be present (e.g., unusual
+    static-initializer patterns in third-party libraries).
+  - (default is `ON`)
 - SPECTRE_INPUT_FILE_TEST_MIN_PRIORITY
   - Minimum priority of input file tests to run. Possible values are: `low` (not
     usually run on CI), `normal` (run at least once on CI), `high` (run always
