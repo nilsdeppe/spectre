@@ -848,11 +848,8 @@ void cartesian_high_order_flux_corrections(
     [[maybe_unused]] const std::array<gsl::span<std::uint8_t>, Dim>&
         reconstruction_order = {},
     const size_t number_of_rdmp_values_in_ghost_data = 0) {
-  const bool is_md_order = fd_derivative_order == DerivativeOrder::FourMd or
-                           fd_derivative_order == DerivativeOrder::SixMd or
-                           fd_derivative_order == DerivativeOrder::EightMd or
-                           fd_derivative_order == DerivativeOrder::TenMd;
-  if (is_md_order) {
+  const bool is_md = ::fd::is_md_order(fd_derivative_order);
+  if (is_md) {
     ASSERT(not cell_centered_fluxes.has_value(),
            "Cell-centered fluxes should not be computed when using "
            "midpoint-only (Md) derivative orders. The extra computation "
