@@ -628,7 +628,8 @@ SPECTRE_TEST_CASE(
 
   // Check the adaptive correction order works.
   // for (const auto& recon_order : make_array(
-  //          DO::OneHigherThanRecons, DO::OneHigherThanReconsButFiveToFour)) {
+  //          DO::OneHigherThanReconsMnd,
+  //          DO::OneHigherThanReconsButFiveToFourMnd)) {
   //   CAPTURE(recon_order);
   //   const auto five_pts_data = test(5, recon_order,
   //   dummy_expansion_velocity); const auto six_pts_data = test(6, recon_order,

@@ -16,14 +16,14 @@ struct create_from_yaml;
 namespace fd {
 /// Controls which FD derivative order is used.
 enum class DerivativeOrder : int {
-  /// \brief Use one order high derivative.
+  /// \brief Use one order higher midpoint-and-node derivative.
   ///
   /// For example, if fifth order reconstruction is used, then a sixth-order
   /// derivative is used.
-  OneHigherThanRecons = -1,
-  /// \brief Same as `OneHigherThanRecons` except uses a fourth-order derivative
-  /// if fifth-order reconstruction was used.
-  OneHigherThanReconsButFiveToFour = -2,
+  OneHigherThanReconsMnd = -1,
+  /// \brief Same as `OneHigherThanReconsMnd` except uses a fourth-order
+  /// derivative if fifth-order reconstruction was used.
+  OneHigherThanReconsButFiveToFourMnd = -2,
   /// \brief Use 2nd order derivatives
   Two = 2,
   /// \brief Use 4th order midpoint-and-node-to-node-difference derivatives
@@ -48,15 +48,16 @@ std::ostream& operator<<(std::ostream& os, DerivativeOrder der_order);
 
 /// Returns the FD order corresponding to a `DerivativeOrder` value.
 ///
-/// For adaptive orders (`OneHigherThanRecons` and
-/// `OneHigherThanReconsButFiveToFour`) the raw negative int value is returned.
+/// For adaptive orders (`OneHigherThanReconsMnd` and
+/// `OneHigherThanReconsButFiveToFourMnd`) the raw negative int value is
+/// returned.
 constexpr int fd_order(const DerivativeOrder der_order) {
   switch (der_order) {
-    case DerivativeOrder::OneHigherThanRecons:
-      return static_cast<int>(DerivativeOrder::OneHigherThanRecons);
-    case DerivativeOrder::OneHigherThanReconsButFiveToFour:
+    case DerivativeOrder::OneHigherThanReconsMnd:
+      return static_cast<int>(DerivativeOrder::OneHigherThanReconsMnd);
+    case DerivativeOrder::OneHigherThanReconsButFiveToFourMnd:
       return static_cast<int>(
-          DerivativeOrder::OneHigherThanReconsButFiveToFour);
+          DerivativeOrder::OneHigherThanReconsButFiveToFourMnd);
     case DerivativeOrder::Two:
       return 2;
     case DerivativeOrder::FourMnd:

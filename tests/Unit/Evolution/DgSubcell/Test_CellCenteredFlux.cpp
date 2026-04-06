@@ -129,7 +129,7 @@ SPECTRE_TEST_CASE("Unit.Evolution.Subcell.CellCenteredFlux",
   using DO = fd::DerivativeOrder;
   for (const DO derivative_order :
        {DO::Two, DO::FourMnd, DO::SixMnd, DO::EightMnd, DO::TenMnd,
-        DO::OneHigherThanRecons, DO::OneHigherThanReconsButFiveToFour}) {
+        DO::OneHigherThanReconsMnd, DO::OneHigherThanReconsButFiveToFourMnd}) {
     for (const bool did_rollback : {true, false}) {
       test<TestConservativeSystem, 1, false>(derivative_order, did_rollback);
       test<TestConservativeSystem, 2, false>(derivative_order, did_rollback);

@@ -23,11 +23,11 @@ void test_construct_from_options(const std::string& expected_output) {
 
 SPECTRE_TEST_CASE("Unit.FiniteDifference.DerivativeOrder",
                   "[Unit][NumericalAlgorithms]") {
-  test_construct_from_options<fd::DerivativeOrder::OneHigherThanRecons>(
-      "OneHigherThanRecons");
+  test_construct_from_options<fd::DerivativeOrder::OneHigherThanReconsMnd>(
+      "OneHigherThanReconsMnd");
   test_construct_from_options<
-      fd::DerivativeOrder::OneHigherThanReconsButFiveToFour>(
-      "OneHigherThanReconsButFiveToFour");
+      fd::DerivativeOrder::OneHigherThanReconsButFiveToFourMnd>(
+      "OneHigherThanReconsButFiveToFourMnd");
   test_construct_from_options<fd::DerivativeOrder::Two>("2");
   test_construct_from_options<fd::DerivativeOrder::FourMnd>(
       "4 MidpointAndNode");
@@ -51,7 +51,7 @@ SPECTRE_TEST_CASE("Unit.FiniteDifference.DerivativeOrder",
   CHECK(fd::fd_order(fd::DerivativeOrder::EightMd) == 8);
   CHECK(fd::fd_order(fd::DerivativeOrder::TenMnd) == 10);
   CHECK(fd::fd_order(fd::DerivativeOrder::TenMd) == 10);
-  CHECK(fd::fd_order(fd::DerivativeOrder::OneHigherThanRecons) == -1);
-  CHECK(fd::fd_order(fd::DerivativeOrder::OneHigherThanReconsButFiveToFour) ==
-        -2);
+  CHECK(fd::fd_order(fd::DerivativeOrder::OneHigherThanReconsMnd) == -1);
+  CHECK(fd::fd_order(
+            fd::DerivativeOrder::OneHigherThanReconsButFiveToFourMnd) == -2);
 }

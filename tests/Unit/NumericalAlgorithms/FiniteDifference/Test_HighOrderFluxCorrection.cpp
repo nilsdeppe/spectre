@@ -39,10 +39,10 @@ void test_using_nodes(const fd::DerivativeOrder correction_order) {
   CAPTURE(correction_order);
   CAPTURE(Dim);
   const size_t max_degree =
-      correction_order == fd::DerivativeOrder::OneHigherThanRecons
+      correction_order == fd::DerivativeOrder::OneHigherThanReconsMnd
           ? 6
           : (correction_order ==
-                     fd::DerivativeOrder::OneHigherThanReconsButFiveToFour
+                     fd::DerivativeOrder::OneHigherThanReconsButFiveToFourMnd
                  ? 4
                  : static_cast<size_t>(correction_order));
   const size_t points_per_dimension = static_cast<size_t>(max_degree) + 2;
@@ -216,9 +216,9 @@ void test_using_nodes(const fd::DerivativeOrder correction_order) {
 
   std::array<std::vector<std::uint8_t>, Dim> reconstruction_order_storage{};
   std::array<gsl::span<std::uint8_t>, Dim> reconstruction_order{};
-  if (correction_order == fd::DerivativeOrder::OneHigherThanRecons or
+  if (correction_order == fd::DerivativeOrder::OneHigherThanReconsMnd or
       correction_order ==
-          fd::DerivativeOrder::OneHigherThanReconsButFiveToFour) {
+          fd::DerivativeOrder::OneHigherThanReconsButFiveToFourMnd) {
     Index<Dim> recons_extents = mesh.extents();
     recons_extents[0] += 2;
     for (size_t i = 0; i < Dim; ++i) {
@@ -595,7 +595,7 @@ SPECTRE_TEST_CASE("Unit.FiniteDifference.CartesianHighOrderFluxCorrection",
   using DO = fd::DerivativeOrder;
   for (const fd::DerivativeOrder correction_order :
        {DO::Two, DO::FourMnd, DO::SixMnd, DO::EightMnd, DO::TenMnd,
-        DO::OneHigherThanRecons, DO::OneHigherThanReconsButFiveToFour}) {
+        DO::OneHigherThanReconsMnd, DO::OneHigherThanReconsButFiveToFourMnd}) {
     test_using_nodes<1>(correction_order);
     test_using_nodes<2>(correction_order);
     test_using_nodes<3>(correction_order);

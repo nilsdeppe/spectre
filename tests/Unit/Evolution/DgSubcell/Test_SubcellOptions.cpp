@@ -207,7 +207,7 @@ SPECTRE_TEST_CASE("Unit.Evolution.Subcell.SubcellOptions",
                                             false, 0_st, 5_st, false};
   const std::string opts_no_blocks =
       "SubcellToDgReconstructionMethod: DimByDim\n"
-      "FiniteDifferenceDerivativeOrder: 4\n"
+      "FiniteDifferenceDerivativeOrder: 4 MidpointAndNode\n"
       "FdInterpolationOrder: 2\n"
       "TroubledCellIndicator:\n"
       "  PerssonTci:\n"

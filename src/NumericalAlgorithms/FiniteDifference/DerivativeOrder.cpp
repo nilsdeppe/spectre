@@ -14,10 +14,10 @@
 namespace fd {
 std::ostream& operator<<(std::ostream& os, DerivativeOrder der_order) {
   switch (der_order) {
-    case DerivativeOrder::OneHigherThanRecons:
-      return os << "OneHigherThanRecons";
-    case DerivativeOrder::OneHigherThanReconsButFiveToFour:
-      return os << "OneHigherThanReconsButFiveToFour";
+    case DerivativeOrder::OneHigherThanReconsMnd:
+      return os << "OneHigherThanReconsMnd";
+    case DerivativeOrder::OneHigherThanReconsButFiveToFourMnd:
+      return os << "OneHigherThanReconsButFiveToFourMnd";
     case DerivativeOrder::Two:
       return os << "2";
     case DerivativeOrder::FourMnd:
@@ -47,12 +47,12 @@ fd::DerivativeOrder
 Options::create_from_yaml<fd::DerivativeOrder>::create<void>(
     const Options::Option& options) {
   const auto type_read = options.parse_as<std::string>();
-  if (type_read == get_output(fd::DerivativeOrder::OneHigherThanRecons)) {
-    return fd::DerivativeOrder::OneHigherThanRecons;
+  if (type_read == get_output(fd::DerivativeOrder::OneHigherThanReconsMnd)) {
+    return fd::DerivativeOrder::OneHigherThanReconsMnd;
   } else if (type_read ==
              get_output(
-                 fd::DerivativeOrder::OneHigherThanReconsButFiveToFour)) {
-    return fd::DerivativeOrder::OneHigherThanReconsButFiveToFour;
+                 fd::DerivativeOrder::OneHigherThanReconsButFiveToFourMnd)) {
+    return fd::DerivativeOrder::OneHigherThanReconsButFiveToFourMnd;
   } else if (type_read == get_output(fd::DerivativeOrder::Two)) {
     return fd::DerivativeOrder::Two;
   } else if (type_read == get_output(fd::DerivativeOrder::FourMnd)) {
@@ -76,8 +76,9 @@ Options::create_from_yaml<fd::DerivativeOrder>::create<void>(
       options.context(),
       "Failed to convert \""
           << type_read << "\" to DerivativeOrder. Must be one of '"
-          << get_output(fd::DerivativeOrder::OneHigherThanRecons) << "', '"
-          << get_output(fd::DerivativeOrder::OneHigherThanReconsButFiveToFour)
+          << get_output(fd::DerivativeOrder::OneHigherThanReconsMnd) << "', '"
+          << get_output(
+                 fd::DerivativeOrder::OneHigherThanReconsButFiveToFourMnd)
           << "', '2', '4 MidpointAndNode', '6 MidpointAndNode', "
              "'8 MidpointAndNode', '10 MidpointAndNode', "
              "'4 Midpoint', '6 Midpoint', '8 Midpoint', or '10 Midpoint'.");

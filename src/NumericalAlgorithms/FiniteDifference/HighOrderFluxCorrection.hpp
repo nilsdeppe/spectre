@@ -314,8 +314,8 @@ void cartesian_high_order_fluxes_using_nodes(
                 (deriv_order_int < 0 and
                  min(recons_order[lower_neighbor_index],
                      recons_order[upper_neighbor_index]) >=
-                     (DerivOrder ==
-                              DerivativeOrder::OneHigherThanReconsButFiveToFour
+                     (DerivOrder == DerivativeOrder::
+                                       OneHigherThanReconsButFiveToFourMnd
                           ? 6
                           : 5))) {
               correction -=
@@ -708,17 +708,17 @@ void cartesian_high_order_fluxes_using_nodes(
     [[maybe_unused]] const std::array<gsl::span<std::uint8_t>, Dim>&
         reconstruction_order = {}) {
   switch (derivative_order) {
-    case DerivativeOrder::OneHigherThanRecons:
+    case DerivativeOrder::OneHigherThanReconsMnd:
       cartesian_high_order_fluxes_using_nodes<
-          DerivativeOrder::OneHigherThanRecons>(
+          DerivativeOrder::OneHigherThanReconsMnd>(
           high_order_boundary_corrections_in_logical_direction,
           second_order_boundary_corrections_in_logical_direction,
           cell_centered_inertial_flux, ghost_cell_inertial_flux, subcell_mesh,
           number_of_ghost_cells, reconstruction_order);
       break;
-    case DerivativeOrder::OneHigherThanReconsButFiveToFour:
+    case DerivativeOrder::OneHigherThanReconsButFiveToFourMnd:
       cartesian_high_order_fluxes_using_nodes<
-          DerivativeOrder::OneHigherThanReconsButFiveToFour>(
+          DerivativeOrder::OneHigherThanReconsButFiveToFourMnd>(
           high_order_boundary_corrections_in_logical_direction,
           second_order_boundary_corrections_in_logical_direction,
           cell_centered_inertial_flux, ghost_cell_inertial_flux, subcell_mesh,
