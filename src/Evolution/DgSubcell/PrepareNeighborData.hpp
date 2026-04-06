@@ -84,9 +84,7 @@ void prepare_neighbor_data(
   const size_t rdmp_size = rdmp_data.max_variables_values.size() +
                            rdmp_data.min_variables_values.size();
   const size_t extra_size_for_ghost_data =
-      (fd_derivative_order == ::fd::DerivativeOrder::Two
-           ? 0
-           : volume_fluxes.size());
+      ::fd::is_mnd_order(fd_derivative_order) ? volume_fluxes.size() : 0;
 
   if (DataVector ghost_variables =
           [&box, &extra_size_for_ghost_data, &rdmp_size, &volume_fluxes]() {
@@ -136,7 +134,12 @@ void prepare_neighbor_data(
   } else {
     *ghost_data_mesh = subcell_mesh;
     const size_t ghost_zone_size =
-        Metavariables::SubcellOptions::ghost_zone_size(*box);
+        Metavariables::SubcellOptions::ghost_zone_size(*box) +
+        (::fd::is_md_order(fd_derivative_order)
+             ? (static_cast<size_t>(::fd::fd_order(fd_derivative_order)) /
+                    2 -
+                1)
+             : 0);
 
     const DataVector data_to_project{};
     make_const_view(make_not_null(&data_to_project), ghost_variables, 0,

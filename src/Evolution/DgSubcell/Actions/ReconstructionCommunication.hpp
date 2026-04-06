@@ -166,8 +166,16 @@ struct SendDataForReconstruction {
 
     const Mesh<Dim>& dg_mesh = db::get<::domain::Tags::Mesh<Dim>>(box);
     const Mesh<Dim>& subcell_mesh = db::get<Tags::Mesh<Dim>>(box);
+    const ::fd::DerivativeOrder fd_derivative_order =
+        db::get<evolution::dg::subcell::Tags::SubcellOptions<Dim>>(box)
+            .finite_difference_derivative_order();
     const size_t ghost_zone_size =
-        Metavariables::SubcellOptions::ghost_zone_size(box);
+        Metavariables::SubcellOptions::ghost_zone_size(box) +
+        (::fd::is_md_order(fd_derivative_order)
+             ? (static_cast<size_t>(::fd::fd_order(fd_derivative_order)) /
+                    2 -
+                1)
+             : 0);
 
     // Optimization note: could save a copy+allocation if we moved
     // all_sliced_data when possible before sending.
@@ -453,8 +461,17 @@ struct ReceiveAndSendDataForReconstruction {
       return {Parallel::AlgorithmExecution::Retry, std::nullopt};
     }
 
+    const ::fd::DerivativeOrder fd_derivative_order_recv =
+        db::get<evolution::dg::subcell::Tags::SubcellOptions<Dim>>(box)
+            .finite_difference_derivative_order();
     const size_t ghost_zone_size =
-        Metavariables::SubcellOptions::ghost_zone_size(box);
+        Metavariables::SubcellOptions::ghost_zone_size(box) +
+        (::fd::is_md_order(fd_derivative_order_recv)
+             ? (static_cast<size_t>(
+                    ::fd::fd_order(fd_derivative_order_recv)) /
+                    2 -
+                1)
+             : 0);
     const Mesh<Dim>& dg_mesh = db::get<::domain::Tags::Mesh<Dim>>(box);
     const Mesh<Dim>& subcell_mesh = db::get<Tags::Mesh<Dim>>(box);
     const Index<Dim>& subcell_extents = subcell_mesh.extents();
@@ -712,6 +729,17 @@ struct ReceiveDataForReconstruction {
 
     const Mesh<Dim>& subcell_mesh = db::get<Tags::Mesh<Dim>>(box);
     const auto& mortar_meshes = get<evolution::dg::Tags::MortarMesh<Dim>>(box);
+    const ::fd::DerivativeOrder fd_derivative_order_receive =
+        db::get<evolution::dg::subcell::Tags::SubcellOptions<Dim>>(box)
+            .finite_difference_derivative_order();
+    const size_t ghost_zone_size_receive =
+        Metavariables::SubcellOptions::ghost_zone_size(box) +
+        (::fd::is_md_order(fd_derivative_order_receive)
+             ? (static_cast<size_t>(
+                    ::fd::fd_order(fd_derivative_order_receive)) /
+                    2 -
+                1)
+             : 0);
 
     db::mutate<Tags::GhostDataForReconstruction<Dim>, Tags::DataForRdmpTci,
                evolution::dg::Tags::MortarData<Dim>,
@@ -720,7 +748,7 @@ struct ReceiveDataForReconstruction {
                evolution::dg::subcell::Tags::MeshForGhostData<Dim>,
                evolution::dg::subcell::Tags::NeighborTciDecisions<Dim>>(
         [&element,
-         ghost_zone_size = Metavariables::SubcellOptions::ghost_zone_size(box),
+         ghost_zone_size = ghost_zone_size_receive,
          &received_data, &subcell_mesh, &mortar_meshes](
             const gsl::not_null<DirectionalIdMap<Dim, GhostData>*>
                 ghost_data_ptr,

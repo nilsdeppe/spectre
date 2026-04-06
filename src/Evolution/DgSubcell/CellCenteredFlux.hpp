@@ -55,8 +55,8 @@ struct CellCenteredFlux {
       const ::Variables<variables>& cell_centered_flux_vars,
       const bool did_rollback, Args&&... args) {
     if (did_rollback or not ComputeOnlyOnRollback) {
-      if (subcell_options.finite_difference_derivative_order() !=
-          ::fd::DerivativeOrder::Two) {
+      if (::fd::is_mnd_order(
+              subcell_options.finite_difference_derivative_order())) {
         if (not cell_centered_fluxes->has_value()) {
           (*cell_centered_fluxes) =
               Variables<db::wrap_tags_in<::Tags::Flux, flux_variables,
