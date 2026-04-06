@@ -18,6 +18,10 @@ std::ostream& operator<<(std::ostream& os, DerivativeOrder der_order) {
       return os << "OneHigherThanReconsMnd";
     case DerivativeOrder::OneHigherThanReconsButFiveToFourMnd:
       return os << "OneHigherThanReconsButFiveToFourMnd";
+    case DerivativeOrder::OneHigherThanReconsMd:
+      return os << "OneHigherThanReconsMd";
+    case DerivativeOrder::OneHigherThanReconsButFiveToFourMd:
+      return os << "OneHigherThanReconsButFiveToFourMd";
     case DerivativeOrder::Two:
       return os << "2";
     case DerivativeOrder::FourMnd:
@@ -53,6 +57,13 @@ Options::create_from_yaml<fd::DerivativeOrder>::create<void>(
              get_output(
                  fd::DerivativeOrder::OneHigherThanReconsButFiveToFourMnd)) {
     return fd::DerivativeOrder::OneHigherThanReconsButFiveToFourMnd;
+  } else if (type_read ==
+             get_output(fd::DerivativeOrder::OneHigherThanReconsMd)) {
+    return fd::DerivativeOrder::OneHigherThanReconsMd;
+  } else if (type_read ==
+             get_output(
+                 fd::DerivativeOrder::OneHigherThanReconsButFiveToFourMd)) {
+    return fd::DerivativeOrder::OneHigherThanReconsButFiveToFourMd;
   } else if (type_read == get_output(fd::DerivativeOrder::Two)) {
     return fd::DerivativeOrder::Two;
   } else if (type_read == get_output(fd::DerivativeOrder::FourMnd)) {
@@ -79,6 +90,10 @@ Options::create_from_yaml<fd::DerivativeOrder>::create<void>(
           << get_output(fd::DerivativeOrder::OneHigherThanReconsMnd) << "', '"
           << get_output(
                  fd::DerivativeOrder::OneHigherThanReconsButFiveToFourMnd)
+          << "', '"
+          << get_output(fd::DerivativeOrder::OneHigherThanReconsMd) << "', '"
+          << get_output(
+                 fd::DerivativeOrder::OneHigherThanReconsButFiveToFourMd)
           << "', '2', '4 MidpointAndNode', '6 MidpointAndNode', "
              "'8 MidpointAndNode', '10 MidpointAndNode', "
              "'4 Midpoint', '6 Midpoint', '8 Midpoint', or '10 Midpoint'.");

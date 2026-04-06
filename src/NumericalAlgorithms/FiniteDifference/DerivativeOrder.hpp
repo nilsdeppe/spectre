@@ -24,6 +24,14 @@ enum class DerivativeOrder : int {
   /// \brief Same as `OneHigherThanReconsMnd` except uses a fourth-order
   /// derivative if fifth-order reconstruction was used.
   OneHigherThanReconsButFiveToFourMnd = -2,
+  /// \brief Use one order higher midpoint-only derivative.
+  ///
+  /// For example, if fifth order reconstruction is used, then a sixth-order
+  /// derivative is used.
+  OneHigherThanReconsMd = -3,
+  /// \brief Same as `OneHigherThanReconsMd` except uses a fourth-order
+  /// derivative if fifth-order reconstruction was used.
+  OneHigherThanReconsButFiveToFourMd = -4,
   /// \brief Use 2nd order derivatives
   Two = 2,
   /// \brief Use 4th order midpoint-and-node-to-node-difference derivatives
@@ -58,6 +66,11 @@ constexpr int fd_order(const DerivativeOrder der_order) {
     case DerivativeOrder::OneHigherThanReconsButFiveToFourMnd:
       return static_cast<int>(
           DerivativeOrder::OneHigherThanReconsButFiveToFourMnd);
+    case DerivativeOrder::OneHigherThanReconsMd:
+      return static_cast<int>(DerivativeOrder::OneHigherThanReconsMd);
+    case DerivativeOrder::OneHigherThanReconsButFiveToFourMd:
+      return static_cast<int>(
+          DerivativeOrder::OneHigherThanReconsButFiveToFourMd);
     case DerivativeOrder::Two:
       return 2;
     case DerivativeOrder::FourMnd:
