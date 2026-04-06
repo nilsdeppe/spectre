@@ -62,4 +62,36 @@ SPECTRE_TEST_CASE("Unit.FiniteDifference.DerivativeOrder",
   CHECK(fd::fd_order(fd::DerivativeOrder::OneHigherThanReconsMd) == -3);
   CHECK(fd::fd_order(
             fd::DerivativeOrder::OneHigherThanReconsButFiveToFourMd) == -4);
+
+  // Test is_mnd_order() and is_md_order() helpers
+  CHECK(not fd::is_mnd_order(fd::DerivativeOrder::Two));
+  CHECK(not fd::is_md_order(fd::DerivativeOrder::Two));
+  CHECK(fd::is_mnd_order(fd::DerivativeOrder::FourMnd));
+  CHECK(not fd::is_md_order(fd::DerivativeOrder::FourMnd));
+  CHECK(fd::is_mnd_order(fd::DerivativeOrder::SixMnd));
+  CHECK(not fd::is_md_order(fd::DerivativeOrder::SixMnd));
+  CHECK(fd::is_mnd_order(fd::DerivativeOrder::EightMnd));
+  CHECK(not fd::is_md_order(fd::DerivativeOrder::EightMnd));
+  CHECK(fd::is_mnd_order(fd::DerivativeOrder::TenMnd));
+  CHECK(not fd::is_md_order(fd::DerivativeOrder::TenMnd));
+  CHECK(not fd::is_mnd_order(fd::DerivativeOrder::FourMd));
+  CHECK(fd::is_md_order(fd::DerivativeOrder::FourMd));
+  CHECK(not fd::is_mnd_order(fd::DerivativeOrder::SixMd));
+  CHECK(fd::is_md_order(fd::DerivativeOrder::SixMd));
+  CHECK(not fd::is_mnd_order(fd::DerivativeOrder::EightMd));
+  CHECK(fd::is_md_order(fd::DerivativeOrder::EightMd));
+  CHECK(not fd::is_mnd_order(fd::DerivativeOrder::TenMd));
+  CHECK(fd::is_md_order(fd::DerivativeOrder::TenMd));
+  CHECK(fd::is_mnd_order(fd::DerivativeOrder::OneHigherThanReconsMnd));
+  CHECK(not fd::is_md_order(fd::DerivativeOrder::OneHigherThanReconsMnd));
+  CHECK(fd::is_mnd_order(
+      fd::DerivativeOrder::OneHigherThanReconsButFiveToFourMnd));
+  CHECK(not fd::is_md_order(
+      fd::DerivativeOrder::OneHigherThanReconsButFiveToFourMnd));
+  CHECK(not fd::is_mnd_order(fd::DerivativeOrder::OneHigherThanReconsMd));
+  CHECK(fd::is_md_order(fd::DerivativeOrder::OneHigherThanReconsMd));
+  CHECK(not fd::is_mnd_order(
+      fd::DerivativeOrder::OneHigherThanReconsButFiveToFourMd));
+  CHECK(fd::is_md_order(
+      fd::DerivativeOrder::OneHigherThanReconsButFiveToFourMd));
 }

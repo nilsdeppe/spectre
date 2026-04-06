@@ -89,6 +89,28 @@ constexpr int fd_order(const DerivativeOrder der_order) {
       return static_cast<int>(der_order);
   }
 }
+
+/// Returns true if `der_order` is a midpoint-and-node (MND) order.
+constexpr bool is_mnd_order(const DerivativeOrder der_order) {
+  return der_order == DerivativeOrder::FourMnd or
+         der_order == DerivativeOrder::SixMnd or
+         der_order == DerivativeOrder::EightMnd or
+         der_order == DerivativeOrder::TenMnd or
+         der_order == DerivativeOrder::OneHigherThanReconsMnd or
+         der_order ==
+             DerivativeOrder::OneHigherThanReconsButFiveToFourMnd;
+}
+
+/// Returns true if `der_order` is a midpoint-only (MD) order.
+constexpr bool is_md_order(const DerivativeOrder der_order) {
+  return der_order == DerivativeOrder::FourMd or
+         der_order == DerivativeOrder::SixMd or
+         der_order == DerivativeOrder::EightMd or
+         der_order == DerivativeOrder::TenMd or
+         der_order == DerivativeOrder::OneHigherThanReconsMd or
+         der_order ==
+             DerivativeOrder::OneHigherThanReconsButFiveToFourMd;
+}
 }  // namespace fd
 
 template <>
