@@ -203,6 +203,12 @@ void test(const bool all_neighbors_are_doing_dg,
   }
 
   const size_t ghost_zone_size = DummyReconstructor::ghost_zone_size();
+  const size_t effective_ghost_zone_size =
+      ghost_zone_size +
+      (::fd::is_md_order(fd_derivative_order)
+           ? (static_cast<size_t>(::fd::fd_order(fd_derivative_order)) / 2 -
+              1)
+           : 0);
 
   const bool always_use_subcell = false;
   const bool use_halo = false;
@@ -235,8 +241,8 @@ void test(const bool all_neighbors_are_doing_dg,
           logical_fd_coords.get(i), subcell_mesh.extents(), orientation_map);
     }
     const auto target_points = evolution::dg::subcell::slice_tensor_for_subcell(
-        oriented_logical_coords, subcell_mesh.extents(), ghost_zone_size,
-        orientation_map(direction), {});
+        oriented_logical_coords, subcell_mesh.extents(),
+        effective_ghost_zone_size, orientation_map(direction), {});
     dg_to_fd_neighbor_interpolants[DirectionalId<Dim>{direction,
                                                       neighbor_element_id}] =
         intrp::Irregular<Dim>{dg_mesh, target_points};
@@ -280,7 +286,7 @@ void test(const bool all_neighbors_are_doing_dg,
 
   DirectionMap<Dim, DataVector> expected_neighbor_data{};
 
-  const bool need_fluxes = fd_derivative_order != ::fd::DerivativeOrder::Two;
+  const bool need_fluxes = ::fd::is_mnd_order(fd_derivative_order);
   if (all_neighbors_are_doing_dg) {
     DataVector data{expected_vars.size() +
                     (need_fluxes ? volume_fluxes.size() : 0)};
@@ -303,7 +309,8 @@ void test(const bool all_neighbors_are_doing_dg,
 
     REQUIRE(data_for_neighbors.size() == Dim);
     const size_t num_ghost_points =
-        subcell_mesh.slice_away(0).number_of_grid_points() * ghost_zone_size;
+        subcell_mesh.slice_away(0).number_of_grid_points() *
+        effective_ghost_zone_size;
     for (const auto& direction : expected_neighbor_directions<Dim>()) {
       REQUIRE(data_for_neighbors.contains(direction));
       REQUIRE(data_for_neighbors.at(direction).size() ==
@@ -312,31 +319,33 @@ void test(const bool all_neighbors_are_doing_dg,
     }
 
     // do same operation as GhostDataToSlice
-    expected_neighbor_data = [&subcell_mesh, &directions_to_slice, &dg_mesh,
-                              &expected_vars, need_fluxes, &volume_fluxes,
-                              &ghost_zone_size]() {
-      if (need_fluxes) {
-        Variables<tmpl::list<Var1, flux_tag>> expected_var_and_flux{
-            expected_vars.number_of_grid_points()};
-        get<Var1>(expected_var_and_flux) = get<Var1>(expected_vars);
-        get<flux_tag>(expected_var_and_flux) = get<flux_tag>(volume_fluxes);
-        return evolution::dg::subcell::slice_data(
-            evolution::dg::subcell::fd::project(expected_var_and_flux, dg_mesh,
-                                                subcell_mesh.extents()),
-            subcell_mesh.extents(), ghost_zone_size, directions_to_slice, 0,
-            {});
-      } else {
-        return evolution::dg::subcell::slice_data(
-            evolution::dg::subcell::fd::project(expected_vars, dg_mesh,
-                                                subcell_mesh.extents()),
-            subcell_mesh.extents(), ghost_zone_size, directions_to_slice, 0,
-            {});
-      }
-    }();
+    expected_neighbor_data =
+        [&subcell_mesh, &directions_to_slice, &dg_mesh, &expected_vars,
+         need_fluxes, &volume_fluxes, effective_ghost_zone_size]() {
+          if (need_fluxes) {
+            Variables<tmpl::list<Var1, flux_tag>> expected_var_and_flux{
+                expected_vars.number_of_grid_points()};
+            get<Var1>(expected_var_and_flux) = get<Var1>(expected_vars);
+            get<flux_tag>(expected_var_and_flux) =
+                get<flux_tag>(volume_fluxes);
+            return evolution::dg::subcell::slice_data(
+                evolution::dg::subcell::fd::project(expected_var_and_flux,
+                                                    dg_mesh,
+                                                    subcell_mesh.extents()),
+                subcell_mesh.extents(), effective_ghost_zone_size,
+                directions_to_slice, 0, {});
+          } else {
+            return evolution::dg::subcell::slice_data(
+                evolution::dg::subcell::fd::project(expected_vars, dg_mesh,
+                                                    subcell_mesh.extents()),
+                subcell_mesh.extents(), effective_ghost_zone_size,
+                directions_to_slice, 0, {});
+          }
+        }();
     if constexpr (Dim == 3) {
       const auto direction = expected_neighbor_directions<Dim>()[1];
       Index<Dim> slice_extents = subcell_mesh.extents();
-      slice_extents[direction.dimension()] = ghost_zone_size;
+      slice_extents[direction.dimension()] = effective_ghost_zone_size;
       const auto& neighbor_element_id =
           *element.neighbors().at(direction).begin();
       expected_neighbor_data.at(direction) = orient_variables(
@@ -364,7 +373,8 @@ SPECTRE_TEST_CASE("Unit.Evolution.Subcell.PrepareNeighborData",
   for (const auto& [all_neighbors_are_doing_dg, fd_deriv_order] :
        cartesian_product(std::array{true, false},
                          std::array{::fd::DerivativeOrder::Two,
-                                    ::fd::DerivativeOrder::FourMnd})) {
+                                    ::fd::DerivativeOrder::FourMnd,
+                                    ::fd::DerivativeOrder::FourMd})) {
     test<1>(all_neighbors_are_doing_dg, fd_deriv_order);
     test<2>(all_neighbors_are_doing_dg, fd_deriv_order);
     test<3>(all_neighbors_are_doing_dg, fd_deriv_order);

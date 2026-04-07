@@ -19,6 +19,7 @@
 #include "Evolution/DgSubcell/Tags/DidRollback.hpp"
 #include "Evolution/DgSubcell/Tags/Mesh.hpp"
 #include "Evolution/DgSubcell/Tags/SubcellOptions.hpp"
+#include "NumericalAlgorithms/FiniteDifference/DerivativeOrder.hpp"
 #include "NumericalAlgorithms/Spectral/Basis.hpp"
 #include "NumericalAlgorithms/Spectral/Mesh.hpp"
 #include "NumericalAlgorithms/Spectral/Quadrature.hpp"
@@ -104,7 +105,7 @@ void test(const fd::DerivativeOrder derivative_order, const bool did_rollback) {
   db::mutate_apply<evolution::dg::subcell::fd::CellCenteredFlux<
       TestSystem, Fluxes<Dim>, Dim, ComputeOnlyOnRollback>>(
       make_not_null(&box));
-  if (derivative_order != fd::DerivativeOrder::Two and
+  if (fd::is_mnd_order(derivative_order) and
       (not ComputeOnlyOnRollback or did_rollback)) {
     REQUIRE(get<evolution::dg::subcell::Tags::CellCenteredFlux<flux_variables,
                                                                Dim>>(box)
@@ -129,7 +130,9 @@ SPECTRE_TEST_CASE("Unit.Evolution.Subcell.CellCenteredFlux",
   using DO = fd::DerivativeOrder;
   for (const DO derivative_order :
        {DO::Two, DO::FourMnd, DO::SixMnd, DO::EightMnd, DO::TenMnd,
-        DO::OneHigherThanReconsMnd, DO::OneHigherThanReconsButFiveToFourMnd}) {
+        DO::OneHigherThanReconsMnd, DO::OneHigherThanReconsButFiveToFourMnd,
+        DO::FourMd, DO::SixMd, DO::EightMd, DO::TenMd,
+        DO::OneHigherThanReconsMd, DO::OneHigherThanReconsButFiveToFourMd}) {
     for (const bool did_rollback : {true, false}) {
       test<TestConservativeSystem, 1, false>(derivative_order, did_rollback);
       test<TestConservativeSystem, 2, false>(derivative_order, did_rollback);
