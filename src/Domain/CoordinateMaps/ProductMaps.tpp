@@ -87,6 +87,37 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, Size, Frame::NoFrame> apply_jac(
   }
   return jac;
 }
+
+template <typename T, size_t Size, typename Map1, typename Map2,
+          typename Function, size_t... Is, size_t... Js>
+void apply_jac_not_null(
+    const gsl::not_null<
+        tnsr::Ij<tt::remove_cvref_wrap_t<T>, Size, Frame::NoFrame>*>
+        result,
+    const std::array<T, Size>& source_coords, const Map1& map1,
+    const Map2& map2, const Function func,
+    std::integer_sequence<size_t, Is...> /*meta*/,
+    std::integer_sequence<size_t, Js...> /*meta*/) {
+  using UnwrappedT = tt::remove_cvref_wrap_t<T>;
+  auto map1_jac = func(
+      std::array<std::reference_wrapper<const UnwrappedT>, sizeof...(Is)>{
+          {source_coords[Is]...}},
+      map1);
+  auto map2_jac = func(
+      std::array<std::reference_wrapper<const UnwrappedT>, sizeof...(Js)>{
+          {source_coords[Map1::dim + Js]...}},
+      map2);
+  for (size_t i = 0; i < Map1::dim; ++i) {
+    for (size_t j = 0; j < Map1::dim; ++j) {
+      result->get(i, j) = std::move(map1_jac.get(i, j));
+    }
+  }
+  for (size_t i = 0; i < Map2::dim; ++i) {
+    for (size_t j = 0; j < Map2::dim; ++j) {
+      result->get(Map1::dim + i, Map1::dim + j) = std::move(map2_jac.get(i, j));
+    }
+  }
+}
 }  // namespace product_detail
 
 template <typename Map1, typename Map2>
@@ -154,17 +185,37 @@ ProductOf2Maps<Map1, Map2>::inv_jacobian(
 
 template <typename Map1, typename Map2>
 template <typename T>
+void ProductOf2Maps<Map1, Map2>::jacobian(
+    const gsl::not_null<
+        tnsr::Ij<tt::remove_cvref_wrap_t<T>, dim, Frame::NoFrame>*>
+        result,
+    const std::array<T, dim>& source_coords) const {
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (auto& component : *result) {
+      component.destructive_resize(size);
+    }
+  }
+  // Zero all components — only block-diagonal entries are set
+  for (auto& component : *result) {
+    component = 0.0;
+  }
+  product_detail::apply_jac_not_null(
+      result, source_coords, map1_, map2_,
+      [](const auto& point, const auto& map) { return map.jacobian(point); },
+      std::make_index_sequence<Map1::dim>{},
+      std::make_index_sequence<Map2::dim>{});
+}
+
+template <typename Map1, typename Map2>
+template <typename T>
 tnsr::Ij<tt::remove_cvref_wrap_t<T>, ProductOf2Maps<Map1, Map2>::dim,
          Frame::NoFrame>
 ProductOf2Maps<Map1, Map2>::jacobian(
     const std::array<T, dim>& source_coords) const {
-  return product_detail::apply_jac(
-      source_coords, map1_, map2_,
-      [](const auto& point, const auto& map) {
-        return map.jacobian(point);
-      },
-      std::make_index_sequence<Map1::dim>{},
-      std::make_index_sequence<Map2::dim>{});
+  tnsr::Ij<tt::remove_cvref_wrap_t<T>, dim, Frame::NoFrame> result{};
+  jacobian(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <typename Map1, typename Map2>
@@ -267,23 +318,42 @@ ProductOf3Maps<Map1, Map2, Map3>::inv_jacobian(
 
 template <typename Map1, typename Map2, typename Map3>
 template <typename T>
+void ProductOf3Maps<Map1, Map2, Map3>::jacobian(
+    const gsl::not_null<
+        tnsr::Ij<tt::remove_cvref_wrap_t<T>, dim, Frame::NoFrame>*>
+        result,
+    const std::array<T, dim>& source_coords) const {
+  using UnwrappedT = tt::remove_cvref_wrap_t<T>;
+  if constexpr (std::is_same_v<UnwrappedT, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (auto& component : *result) {
+      component.destructive_resize(size);
+    }
+  }
+  // Zero all components — only diagonal entries are set
+  for (auto& component : *result) {
+    component = 0.0;
+  }
+  get<0, 0>(*result) = get<0, 0>(
+      map1_.jacobian(std::array<std::reference_wrapper<const UnwrappedT>, 1>{
+          {source_coords[0]}}));
+  get<1, 1>(*result) = get<0, 0>(
+      map2_.jacobian(std::array<std::reference_wrapper<const UnwrappedT>, 1>{
+          {source_coords[1]}}));
+  get<2, 2>(*result) = get<0, 0>(
+      map3_.jacobian(std::array<std::reference_wrapper<const UnwrappedT>, 1>{
+          {source_coords[2]}}));
+}
+
+template <typename Map1, typename Map2, typename Map3>
+template <typename T>
 tnsr::Ij<tt::remove_cvref_wrap_t<T>, ProductOf3Maps<Map1, Map2, Map3>::dim,
          Frame::NoFrame>
 ProductOf3Maps<Map1, Map2, Map3>::jacobian(
     const std::array<T, dim>& source_coords) const {
-  using UnwrappedT = tt::remove_cvref_wrap_t<T>;
-  tnsr::Ij<UnwrappedT, dim, Frame::NoFrame> jacobian_matrix{
-      make_with_value<UnwrappedT>(dereference_wrapper(source_coords[0]), 0.0)};
-  get<0, 0>(jacobian_matrix) = get<0, 0>(
-      map1_.jacobian(std::array<std::reference_wrapper<const UnwrappedT>, 1>{
-          {source_coords[0]}}));
-  get<1, 1>(jacobian_matrix) = get<0, 0>(
-      map2_.jacobian(std::array<std::reference_wrapper<const UnwrappedT>, 1>{
-          {source_coords[1]}}));
-  get<2, 2>(jacobian_matrix) = get<0, 0>(
-      map3_.jacobian(std::array<std::reference_wrapper<const UnwrappedT>, 1>{
-          {source_coords[2]}}));
-  return jacobian_matrix;
+  tnsr::Ij<tt::remove_cvref_wrap_t<T>, dim, Frame::NoFrame> result{};
+  jacobian(make_not_null(&result), source_coords);
+  return result;
 }
 template <typename Map1, typename Map2, typename Map3>
 void ProductOf3Maps<Map1, Map2, Map3>::pup(PUP::er& p) {
