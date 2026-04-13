@@ -696,9 +696,19 @@ std::optional<std::array<double, Dim>> Wedge<Dim>::inverse(
 
 template <size_t Dim>
 template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame> Wedge<Dim>::jacobian(
+void Wedge<Dim>::jacobian(
+    const gsl::not_null<
+        tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame>*>
+        result,
     const std::array<T, Dim>& source_coords) const {
   using ReturnType = tt::remove_cvref_wrap_t<T>;
+
+  if constexpr (std::is_same_v<ReturnType, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (auto& component : *result) {
+      component.destructive_resize(size);
+    }
+  }
 
   // Radial coordinate
   const ReturnType& zeta = source_coords[radial_coord];
@@ -735,9 +745,6 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame> Wedge<Dim>::jacobian(
   const std::array<ReturnType, Dim> d_generalized_z =
       get_d_generalized_z(zeta, one_over_rho, s_factor, cap_deriv, rho_vec);
 
-  auto jacobian_matrix =
-      make_with_value<tnsr::Ij<ReturnType, Dim, Frame::NoFrame>>(xi, 0.0);
-
   // Derivative by polar angle
   std::array<ReturnType, Dim> dxyz_dxi{};
   dxyz_dxi[radial_coord] = rho_vec[radial_coord] * d_generalized_z[polar_coord];
@@ -758,10 +765,10 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame> Wedge<Dim>::jacobian(
 
   std::array<ReturnType, Dim> dX_dlogical =
       discrete_rotation(orientation_of_wedge_, std::move(dxyz_dxi));
-  get<0, polar_coord>(jacobian_matrix) = dX_dlogical[0];
-  get<1, polar_coord>(jacobian_matrix) = dX_dlogical[1];
+  get<0, polar_coord>(*result) = dX_dlogical[0];
+  get<1, polar_coord>(*result) = dX_dlogical[1];
   if constexpr (Dim == 3) {
-    get<2, polar_coord>(jacobian_matrix) = dX_dlogical[2];
+    get<2, polar_coord>(*result) = dX_dlogical[2];
   }
 
   // Derivative by azimuthal angle
@@ -779,9 +786,9 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame> Wedge<Dim>::jacobian(
 
     dX_dlogical =
         discrete_rotation(orientation_of_wedge_, std::move(dxyz_deta));
-    get<0, azimuth_coord>(jacobian_matrix) = dX_dlogical[0];
-    get<1, azimuth_coord>(jacobian_matrix) = dX_dlogical[1];
-    get<2, azimuth_coord>(jacobian_matrix) = dX_dlogical[2];
+    get<0, azimuth_coord>(*result) = dX_dlogical[0];
+    get<1, azimuth_coord>(*result) = dX_dlogical[1];
+    get<2, azimuth_coord>(*result) = dX_dlogical[2];
   }
 
   // Derivative by radial coordinate
@@ -797,13 +804,20 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame> Wedge<Dim>::jacobian(
   }
 
   dX_dlogical = discrete_rotation(orientation_of_wedge_, std::move(dxyz_dzeta));
-  get<0, radial_coord>(jacobian_matrix) = dX_dlogical[0];
-  get<1, radial_coord>(jacobian_matrix) = dX_dlogical[1];
+  get<0, radial_coord>(*result) = dX_dlogical[0];
+  get<1, radial_coord>(*result) = dX_dlogical[1];
   if constexpr (Dim == 3) {
-    get<2, radial_coord>(jacobian_matrix) = dX_dlogical[2];
+    get<2, radial_coord>(*result) = dX_dlogical[2];
   }
+}
 
-  return jacobian_matrix;
+template <size_t Dim>
+template <typename T>
+tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame> Wedge<Dim>::jacobian(
+    const std::array<T, Dim>& source_coords) const {
+  tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame> result{};
+  jacobian(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <size_t Dim>
@@ -1077,7 +1091,21 @@ GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL, (2, 3),
                          std::reference_wrapper<const double>,
                          std::reference_wrapper<const DataVector>))
 
+#undef INSTANTIATE_NOT_NULL
+
+#define INSTANTIATE_JACOBIAN_NOT_NULL(_, data)                                \
+  template void Wedge<DIM(data)>::jacobian(                                   \
+      gsl::not_null<tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data), \
+                             Frame::NoFrame>*>                                \
+          result,                                                             \
+      const std::array<DTYPE(data), DIM(data)>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_JACOBIAN_NOT_NULL, (2, 3),
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
 #undef DIM
 #undef DTYPE
-#undef INSTANTIATE_NOT_NULL
+#undef INSTANTIATE_JACOBIAN_NOT_NULL
 }  // namespace domain::CoordinateMaps
