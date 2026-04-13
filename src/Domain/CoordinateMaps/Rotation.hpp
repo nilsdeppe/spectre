@@ -77,6 +77,12 @@ class Rotation<2> {
       const std::array<double, 2>& target_coords) const;
 
   template <typename T>
+  void jacobian(
+      gsl::not_null<tnsr::Ij<tt::remove_cvref_wrap_t<T>, 2, Frame::NoFrame>*>
+          result,
+      const std::array<T, 2>& source_coords) const;
+
+  template <typename T>
   tnsr::Ij<tt::remove_cvref_wrap_t<T>, 2, Frame::NoFrame> jacobian(
       const std::array<T, 2>& source_coords) const;
 
@@ -156,6 +162,12 @@ class Rotation<3> {
 
   std::optional<std::array<double, 3>> inverse(
       const std::array<double, 3>& target_coords) const;
+
+  template <typename T>
+  void jacobian(
+      gsl::not_null<tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>*>
+          result,
+      const std::array<T, 3>& source_coords) const;
 
   template <typename T>
   tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> jacobian(

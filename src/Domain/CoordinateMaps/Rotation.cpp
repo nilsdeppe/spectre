@@ -61,16 +61,29 @@ std::optional<std::array<double, 2>> Rotation<2>::inverse(
 }
 
 template <typename T>
+void Rotation<2>::jacobian(
+    const gsl::not_null<
+        tnsr::Ij<tt::remove_cvref_wrap_t<T>, 2, Frame::NoFrame>*>
+        result,
+    const std::array<T, 2>& source_coords) const {
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (auto& component : *result) {
+      component.destructive_resize(size);
+    }
+  }
+  get<0, 0>(*result) = get<0, 0>(rotation_matrix_);
+  get<1, 0>(*result) = get<1, 0>(rotation_matrix_);
+  get<0, 1>(*result) = get<0, 1>(rotation_matrix_);
+  get<1, 1>(*result) = get<1, 1>(rotation_matrix_);
+}
+
+template <typename T>
 tnsr::Ij<tt::remove_cvref_wrap_t<T>, 2, Frame::NoFrame> Rotation<2>::jacobian(
     const std::array<T, 2>& source_coords) const {
-  tnsr::Ij<tt::remove_cvref_wrap_t<T>, 2, Frame::NoFrame> jacobian_matrix{
-      make_with_value<tt::remove_cvref_wrap_t<T>>(
-          dereference_wrapper(source_coords[0]), 0.0)};
-  get<0, 0>(jacobian_matrix) = get<0, 0>(rotation_matrix_);
-  get<1, 0>(jacobian_matrix) = get<1, 0>(rotation_matrix_);
-  get<0, 1>(jacobian_matrix) = get<0, 1>(rotation_matrix_);
-  get<1, 1>(jacobian_matrix) = get<1, 1>(rotation_matrix_);
-  return jacobian_matrix;
+  tnsr::Ij<tt::remove_cvref_wrap_t<T>, 2, Frame::NoFrame> result{};
+  jacobian(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <typename T>
@@ -184,21 +197,34 @@ std::optional<std::array<double, 3>> Rotation<3>::inverse(
 }
 
 template <typename T>
+void Rotation<3>::jacobian(
+    const gsl::not_null<
+        tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>*>
+        result,
+    const std::array<T, 3>& source_coords) const {
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (auto& component : *result) {
+      component.destructive_resize(size);
+    }
+  }
+  get<0, 0>(*result) = get<0, 0>(rotation_matrix_);
+  get<1, 0>(*result) = get<1, 0>(rotation_matrix_);
+  get<0, 1>(*result) = get<0, 1>(rotation_matrix_);
+  get<1, 1>(*result) = get<1, 1>(rotation_matrix_);
+  get<2, 0>(*result) = get<2, 0>(rotation_matrix_);
+  get<2, 1>(*result) = get<2, 1>(rotation_matrix_);
+  get<0, 2>(*result) = get<0, 2>(rotation_matrix_);
+  get<1, 2>(*result) = get<1, 2>(rotation_matrix_);
+  get<2, 2>(*result) = get<2, 2>(rotation_matrix_);
+}
+
+template <typename T>
 tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> Rotation<3>::jacobian(
     const std::array<T, 3>& source_coords) const {
-  tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> jacobian_matrix{
-      make_with_value<tt::remove_cvref_wrap_t<T>>(
-          dereference_wrapper(source_coords[0]), 0.0)};
-  get<0, 0>(jacobian_matrix) = get<0, 0>(rotation_matrix_);
-  get<1, 0>(jacobian_matrix) = get<1, 0>(rotation_matrix_);
-  get<0, 1>(jacobian_matrix) = get<0, 1>(rotation_matrix_);
-  get<1, 1>(jacobian_matrix) = get<1, 1>(rotation_matrix_);
-  get<2, 0>(jacobian_matrix) = get<2, 0>(rotation_matrix_);
-  get<2, 1>(jacobian_matrix) = get<2, 1>(rotation_matrix_);
-  get<0, 2>(jacobian_matrix) = get<0, 2>(rotation_matrix_);
-  get<1, 2>(jacobian_matrix) = get<1, 2>(rotation_matrix_);
-  get<2, 2>(jacobian_matrix) = get<2, 2>(rotation_matrix_);
-  return jacobian_matrix;
+  tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> result{};
+  jacobian(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <typename T>
@@ -276,8 +302,22 @@ GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL, (2, 3),
                          std::reference_wrapper<const double>,
                          std::reference_wrapper<const DataVector>))
 
+#undef INSTANTIATE_NOT_NULL
+
+#define INSTANTIATE_JACOBIAN_NOT_NULL(_, data)                                \
+  template void Rotation<DIM(data)>::jacobian(                                \
+      gsl::not_null<tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data), \
+                             Frame::NoFrame>*>                                \
+          result,                                                             \
+      const std::array<DTYPE(data), DIM(data)>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_JACOBIAN_NOT_NULL, (2, 3),
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
 #undef DIM
 #undef DTYPE
-#undef INSTANTIATE_NOT_NULL
+#undef INSTANTIATE_JACOBIAN_NOT_NULL
 
 }  // namespace domain::CoordinateMaps
