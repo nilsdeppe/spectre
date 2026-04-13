@@ -6,10 +6,12 @@
 #include <cmath>
 #include <pup.h>
 
+#include "DataStructures/DataVector.hpp"
 #include "Domain/CoordinateMaps/AutodiffInstantiationTypes.hpp"
 #include "Utilities/Autodiff/Autodiff.hpp"
 #include "Utilities/DereferenceWrapper.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/MakeWithValue.hpp"
 
 namespace domain::CoordinateMaps {
@@ -27,12 +29,27 @@ Rotation<2>::Rotation(const double rotation_angle)
 }
 
 template <typename T>
+void Rotation<2>::operator()(
+    const gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 2>*> result,
+    const std::array<T, 2>& source_coords) const {
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    (*result)[0].destructive_resize(size);
+    (*result)[1].destructive_resize(size);
+  }
+  (*result)[0] = source_coords[0] * get<0, 0>(rotation_matrix_) +
+                 source_coords[1] * get<0, 1>(rotation_matrix_);
+  (*result)[1] = source_coords[0] * get<1, 0>(rotation_matrix_) +
+                 source_coords[1] * get<1, 1>(rotation_matrix_);
+}
+
+template <typename T>
 std::array<tt::remove_cvref_wrap_t<T>, 2> Rotation<2>::operator()(
     const std::array<T, 2>& source_coords) const {
-  return {{source_coords[0] * get<0, 0>(rotation_matrix_) +
-               source_coords[1] * get<0, 1>(rotation_matrix_),
-           source_coords[0] * get<1, 0>(rotation_matrix_) +
-               source_coords[1] * get<1, 1>(rotation_matrix_)}};
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  std::array<ReturnType, 2> result{};
+  (*this)(make_not_null(&result), source_coords);
+  return result;
 }
 
 std::optional<std::array<double, 2>> Rotation<2>::inverse(
@@ -123,17 +140,33 @@ Rotation<3>::Rotation(const double rotation_about_z,
 }
 
 template <typename T>
+void Rotation<3>::operator()(
+    const gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 3>*> result,
+    const std::array<T, 3>& source_coords) const {
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    (*result)[0].destructive_resize(size);
+    (*result)[1].destructive_resize(size);
+    (*result)[2].destructive_resize(size);
+  }
+  (*result)[0] = source_coords[0] * get<0, 0>(rotation_matrix_) +
+                 source_coords[1] * get<0, 1>(rotation_matrix_) +
+                 source_coords[2] * get<0, 2>(rotation_matrix_);
+  (*result)[1] = source_coords[0] * get<1, 0>(rotation_matrix_) +
+                 source_coords[1] * get<1, 1>(rotation_matrix_) +
+                 source_coords[2] * get<1, 2>(rotation_matrix_);
+  (*result)[2] = source_coords[0] * get<2, 0>(rotation_matrix_) +
+                 source_coords[1] * get<2, 1>(rotation_matrix_) +
+                 source_coords[2] * get<2, 2>(rotation_matrix_);
+}
+
+template <typename T>
 std::array<tt::remove_cvref_wrap_t<T>, 3> Rotation<3>::operator()(
     const std::array<T, 3>& source_coords) const {
-  return {{source_coords[0] * get<0, 0>(rotation_matrix_) +
-               source_coords[1] * get<0, 1>(rotation_matrix_) +
-               source_coords[2] * get<0, 2>(rotation_matrix_),
-           source_coords[0] * get<1, 0>(rotation_matrix_) +
-               source_coords[1] * get<1, 1>(rotation_matrix_) +
-               source_coords[2] * get<1, 2>(rotation_matrix_),
-           source_coords[0] * get<2, 0>(rotation_matrix_) +
-               source_coords[1] * get<2, 1>(rotation_matrix_) +
-               source_coords[2] * get<2, 2>(rotation_matrix_)}};
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  std::array<ReturnType, 3> result{};
+  (*this)(make_not_null(&result), source_coords);
+  return result;
 }
 
 std::optional<std::array<double, 3>> Rotation<3>::inverse(
@@ -229,8 +262,22 @@ GENERATE_INSTANTIATIONS(
 
 GENERATE_INSTANTIATIONS(INSTANTIATE, (2, 3), MAP_AUTODIFF_TYPES)
 
+#undef INSTANTIATE
+
+#define INSTANTIATE_NOT_NULL(_, data)                                   \
+  template void Rotation<DIM(data)>::operator()(                        \
+      gsl::not_null<                                                    \
+          std::array<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data)>*> \
+          result,                                                       \
+      const std::array<DTYPE(data), DIM(data)>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL, (2, 3),
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
 #undef DIM
 #undef DTYPE
-#undef INSTANTIATE
+#undef INSTANTIATE_NOT_NULL
 
 }  // namespace domain::CoordinateMaps

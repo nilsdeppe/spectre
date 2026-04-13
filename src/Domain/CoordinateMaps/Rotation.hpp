@@ -12,6 +12,7 @@
 #include <optional>
 
 #include "DataStructures/Tensor/Tensor.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/TypeTraits/RemoveReferenceWrapper.hpp"
 
 /// \cond
@@ -58,6 +59,11 @@ class Rotation<2> {
   Rotation& operator=(const Rotation&) = default;
   Rotation(Rotation&&) = default;  // NOLINT
   Rotation& operator=(Rotation&&) = default;
+
+  template <typename T>
+  void operator()(
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 2>*> result,
+      const std::array<T, 2>& source_coords) const;
 
   template <typename T>
   std::array<tt::remove_cvref_wrap_t<T>, 2> operator()(
@@ -138,6 +144,11 @@ class Rotation<3> {
   Rotation& operator=(const Rotation&) = default;
   Rotation(Rotation&&) = default;  // NOLINT
   Rotation& operator=(Rotation&&) = default;
+
+  template <typename T>
+  void operator()(
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 3>*> result,
+      const std::array<T, 3>& source_coords) const;
 
   template <typename T>
   std::array<tt::remove_cvref_wrap_t<T>, 3> operator()(
