@@ -92,18 +92,22 @@ FocallyLiftedMap<InnerMap>::operator()(
 
 template <typename InnerMap>
 template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>
-FocallyLiftedMap<InnerMap>::jacobian(
+void FocallyLiftedMap<InnerMap>::jacobian(
+    const gsl::not_null<
+        tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>*>
+        result,
     const std::array<T, 3>& source_coords) const {
   using ReturnType = tt::remove_cvref_wrap_t<T>;
+  if constexpr (std::is_same_v<ReturnType, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (auto& component : *result) {
+      component.destructive_resize(size);
+    }
+  }
 
   // Use these variables to reduce allocations.
   std::array<ReturnType, 3> temp_vector_one{};
   std::array<ReturnType, 3> temp_vector_two{};
-
-  auto jacobian_matrix =
-      make_with_value<tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>>(
-          dereference_wrapper(source_coords[0]), 0.0);
 
   // lower_coords are the mapped coords on the surface.
   std::array<ReturnType, 3> lower_coords{};
@@ -126,19 +130,19 @@ FocallyLiftedMap<InnerMap>::jacobian(
   FocallyLiftedMapHelpers::d_scale_factor_d_src_point<ReturnType>(
       &d_lambda_d_lower_coords, upper_coords, proj_center_, center_, lambda);
 
-  // Put the inner map's jacobian temporarily into jacobian_matrix.
-  // This saves an allocation.
-  inner_map_.jacobian(&jacobian_matrix, source_coords);
+  // Put the inner map's jacobian into *result.
+  // This saves an allocation vs. using make_with_value.
+  inner_map_.jacobian(result, source_coords);
 
   // Re-use memory of upper_coords in computing sigma_d_lambda_d_xbar.
   // Don't multiply by sigma yet because we don't know it.
   std::array<ReturnType, 3>& sigma_d_lambda_d_xbar = temp_vector_one;
   for (size_t j = 0; j < 3; ++j) {
     gsl::at(sigma_d_lambda_d_xbar, j) =
-        d_lambda_d_lower_coords[0] * jacobian_matrix.get(0, j);
+        d_lambda_d_lower_coords[0] * result->get(0, j);
     for (size_t k = 1; k < 3; ++k) {  // First iteration split out above.
       gsl::at(sigma_d_lambda_d_xbar, j) +=
-          gsl::at(d_lambda_d_lower_coords, k) * jacobian_matrix.get(k, j);
+          gsl::at(d_lambda_d_lower_coords, k) * result->get(k, j);
     }
   }
 
@@ -157,7 +161,7 @@ FocallyLiftedMap<InnerMap>::jacobian(
   lambda_factor = 1.0 - sigma + lambda * sigma;
   for (size_t i = 0; i < 3; ++i) {
     for (size_t j = 0; j < 3; ++j) {
-      jacobian_matrix.get(i, j) *= lambda_factor;
+      result->get(i, j) *= lambda_factor;
     }
   }
 
@@ -169,7 +173,7 @@ FocallyLiftedMap<InnerMap>::jacobian(
   inner_map_.deriv_sigma(&d_sigma, source_coords);
   for (size_t i = 0; i < 3; ++i) {
     for (size_t j = 0; j < 3; ++j) {
-      jacobian_matrix.get(i, j) +=
+      result->get(i, j) +=
           gsl::at(d_sigma, j) *
           (gsl::at(proj_center_, i) +
            (gsl::at(lower_coords, i) - gsl::at(proj_center_, i)) * lambda -
@@ -180,13 +184,21 @@ FocallyLiftedMap<InnerMap>::jacobian(
   // Do the second term in Eq. (6) in the documentation.
   for (size_t j = 0; j < 3; ++j) {
     for (size_t i = 0; i < 3; ++i) {
-      jacobian_matrix.get(i, j) +=
+      result->get(i, j) +=
           gsl::at(sigma_d_lambda_d_xbar, j) *
           (gsl::at(lower_coords, i) - gsl::at(proj_center_, i));
     }
   }
+}
 
-  return jacobian_matrix;
+template <typename InnerMap>
+template <typename T>
+tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>
+FocallyLiftedMap<InnerMap>::jacobian(
+    const std::array<T, 3>& source_coords) const {
+  tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> result{};
+  jacobian(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <typename InnerMap>
@@ -435,8 +447,23 @@ GENERATE_INSTANTIATIONS(
     (double, DataVector, std::reference_wrapper<const double>,
      std::reference_wrapper<const DataVector>))
 
+#define INSTANTIATE_JACOBIAN_NOT_NULL(_, data)                                \
+  template void FocallyLiftedMap<IMAP(data)>::jacobian(                       \
+      gsl::not_null<                                                          \
+          tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>*> \
+          result,                                                             \
+      const std::array<DTYPE(data), 3>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(
+    INSTANTIATE_JACOBIAN_NOT_NULL,
+    (FocallyLiftedInnerMaps::Endcap, FocallyLiftedInnerMaps::FlatEndcap,
+     FocallyLiftedInnerMaps::FlatSide, FocallyLiftedInnerMaps::Side),
+    (double, DataVector, std::reference_wrapper<const double>,
+     std::reference_wrapper<const DataVector>))
+
 #undef DTYPE
 #undef IMAP
 #undef INSTANTIATE_NOT_NULL
+#undef INSTANTIATE_JACOBIAN_NOT_NULL
 
 }  // namespace domain::CoordinateMaps

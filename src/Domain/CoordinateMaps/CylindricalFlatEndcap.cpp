@@ -93,7 +93,7 @@ void CylindricalFlatEndcap::jacobian(
         tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>*>
         result,
     const std::array<T, 3>& source_coords) const {
-  *result = impl_.jacobian(source_coords);
+  impl_.jacobian(result, source_coords);
 }
 
 template <typename T>

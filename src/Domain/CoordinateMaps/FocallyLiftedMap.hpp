@@ -342,6 +342,12 @@ class FocallyLiftedMap {
       const std::array<double, 3>& target_coords) const;
 
   template <typename T>
+  void jacobian(
+      gsl::not_null<tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>*>
+          result,
+      const std::array<T, 3>& source_coords) const;
+
+  template <typename T>
   tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> jacobian(
       const std::array<T, 3>& source_coords) const;
 
