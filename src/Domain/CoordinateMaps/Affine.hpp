@@ -11,6 +11,7 @@
 #include <optional>
 
 #include "DataStructures/Tensor/TypeAliases.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/TypeTraits/RemoveReferenceWrapper.hpp"
 
 /// \cond
@@ -46,6 +47,11 @@ class Affine {
   Affine(Affine&&) = default;  // NOLINT
   Affine& operator=(const Affine&) = default;
   Affine& operator=(Affine&&) = default;
+
+  template <typename T>
+  void operator()(
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 1>*> result,
+      const std::array<T, 1>& source_coords) const;
 
   template <typename T>
   std::array<tt::remove_cvref_wrap_t<T>, 1> operator()(
