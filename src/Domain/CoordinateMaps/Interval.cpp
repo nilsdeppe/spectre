@@ -17,6 +17,7 @@
 #include "Utilities/EqualWithinRoundoff.hpp"
 #include "Utilities/ErrorHandling/Assert.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/MakeWithValue.hpp"
 
 namespace domain::CoordinateMaps {
@@ -53,17 +54,25 @@ Interval::Interval(const double A, const double B, const double a,
 }
 
 template <typename T>
-std::array<tt::remove_cvref_wrap_t<T>, 1> Interval::operator()(
+void Interval::operator()(
+    const gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 1>*> result,
     const std::array<T, 1>& source_coords) const {
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    (*result)[0].destructive_resize(
+        dereference_wrapper(source_coords[0]).size());
+  }
   switch (distribution_) {
     case Distribution::Linear: {
-      return {{((b_ - a_) * source_coords[0] + a_ * B_ - b_ * A_) / (B_ - A_)}};
+      (*result)[0] =
+          ((b_ - a_) * source_coords[0] + a_ * B_ - b_ * A_) / (B_ - A_);
+      return;
     }
     case Distribution::Equiangular: {
-      return {
-          {0.5 * (a_ + b_ +
-                  (b_ - a_) * tan(M_PI_4 * (2.0 * source_coords[0] - B_ - A_) /
-                                  (B_ - A_)))}};
+      (*result)[0] =
+          0.5 * (a_ + b_ +
+                 (b_ - a_) * tan(M_PI_4 * (2.0 * source_coords[0] - B_ - A_) /
+                                 (B_ - A_)));
+      return;
     }
     case Distribution::Logarithmic: {
       const double singularity_pos = singularity_pos_.value();
@@ -73,23 +82,35 @@ std::array<tt::remove_cvref_wrap_t<T>, 1> Interval::operator()(
           0.5 * (log((b_ - singularity_pos) / (a_ - singularity_pos)));
       const double singularity_sign =
           std::min(a_, b_) > singularity_pos ? 1. : -1.;
-      return {{singularity_sign *
-                   exp(logarithmic_zero +
-                       logarithmic_rate * (2.0 * source_coords[0] - B_ - A_) /
-                           (B_ - A_)) +
-               singularity_pos}};
+      (*result)[0] =
+          singularity_sign *
+              exp(logarithmic_zero +
+                  logarithmic_rate * (2.0 * source_coords[0] - B_ - A_) /
+                      (B_ - A_)) +
+          singularity_pos;
+      return;
     }
     case Distribution::Inverse: {
       const double singularity_pos = singularity_pos_.value();
-      return {
-          {2.0 * (a_ - singularity_pos) * (b_ - singularity_pos) /
-               (a_ + b_ - 2.0 * singularity_pos -
-                (b_ - a_) / (B_ - A_) * (2.0 * source_coords[0] - B_ - A_)) +
-           singularity_pos}};
+      (*result)[0] =
+          2.0 * (a_ - singularity_pos) * (b_ - singularity_pos) /
+              (a_ + b_ - 2.0 * singularity_pos -
+               (b_ - a_) / (B_ - A_) * (2.0 * source_coords[0] - B_ - A_)) +
+          singularity_pos;
+      return;
     }
     default:
       ERROR("Unknown domain::CoordinateMaps::Distribution type for Interval");
   }
+}
+
+template <typename T>
+std::array<tt::remove_cvref_wrap_t<T>, 1> Interval::operator()(
+    const std::array<T, 1>& source_coords) const {
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  std::array<ReturnType, 1> result{};
+  (*this)(make_not_null(&result), source_coords);
+  return result;
 }
 
 std::optional<std::array<double, 1>> Interval::inverse(
@@ -271,6 +292,19 @@ GENERATE_INSTANTIATIONS(
 
 GENERATE_INSTANTIATIONS(INSTANTIATE, MAP_AUTODIFF_TYPES)
 
-#undef DTYPE
 #undef INSTANTIATE
+
+#define INSTANTIATE_NOT_NULL(_, data)                                     \
+  template void Interval::operator()(                                     \
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<DTYPE(data)>, 1>*> \
+          result,                                                         \
+      const std::array<DTYPE(data), 1>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_NOT_NULL
 }  // namespace domain::CoordinateMaps

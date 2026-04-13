@@ -13,6 +13,7 @@
 #include "Utilities/ConstantExpressions.hpp"
 #include "Utilities/DereferenceWrapper.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/MakeWithValue.hpp"
 
 namespace domain::CoordinateMaps {
@@ -33,12 +34,26 @@ Equiangular::Equiangular(const double A, const double B, const double a,
                                            length_of_range_) {}
 
 template <typename T>
+void Equiangular::operator()(
+    const gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 1>*> result,
+    const std::array<T, 1>& source_coords) const {
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    (*result)[0].destructive_resize(
+        dereference_wrapper(source_coords[0]).size());
+  }
+  (*result)[0] =
+      0.5 * (a_ + b_ +
+             length_of_range_ * tan(m_pi_4_over_length_of_domain_ *
+                                    (-B_ - A_ + 2.0 * source_coords[0])));
+}
+
+template <typename T>
 std::array<tt::remove_cvref_wrap_t<T>, 1> Equiangular::operator()(
     const std::array<T, 1>& source_coords) const {
-  return {
-      {0.5 * (a_ + b_ +
-              length_of_range_ * tan(m_pi_4_over_length_of_domain_ *
-                                     (-B_ - A_ + 2.0 * source_coords[0])))}};
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  std::array<ReturnType, 1> result{};
+  (*this)(make_not_null(&result), source_coords);
+  return result;
 }
 
 std::optional<std::array<double, 1>> Equiangular::inverse(
@@ -132,6 +147,19 @@ GENERATE_INSTANTIATIONS(
 
 GENERATE_INSTANTIATIONS(INSTANTIATE, MAP_AUTODIFF_TYPES)
 
-#undef DTYPE
 #undef INSTANTIATE
+
+#define INSTANTIATE_NOT_NULL(_, data)                                     \
+  template void Equiangular::operator()(                                  \
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<DTYPE(data)>, 1>*> \
+          result,                                                         \
+      const std::array<DTYPE(data), 1>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_NOT_NULL
 }  // namespace domain::CoordinateMaps

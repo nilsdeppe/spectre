@@ -9,6 +9,7 @@
 
 #include "DataStructures/Tensor/TypeAliases.hpp"
 #include "Domain/CoordinateMaps/Distribution.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/Serialization/PupStlCpp17.hpp"
 #include "Utilities/TypeTraits/RemoveReferenceWrapper.hpp"
 
@@ -87,6 +88,11 @@ class Interval {
            std::optional<double> singularity_pos = std::nullopt);
 
   Interval() = default;
+
+  template <typename T>
+  void operator()(
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 1>*> result,
+      const std::array<T, 1>& source_coords) const;
 
   template <typename T>
   std::array<tt::remove_cvref_wrap_t<T>, 1> operator()(
