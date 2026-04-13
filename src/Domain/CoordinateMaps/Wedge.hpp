@@ -11,6 +11,7 @@
 #include "DataStructures/Tensor/TypeAliases.hpp"
 #include "Domain/CoordinateMaps/Distribution.hpp"
 #include "Domain/Structure/OrientationMap.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/TypeTraits/RemoveReferenceWrapper.hpp"
 
 /// \cond
@@ -933,6 +934,11 @@ class Wedge {
   Wedge(const Wedge&) = default;
   Wedge& operator=(const Wedge&) = default;
   Wedge& operator=(Wedge&&) = default;
+
+  template <typename T>
+  void operator()(
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, Dim>*> result,
+      const std::array<T, Dim>& source_coords) const;
 
   template <typename T>
   std::array<tt::remove_cvref_wrap_t<T>, Dim> operator()(

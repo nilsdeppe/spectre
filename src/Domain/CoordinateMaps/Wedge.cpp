@@ -9,6 +9,7 @@
 #include <optional>
 #include <pup.h>
 
+#include "DataStructures/DataVector.hpp"
 #include "DataStructures/Tensor/EagerMath/Determinant.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Domain/CoordinateMaps/AutodiffInstantiationTypes.hpp"
@@ -21,6 +22,7 @@
 #include "Utilities/EqualWithinRoundoff.hpp"
 #include "Utilities/ErrorHandling/Assert.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/MakeWithValue.hpp"
 #include "Utilities/Serialization/PupStlCpp17.hpp"
 
@@ -475,9 +477,16 @@ std::array<tt::remove_cvref_wrap_t<T>, Dim> Wedge<Dim>::get_d_generalized_z(
 
 template <size_t Dim>
 template <typename T>
-std::array<tt::remove_cvref_wrap_t<T>, Dim> Wedge<Dim>::operator()(
+void Wedge<Dim>::operator()(
+    const gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, Dim>*> result,
     const std::array<T, Dim>& source_coords) const {
   using ReturnType = tt::remove_cvref_wrap_t<T>;
+  if constexpr (std::is_same_v<ReturnType, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (size_t i = 0; i < Dim; ++i) {
+      gsl::at(*result, i).destructive_resize(size);
+    }
+  }
 
   // Radial coordinate
   const ReturnType& zeta = source_coords[radial_coord];
@@ -535,7 +544,18 @@ std::array<tt::remove_cvref_wrap_t<T>, Dim> Wedge<Dim>::operator()(
           rotated_focus[azimuth_coord];
     }
   }
-  return discrete_rotation(orientation_of_wedge_, std::move(physical_coords));
+  *result =
+      discrete_rotation(orientation_of_wedge_, std::move(physical_coords));
+}
+
+template <size_t Dim>
+template <typename T>
+std::array<tt::remove_cvref_wrap_t<T>, Dim> Wedge<Dim>::operator()(
+    const std::array<T, Dim>& source_coords) const {
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  std::array<ReturnType, Dim> result{};
+  (*this)(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <size_t Dim>
@@ -1042,8 +1062,22 @@ GENERATE_INSTANTIATIONS(
 
 GENERATE_INSTANTIATIONS(INSTANTIATE_DTYPE, (2, 3), MAP_AUTODIFF_TYPES)
 
-#undef DIM
-#undef DTYPE
 #undef INSTANTIATE_DIM
 #undef INSTANTIATE_DTYPE
+
+#define INSTANTIATE_NOT_NULL(_, data)                                   \
+  template void Wedge<DIM(data)>::operator()(                           \
+      gsl::not_null<                                                    \
+          std::array<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data)>*> \
+          result,                                                       \
+      const std::array<DTYPE(data), DIM(data)>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL, (2, 3),
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DIM
+#undef DTYPE
+#undef INSTANTIATE_NOT_NULL
 }  // namespace domain::CoordinateMaps
