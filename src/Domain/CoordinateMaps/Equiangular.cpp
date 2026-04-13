@@ -65,16 +65,29 @@ std::optional<std::array<double, 1>> Equiangular::inverse(
 }
 
 template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame> Equiangular::jacobian(
+void Equiangular::jacobian(
+    const gsl::not_null<
+        tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame>*>
+        result,
     const std::array<T, 1>& source_coords) const {
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (auto& component : *result) {
+      component.destructive_resize(size);
+    }
+  }
   const tt::remove_cvref_wrap_t<T> tan_variable =
       tan(m_pi_4_over_length_of_domain_ * (-B_ - A_ + 2.0 * source_coords[0]));
-  auto jacobian_matrix =
-      make_with_value<tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame>>(
-          dereference_wrapper(source_coords[0]), 0.0);
-  get<0, 0>(jacobian_matrix) =
+  get<0, 0>(*result) =
       linear_jacobian_times_m_pi_4_ * (1.0 + square(tan_variable));
-  return jacobian_matrix;
+}
+
+template <typename T>
+tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame> Equiangular::jacobian(
+    const std::array<T, 1>& source_coords) const {
+  tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame> result{};
+  jacobian(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <typename T>
@@ -160,6 +173,20 @@ GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
                          std::reference_wrapper<const double>,
                          std::reference_wrapper<const DataVector>))
 
-#undef DTYPE
 #undef INSTANTIATE_NOT_NULL
+
+#define INSTANTIATE_JACOBIAN_NOT_NULL(_, data)                                \
+  template void Equiangular::jacobian(                                        \
+      gsl::not_null<                                                          \
+          tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 1, Frame::NoFrame>*> \
+          result,                                                             \
+      const std::array<DTYPE(data), 1>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_JACOBIAN_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_JACOBIAN_NOT_NULL
 }  // namespace domain::CoordinateMaps

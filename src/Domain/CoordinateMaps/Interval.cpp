@@ -156,22 +156,27 @@ std::optional<std::array<double, 1>> Interval::inverse(
 }
 
 template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame> Interval::jacobian(
-    const std::array<T, 1>& source_coords) const {
-  auto jacobian_matrix =
-      make_with_value<tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame>>(
-          dereference_wrapper(source_coords[0]), 0.0);
+void Interval::jacobian(const gsl::not_null<tnsr::Ij<tt::remove_cvref_wrap_t<T>,
+                                                     1, Frame::NoFrame>*>
+                            result,
+                        const std::array<T, 1>& source_coords) const {
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (auto& component : *result) {
+      component.destructive_resize(size);
+    }
+  }
   switch (distribution_) {
     case Distribution::Linear: {
-      get<0, 0>(jacobian_matrix) = (b_ - a_) / (B_ - A_);
-      return jacobian_matrix;
+      get<0, 0>(*result) = (b_ - a_) / (B_ - A_);
+      return;
     }
     case Distribution::Equiangular: {
       const tt::remove_cvref_wrap_t<T> tan_variable =
           tan((2.0 * source_coords[0] - B_ - A_) * M_PI_4 / (B_ - A_));
-      get<0, 0>(jacobian_matrix) =
+      get<0, 0>(*result) =
           M_PI_4 * (b_ - a_) / (B_ - A_) * (1.0 + square(tan_variable));
-      return jacobian_matrix;
+      return;
     }
     case Distribution::Logarithmic: {
       const double singularity_pos = singularity_pos_.value();
@@ -181,25 +186,32 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame> Interval::jacobian(
           0.5 * (log((b_ - singularity_pos) / (a_ - singularity_pos)));
       const double singularity_sign =
           std::min(a_, b_) > singularity_pos ? 1. : -1.;
-      get<0, 0>(jacobian_matrix) =
+      get<0, 0>(*result) =
           2.0 / (B_ - A_) * logarithmic_rate * singularity_sign *
           exp(logarithmic_zero + logarithmic_rate *
                                      (2.0 * source_coords[0] - B_ - A_) /
                                      (B_ - A_));
-      return jacobian_matrix;
+      return;
     }
     case Distribution::Inverse: {
       const double singularity_pos = singularity_pos_.value();
-      get<0, 0>(jacobian_matrix) =
-          (a_ - singularity_pos) * (b_ - singularity_pos) * (b_ - a_) *
-          (B_ - A_) /
-          square((b_ - a_) * source_coords[0] + a_ * A_ - b_ * B_ +
-                 singularity_pos * (B_ - A_));
-      return jacobian_matrix;
+      get<0, 0>(*result) = (a_ - singularity_pos) * (b_ - singularity_pos) *
+                           (b_ - a_) * (B_ - A_) /
+                           square((b_ - a_) * source_coords[0] + a_ * A_ -
+                                  b_ * B_ + singularity_pos * (B_ - A_));
+      return;
     }
     default:
       ERROR("Unknown domain::CoordinateMaps::Distribution type for Interval");
   }
+}
+
+template <typename T>
+tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame> Interval::jacobian(
+    const std::array<T, 1>& source_coords) const {
+  tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame> result{};
+  jacobian(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <typename T>
@@ -305,6 +317,20 @@ GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
                          std::reference_wrapper<const double>,
                          std::reference_wrapper<const DataVector>))
 
-#undef DTYPE
 #undef INSTANTIATE_NOT_NULL
+
+#define INSTANTIATE_JACOBIAN_NOT_NULL(_, data)                                \
+  template void Interval::jacobian(                                           \
+      gsl::not_null<                                                          \
+          tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 1, Frame::NoFrame>*> \
+          result,                                                             \
+      const std::array<DTYPE(data), 1>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_JACOBIAN_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_JACOBIAN_NOT_NULL
 }  // namespace domain::CoordinateMaps
