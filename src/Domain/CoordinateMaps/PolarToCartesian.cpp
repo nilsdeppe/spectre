@@ -59,17 +59,30 @@ std::optional<std::array<double, 2>> PolarToCartesian::inverse(
 }
 
 template <typename T>
+void PolarToCartesian::jacobian(
+    const gsl::not_null<
+        tnsr::Ij<tt::remove_cvref_wrap_t<T>, 2, Frame::NoFrame>*>
+        result,
+    const std::array<T, 2>& source_coords) const {
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (auto& component : *result) {
+      component.destructive_resize(size);
+    }
+  }
+  const auto& [r, phi] = source_coords;
+  const auto& cos_phi = get<0, 0>(*result) = cos(phi);
+  const auto& sin_phi = get<1, 0>(*result) = sin(phi);
+  get<0, 1>(*result) = -r * sin_phi;
+  get<1, 1>(*result) = r * cos_phi;
+}
+
+template <typename T>
 tnsr::Ij<tt::remove_cvref_wrap_t<T>, 2, Frame::NoFrame>
 PolarToCartesian::jacobian(const std::array<T, 2>& source_coords) const {
-  const auto& [r, phi] = source_coords;
-  using DataType = tt::remove_cvref_wrap_t<T>;
-  tnsr::Ij<DataType, 2, Frame::NoFrame> jacobian_matrix{
-      make_with_value<DataType>(dereference_wrapper(r), 0.0)};
-  const auto& cos_phi = get<0, 0>(jacobian_matrix) = cos(phi);
-  const auto& sin_phi = get<1, 0>(jacobian_matrix) = sin(phi);
-  get<0, 1>(jacobian_matrix) = -r * sin_phi;
-  get<1, 1>(jacobian_matrix) = r * cos_phi;
-  return jacobian_matrix;
+  tnsr::Ij<tt::remove_cvref_wrap_t<T>, 2, Frame::NoFrame> result{};
+  jacobian(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <typename T>
@@ -129,6 +142,20 @@ GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
                          std::reference_wrapper<const double>,
                          std::reference_wrapper<const DataVector>))
 
-#undef DTYPE
 #undef INSTANTIATE_NOT_NULL
+
+#define INSTANTIATE_JACOBIAN_NOT_NULL(_, data)                                \
+  template void PolarToCartesian::jacobian(                                   \
+      gsl::not_null<                                                          \
+          tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 2, Frame::NoFrame>*> \
+          result,                                                             \
+      const std::array<DTYPE(data), 2>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_JACOBIAN_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_JACOBIAN_NOT_NULL
 }  // namespace domain::CoordinateMaps
