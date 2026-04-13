@@ -35,10 +35,16 @@ FocallyLiftedMap<InnerMap>::FocallyLiftedMap(
 
 template <typename InnerMap>
 template <typename T>
-std::array<tt::remove_cvref_wrap_t<T>, 3>
-FocallyLiftedMap<InnerMap>::operator()(
+void FocallyLiftedMap<InnerMap>::operator()(
+    const gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 3>*> result,
     const std::array<T, 3>& source_coords) const {
   using ReturnType = tt::remove_cvref_wrap_t<T>;
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    (*result)[0].destructive_resize(size);
+    (*result)[1].destructive_resize(size);
+    (*result)[2].destructive_resize(size);
+  }
 
   // Temporary variable that will be re-used to avoid extra
   // allocations.
@@ -54,9 +60,8 @@ FocallyLiftedMap<InnerMap>::operator()(
       &lambda, lower_coords, proj_center_, center_, radius_,
       source_is_between_focus_and_target_);
 
-  std::array<ReturnType, 3> upper_coords{};
   for (size_t i = 0; i < 3; ++i) {
-    gsl::at(upper_coords, i) =
+    gsl::at(*result, i) =
         gsl::at(proj_center_, i) +
         (gsl::at(lower_coords, i) - gsl::at(proj_center_, i)) * lambda;
   }
@@ -66,13 +71,23 @@ FocallyLiftedMap<InnerMap>::operator()(
   ReturnType& sigma = temp_scalar; // sigma shares memory with lambda.
   inner_map_.sigma(&sigma, source_coords);
 
-  // Use upper_coords to store result, so as to save an allocation.
+  // Use *result to store result, so as to save an allocation.
   for (size_t i = 0; i < 3; ++i) {
-    gsl::at(upper_coords, i) =
+    gsl::at(*result, i) =
         gsl::at(lower_coords, i) +
-        (gsl::at(upper_coords, i) - gsl::at(lower_coords, i)) * sigma;
+        (gsl::at(*result, i) - gsl::at(lower_coords, i)) * sigma;
   }
-  return upper_coords;
+}
+
+template <typename InnerMap>
+template <typename T>
+std::array<tt::remove_cvref_wrap_t<T>, 3>
+FocallyLiftedMap<InnerMap>::operator()(
+    const std::array<T, 3>& source_coords) const {
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  std::array<ReturnType, 3> result{};
+  (*this)(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <typename InnerMap>
@@ -406,7 +421,22 @@ GENERATE_INSTANTIATIONS(INSTANTIATE,
                          std::reference_wrapper<const DataVector>))
 
 #undef INSTANTIATE
+
+#define INSTANTIATE_NOT_NULL(_, data)                                     \
+  template void FocallyLiftedMap<IMAP(data)>::operator()(                 \
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<DTYPE(data)>, 3>*> \
+          result,                                                         \
+      const std::array<DTYPE(data), 3>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(
+    INSTANTIATE_NOT_NULL,
+    (FocallyLiftedInnerMaps::Endcap, FocallyLiftedInnerMaps::FlatEndcap,
+     FocallyLiftedInnerMaps::FlatSide, FocallyLiftedInnerMaps::Side),
+    (double, DataVector, std::reference_wrapper<const double>,
+     std::reference_wrapper<const DataVector>))
+
 #undef DTYPE
 #undef IMAP
+#undef INSTANTIATE_NOT_NULL
 
 }  // namespace domain::CoordinateMaps
