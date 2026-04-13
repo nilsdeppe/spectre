@@ -258,8 +258,17 @@ std::array<tt::remove_cvref_wrap_t<T>, 3> BulgedCube::xi_derivative(
 }
 
 template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> BulgedCube::jacobian(
+void BulgedCube::jacobian(
+    const gsl::not_null<
+        tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>*>
+        result,
     const std::array<T, 3>& source_coords) const {
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (auto& component : *result) {
+      component.destructive_resize(size);
+    }
+  }
   const auto dX_dxi = xi_derivative(source_coords);
   const auto dX_deta = xi_derivative(
       std::array<std::reference_wrapper<const tt::remove_cvref_wrap_t<T>>, 3>{
@@ -271,20 +280,24 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> BulgedCube::jacobian(
           {std::cref(dereference_wrapper(source_coords[2])),
            std::cref(dereference_wrapper(source_coords[1])),
            std::cref(dereference_wrapper(source_coords[0]))}});
-  auto jacobian_matrix =
-      make_with_value<tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>>(
-          dereference_wrapper(source_coords[0]), 0.0);
 
-  get<0, 0>(jacobian_matrix) = dX_dxi[0];
-  get<0, 1>(jacobian_matrix) = dX_deta[1];
-  get<0, 2>(jacobian_matrix) = dX_dzeta[2];
-  get<1, 0>(jacobian_matrix) = dX_dxi[1];
-  get<1, 1>(jacobian_matrix) = dX_deta[0];
-  get<1, 2>(jacobian_matrix) = dX_dzeta[1];
-  get<2, 0>(jacobian_matrix) = dX_dxi[2];
-  get<2, 1>(jacobian_matrix) = dX_deta[2];
-  get<2, 2>(jacobian_matrix) = dX_dzeta[0];
-  return jacobian_matrix;
+  get<0, 0>(*result) = dX_dxi[0];
+  get<0, 1>(*result) = dX_deta[1];
+  get<0, 2>(*result) = dX_dzeta[2];
+  get<1, 0>(*result) = dX_dxi[1];
+  get<1, 1>(*result) = dX_deta[0];
+  get<1, 2>(*result) = dX_dzeta[1];
+  get<2, 0>(*result) = dX_dxi[2];
+  get<2, 1>(*result) = dX_deta[2];
+  get<2, 2>(*result) = dX_dzeta[0];
+}
+
+template <typename T>
+tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> BulgedCube::jacobian(
+    const std::array<T, 3>& source_coords) const {
+  tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> result{};
+  jacobian(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <typename T>
@@ -351,6 +364,20 @@ GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
                          std::reference_wrapper<const double>,
                          std::reference_wrapper<const DataVector>))
 
-#undef DTYPE
 #undef INSTANTIATE_NOT_NULL
+
+#define INSTANTIATE_JACOBIAN_NOT_NULL(_, data)                                \
+  template void BulgedCube::jacobian(                                         \
+      gsl::not_null<                                                          \
+          tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>*> \
+          result,                                                             \
+      const std::array<DTYPE(data), 3>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_JACOBIAN_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_JACOBIAN_NOT_NULL
 }  // namespace domain::CoordinateMaps

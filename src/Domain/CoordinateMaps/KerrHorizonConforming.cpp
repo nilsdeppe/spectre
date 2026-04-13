@@ -75,25 +75,31 @@ std::optional<std::array<double, 3>> KerrHorizonConforming::inverse(
 }
 
 template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>
-KerrHorizonConforming::jacobian(const std::array<T, 3>& source_coords) const {
+void KerrHorizonConforming::jacobian(
+    const gsl::not_null<
+        tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>*>
+        result,
+    const std::array<T, 3>& source_coords) const {
   using ReturnType = tt::remove_cvref_wrap_t<T>;
+  if constexpr (std::is_same_v<ReturnType, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (auto& component : *result) {
+      component.destructive_resize(size);
+    }
+  }
 
-  tnsr::Ij<ReturnType, 3, Frame::NoFrame> jac(
-      get_size(dereference_wrapper(source_coords[0])));
-
-  // use allocations from `jac` for auxiliaries
-  ReturnType& fac = get<0, 0>(jac);
-  ReturnType& source_coords_sq = get<0, 1>(jac);
-  ReturnType& coords_dot_spin = get<0, 2>(jac);
-  ReturnType& subexpr_1 = get<1, 0>(jac);
-  ReturnType& subexpr_2 = get<1, 1>(jac);
+  // use allocations from `*result` for auxiliaries
+  ReturnType& fac = get<0, 0>(*result);
+  ReturnType& source_coords_sq = get<0, 1>(*result);
+  ReturnType& coords_dot_spin = get<0, 2>(*result);
+  ReturnType& subexpr_1 = get<1, 0>(*result);
+  ReturnType& subexpr_2 = get<1, 1>(*result);
 
   std::array<ReturnType, 3> dfac_dx{};
   if constexpr (std::is_same_v<ReturnType, DataVector>) {
-    dfac_dx[0].set_data_ref(&get<2, 0>(jac));
-    dfac_dx[1].set_data_ref(&get<2, 1>(jac));
-    dfac_dx[2].set_data_ref(&get<2, 2>(jac));
+    dfac_dx[0].set_data_ref(&get<2, 0>(*result));
+    dfac_dx[1].set_data_ref(&get<2, 1>(*result));
+    dfac_dx[2].set_data_ref(&get<2, 2>(*result));
   }
 
   stretch_factor_square(make_not_null(&fac), source_coords);
@@ -117,11 +123,20 @@ KerrHorizonConforming::jacobian(const std::array<T, 3>& source_coords) const {
 
   for (size_t i = 0; i < 3; ++i) {
     for (size_t j = 0; j < 3; ++j) {
-      jac.get(i, j) = gsl::at(dfac_dx, j) * gsl::at(source_coords, i);
+      result->get(i, j) = gsl::at(dfac_dx, j) * gsl::at(source_coords, i);
     }
-    jac.get(i, i) += sqrt_fac;
+    result->get(i, i) += sqrt_fac;
   }
-  return jac;
+}
+
+template <typename T>
+tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>
+KerrHorizonConforming::jacobian(const std::array<T, 3>& source_coords) const {
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  tnsr::Ij<ReturnType, 3, Frame::NoFrame> result(
+      get_size(dereference_wrapper(source_coords[0])));
+  jacobian(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <typename T>
@@ -236,6 +251,20 @@ GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
                          std::reference_wrapper<const double>,
                          std::reference_wrapper<const DataVector>))
 
-#undef DTYPE
 #undef INSTANTIATE_NOT_NULL
+
+#define INSTANTIATE_JACOBIAN_NOT_NULL(_, data)                                \
+  template void KerrHorizonConforming::jacobian(                              \
+      gsl::not_null<                                                          \
+          tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>*> \
+          result,                                                             \
+      const std::array<DTYPE(data), 3>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_JACOBIAN_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_JACOBIAN_NOT_NULL
 }  // namespace domain::CoordinateMaps

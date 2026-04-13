@@ -649,51 +649,63 @@ std::optional<std::array<double, 3>> UniformCylindricalFlatEndcap::inverse(
 }
 
 template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>
-UniformCylindricalFlatEndcap::jacobian(
+void UniformCylindricalFlatEndcap::jacobian(
+    const gsl::not_null<
+        tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>*>
+        result,
     const std::array<T, 3>& source_coords) const {
   using ReturnType = tt::remove_cvref_wrap_t<T>;
+  if constexpr (std::is_same_v<ReturnType, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (auto& component : *result) {
+      component.destructive_resize(size);
+    }
+  }
   const ReturnType& xbar = source_coords[0];
   const ReturnType& ybar = source_coords[1];
   const ReturnType& zbar = source_coords[2];
 
-  auto jac =
-      make_with_value<tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>>(
-          dereference_wrapper(source_coords[0]), 0.0);
-
   // Use jacobian components as temporary storage to avoid extra
   // memory allocations.
-  get<2, 2>(jac) = sqrt(square(xbar) + square(ybar));
-  get<2, 0>(jac) = 0.5 * radius_one_ *
-                   cylindrical_endcap_helpers::sin_ax_over_x(get<2, 2>(jac),
-                                                             theta_max_one_) *
-                   (1.0 - zbar);
-  get<1, 1>(jac) = get<2, 0>(jac) + 0.5 * radius_two_ * (1.0 + zbar);
-  get<2, 1>(jac) = theta_max_one_ * get<2, 0>(jac);
-  get<1, 2>(jac) =
+  get<2, 2>(*result) = sqrt(square(xbar) + square(ybar));
+  get<2, 0>(*result) = 0.5 * radius_one_ *
+                       cylindrical_endcap_helpers::sin_ax_over_x(
+                           get<2, 2>(*result), theta_max_one_) *
+                       (1.0 - zbar);
+  get<1, 1>(*result) = get<2, 0>(*result) + 0.5 * radius_two_ * (1.0 + zbar);
+  get<2, 1>(*result) = theta_max_one_ * get<2, 0>(*result);
+  get<1, 2>(*result) =
       0.5 *
       (radius_two_ - radius_one_ * cylindrical_endcap_helpers::sin_ax_over_x(
-                                       get<2, 2>(jac), theta_max_one_));
-  get<1, 0>(jac) = 0.5 * radius_one_ *
-                   cylindrical_endcap_helpers::one_over_x_d_sin_ax_over_x(
-                       get<2, 2>(jac), theta_max_one_) *
-                   (1.0 - zbar);
+                                       get<2, 2>(*result), theta_max_one_));
+  get<1, 0>(*result) = 0.5 * radius_one_ *
+                       cylindrical_endcap_helpers::one_over_x_d_sin_ax_over_x(
+                           get<2, 2>(*result), theta_max_one_) *
+                       (1.0 - zbar);
 
   // Now fill Jacobian values
-  get<0, 0>(jac) = square(xbar) * get<1, 0>(jac) + get<1, 1>(jac);
-  get<1, 1>(jac) = square(ybar) * get<1, 0>(jac) + get<1, 1>(jac);
-  get<0, 1>(jac) = xbar * ybar * get<1, 0>(jac);
-  get<1, 0>(jac) = get<0, 1>(jac);
-  get<2, 0>(jac) = -xbar * get<2, 1>(jac);
-  get<2, 1>(jac) = -ybar * get<2, 1>(jac);
-  get<0, 2>(jac) =
-      xbar * get<1, 2>(jac) + 0.5 * (center_two_[0] - center_one_[0]);
-  get<1, 2>(jac) =
-      ybar * get<1, 2>(jac) + 0.5 * (center_two_[1] - center_one_[1]);
-  get<2, 2>(jac) = 0.5 * (center_two_[2] - center_one_[2] -
-                          radius_one_ * cos(theta_max_one_ * get<2, 2>(jac)));
+  get<0, 0>(*result) = square(xbar) * get<1, 0>(*result) + get<1, 1>(*result);
+  get<1, 1>(*result) = square(ybar) * get<1, 0>(*result) + get<1, 1>(*result);
+  get<0, 1>(*result) = xbar * ybar * get<1, 0>(*result);
+  get<1, 0>(*result) = get<0, 1>(*result);
+  get<2, 0>(*result) = -xbar * get<2, 1>(*result);
+  get<2, 1>(*result) = -ybar * get<2, 1>(*result);
+  get<0, 2>(*result) =
+      xbar * get<1, 2>(*result) + 0.5 * (center_two_[0] - center_one_[0]);
+  get<1, 2>(*result) =
+      ybar * get<1, 2>(*result) + 0.5 * (center_two_[1] - center_one_[1]);
+  get<2, 2>(*result) =
+      0.5 * (center_two_[2] - center_one_[2] -
+             radius_one_ * cos(theta_max_one_ * get<2, 2>(*result)));
+}
 
-  return jac;
+template <typename T>
+tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>
+UniformCylindricalFlatEndcap::jacobian(
+    const std::array<T, 3>& source_coords) const {
+  tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> result{};
+  jacobian(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <typename T>
@@ -766,7 +778,21 @@ GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
                          std::reference_wrapper<const double>,
                          std::reference_wrapper<const DataVector>))
 
-#undef DTYPE
 #undef INSTANTIATE_NOT_NULL
+
+#define INSTANTIATE_JACOBIAN_NOT_NULL(_, data)                                \
+  template void UniformCylindricalFlatEndcap::jacobian(                       \
+      gsl::not_null<                                                          \
+          tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>*> \
+          result,                                                             \
+      const std::array<DTYPE(data), 3>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_JACOBIAN_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_JACOBIAN_NOT_NULL
 
 }  // namespace domain::CoordinateMaps

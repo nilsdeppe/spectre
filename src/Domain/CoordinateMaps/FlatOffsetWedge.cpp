@@ -188,49 +188,65 @@ std::optional<std::array<double, 3>> FlatOffsetWedge::inverse(
 }
 
 template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>
-FlatOffsetWedge::jacobian(const std::array<T, 3>& source_coords) const {
+void FlatOffsetWedge::jacobian(
+    const gsl::not_null<
+        tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>*>
+        result,
+    const std::array<T, 3>& source_coords) const {
   using ReturnType = tt::remove_cvref_wrap_t<T>;
+  if constexpr (std::is_same_v<ReturnType, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (auto& component : *result) {
+      component.destructive_resize(size);
+    }
+  }
+  // Zero all components first (some components are not explicitly set)
+  for (auto& component : *result) {
+    component = 0.0;
+  }
   const ReturnType& xi = source_coords[0];
   const ReturnType& eta = source_coords[1];
   const ReturnType& zeta = source_coords[2];
-
-  auto jac =
-      make_with_value<tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>>(
-          dereference_wrapper(source_coords[0]), 0.0);
 
   const double q = 0.5 * lower_face_x_width_ / outer_radius_;
 
   // Use Jacobian components as temporary storage to avoid extra
   // memory allocations.
 
-  // temporarily jac(0,0) = P (where P is the quantity in the dox)
-  get<0, 0>(jac) = outer_radius_ *
-                   sqrt((1.0 - square(q * (xi - 1.0))) / (1.0 + square(eta)));
+  // temporarily result(0,0) = P (where P is the quantity in the dox)
+  get<0, 0>(*result) = outer_radius_ * sqrt((1.0 - square(q * (xi - 1.0))) /
+                                            (1.0 + square(eta)));
 
-  // temporarily jac(1,1) = z
-  get<1, 1>(jac) = 0.5 * (get<0, 0>(jac) + lower_face_y_half_width_ +
-                          zeta * (get<0, 0>(jac) - lower_face_y_half_width_));
+  // temporarily result(1,1) = z
+  get<1, 1>(*result) =
+      0.5 * (get<0, 0>(*result) + lower_face_y_half_width_ +
+             zeta * (get<0, 0>(*result) - lower_face_y_half_width_));
 
-  // Fill in correct jac(2,1)
-  get<2, 1>(jac) =
-      -get<0, 0>(jac) * 0.5 * eta * (1.0 + zeta) / (1.0 + square(eta));
-  // Now use that to get correct jac(1,1)
-  get<1, 1>(jac) += eta * get<2, 1>(jac);
+  // Fill in correct result(2,1)
+  get<2, 1>(*result) =
+      -get<0, 0>(*result) * 0.5 * eta * (1.0 + zeta) / (1.0 + square(eta));
+  // Now use that to get correct result(1,1)
+  get<1, 1>(*result) += eta * get<2, 1>(*result);
 
-  // Fill in correct jac(2,0) and jac(1,0)
-  get<2, 0>(jac) = 0.5 * get<0, 0>(jac) * square(q) * (1.0 + zeta) *
-                   (1.0 - xi) / (1.0 - square(q * (xi - 1.0)));
-  get<1, 0>(jac) = eta * get<2, 0>(jac);
+  // Fill in correct result(2,0) and result(1,0)
+  get<2, 0>(*result) = 0.5 * get<0, 0>(*result) * square(q) * (1.0 + zeta) *
+                       (1.0 - xi) / (1.0 - square(q * (xi - 1.0)));
+  get<1, 0>(*result) = eta * get<2, 0>(*result);
 
-  // Fill in correct jac(2,2) and jac(1,2)
-  get<2, 2>(jac) = 0.5 * (get<0, 0>(jac) - lower_face_y_half_width_);
-  get<1, 2>(jac) = eta * get<2, 2>(jac);
+  // Fill in correct result(2,2) and result(1,2)
+  get<2, 2>(*result) = 0.5 * (get<0, 0>(*result) - lower_face_y_half_width_);
+  get<1, 2>(*result) = eta * get<2, 2>(*result);
 
-  // Now set jac(0,0) to its real value instead of the temporary.
-  get<0, 0>(jac) = 0.5 * lower_face_x_width_;
+  // Now set result(0,0) to its real value instead of the temporary.
+  get<0, 0>(*result) = 0.5 * lower_face_x_width_;
+}
 
-  return jac;
+template <typename T>
+tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>
+FlatOffsetWedge::jacobian(const std::array<T, 3>& source_coords) const {
+  tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> result{};
+  jacobian(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <typename T>
@@ -293,7 +309,21 @@ GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
                          std::reference_wrapper<const double>,
                          std::reference_wrapper<const DataVector>))
 
-#undef DTYPE
 #undef INSTANTIATE_NOT_NULL
+
+#define INSTANTIATE_JACOBIAN_NOT_NULL(_, data)                                \
+  template void FlatOffsetWedge::jacobian(                                    \
+      gsl::not_null<                                                          \
+          tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>*> \
+          result,                                                             \
+      const std::array<DTYPE(data), 3>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_JACOBIAN_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_JACOBIAN_NOT_NULL
 
 }  // namespace domain::CoordinateMaps

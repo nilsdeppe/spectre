@@ -368,9 +368,21 @@ std::optional<std::array<double, 3>> Frustum::inverse(
 }
 
 template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> Frustum::jacobian(
-    const std::array<T, 3>& source_coords) const {
+void Frustum::jacobian(const gsl::not_null<tnsr::Ij<tt::remove_cvref_wrap_t<T>,
+                                                    3, Frame::NoFrame>*>
+                           result,
+                       const std::array<T, 3>& source_coords) const {
   using ReturnType = tt::remove_cvref_wrap_t<T>;
+  if constexpr (std::is_same_v<ReturnType, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (auto& component : *result) {
+      component.destructive_resize(size);
+    }
+  }
+  // Zero all components first (some components are conditionally set)
+  for (auto& component : *result) {
+    component = 0.0;
+  }
   const ReturnType& xi = source_coords[0];
   const ReturnType& eta = source_coords[1];
   const ReturnType& zeta = source_coords[2];
@@ -452,34 +464,28 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> Frustum::jacobian(
                 0.5 * (1.0 - cap_zeta) * cap_eta_zero_deriv
           : make_with_value<ReturnType>(eta, 1.0);
 
-  auto jacobian_matrix =
-      make_with_value<tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>>(
-          dereference_wrapper(source_coords[0]), 0.0);
-
   // dX_dxi
   const auto mapped_xi =
       orientation_of_frustum_.inverse_map()(Direction<3>::upper_xi());
   const size_t mapped_dim_0 = orientation_of_frustum_.inverse_map()(0);
-  jacobian_matrix.get(mapped_dim_0, 0) =
-      delta_x_xi_ + delta_x_xi_zeta_ * cap_zeta;
+  result->get(mapped_dim_0, 0) = delta_x_xi_ + delta_x_xi_zeta_ * cap_zeta;
   if (equiangular_map_at_inner_ or equiangular_map_at_outer_) {
-    jacobian_matrix.get(mapped_dim_0, 0) *= cap_xi_transition_deriv;
+    result->get(mapped_dim_0, 0) *= cap_xi_transition_deriv;
   }
   if (mapped_xi.side() == Side::Lower) {
-    jacobian_matrix.get(mapped_dim_0, 0) *= -1.0;
+    result->get(mapped_dim_0, 0) *= -1.0;
   }
 
   // dX_deta
   const auto mapped_eta =
       orientation_of_frustum_.inverse_map()(Direction<3>::upper_eta());
   const size_t mapped_dim_1 = orientation_of_frustum_.inverse_map()(1);
-  jacobian_matrix.get(mapped_dim_1, 1) =
-      delta_y_eta_ + delta_y_eta_zeta_ * cap_zeta;
+  result->get(mapped_dim_1, 1) = delta_y_eta_ + delta_y_eta_zeta_ * cap_zeta;
   if (equiangular_map_at_inner_ or equiangular_map_at_outer_) {
-    jacobian_matrix.get(mapped_dim_1, 1) *= cap_eta_transition_deriv;
+    result->get(mapped_dim_1, 1) *= cap_eta_transition_deriv;
   }
   if (mapped_eta.side() == Side::Lower) {
-    jacobian_matrix.get(mapped_dim_1, 1) *= -1.0;
+    result->get(mapped_dim_1, 1) *= -1.0;
   }
 
   // dX_dzeta
@@ -500,9 +506,9 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> Frustum::jacobian(
     dX_dzeta[2] *= cap_zeta_deriv;
   }
 
-  get<0, 2>(jacobian_matrix) = dX_dzeta[0];
-  get<1, 2>(jacobian_matrix) = dX_dzeta[1];
-  get<2, 2>(jacobian_matrix) = dX_dzeta[2];
+  get<0, 2>(*result) = dX_dzeta[0];
+  get<1, 2>(*result) = dX_dzeta[1];
+  get<2, 2>(*result) = dX_dzeta[2];
 
   if (sphericity_ > 0.0) {
     const ReturnType flat_frustum_x = sigma_x_ + delta_x_xi_ * cap_xi_upper +
@@ -546,9 +552,9 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> Frustum::jacobian(
       delta_dX_dxi[2] *= cap_xi_upper_deriv;
     }
 
-    get<0, 0>(jacobian_matrix) += delta_dX_dxi[0];
-    get<1, 0>(jacobian_matrix) += delta_dX_dxi[1];
-    get<2, 0>(jacobian_matrix) += delta_dX_dxi[2];
+    get<0, 0>(*result) += delta_dX_dxi[0];
+    get<1, 0>(*result) += delta_dX_dxi[1];
+    get<2, 0>(*result) += delta_dX_dxi[2];
 
     // delta_dX_deta
     std::array<ReturnType, 3> delta_dX_deta = discrete_rotation(
@@ -567,9 +573,9 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> Frustum::jacobian(
       delta_dX_deta[2] *= cap_eta_upper_deriv;
     }
 
-    get<0, 1>(jacobian_matrix) += delta_dX_deta[0];
-    get<1, 1>(jacobian_matrix) += delta_dX_deta[1];
-    get<2, 1>(jacobian_matrix) += delta_dX_deta[2];
+    get<0, 1>(*result) += delta_dX_deta[0];
+    get<1, 1>(*result) += delta_dX_deta[1];
+    get<2, 1>(*result) += delta_dX_deta[2];
 
     // delta_dX_dzeta
     std::array<ReturnType, 3> delta_dX_dzeta = discrete_rotation(
@@ -585,11 +591,18 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> Frustum::jacobian(
       delta_dX_dzeta[2] *= cap_zeta_deriv;
     }
 
-    get<0, 2>(jacobian_matrix) += delta_dX_dzeta[0];
-    get<1, 2>(jacobian_matrix) += delta_dX_dzeta[1];
-    get<2, 2>(jacobian_matrix) += delta_dX_dzeta[2];
+    get<0, 2>(*result) += delta_dX_dzeta[0];
+    get<1, 2>(*result) += delta_dX_dzeta[1];
+    get<2, 2>(*result) += delta_dX_dzeta[2];
   }
-  return jacobian_matrix;
+}
+
+template <typename T>
+tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> Frustum::jacobian(
+    const std::array<T, 3>& source_coords) const {
+  tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> result{};
+  jacobian(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <typename T>
@@ -747,6 +760,20 @@ GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
                          std::reference_wrapper<const double>,
                          std::reference_wrapper<const DataVector>))
 
-#undef DTYPE
 #undef INSTANTIATE_NOT_NULL
+
+#define INSTANTIATE_JACOBIAN_NOT_NULL(_, data)                                \
+  template void Frustum::jacobian(                                            \
+      gsl::not_null<                                                          \
+          tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>*> \
+          result,                                                             \
+      const std::array<DTYPE(data), 3>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_JACOBIAN_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_JACOBIAN_NOT_NULL
 }  // namespace domain::CoordinateMaps

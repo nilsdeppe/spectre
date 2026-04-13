@@ -69,28 +69,46 @@ std::optional<std::array<double, 3>> SphericalToCartesianPfaffian::inverse(
 }
 
 template <typename T>
+void SphericalToCartesianPfaffian::jacobian(
+    const gsl::not_null<
+        tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>*>
+        result,
+    const std::array<T, 3>& source_coords) const {
+  const auto& [r, theta, phi] = source_coords;
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  if constexpr (std::is_same_v<ReturnType, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (auto& component : *result) {
+      component.destructive_resize(size);
+    }
+  }
+  // Zero all components first (get<2, 2> is intentionally left zero)
+  for (auto& component : *result) {
+    component = 0.0;
+  }
+  // Pfaffian basis means phi components are 1 / sin_theta times those of a
+  // coord basis
+  const auto& cos_theta = get<2, 0>(*result) = cos(theta);
+  const auto& sin_theta = get<2, 1>(*result) = sin(theta);
+  const auto& cos_phi = get<1, 2>(*result) = cos(phi);
+  const auto& sin_phi = get<0, 2>(*result) = sin(phi);
+  get<0, 0>(*result) = sin_theta * cos_phi;
+  get<1, 0>(*result) = sin_theta * sin_phi;
+  get<0, 1>(*result) = r * cos_theta * cos_phi;
+  get<1, 1>(*result) = r * cos_theta * sin_phi;
+  get<2, 1>(*result) *= -r;
+  get<0, 2>(*result) *= -r;
+  get<1, 2>(*result) *= r;
+  // get<2, 2>(*result) is zero
+}
+
+template <typename T>
 tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>
 SphericalToCartesianPfaffian::jacobian(
     const std::array<T, 3>& source_coords) const {
-  const auto& [r, theta, phi] = source_coords;
-  using DataType = tt::remove_cvref_wrap_t<T>;
-  tnsr::Ij<DataType, 3, Frame::NoFrame> jacobian_matrix{
-      make_with_value<DataType>(dereference_wrapper(r), 0.0)};
-  // Pfaffian basis means phi components are 1 / sin_theta times those of a
-  // coord basis
-  const auto& cos_theta = get<2, 0>(jacobian_matrix) = cos(theta);
-  const auto& sin_theta = get<2, 1>(jacobian_matrix) = sin(theta);
-  const auto& cos_phi = get<1, 2>(jacobian_matrix) = cos(phi);
-  const auto& sin_phi = get<0, 2>(jacobian_matrix) = sin(phi);
-  get<0, 0>(jacobian_matrix) = sin_theta * cos_phi;
-  get<1, 0>(jacobian_matrix) = sin_theta * sin_phi;
-  get<0, 1>(jacobian_matrix) = r * cos_theta * cos_phi;
-  get<1, 1>(jacobian_matrix) = r * cos_theta * sin_phi;
-  get<2, 1>(jacobian_matrix) *= -r;
-  get<0, 2>(jacobian_matrix) *= -r;
-  get<1, 2>(jacobian_matrix) *= r;
-  // get<2, 2>(jacobian_matrix) is zero
-  return jacobian_matrix;
+  tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> result{};
+  jacobian(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <typename T>
@@ -162,6 +180,20 @@ GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
                          std::reference_wrapper<const double>,
                          std::reference_wrapper<const DataVector>))
 
-#undef DTYPE
 #undef INSTANTIATE_NOT_NULL
+
+#define INSTANTIATE_JACOBIAN_NOT_NULL(_, data)                                \
+  template void SphericalToCartesianPfaffian::jacobian(                       \
+      gsl::not_null<                                                          \
+          tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>*> \
+          result,                                                             \
+      const std::array<DTYPE(data), 3>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_JACOBIAN_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_JACOBIAN_NOT_NULL
 }  // namespace domain::CoordinateMaps
