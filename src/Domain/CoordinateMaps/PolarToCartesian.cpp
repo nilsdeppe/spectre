@@ -11,6 +11,7 @@
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Utilities/DereferenceWrapper.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/MakeWithValue.hpp"
 
 namespace domain::CoordinateMaps {
@@ -22,10 +23,26 @@ PolarToCartesian& PolarToCartesian::operator=(const PolarToCartesian&) =
 PolarToCartesian& PolarToCartesian::operator=(PolarToCartesian&&) = default;
 
 template <typename T>
+void PolarToCartesian::operator()(
+    const gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 2>*> result,
+    const std::array<T, 2>& source_coords) const {
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    (*result)[0].destructive_resize(size);
+    (*result)[1].destructive_resize(size);
+  }
+  const auto& [r, phi] = source_coords;
+  (*result)[0] = r * cos(phi);
+  (*result)[1] = r * sin(phi);
+}
+
+template <typename T>
 std::array<tt::remove_cvref_wrap_t<T>, 2> PolarToCartesian::operator()(
     const std::array<T, 2>& source_coords) const {
-  const auto& [r, phi] = source_coords;
-  return {{r * cos(phi), r * sin(phi)}};
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  std::array<ReturnType, 2> result{};
+  (*this)(make_not_null(&result), source_coords);
+  return result;
 }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
@@ -98,4 +115,20 @@ GENERATE_INSTANTIATIONS(INSTANTIATE_DTYPE,
                         (double, DataVector,
                          std::reference_wrapper<const double>,
                          std::reference_wrapper<const DataVector>))
+
+#undef INSTANTIATE_DTYPE
+
+#define INSTANTIATE_NOT_NULL(_, data)                                     \
+  template void PolarToCartesian::operator()(                             \
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<DTYPE(data)>, 2>*> \
+          result,                                                         \
+      const std::array<DTYPE(data), 2>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_NOT_NULL
 }  // namespace domain::CoordinateMaps

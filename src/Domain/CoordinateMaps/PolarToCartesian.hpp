@@ -8,6 +8,7 @@
 #include <optional>
 
 #include "DataStructures/Tensor/TypeAliases.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/TypeTraits/RemoveReferenceWrapper.hpp"
 
 /// \cond
@@ -40,6 +41,11 @@ class PolarToCartesian {
   PolarToCartesian(const PolarToCartesian&);
   PolarToCartesian& operator=(const PolarToCartesian&);
   PolarToCartesian& operator=(PolarToCartesian&&);
+
+  template <typename T>
+  void operator()(
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 2>*> result,
+      const std::array<T, 2>& source_coords) const;
 
   template <typename T>
   std::array<tt::remove_cvref_wrap_t<T>, 2> operator()(
