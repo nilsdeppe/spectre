@@ -11,6 +11,7 @@
 #include <optional>
 
 #include "DataStructures/Tensor/TypeAliases.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/TypeTraits/RemoveReferenceWrapper.hpp"
 
 /// \cond
@@ -497,6 +498,11 @@ class BulgedCube {
   BulgedCube(const BulgedCube&) = default;
   BulgedCube& operator=(const BulgedCube&) = default;
   BulgedCube& operator=(BulgedCube&&) = default;
+
+  template <typename T>
+  void operator()(
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 3>*> result,
+      const std::array<T, 3>& source_coords) const;
 
   template <typename T>
   std::array<tt::remove_cvref_wrap_t<T>, 3> operator()(

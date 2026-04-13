@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <optional>
 
+#include "DataStructures/DataVector.hpp"
 #include "DataStructures/Tensor/EagerMath/DeterminantAndInverse.hpp"
 #include "Utilities/ContainerHelpers.hpp"
 #include "Utilities/DereferenceWrapper.hpp"
@@ -30,16 +31,30 @@ KerrHorizonConforming::KerrHorizonConforming(
 }
 
 template <typename T>
+void KerrHorizonConforming::operator()(
+    const gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 3>*> result,
+    const std::array<T, 3>& source_coords) const {
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    (*result)[0].destructive_resize(size);
+    (*result)[1].destructive_resize(size);
+    (*result)[2].destructive_resize(size);
+  }
+  ReturnType& stretch_fac = (*result)[2];
+  stretch_factor_square(make_not_null(&stretch_fac), source_coords);
+  stretch_fac = sqrt(stretch_fac);
+  for (size_t i = 0; i < 3; ++i) {
+    gsl::at(*result, i) = gsl::at(source_coords, i) * stretch_fac;
+  }
+}
+
+template <typename T>
 std::array<tt::remove_cvref_wrap_t<T>, 3> KerrHorizonConforming::operator()(
     const std::array<T, 3>& source_coords) const {
   using ReturnType = tt::remove_cvref_wrap_t<T>;
   std::array<ReturnType, 3> result{};
-  ReturnType& stretch_fac = get<2>(result);
-  stretch_factor_square(make_not_null(&stretch_fac), source_coords);
-  stretch_fac = sqrt(stretch_fac);
-  for (size_t i = 0; i < 3; ++i) {
-    gsl::at(result, i) = gsl::at(source_coords, i) * stretch_fac;
-  }
+  (*this)(make_not_null(&result), source_coords);
   return result;
 }
 
@@ -208,6 +223,19 @@ bool operator!=(const KerrHorizonConforming& lhs,
 GENERATE_INSTANTIATIONS(INSTANTIATE, (double, DataVector,
                                       std::reference_wrapper<const double>,
                                       std::reference_wrapper<const DataVector>))
-#undef DTYPE
 #undef INSTANTIATE
+
+#define INSTANTIATE_NOT_NULL(_, data)                                     \
+  template void KerrHorizonConforming::operator()(                        \
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<DTYPE(data)>, 3>*> \
+          result,                                                         \
+      const std::array<DTYPE(data), 3>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_NOT_NULL
 }  // namespace domain::CoordinateMaps

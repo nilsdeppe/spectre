@@ -11,6 +11,7 @@
 #include "DataStructures/Tensor/TypeAliases.hpp"
 #include "Domain/CoordinateMaps/Distribution.hpp"
 #include "Domain/Structure/OrientationMap.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/TypeTraits/RemoveReferenceWrapper.hpp"
 
 /// \cond
@@ -304,6 +305,11 @@ class Frustum {
   Frustum(const Frustum&) = default;
   Frustum& operator=(const Frustum&) = default;
   Frustum& operator=(Frustum&&) = default;
+
+  template <typename T>
+  void operator()(
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 3>*> result,
+      const std::array<T, 3>& source_coords) const;
 
   template <typename T>
   std::array<tt::remove_cvref_wrap_t<T>, 3> operator()(

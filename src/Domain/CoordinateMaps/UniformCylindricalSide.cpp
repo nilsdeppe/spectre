@@ -10,13 +10,16 @@
 #include <sstream>
 #include <utility>
 
+#include "DataStructures/DataVector.hpp"
 #include "DataStructures/Tensor/EagerMath/DeterminantAndInverse.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "NumericalAlgorithms/RootFinding/TOMS748.hpp"
 #include "Utilities/ConstantExpressions.hpp"
 #include "Utilities/DereferenceWrapper.hpp"
 #include "Utilities/EqualWithinRoundoff.hpp"
+#include "Utilities/ErrorHandling/Assert.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/Serialization/PupStlCpp11.hpp"
 
 namespace domain::CoordinateMaps {
@@ -317,16 +320,22 @@ UniformCylindricalSide::UniformCylindricalSide(
 }
 
 template <typename T>
-std::array<tt::remove_cvref_wrap_t<T>, 3> UniformCylindricalSide::operator()(
+void UniformCylindricalSide::operator()(
+    const gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 3>*> result,
     const std::array<T, 3>& source_coords) const {
   using ReturnType = tt::remove_cvref_wrap_t<T>;
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    (*result)[0].destructive_resize(size);
+    (*result)[1].destructive_resize(size);
+    (*result)[2].destructive_resize(size);
+  }
   const ReturnType& xbar = source_coords[0];
   const ReturnType& ybar = source_coords[1];
   const ReturnType& zbar = source_coords[2];
-  std::array<ReturnType, 3> target_coords{};
-  ReturnType& x = target_coords[0];
-  ReturnType& y = target_coords[1];
-  ReturnType& z = target_coords[2];
+  ReturnType& x = (*result)[0];
+  ReturnType& y = (*result)[1];
+  ReturnType& z = (*result)[2];
 
   // Use y and z as temporary storage to avoid allocations,
   // before setting them to their actual values.
@@ -353,7 +362,15 @@ std::array<tt::remove_cvref_wrap_t<T>, 3> UniformCylindricalSide::operator()(
       (z_plane_minus_one_ +
        0.5 * (zbar + 1.0) * (z_plane_plus_one_ - z_plane_minus_one_)) *
           (2.0 - z);
-  return target_coords;
+}
+
+template <typename T>
+std::array<tt::remove_cvref_wrap_t<T>, 3> UniformCylindricalSide::operator()(
+    const std::array<T, 3>& source_coords) const {
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  std::array<ReturnType, 3> result{};
+  (*this)(make_not_null(&result), source_coords);
+  return result;
 }
 
 std::optional<std::array<double, 3>> UniformCylindricalSide::inverse(
@@ -834,7 +851,20 @@ GENERATE_INSTANTIATIONS(INSTANTIATE, (double, DataVector,
                                       std::reference_wrapper<const double>,
                                       std::reference_wrapper<const DataVector>))
 
-#undef DTYPE
 #undef INSTANTIATE
+
+#define INSTANTIATE_NOT_NULL(_, data)                                     \
+  template void UniformCylindricalSide::operator()(                       \
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<DTYPE(data)>, 3>*> \
+          result,                                                         \
+      const std::array<DTYPE(data), 3>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_NOT_NULL
 
 }  // namespace domain::CoordinateMaps

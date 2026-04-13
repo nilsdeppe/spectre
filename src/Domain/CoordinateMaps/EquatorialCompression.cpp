@@ -6,6 +6,7 @@
 #include <cmath>
 #include <pup.h>
 
+#include "DataStructures/DataVector.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Utilities/ConstantExpressions.hpp"
 #include "Utilities/ContainerHelpers.hpp"
@@ -135,9 +136,25 @@ EquatorialCompression::angular_distortion_jacobian(
 }
 
 template <typename T>
+void EquatorialCompression::operator()(
+    const gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 3>*> result,
+    const std::array<T, 3>& source_coords) const {
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    (*result)[0].destructive_resize(size);
+    (*result)[1].destructive_resize(size);
+    (*result)[2].destructive_resize(size);
+  }
+  *result = angular_distortion(source_coords, inverse_aspect_ratio_);
+}
+
+template <typename T>
 std::array<tt::remove_cvref_wrap_t<T>, 3> EquatorialCompression::operator()(
     const std::array<T, 3>& source_coords) const {
-  return angular_distortion(source_coords, inverse_aspect_ratio_);
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  std::array<ReturnType, 3> result{};
+  (*this)(make_not_null(&result), source_coords);
+  return result;
 }
 
 std::optional<std::array<double, 3>> EquatorialCompression::inverse(
@@ -202,6 +219,19 @@ bool operator!=(const EquatorialCompression& lhs,
 GENERATE_INSTANTIATIONS(INSTANTIATE, (double, DataVector,
                                       std::reference_wrapper<const double>,
                                       std::reference_wrapper<const DataVector>))
-#undef DTYPE
 #undef INSTANTIATE
+
+#define INSTANTIATE_NOT_NULL(_, data)                                     \
+  template void EquatorialCompression::operator()(                        \
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<DTYPE(data)>, 3>*> \
+          result,                                                         \
+      const std::array<DTYPE(data), 3>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_NOT_NULL
 }  // namespace domain::CoordinateMaps

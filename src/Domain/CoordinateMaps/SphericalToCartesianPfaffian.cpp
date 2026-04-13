@@ -11,6 +11,7 @@
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Utilities/DereferenceWrapper.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/MakeWithValue.hpp"
 
 namespace domain::CoordinateMaps {
@@ -25,12 +26,29 @@ SphericalToCartesianPfaffian& SphericalToCartesianPfaffian::operator=(
     SphericalToCartesianPfaffian&&) = default;
 
 template <typename T>
+void SphericalToCartesianPfaffian::operator()(
+    const gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 3>*> result,
+    const std::array<T, 3>& source_coords) const {
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    (*result)[0].destructive_resize(size);
+    (*result)[1].destructive_resize(size);
+    (*result)[2].destructive_resize(size);
+  }
+  const auto& [r, theta, phi] = source_coords;
+  (*result)[0] = r * sin(theta) * cos(phi);
+  (*result)[1] = r * sin(theta) * sin(phi);
+  (*result)[2] = r * cos(theta);
+}
+
+template <typename T>
 std::array<tt::remove_cvref_wrap_t<T>, 3>
 SphericalToCartesianPfaffian::operator()(
     const std::array<T, 3>& source_coords) const {
-  const auto& [r, theta, phi] = source_coords;
-  return {
-      {r * sin(theta) * cos(phi), r * sin(theta) * sin(phi), r * cos(theta)}};
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  std::array<ReturnType, 3> result{};
+  (*this)(make_not_null(&result), source_coords);
+  return result;
 }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
@@ -130,4 +148,20 @@ GENERATE_INSTANTIATIONS(INSTANTIATE_DTYPE,
                         (double, DataVector,
                          std::reference_wrapper<const double>,
                          std::reference_wrapper<const DataVector>))
+
+#undef INSTANTIATE_DTYPE
+
+#define INSTANTIATE_NOT_NULL(_, data)                                     \
+  template void SphericalToCartesianPfaffian::operator()(                 \
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<DTYPE(data)>, 3>*> \
+          result,                                                         \
+      const std::array<DTYPE(data), 3>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_NOT_NULL
 }  // namespace domain::CoordinateMaps

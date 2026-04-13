@@ -14,6 +14,7 @@
 #include "DataStructures/Tensor/TypeAliases.hpp"
 #include "Domain/CoordinateMaps/FocallyLiftedEndcap.hpp"
 #include "Domain/CoordinateMaps/FocallyLiftedMap.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/TypeTraits/RemoveReferenceWrapper.hpp"
 
 /// \cond
@@ -146,6 +147,11 @@ class CylindricalEndcap {
   CylindricalEndcap(const CylindricalEndcap&) = default;
   CylindricalEndcap& operator=(const CylindricalEndcap&) = default;
   CylindricalEndcap& operator=(CylindricalEndcap&&) = default;
+
+  template <typename T>
+  void operator()(
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 3>*> result,
+      const std::array<T, 3>& source_coords) const;
 
   template <typename T>
   std::array<tt::remove_cvref_wrap_t<T>, 3> operator()(

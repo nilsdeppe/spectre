@@ -10,6 +10,7 @@
 #include <optional>
 #include <pup.h>
 
+#include "DataStructures/DataVector.hpp"
 #include "DataStructures/Tensor/EagerMath/DeterminantAndInverse.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Domain/CoordinateMaps/AutodiffInstantiationTypes.hpp"
@@ -103,9 +104,16 @@ BulgedCube::BulgedCube(const double radius, const double sphericity,
 }
 
 template <typename T>
-std::array<tt::remove_cvref_wrap_t<T>, 3> BulgedCube::operator()(
+void BulgedCube::operator()(
+    const gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 3>*> result,
     const std::array<T, 3>& source_coords) const {
   using ReturnType = tt::remove_cvref_wrap_t<T>;
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    (*result)[0].destructive_resize(size);
+    (*result)[1].destructive_resize(size);
+    (*result)[2].destructive_resize(size);
+  }
   const auto physical_coordinates = [this](const ReturnType& cap_xi,
                                            const ReturnType& cap_eta,
                                            const ReturnType& cap_zeta) {
@@ -145,14 +153,24 @@ std::array<tt::remove_cvref_wrap_t<T>, 3> BulgedCube::operator()(
   };
 
   if (use_equiangular_map_) {
-    return physical_coordinates(
+    *result = physical_coordinates(
         tan(M_PI_4 * dereference_wrapper(source_coords[0])),
         tan(M_PI_4 * dereference_wrapper(source_coords[1])),
         tan(M_PI_4 * dereference_wrapper(source_coords[2])));
+  } else {
+    *result = physical_coordinates(dereference_wrapper(source_coords[0]),
+                                   dereference_wrapper(source_coords[1]),
+                                   dereference_wrapper(source_coords[2]));
   }
-  return physical_coordinates(dereference_wrapper(source_coords[0]),
-                              dereference_wrapper(source_coords[1]),
-                              dereference_wrapper(source_coords[2]));
+}
+
+template <typename T>
+std::array<tt::remove_cvref_wrap_t<T>, 3> BulgedCube::operator()(
+    const std::array<T, 3>& source_coords) const {
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  std::array<ReturnType, 3> result{};
+  (*this)(make_not_null(&result), source_coords);
+  return result;
 }
 
 std::optional<std::array<double, 3>> BulgedCube::inverse(
@@ -320,6 +338,19 @@ GENERATE_INSTANTIATIONS(
 
 GENERATE_INSTANTIATIONS(INSTANTIATE, MAP_AUTODIFF_TYPES)
 
-#undef DTYPE
 #undef INSTANTIATE
+
+#define INSTANTIATE_NOT_NULL(_, data)                                     \
+  template void BulgedCube::operator()(                                   \
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<DTYPE(data)>, 3>*> \
+          result,                                                         \
+      const std::array<DTYPE(data), 3>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_NOT_NULL
 }  // namespace domain::CoordinateMaps

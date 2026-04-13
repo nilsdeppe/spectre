@@ -8,6 +8,7 @@
 #include <pup.h>
 #include <pup_stl.h>
 
+#include "DataStructures/DataVector.hpp"
 #include "DataStructures/Tensor/EagerMath/Determinant.hpp"
 #include "DataStructures/Tensor/EagerMath/DeterminantAndInverse.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
@@ -25,6 +26,7 @@
 #include "Utilities/ErrorHandling/Assert.hpp"
 #include "Utilities/ErrorHandling/Exceptions.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/MakeWithValue.hpp"
 
 namespace domain::CoordinateMaps {
@@ -145,9 +147,16 @@ Frustum::Frustum(const std::array<std::array<double, 2>, 4>& face_vertices,
 }
 
 template <typename T>
-std::array<tt::remove_cvref_wrap_t<T>, 3> Frustum::operator()(
+void Frustum::operator()(
+    const gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 3>*> result,
     const std::array<T, 3>& source_coords) const {
   using ReturnType = tt::remove_cvref_wrap_t<T>;
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    (*result)[0].destructive_resize(size);
+    (*result)[1].destructive_resize(size);
+    (*result)[2].destructive_resize(size);
+  }
 
   const ReturnType& xi = source_coords[0];
   const ReturnType& eta = source_coords[1];
@@ -221,7 +230,17 @@ std::array<tt::remove_cvref_wrap_t<T>, 3> Frustum::operator()(
   }
   std::array<ReturnType, 3> physical_coords{
       {std::move(physical_x), std::move(physical_y), std::move(physical_z)}};
-  return discrete_rotation(orientation_of_frustum_, std::move(physical_coords));
+  *result =
+      discrete_rotation(orientation_of_frustum_, std::move(physical_coords));
+}
+
+template <typename T>
+std::array<tt::remove_cvref_wrap_t<T>, 3> Frustum::operator()(
+    const std::array<T, 3>& source_coords) const {
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  std::array<ReturnType, 3> result{};
+  (*this)(make_not_null(&result), source_coords);
+  return result;
 }
 
 std::optional<std::array<double, 3>> Frustum::inverse(
@@ -715,6 +734,19 @@ GENERATE_INSTANTIATIONS(
 
 GENERATE_INSTANTIATIONS(INSTANTIATE, MAP_AUTODIFF_TYPES)
 
-#undef DTYPE
 #undef INSTANTIATE
+
+#define INSTANTIATE_NOT_NULL(_, data)                                     \
+  template void Frustum::operator()(                                      \
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<DTYPE(data)>, 3>*> \
+          result,                                                         \
+      const std::array<DTYPE(data), 3>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_NOT_NULL
 }  // namespace domain::CoordinateMaps

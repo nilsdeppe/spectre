@@ -85,6 +85,11 @@ class KerrHorizonConforming {
                                  std::array<double, 3> dimensionless_spin);
 
   template <typename T>
+  void operator()(
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 3>*> result,
+      const std::array<T, 3>& source_coords) const;
+
+  template <typename T>
   std::array<tt::remove_cvref_wrap_t<T>, 3> operator()(
       const std::array<T, 3>& source_coords) const;
 

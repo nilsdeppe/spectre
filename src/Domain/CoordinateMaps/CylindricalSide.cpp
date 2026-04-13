@@ -5,11 +5,15 @@
 
 #include <pup.h>
 
+#include "DataStructures/DataVector.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Domain/CoordinateMaps/FocallyLiftedMap.hpp"
 #include "Domain/CoordinateMaps/FocallyLiftedSide.hpp"
 #include "Utilities/ConstantExpressions.hpp"
+#include "Utilities/DereferenceWrapper.hpp"
+#include "Utilities/ErrorHandling/Assert.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/Serialization/PupStlCpp11.hpp"
 
 namespace domain::CoordinateMaps {
@@ -196,9 +200,19 @@ CylindricalSide::CylindricalSide(const std::array<double, 3>& center_one,
 }
 
 template <typename T>
+void CylindricalSide::operator()(
+    const gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, 3>*> result,
+    const std::array<T, 3>& source_coords) const {
+  impl_.operator()(result, source_coords);
+}
+
+template <typename T>
 std::array<tt::remove_cvref_wrap_t<T>, 3> CylindricalSide::operator()(
     const std::array<T, 3>& source_coords) const {
-  return impl_.operator()(source_coords);
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  std::array<ReturnType, 3> result{};
+  (*this)(make_not_null(&result), source_coords);
+  return result;
 }
 
 std::optional<std::array<double, 3>> CylindricalSide::inverse(
@@ -245,7 +259,20 @@ GENERATE_INSTANTIATIONS(INSTANTIATE, (double, DataVector,
                                       std::reference_wrapper<const double>,
                                       std::reference_wrapper<const DataVector>))
 
-#undef DTYPE
 #undef INSTANTIATE
+
+#define INSTANTIATE_NOT_NULL(_, data)                                     \
+  template void CylindricalSide::operator()(                              \
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<DTYPE(data)>, 3>*> \
+          result,                                                         \
+      const std::array<DTYPE(data), 3>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL,
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DTYPE
+#undef INSTANTIATE_NOT_NULL
 
 }  // namespace domain::CoordinateMaps
