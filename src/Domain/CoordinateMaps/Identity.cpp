@@ -48,9 +48,31 @@ std::optional<std::array<double, Dim>> Identity<Dim>::inverse(
 
 template <size_t Dim>
 template <typename T>
+void Identity<Dim>::jacobian(
+    const gsl::not_null<
+        tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame>*>
+        result,
+    const std::array<T, Dim>& source_coords) const {
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (auto& component : *result) {
+      component.destructive_resize(size);
+    }
+  }
+  for (size_t i = 0; i < Dim; ++i) {
+    for (size_t j = 0; j < Dim; ++j) {
+      result->get(i, j) = (i == j) ? 1.0 : 0.0;
+    }
+  }
+}
+
+template <size_t Dim>
+template <typename T>
 tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame>
 Identity<Dim>::jacobian(const std::array<T, Dim>& source_coords) const {
-  return identity<Dim>(dereference_wrapper(source_coords[0]));
+  tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame> result{};
+  jacobian(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <size_t Dim>
@@ -103,8 +125,22 @@ GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL, (1, 2, 3),
                          std::reference_wrapper<const double>,
                          std::reference_wrapper<const DataVector>))
 
+#undef INSTANTIATE_NOT_NULL
+
+#define INSTANTIATE_JACOBIAN_NOT_NULL(_, data)                                \
+  template void Identity<DIM(data)>::jacobian(                                \
+      gsl::not_null<tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data), \
+                             Frame::NoFrame>*>                                \
+          result,                                                             \
+      const std::array<DTYPE(data), DIM(data)>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_JACOBIAN_NOT_NULL, (1, 2, 3),
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
 #undef DIM
 #undef DTYPE
-#undef INSTANTIATE_NOT_NULL
+#undef INSTANTIATE_JACOBIAN_NOT_NULL
 
 }  // namespace domain::CoordinateMaps

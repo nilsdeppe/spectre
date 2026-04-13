@@ -69,19 +69,37 @@ DiscreteRotation<VolumeDim>::inverse(
 
 template <size_t VolumeDim>
 template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, VolumeDim, Frame::NoFrame>
-DiscreteRotation<VolumeDim>::jacobian(
+void DiscreteRotation<VolumeDim>::jacobian(
+    const gsl::not_null<
+        tnsr::Ij<tt::remove_cvref_wrap_t<T>, VolumeDim, Frame::NoFrame>*>
+        result,
     const std::array<T, VolumeDim>& source_coords) const {
-  auto jacobian_matrix = make_with_value<
-      tnsr::Ij<tt::remove_cvref_wrap_t<T>, VolumeDim, Frame::NoFrame>>(
-      dereference_wrapper(source_coords[0]), 0.0);
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (auto& component : *result) {
+      component.destructive_resize(size);
+    }
+  }
+  // Zero all components -- only permutation entries are non-zero
+  for (auto& component : *result) {
+    component = 0.0;
+  }
   for (size_t d = 0; d < VolumeDim; d++) {
     const auto new_direction =
         orientation_(Direction<VolumeDim>(d, Side::Upper));
-    jacobian_matrix.get(d, orientation_(d)) =
+    result->get(d, orientation_(d)) =
         new_direction.side() == Side::Upper ? 1.0 : -1.0;
   }
-  return jacobian_matrix;
+}
+
+template <size_t VolumeDim>
+template <typename T>
+tnsr::Ij<tt::remove_cvref_wrap_t<T>, VolumeDim, Frame::NoFrame>
+DiscreteRotation<VolumeDim>::jacobian(
+    const std::array<T, VolumeDim>& source_coords) const {
+  tnsr::Ij<tt::remove_cvref_wrap_t<T>, VolumeDim, Frame::NoFrame> result{};
+  jacobian(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <size_t VolumeDim>
@@ -157,7 +175,21 @@ GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL, (1, 2, 3),
                          std::reference_wrapper<const double>,
                          std::reference_wrapper<const DataVector>))
 
+#undef INSTANTIATE_NOT_NULL
+
+#define INSTANTIATE_JACOBIAN_NOT_NULL(_, data)                                \
+  template void DiscreteRotation<DIM(data)>::jacobian(                        \
+      gsl::not_null<tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data), \
+                             Frame::NoFrame>*>                                \
+          result,                                                             \
+      const std::array<DTYPE(data), DIM(data)>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_JACOBIAN_NOT_NULL, (1, 2, 3),
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
 #undef DIM
 #undef DTYPE
-#undef INSTANTIATE_NOT_NULL
+#undef INSTANTIATE_JACOBIAN_NOT_NULL
 }  // namespace domain::CoordinateMaps
