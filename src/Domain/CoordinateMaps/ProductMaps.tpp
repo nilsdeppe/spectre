@@ -12,6 +12,7 @@
 #include <pup.h>
 #include <utility>
 
+#include "DataStructures/DataVector.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Utilities/DereferenceWrapper.hpp"
 #include "Utilities/MakeWithValue.hpp"
@@ -96,14 +97,31 @@ ProductOf2Maps<Map1, Map2>::ProductOf2Maps(Map1 map1, Map2 map2)
 
 template <typename Map1, typename Map2>
 template <typename T>
-std::array<tt::remove_cvref_wrap_t<T>, ProductOf2Maps<Map1, Map2>::dim>
-ProductOf2Maps<Map1, Map2>::operator()(
+void ProductOf2Maps<Map1, Map2>::operator()(
+    const gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, dim>*> result,
     const std::array<T, dim>& source_coords) const {
-  return product_detail::apply_call(
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (size_t i = 0; i < dim; ++i) {
+      (*result)[i].destructive_resize(size);
+    }
+  }
+  *result = product_detail::apply_call(
       source_coords, map1_, map2_,
       [](const auto& point, const auto& map) { return map(point); },
       std::make_index_sequence<Map1::dim>{},
       std::make_index_sequence<Map2::dim>{});
+}
+
+template <typename Map1, typename Map2>
+template <typename T>
+std::array<tt::remove_cvref_wrap_t<T>, ProductOf2Maps<Map1, Map2>::dim>
+ProductOf2Maps<Map1, Map2>::operator()(
+    const std::array<T, dim>& source_coords) const {
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  std::array<ReturnType, dim> result{};
+  (*this)(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <typename Map1, typename Map2>
@@ -180,16 +198,36 @@ ProductOf3Maps<Map1, Map2, Map3>::ProductOf3Maps(Map1 map1, Map2 map2,
 
 template <typename Map1, typename Map2, typename Map3>
 template <typename T>
+void ProductOf3Maps<Map1, Map2, Map3>::operator()(
+    const gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, dim>*> result,
+    const std::array<T, dim>& source_coords) const {
+  using UnwrappedT = tt::remove_cvref_wrap_t<T>;
+  if constexpr (std::is_same_v<UnwrappedT, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    (*result)[0].destructive_resize(size);
+    (*result)[1].destructive_resize(size);
+    (*result)[2].destructive_resize(size);
+  }
+  (*result)[0] =
+      map1_(std::array<std::reference_wrapper<const UnwrappedT>, 1>{
+          {source_coords[0]}})[0];
+  (*result)[1] =
+      map2_(std::array<std::reference_wrapper<const UnwrappedT>, 1>{
+          {source_coords[1]}})[0];
+  (*result)[2] =
+      map3_(std::array<std::reference_wrapper<const UnwrappedT>, 1>{
+          {source_coords[2]}})[0];
+}
+
+template <typename Map1, typename Map2, typename Map3>
+template <typename T>
 std::array<tt::remove_cvref_wrap_t<T>, ProductOf3Maps<Map1, Map2, Map3>::dim>
 ProductOf3Maps<Map1, Map2, Map3>::operator()(
     const std::array<T, dim>& source_coords) const {
-  using UnwrappedT = tt::remove_cvref_wrap_t<T>;
-  return {{map1_(std::array<std::reference_wrapper<const UnwrappedT>, 1>{
-               {source_coords[0]}})[0],
-           map2_(std::array<std::reference_wrapper<const UnwrappedT>, 1>{
-               {source_coords[1]}})[0],
-           map3_(std::array<std::reference_wrapper<const UnwrappedT>, 1>{
-               {source_coords[2]}})[0]}};
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  std::array<ReturnType, dim> result{};
+  (*this)(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <typename Map1, typename Map2, typename Map3>

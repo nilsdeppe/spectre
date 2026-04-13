@@ -14,6 +14,7 @@
 
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Utilities/DereferenceWrapper.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/MakeWithValue.hpp"
 #include "Utilities/TMPL.hpp"
 #include "Utilities/TypeTraits/RemoveReferenceWrapper.hpp"
@@ -43,6 +44,11 @@ class ProductOf2Maps {
   ProductOf2Maps() = default;
 
   ProductOf2Maps(Map1 map1, Map2 map2);
+
+  template <typename T>
+  void operator()(
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, dim>*> result,
+      const std::array<T, dim>& source_coords) const;
 
   template <typename T>
   std::array<tt::remove_cvref_wrap_t<T>, dim> operator()(
@@ -99,6 +105,11 @@ class ProductOf3Maps {
   ProductOf3Maps() = default;
 
   ProductOf3Maps(Map1 map1, Map2 map2, Map3 map3);
+
+  template <typename T>
+  void operator()(
+      gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, dim>*> result,
+      const std::array<T, dim>& source_coords) const;
 
   template <typename T>
   std::array<tt::remove_cvref_wrap_t<T>, dim> operator()(
