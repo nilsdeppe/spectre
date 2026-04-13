@@ -40,12 +40,6 @@ SPECTRE_TEST_CASE("Unit.Domain.CoordinateMaps.Affine", "[Domain][Unit]") {
   CHECK(affine_map.inverse(point_b).value() == point_B);
   CHECK(affine_map.inverse(point_x).value() == point_xi);
 
-  const double inv_jacobian_00 = (xB - xA) / (xb - xa);
-
-  CHECK((get<0, 0>(affine_map.inv_jacobian(point_A))) == inv_jacobian_00);
-  CHECK((get<0, 0>(affine_map.inv_jacobian(point_B))) == inv_jacobian_00);
-  CHECK((get<0, 0>(affine_map.inv_jacobian(point_xi))) == inv_jacobian_00);
-
   const double jacobian_00 = (xb - xa) / (xB - xA);
   CHECK((get<0, 0>(affine_map.jacobian(point_A))) == jacobian_00);
   CHECK((get<0, 0>(affine_map.jacobian(point_B))) == jacobian_00);

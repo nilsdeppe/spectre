@@ -14,7 +14,6 @@
 #include <unordered_set>
 
 #include "DataStructures/DataVector.hpp"
-#include "DataStructures/Tensor/EagerMath/DeterminantAndInverse.hpp"
 #include "DataStructures/Tensor/EagerMath/Magnitude.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "DataStructures/Tensor/TypeAliases.hpp"
@@ -261,23 +260,6 @@ SphericalCompression<InteriorMap>::jacobian(
 }
 
 template <bool InteriorMap>
-template <typename T>
-tnsr::Ij<ResultType<T>, 3, Frame::NoFrame>
-SphericalCompression<InteriorMap>::inv_jacobian(
-    const std::array<T, 3>& source_coords, const double time,
-    const std::unordered_map<
-        std::string, std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&
-        functions_of_time) const {
-  // Obtain the Jacobian and then compute its inverse numerically.
-  // There is a clear opportunity here for a potential future optimization:
-  // instead of taking the determinant and inverse numerically, it is
-  // likely possible to compute them analytically.
-  return determinant_and_inverse(
-             jacobian(source_coords, time, functions_of_time))
-      .second;
-}
-
-template <bool InteriorMap>
 void SphericalCompression<InteriorMap>::pup(PUP::er& p) {
   size_t version = 0;
   p | version;
@@ -318,13 +300,6 @@ void SphericalCompression<InteriorMap>::pup(PUP::er& p) {
           functions_of_time) const;                                          \
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame> \
   SphericalCompression<INTERIOR_MAP(data)>::jacobian(                        \
-      const std::array<DTYPE(data), 3>& source_coords, double time,          \
-      const std::unordered_map<                                              \
-          std::string,                                                       \
-          std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&         \
-          functions_of_time) const;                                          \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame> \
-  SphericalCompression<INTERIOR_MAP(data)>::inv_jacobian(                    \
       const std::array<DTYPE(data), 3>& source_coords, double time,          \
       const std::unordered_map<                                              \
           std::string,                                                       \

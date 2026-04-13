@@ -181,53 +181,6 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame> Interval::jacobian(
   }
 }
 
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame> Interval::inv_jacobian(
-    const std::array<T, 1>& source_coords) const {
-  auto inv_jacobian_matrix =
-      make_with_value<tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame>>(
-          dereference_wrapper(source_coords[0]), 0.0);
-  switch (distribution_) {
-    case Distribution::Linear: {
-      get<0, 0>(inv_jacobian_matrix) = (B_ - A_) / (b_ - a_);
-      return inv_jacobian_matrix;
-    }
-    case Distribution::Equiangular: {
-      const tt::remove_cvref_wrap_t<T> tan_variable =
-          tan(M_PI_4 * (2.0 * source_coords[0] - B_ - A_) / (B_ - A_));
-      get<0, 0>(inv_jacobian_matrix) =
-          (B_ - A_) / (M_PI_4 * (b_ - a_) * (1.0 + square(tan_variable)));
-      return inv_jacobian_matrix;
-    }
-    case Distribution::Logarithmic: {
-      const double singularity_pos = singularity_pos_.value();
-      const double logarithmic_zero =
-          0.5 * (log((b_ - singularity_pos) * (a_ - singularity_pos)));
-      const double logarithmic_rate =
-          0.5 * (log((b_ - singularity_pos) / (a_ - singularity_pos)));
-      const double singularity_sign =
-          std::min(a_, b_) > singularity_pos ? 1. : -1.;
-      get<0, 0>(inv_jacobian_matrix) =
-          0.5 * (B_ - A_) / logarithmic_rate * singularity_sign *
-          exp(-logarithmic_zero - logarithmic_rate *
-                                      (2.0 * source_coords[0] - B_ - A_) /
-                                      (B_ - A_));
-      return inv_jacobian_matrix;
-    }
-    case Distribution::Inverse: {
-      const double singularity_pos = singularity_pos_.value();
-      get<0, 0>(inv_jacobian_matrix) =
-          square((b_ - a_) * source_coords[0] + a_ * A_ - b_ * B_ +
-                 singularity_pos * (B_ - A_)) /
-          ((a_ - singularity_pos) * (b_ - singularity_pos) * (b_ - a_) *
-           (B_ - A_));
-      return inv_jacobian_matrix;
-    }
-    default:
-      ERROR("Unknown domain::CoordinateMaps::Distribution type for Interval");
-  }
-}
-
 void Interval::pup(PUP::er& p) {
   size_t version = 0;
   p | version;
@@ -259,10 +212,7 @@ bool operator==(const CoordinateMaps::Interval& lhs,
   template std::array<tt::remove_cvref_wrap_t<DTYPE(data)>, 1>                 \
   Interval::operator()(const std::array<DTYPE(data), 1>& source_coords) const; \
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 1, Frame::NoFrame>   \
-  Interval::jacobian(const std::array<DTYPE(data), 1>& source_coords) const;   \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 1, Frame::NoFrame>   \
-  Interval::inv_jacobian(const std::array<DTYPE(data), 1>& source_coords)      \
-      const;
+  Interval::jacobian(const std::array<DTYPE(data), 1>& source_coords) const;
 
 GENERATE_INSTANTIATIONS(
     INSTANTIATE, (double, DataVector,

@@ -10,6 +10,7 @@
 #include <pup.h>
 
 #include "DataStructures/DataVector.hpp"
+#include "DataStructures/Tensor/EagerMath/DeterminantAndInverse.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Domain/CoordinateMaps/Affine.hpp"
 #include "Domain/CoordinateMaps/ProductMaps.hpp"
@@ -104,9 +105,12 @@ void test_product_of_2_maps() {
 
   const double inv_jacobian_00 = (xB - xA) / (xb - xa);
   const double inv_jacobian_11 = (yB - yA) / (yb - ya);
-  const auto inv_jac_A = affine_map_xy.inv_jacobian(point_A);
-  const auto inv_jac_B = affine_map_xy.inv_jacobian(point_B);
-  const auto inv_jac_xi = affine_map_xy.inv_jacobian(point_xi);
+  const auto inv_jac_A =
+      determinant_and_inverse(affine_map_xy.jacobian(point_A)).second;
+  const auto inv_jac_B =
+      determinant_and_inverse(affine_map_xy.jacobian(point_B)).second;
+  const auto inv_jac_xi =
+      determinant_and_inverse(affine_map_xy.jacobian(point_xi)).second;
 
   CHECK(inv_jac_A.get(0, 0) == inv_jacobian_00);
   CHECK(inv_jac_B.get(0, 0) == inv_jacobian_00);
@@ -152,8 +156,8 @@ void test_product_of_2_maps() {
   const auto tensor_logical_coords = logical_coordinates(mesh);
   const std::array<DataVector, 2> logical_coords{
       {tensor_logical_coords.get(0), tensor_logical_coords.get(1)}};
-  const auto volume_inv_jac = affine_map_xy.inv_jacobian(logical_coords);
   const auto volume_jac = affine_map_xy.jacobian(logical_coords);
+  const auto volume_inv_jac = determinant_and_inverse(volume_jac).second;
   for (size_t i = 0; i < 2; ++i) {
     for (size_t j = 0; j < 2; ++j) {
       if (i == j) {
@@ -242,9 +246,12 @@ void test_product_of_3_maps() {
   const double inv_jacobian_00 = (xB - xA) / (xb - xa);
   const double inv_jacobian_11 = (yB - yA) / (yb - ya);
   const double inv_jacobian_22 = (zB - zA) / (zb - za);
-  const auto inv_jac_A = affine_map_xyz.inv_jacobian(point_A);
-  const auto inv_jac_B = affine_map_xyz.inv_jacobian(point_B);
-  const auto inv_jac_xi = affine_map_xyz.inv_jacobian(point_xi);
+  const auto inv_jac_A =
+      determinant_and_inverse(affine_map_xyz.jacobian(point_A)).second;
+  const auto inv_jac_B =
+      determinant_and_inverse(affine_map_xyz.jacobian(point_B)).second;
+  const auto inv_jac_xi =
+      determinant_and_inverse(affine_map_xyz.jacobian(point_xi)).second;
 
   CHECK(inv_jac_A.get(0, 0) == inv_jacobian_00);
   CHECK(inv_jac_B.get(0, 0) == inv_jacobian_00);
@@ -332,8 +339,8 @@ void test_product_of_3_maps() {
   const std::array<DataVector, 3> logical_coords{
       {tensor_logical_coords.get(0), tensor_logical_coords.get(1),
        tensor_logical_coords.get(2)}};
-  const auto volume_inv_jac = affine_map_xyz.inv_jacobian(logical_coords);
   const auto volume_jac = affine_map_xyz.jacobian(logical_coords);
+  const auto volume_inv_jac = determinant_and_inverse(volume_jac).second;
   for (size_t i = 0; i < 3; ++i) {
     for (size_t j = 0; j < 3; ++j) {
       if (i == j) {

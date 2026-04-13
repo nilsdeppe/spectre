@@ -17,7 +17,7 @@
 
 #include "DataStructures/DataVector.hpp"
 #include "DataStructures/Tags/TempTensor.hpp"
-#include "DataStructures/Tensor/EagerMath/DeterminantAndInverse.hpp"
+#include "DataStructures/Variables.hpp"
 #include "Domain/CoordinateMaps/TimeDependent/ShapeMapTransitionFunctions/ShapeMapTransitionFunction.hpp"
 #include "Domain/FunctionsOfTime/FunctionOfTime.hpp"
 #include "NumericalAlgorithms/SphericalHarmonics/SpherepackIterator.hpp"
@@ -438,15 +438,6 @@ void Shape::coords_frame_velocity_jacobian(
                               transition_func, ylm);
 }
 
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> Shape::inv_jacobian(
-    const std::array<T, 3>& source_coords, const double time,
-    const FunctionsOfTimeMap& functions_of_time) const {
-  return determinant_and_inverse(
-             jacobian(source_coords, time, functions_of_time))
-      .second;
-}
-
 size_t Shape::find_truncated_l_max(const DataVector& coefs,
                                    const DataVector& coef_derivs,
                                    const DataVector& coef_dderivs,
@@ -578,11 +569,7 @@ void Shape::pup(PUP::er& p) {
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>  \
   Shape::jacobian(const std::array<DTYPE(data), 3>& source_coords,            \
                   double time, const FunctionsOfTimeMap& functions_of_time)   \
-      const;                                                                  \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>  \
-  Shape::inv_jacobian(const std::array<DTYPE(data), 3>& source_coords,        \
-                      double time,                                            \
-                      const FunctionsOfTimeMap& functions_of_time) const;
+      const;
 
 GENERATE_INSTANTIATIONS(INSTANTIATE, (double, DataVector,
                                       std::reference_wrapper<const double>,

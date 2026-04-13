@@ -117,32 +117,6 @@ Rotation<Dim>::jacobian(
 }
 
 template <size_t Dim>
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame>
-Rotation<Dim>::inv_jacobian(
-    const std::array<T, Dim>& source_coords, const double time,
-    const std::unordered_map<
-        std::string, std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&
-        functions_of_time) const {
-  const Matrix rot_matrix =
-      rotation_matrix<Dim>(time, *(functions_of_time.at(f_of_t_name_)));
-
-  auto inv_jacobian_matrix = make_with_value<
-      tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame>>(
-      dereference_wrapper(source_coords[0]), 0.0);
-
-  // The inverse jacobian is just the inverse rotation matrix, which is the
-  // transpose of the rotation matrix.
-  for (size_t i = 0; i < Dim; i++) {
-    for (size_t j = 0; j < Dim; j++) {
-      inv_jacobian_matrix.get(i, j) = rot_matrix(j, i);
-    }
-  }
-
-  return inv_jacobian_matrix;
-}
-
-template <size_t Dim>
 void Rotation<Dim>::pup(PUP::er& p) {
   size_t version = 0;
   p | version;
@@ -203,14 +177,6 @@ GENERATE_INSTANTIATIONS(INSTANTIATE, (2, 3))
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data),        \
                     Frame::NoFrame>                                         \
   Rotation<DIM(data)>::jacobian(                                            \
-      const std::array<DTYPE(data), DIM(data)>& source_coords, double time, \
-      const std::unordered_map<                                             \
-          std::string,                                                      \
-          std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&        \
-          functions_of_time) const;                                         \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data),        \
-                    Frame::NoFrame>                                         \
-  Rotation<DIM(data)>::inv_jacobian(                                        \
       const std::array<DTYPE(data), DIM(data)>& source_coords, double time, \
       const std::unordered_map<                                             \
           std::string,                                                      \

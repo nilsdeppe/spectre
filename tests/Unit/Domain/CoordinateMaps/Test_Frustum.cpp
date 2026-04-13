@@ -328,25 +328,6 @@ void test_bulged_frustum_jacobian() {
   test_jacobian(map, test_point4);
 }
 
-void test_bulged_frustum_inv_jacobian() {
-  INFO("Bulged frustum inverse jacobian");
-  const std::array<std::array<double, 2>, 4> face_vertices{
-      {{{-2.0, -2.0}}, {{2.0, 2.0}}, {{-4.0, -4.0}}, {{4.0, 4.0}}}};
-  const CoordinateMaps::Frustum map(
-      face_vertices, 2.0, 5.0, OrientationMap<3>::create_aligned(), false,
-      false, CoordinateMaps::Distribution::Projective, std::nullopt, 1.0);
-
-  const std::array<double, 3> test_point1{{-1.0, 0.25, 0.0}};
-  const std::array<double, 3> test_point2{{1.0, 1.0, -0.5}};
-  const std::array<double, 3> test_point3{{0.7, -0.2, 0.4}};
-  const std::array<double, 3> test_point4{{0.0, 0.0, 0.0}};
-
-  test_inv_jacobian(map, test_point1);
-  test_inv_jacobian(map, test_point2);
-  test_inv_jacobian(map, test_point3);
-  test_inv_jacobian(map, test_point4);
-}
-
 void test_bulged_frustum_inv_map() {
   INFO("Bulged frustum inverse map");
   const std::array<std::array<double, 2>, 4> face_vertices{
@@ -594,7 +575,6 @@ SPECTRE_TEST_CASE("Unit.Domain.CoordinateMaps.Frustum", "[Domain][Unit]") {
   test_auto_projective_scale_factor();
   test_is_identity();
   test_bulged_frustum_jacobian();
-  test_bulged_frustum_inv_jacobian();
   test_bulged_frustum_inv_map();
   test_bulged_frustum_equiangular_full();
   test_bulged_frustum_equiangular_upper();

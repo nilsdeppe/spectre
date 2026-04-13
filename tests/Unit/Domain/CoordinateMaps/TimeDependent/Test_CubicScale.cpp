@@ -225,11 +225,9 @@ void test(const bool linear_expansion) {
       }
 
       test_jacobian(scale_map, point_xi, t, f_of_t_list);
-      test_inv_jacobian(scale_map, point_xi, t, f_of_t_list);
       test_frame_velocity(scale_map, point_xi, t, f_of_t_list);
 
       test_jacobian(scale_map_deserialized, point_xi, t, f_of_t_list);
-      test_inv_jacobian(scale_map_deserialized, point_xi, t, f_of_t_list);
       test_frame_velocity(scale_map_deserialized, point_xi, t, f_of_t_list);
 
       // Check inequivalence operator

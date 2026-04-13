@@ -55,21 +55,6 @@ PolarToCartesian::jacobian(const std::array<T, 2>& source_coords) const {
   return jacobian_matrix;
 }
 
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 2, Frame::NoFrame>
-PolarToCartesian::inv_jacobian(const std::array<T, 2>& source_coords) const {
-  const auto& [r, phi] = source_coords;
-  using DataType = tt::remove_cvref_wrap_t<T>;
-  tnsr::Ij<DataType, 2, Frame::NoFrame> inv_jacobian_matrix{
-      make_with_value<DataType>(dereference_wrapper(r), 0.0)};
-  const auto& cos_phi = get<0, 0>(inv_jacobian_matrix) = cos(phi);
-  const auto& sin_phi = get<0, 1>(inv_jacobian_matrix) = sin(phi);
-  const auto& one_over_r = get<1, 1>(inv_jacobian_matrix) = 1.0 / r;
-  get<1, 0>(inv_jacobian_matrix) = -one_over_r * sin_phi;
-  get<1, 1>(inv_jacobian_matrix) *= cos_phi;
-  return inv_jacobian_matrix;
-}
-
 void PolarToCartesian::pup(PUP::er& /*p*/) {}
 
 bool operator==(const PolarToCartesian& /*lhs*/,
@@ -89,10 +74,7 @@ bool operator!=(const PolarToCartesian& lhs, const PolarToCartesian& rhs) {
       const std::array<DTYPE(data), 2>& source_coords) const;                 \
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 2, Frame::NoFrame>  \
   PolarToCartesian::jacobian(const std::array<DTYPE(data), 2>& source_coords) \
-      const;                                                                  \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 2, Frame::NoFrame>  \
-  PolarToCartesian::inv_jacobian(                                             \
-      const std::array<DTYPE(data), 2>& source_coords) const;
+      const;
 
 GENERATE_INSTANTIATIONS(INSTANTIATE_DTYPE,
                         (double, DataVector,

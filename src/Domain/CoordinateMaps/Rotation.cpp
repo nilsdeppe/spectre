@@ -56,19 +56,6 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, 2, Frame::NoFrame> Rotation<2>::jacobian(
   return jacobian_matrix;
 }
 
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 2, Frame::NoFrame>
-Rotation<2>::inv_jacobian(const std::array<T, 2>& source_coords) const {
-  tnsr::Ij<tt::remove_cvref_wrap_t<T>, 2, Frame::NoFrame> inv_jacobian_matrix{
-      make_with_value<tt::remove_cvref_wrap_t<T>>(
-          dereference_wrapper(source_coords[0]), 0.0)};
-  get<0, 0>(inv_jacobian_matrix) = get<0, 0>(rotation_matrix_);
-  get<1, 0>(inv_jacobian_matrix) = get<0, 1>(rotation_matrix_);
-  get<0, 1>(inv_jacobian_matrix) = get<1, 0>(rotation_matrix_);
-  get<1, 1>(inv_jacobian_matrix) = get<1, 1>(rotation_matrix_);
-  return inv_jacobian_matrix;
-}
-
 void Rotation<2>::pup(PUP::er& p) {
   size_t version = 0;
   p | version;
@@ -168,24 +155,6 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> Rotation<3>::jacobian(
   return jacobian_matrix;
 }
 
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>
-Rotation<3>::inv_jacobian(const std::array<T, 3>& source_coords) const {
-  tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> inv_jacobian_matrix{
-      make_with_value<tt::remove_cvref_wrap_t<T>>(
-          dereference_wrapper(source_coords[0]), 0.0)};
-  get<0, 0>(inv_jacobian_matrix) = get<0, 0>(rotation_matrix_);
-  get<1, 0>(inv_jacobian_matrix) = get<0, 1>(rotation_matrix_);
-  get<0, 1>(inv_jacobian_matrix) = get<1, 0>(rotation_matrix_);
-  get<1, 1>(inv_jacobian_matrix) = get<1, 1>(rotation_matrix_);
-  get<2, 0>(inv_jacobian_matrix) = get<0, 2>(rotation_matrix_);
-  get<2, 1>(inv_jacobian_matrix) = get<1, 2>(rotation_matrix_);
-  get<0, 2>(inv_jacobian_matrix) = get<2, 0>(rotation_matrix_);
-  get<1, 2>(inv_jacobian_matrix) = get<2, 1>(rotation_matrix_);
-  get<2, 2>(inv_jacobian_matrix) = get<2, 2>(rotation_matrix_);
-  return inv_jacobian_matrix;
-}
-
 void Rotation<3>::pup(PUP::er& p) {  // NOLINT
   p | rotation_about_z_;
   p | rotation_about_rotated_y_;
@@ -215,10 +184,6 @@ bool operator!=(const Rotation<3>& lhs, const Rotation<3>& rhs) {
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data),   \
                     Frame::NoFrame>                                    \
   Rotation<DIM(data)>::jacobian(                                       \
-      const std::array<DTYPE(data), DIM(data)>& source_coords) const;  \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data),   \
-                    Frame::NoFrame>                                    \
-  Rotation<DIM(data)>::inv_jacobian(                                   \
       const std::array<DTYPE(data), DIM(data)>& source_coords) const;
 
 GENERATE_INSTANTIATIONS(

@@ -10,7 +10,7 @@
 #include <sstream>
 #include <utility>
 
-#include "DataStructures/Tensor/EagerMath/DeterminantAndInverse.hpp"
+#include "DataStructures/DataVector.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Utilities/ConstantExpressions.hpp"
 #include "Utilities/DereferenceWrapper.hpp"
@@ -224,13 +224,6 @@ FlatOffsetSphericalWedge::jacobian(
   return jac;
 }
 
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>
-FlatOffsetSphericalWedge::inv_jacobian(
-    const std::array<T, 3>& source_coords) const {
-  return determinant_and_inverse(jacobian(source_coords)).second;
-}
-
 void FlatOffsetSphericalWedge::pup(PUP::er& p) {
   size_t version = 0;
   p | version;
@@ -265,9 +258,6 @@ bool operator!=(const FlatOffsetSphericalWedge& lhs,
       const std::array<DTYPE(data), 3>& source_coords) const;                \
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame> \
   FlatOffsetSphericalWedge::jacobian(                                        \
-      const std::array<DTYPE(data), 3>& source_coords) const;                \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame> \
-  FlatOffsetSphericalWedge::inv_jacobian(                                    \
       const std::array<DTYPE(data), 3>& source_coords) const;
 
 GENERATE_INSTANTIATIONS(INSTANTIATE, (double, DataVector,

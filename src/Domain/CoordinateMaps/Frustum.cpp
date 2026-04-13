@@ -9,7 +9,6 @@
 #include <pup_stl.h>
 
 #include "DataStructures/Tensor/EagerMath/Determinant.hpp"
-#include "DataStructures/Tensor/EagerMath/DeterminantAndInverse.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Domain/CoordinateMaps/AutodiffInstantiationTypes.hpp"
 #include "Domain/CoordinateMaps/Interval.hpp"
@@ -573,13 +572,6 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> Frustum::jacobian(
   return jacobian_matrix;
 }
 
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> Frustum::inv_jacobian(
-    const std::array<T, 3>& source_coords) const {
-  const auto jac = jacobian(source_coords);
-  return determinant_and_inverse(jac).second;
-}
-
 void Frustum::pup(PUP::er& p) {
   size_t version = 5;
   p | version;
@@ -703,10 +695,7 @@ bool operator!=(const Frustum& lhs, const Frustum& rhs) {
   template std::array<tt::remove_cvref_wrap_t<DTYPE(data)>, 3>                \
   Frustum::operator()(const std::array<DTYPE(data), 3>& source_coords) const; \
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>  \
-  Frustum::jacobian(const std::array<DTYPE(data), 3>& source_coords) const;   \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>  \
-  Frustum::inv_jacobian(const std::array<DTYPE(data), 3>& source_coords)      \
-      const;
+  Frustum::jacobian(const std::array<DTYPE(data), 3>& source_coords) const;
 
 GENERATE_INSTANTIATIONS(
     INSTANTIATE, (double, DataVector,

@@ -263,10 +263,6 @@ class FlatOffsetWedge {
   tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> jacobian(
       const std::array<T, 3>& source_coords) const;
 
-  template <typename T>
-  tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> inv_jacobian(
-      const std::array<T, 3>& source_coords) const;
-
   // clang-tidy: google runtime references
   void pup(PUP::er& p);  // NOLINT
 

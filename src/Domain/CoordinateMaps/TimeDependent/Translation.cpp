@@ -11,7 +11,6 @@
 #include <utility>
 
 #include "DataStructures/DataVector.hpp"
-#include "DataStructures/Tensor/EagerMath/DeterminantAndInverse.hpp"
 #include "DataStructures/Tensor/Identity.hpp"
 #include "Domain/FunctionsOfTime/FunctionOfTime.hpp"
 #include "NumericalAlgorithms/RootFinding/QuadraticEquation.hpp"
@@ -273,23 +272,6 @@ Translation<Dim>::jacobian(
 }
 template <size_t Dim>
 template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame>
-Translation<Dim>::inv_jacobian(
-    const std::array<T, Dim>& source_coords, const double time,
-    const std::unordered_map<
-        std::string, std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&
-        functions_of_time) const {
-  if (f_of_r_ == nullptr and not inner_radius_.has_value()) {
-    return identity<Dim>(dereference_wrapper(source_coords[0]));
-  } else {
-    return determinant_and_inverse(
-               jacobian(source_coords, time, functions_of_time))
-        .second;
-  }
-}
-
-template <size_t Dim>
-template <typename T>
 std::array<tt::remove_cvref_wrap_t<T>, Dim>
 Translation<Dim>::math_function_helper(
     const std::array<T, Dim>& source_coords, double time,
@@ -489,14 +471,6 @@ GENERATE_INSTANTIATIONS(INSTANTIATE, (1, 2, 3))
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data),        \
                     Frame::NoFrame>                                         \
   Translation<DIM(data)>::jacobian(                                         \
-      const std::array<DTYPE(data), DIM(data)>& source_coords, double time, \
-      const std::unordered_map<                                             \
-          std::string,                                                      \
-          std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&        \
-          functions_of_time) const;                                         \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data),        \
-                    Frame::NoFrame>                                         \
-  Translation<DIM(data)>::inv_jacobian(                                     \
       const std::array<DTYPE(data), DIM(data)>& source_coords, double time, \
       const std::unordered_map<                                             \
           std::string,                                                      \

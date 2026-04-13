@@ -345,7 +345,6 @@ void test_map_helpers(const TransitionFunction& transition_func, size_t l_max,
   test_inverse_map(map, random_point, time, functions_of_time);
   test_frame_velocity(map, random_point, time, functions_of_time);
   test_jacobian(map, random_point, time, functions_of_time);
-  test_inv_jacobian(map, random_point, time, functions_of_time);
 }
 
 // duplicates map but calculates spherical harmonics expansion directly.

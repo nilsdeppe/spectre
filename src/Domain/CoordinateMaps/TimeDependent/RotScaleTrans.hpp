@@ -256,8 +256,6 @@ namespace domain::CoordinateMaps::TimeDependent {
  * \note For the translation map, the map returns the identity for all regions
  * except between $R_{in}$ and $R_{out}$
  *
- * ## Inverse Jacobian
- * The inverse jacobian is computed numerically by inverting the jacobian.
  */
 template <size_t Dim>
 class RotScaleTrans {
@@ -307,14 +305,6 @@ class RotScaleTrans {
 
   template <typename T>
   std::array<tt::remove_cvref_wrap_t<T>, Dim> frame_velocity(
-      const std::array<T, Dim>& source_coords, double time,
-      const std::unordered_map<
-          std::string,
-          std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&
-          functions_of_time) const;
-
-  template <typename T>
-  tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame> inv_jacobian(
       const std::array<T, Dim>& source_coords, double time,
       const std::unordered_map<
           std::string,

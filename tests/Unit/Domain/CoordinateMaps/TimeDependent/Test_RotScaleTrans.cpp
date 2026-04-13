@@ -406,67 +406,42 @@ void test_RotScaleTrans() {
     };
     const auto check_all_maps_jacobian = [&](const auto& point_to_check) {
       test_jacobian(rot_map, point_to_check, t, f_of_t_list, custom_approx);
-      test_inv_jacobian(rot_map, point_to_check, t, f_of_t_list);
       test_jacobian(scale_map_inner, point_to_check, t, f_of_t_list,
                     custom_approx);
-      test_inv_jacobian(scale_map_inner, point_to_check, t, f_of_t_list);
       test_jacobian(scale_map_transition, point_to_check, t, f_of_t_list,
                     custom_approx);
-      test_inv_jacobian(scale_map_transition, point_to_check, t, f_of_t_list);
       test_jacobian(scale_map_outer, point_to_check, t, f_of_t_list,
                     custom_approx);
-      test_inv_jacobian(scale_map_outer, point_to_check, t, f_of_t_list);
       test_jacobian(trans_map_inner, point_to_check, t, f_of_t_list,
                     custom_approx);
-      test_inv_jacobian(trans_map_inner, point_to_check, t, f_of_t_list);
       test_jacobian(trans_map_transition, point_to_check, t, f_of_t_list,
                     custom_approx);
-      test_inv_jacobian(trans_map_transition, point_to_check, t, f_of_t_list);
       test_jacobian(trans_map_outer, point_to_check, t, f_of_t_list,
                     custom_approx);
-      test_inv_jacobian(trans_map_outer, point_to_check, t, f_of_t_list);
       test_jacobian(rot_scale_map_inner, point_to_check, t, f_of_t_list,
                     custom_approx);
-      test_inv_jacobian(rot_scale_map_inner, point_to_check, t, f_of_t_list);
       test_jacobian(rot_scale_map_transition, point_to_check, t, f_of_t_list,
                     custom_approx);
-      test_inv_jacobian(rot_scale_map_transition, point_to_check, t,
-                        f_of_t_list);
       test_jacobian(rot_scale_map_outer, point_to_check, t, f_of_t_list,
                     custom_approx);
-      test_inv_jacobian(rot_scale_map_outer, point_to_check, t, f_of_t_list);
       test_jacobian(rot_trans_map_inner, point_to_check, t, f_of_t_list,
                     custom_approx);
-      test_inv_jacobian(rot_trans_map_inner, point_to_check, t, f_of_t_list);
       test_jacobian(rot_trans_map_transition, point_to_check, t, f_of_t_list,
                     custom_approx);
-      test_inv_jacobian(rot_trans_map_transition, point_to_check, t,
-                        f_of_t_list);
       test_jacobian(rot_trans_map_outer, point_to_check, t, f_of_t_list,
                     custom_approx);
-      test_inv_jacobian(rot_trans_map_outer, point_to_check, t, f_of_t_list);
       test_jacobian(scale_trans_map_inner, point_to_check, t, f_of_t_list,
                     custom_approx);
-      test_inv_jacobian(scale_trans_map_inner, point_to_check, t, f_of_t_list);
       test_jacobian(scale_trans_map_transition, point_to_check, t, f_of_t_list,
                     custom_approx);
-      test_inv_jacobian(scale_trans_map_transition, point_to_check, t,
-                        f_of_t_list);
       test_jacobian(scale_trans_map_outer, point_to_check, t, f_of_t_list,
                     custom_approx);
-      test_inv_jacobian(scale_trans_map_outer, point_to_check, t, f_of_t_list);
       test_jacobian(rot_scale_trans_map_inner, point_to_check, t, f_of_t_list,
                     custom_approx);
-      test_inv_jacobian(rot_scale_trans_map_inner, point_to_check, t,
-                        f_of_t_list);
       test_jacobian(rot_scale_trans_map_transition, point_to_check, t,
                     f_of_t_list, custom_approx);
-      test_inv_jacobian(rot_scale_trans_map_transition, point_to_check, t,
-                        f_of_t_list);
       test_jacobian(rot_scale_trans_map_outer, point_to_check, t, f_of_t_list,
                     custom_approx);
-      test_inv_jacobian(rot_scale_trans_map_outer, point_to_check, t,
-                        f_of_t_list);
     };
 
     if (radius <= inner_radius) {

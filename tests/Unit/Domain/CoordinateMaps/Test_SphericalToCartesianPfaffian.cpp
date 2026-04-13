@@ -25,7 +25,6 @@ void test_map_at_point(const CoordinateMaps::SphericalToCartesianPfaffian& map,
   if (source_point !=
       std::array{0.0, 0.5 * M_PI, 0.0}) {  // inv jac singular at origin
     test_coordinate_map_argument_types(map, source_point);
-    test_inv_jacobian(map, source_point);
   }
   CHECK_ITERABLE_APPROX(map(source_point), target_point);
   CHECK_ITERABLE_APPROX(map.inverse(target_point).value(), source_point);
@@ -67,7 +66,6 @@ void test_map(const CoordinateMaps::SphericalToCartesianPfaffian& map) {
        Spectral::Quadrature::Equiangular}};
   const auto xi = logical_coordinates(mesh);
   const std::array<DataVector, 3> source_coords{xi[0] + 2.0, xi[1], xi[2]};
-  test_inv_jacobian(map, source_coords);
 }
 
 void test() {

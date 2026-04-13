@@ -118,12 +118,10 @@ void test(const gsl::not_null<Generator*> generator) {
 
     const auto run_checks = [&](const auto& points) {
       test_jacobian(skew_map, points, t, f_of_t_list, deriv_approx);
-      test_inv_jacobian(skew_map, points, t, f_of_t_list);
       test_frame_velocity(skew_map, points, t, f_of_t_list, deriv_approx);
 
       test_jacobian(skew_map_deserialized, points, t, f_of_t_list,
                     deriv_approx);
-      test_inv_jacobian(skew_map_deserialized, points, t, f_of_t_list);
       test_frame_velocity(skew_map_deserialized, points, t, f_of_t_list,
                           deriv_approx);
     };

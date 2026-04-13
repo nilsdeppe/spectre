@@ -105,62 +105,6 @@ void Endcap::jacobian(const gsl::not_null<tnsr::Ij<tt::remove_cvref_wrap_t<T>,
   get<1, 0>(*jacobian_out) = get<0, 1>(*jacobian_out);
 }
 
-template <typename T>
-void Endcap::inv_jacobian(
-    const gsl::not_null<
-        tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>*>
-        inv_jacobian_out,
-    const std::array<T, 3>& source_coords) const {
-  using ReturnType = tt::remove_cvref_wrap_t<T>;
-  const ReturnType& xbar = source_coords[0];
-  const ReturnType& ybar = source_coords[1];
-
-  set_number_of_grid_points(inv_jacobian_out, source_coords);
-  // Most of the inverse jacobian components are zero.
-  for (auto& jac_component : *inv_jacobian_out) {
-    jac_component = 0.0;
-  }
-
-  // Use parts of Jacobian as temp storage to reduce allocations.
-  // We comment temporary quantities to make the code more understandable.
-
-  // rhobar, Eq. 7 in the documentation.
-  get<1, 0>(*inv_jacobian_out) = sqrt(square(xbar) + square(ybar));
-
-  // q = sin(rhobar theta)/rhobar as defined in the documentation, Eq. 17.
-  get<0, 1>(*inv_jacobian_out) = cylindrical_endcap_helpers::sin_ax_over_x(
-      get<1, 0>(*inv_jacobian_out), theta_max_);
-
-  // 1/rhobar dq/d(rhobar)
-  get<1, 1>(*inv_jacobian_out) =
-      cylindrical_endcap_helpers::one_over_x_d_sin_ax_over_x(
-          get<1, 0>(*inv_jacobian_out), theta_max_);
-
-  // Right-hand side of Eq. 23, without the factor of
-  // xbar ybar/rq or the minus sign.
-  get<1, 0>(*inv_jacobian_out) =
-      get<1, 1>(*inv_jacobian_out) /
-      (get<0, 1>(*inv_jacobian_out) +
-       square(get<1, 0>(*inv_jacobian_out)) * get<1, 1>(*inv_jacobian_out));
-
-  // 1/(r q), i.e. first term in Eq. 22.
-  get<0, 0>(*inv_jacobian_out) = 1.0 / (get<0, 1>(*inv_jacobian_out) * radius_);
-
-  // Right-hand side of Eq. 23, without the factor of
-  // xbar ybar or the minus sign.
-  get<1, 0>(*inv_jacobian_out) *= get<0, 0>(*inv_jacobian_out);
-
-  // dybar/dy
-  get<1, 1>(*inv_jacobian_out) = get<0, 0>(*inv_jacobian_out) -
-                                 square(ybar) * get<1, 0>(*inv_jacobian_out);
-  // dxbar/dx
-  get<0, 0>(*inv_jacobian_out) -= square(xbar) * get<1, 0>(*inv_jacobian_out);
-  // dybar/dx
-  get<1, 0>(*inv_jacobian_out) *= -xbar * ybar;
-  // dxbar/dy
-  get<0, 1>(*inv_jacobian_out) = get<1, 0>(*inv_jacobian_out);
-}
-
 std::optional<std::array<double, 3>> Endcap::inverse(
     const std::array<double, 3>& target_coords, const double sigma_in) const {
   const double x = target_coords[0] - center_[0];
@@ -293,11 +237,6 @@ bool operator!=(const Endcap& lhs, const Endcap& rhs) {
       const gsl::not_null<                                                    \
           tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>*> \
           jacobian_out,                                                       \
-      const std::array<DTYPE(data), 3>& source_coords) const;                 \
-  template void Endcap::inv_jacobian(                                         \
-      const gsl::not_null<                                                    \
-          tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>*> \
-          inv_jacobian_out,                                                   \
       const std::array<DTYPE(data), 3>& source_coords) const;                 \
   template void Endcap::sigma(                                                \
       const gsl::not_null<tt::remove_cvref_wrap_t<DTYPE(data)>*> sigma_out,   \

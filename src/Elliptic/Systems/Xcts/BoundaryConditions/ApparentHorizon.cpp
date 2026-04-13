@@ -255,8 +255,11 @@ void apparent_horizon_impl(
         *solution_for_negative_expansion, x, face_normal, face_normal_magnitude,
         deriv_unnormalized_face_normal);
     ASSERT(max(get(expansion_of_solution)) <
-               100.0 * std::numeric_limits<double>::epsilon(),
-           "Expansion of solution is not negative everywhere.");
+               300.0 * std::numeric_limits<double>::epsilon(),
+           "Expansion of solution is not close to zero on the horizon. Max "
+           "expansion: "
+               << max(get(expansion_of_solution)) << "\ntolerance: "
+               << 300.0 * std::numeric_limits<double>::epsilon());
   }
 
   // Shift

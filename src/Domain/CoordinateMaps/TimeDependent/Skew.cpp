@@ -14,7 +14,6 @@
 #include <utility>
 
 #include "DataStructures/DataVector.hpp"
-#include "DataStructures/Tensor/EagerMath/DeterminantAndInverse.hpp"
 #include "DataStructures/Tensor/Identity.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Domain/FunctionsOfTime/FunctionOfTime.hpp"
@@ -179,15 +178,6 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> Skew::jacobian(
   get<0, 2>(result) = width_deriv[2] * tan_sum + width * tan_func[1];
 
   return result;
-}
-
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> Skew::inv_jacobian(
-    const std::array<T, 3>& source_coords, const double time,
-    const domain::FunctionsOfTimeMap& functions_of_time) const {
-  return determinant_and_inverse(
-             jacobian(source_coords, time, functions_of_time))
-      .second;
 }
 
 template <typename T>
@@ -465,10 +455,6 @@ bool operator!=(const Skew& lhs, const Skew& rhs) { return not(lhs == rhs); }
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>   \
   Skew::jacobian(const std::array<DTYPE(data), 3>& source_coords, double time, \
                  const domain::FunctionsOfTimeMap& functions_of_time) const;   \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>   \
-  Skew::inv_jacobian(                                                          \
-      const std::array<DTYPE(data), 3>& source_coords, double time,            \
-      const domain::FunctionsOfTimeMap& functions_of_time) const;              \
   template tt::remove_cvref_wrap_t<DTYPE(data)> Skew::get_width(               \
       const std::array<DTYPE(data), 3>& source_coords,                         \
       const bool ignore_error) const;                                          \
