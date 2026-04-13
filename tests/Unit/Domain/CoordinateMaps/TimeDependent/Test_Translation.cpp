@@ -229,15 +229,10 @@ void test_translation() {
                           radial_frame_vel);
 
     test_jacobian(translation_map, point_xi, t, f_of_t_list);
-    test_inv_jacobian(translation_map, point_xi, t, f_of_t_list);
     test_jacobian(translation_map_deserialized, point_xi, t, f_of_t_list);
-    test_inv_jacobian(translation_map_deserialized, point_xi, t, f_of_t_list);
     test_jacobian(radial_translation_map, point_xi, t, f_of_t_list);
-    test_inv_jacobian(radial_translation_map, point_xi, t, f_of_t_list);
     test_jacobian(radial_translation_map_deserialized, point_xi, t,
                   f_of_t_list);
-    test_inv_jacobian(radial_translation_map_deserialized, point_xi, t,
-                      f_of_t_list);
     // This is for an edge case numerical derivative function used in the
     // jacobian, it calls the operator with tiny steps forward and backward on
     // the order of x1 = x + dx, x2 = x1 + dx and x3 = x2 + dx where dx = 1e-4
@@ -250,11 +245,8 @@ void test_translation() {
     if (piecewise_radius <= inner_radius * .99 or
         piecewise_radius >= inner_radius * 1.01) {
       test_jacobian(piecewise_translation_map, point_xi, t, f_of_t_list);
-      test_inv_jacobian(piecewise_translation_map, point_xi, t, f_of_t_list);
       test_jacobian(piecewise_translation_map_deserialized, point_xi, t,
                     f_of_t_list);
-      test_inv_jacobian(piecewise_translation_map_deserialized, point_xi, t,
-                        f_of_t_list);
     }
     // Checking if any radius in the datavector is within the range above.
     bool jac_flag = true;
@@ -266,21 +258,14 @@ void test_translation() {
     }
     if (jac_flag) {
       test_jacobian(piecewise_translation_map, point_xi_dv, t, f_of_t_list);
-      test_inv_jacobian(piecewise_translation_map, point_xi_dv, t, f_of_t_list);
       test_jacobian(piecewise_translation_map_deserialized, point_xi_dv, t,
                     f_of_t_list);
-      test_inv_jacobian(piecewise_translation_map_deserialized, point_xi_dv, t,
-                        f_of_t_list);
     }
     // Same issue as above, but for the outer boundary.
     if (far_piecewise_radius >= outer_radius * 1.01) {
       test_jacobian(piecewise_translation_map, far_point_xi, t, f_of_t_list);
-      test_inv_jacobian(piecewise_translation_map, far_point_xi, t,
-                        f_of_t_list);
       test_jacobian(piecewise_translation_map_deserialized, far_point_xi, t,
                     f_of_t_list);
-      test_inv_jacobian(piecewise_translation_map_deserialized, far_point_xi, t,
-                        f_of_t_list);
     }
     t += dt;
   }

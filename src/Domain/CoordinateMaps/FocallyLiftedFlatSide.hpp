@@ -227,12 +227,6 @@ class FlatSide {
                 const std::array<T, 3>& source_coords) const;
 
   template <typename T>
-  void inv_jacobian(const gsl::not_null<tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3,
-                                                 Frame::NoFrame>*>
-                        inv_jacobian_out,
-                    const std::array<T, 3>& source_coords) const;
-
-  template <typename T>
   void sigma(const gsl::not_null<tt::remove_cvref_wrap_t<T>*> sigma_out,
              const std::array<T, 3>& source_coords) const;
 

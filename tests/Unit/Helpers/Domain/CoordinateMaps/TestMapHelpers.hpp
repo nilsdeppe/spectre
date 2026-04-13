@@ -215,154 +215,6 @@ void test_jacobian(
 }
 /// @}
 
-/// @{
-/*!
- * \ingroup TestingFrameworkGroup
- * \brief Given a Map `map`, checks that the inverse jacobian and jacobian
- * multiply together to produce the identity matrix
- */
-template <typename Map>
-void test_inv_jacobian(const Map& map,
-                       const std::array<double, Map::dim>& test_point) {
-  INFO("Test inverse Jacobian");
-  CAPTURE(test_point);
-  const auto jacobian = map.jacobian(test_point);
-  const auto inv_jacobian = map.inv_jacobian(test_point);
-
-  const auto expected_identity = [&jacobian, &inv_jacobian]() {
-    std::array<std::array<double, Map::dim>, Map::dim> identity{};
-    for (size_t i = 0; i < Map::dim; ++i) {
-      for (size_t j = 0; j < Map::dim; ++j) {
-        gsl::at(gsl::at(identity, i), j) = 0.;
-        for (size_t k = 0; k < Map::dim; ++k) {
-          gsl::at(gsl::at(identity, i), j) +=
-              jacobian.get(i, k) * inv_jacobian.get(k, j);
-        }
-      }
-    }
-    return identity;
-  }();
-
-  for (size_t i = 0; i < Map::dim; ++i) {
-    for (size_t j = 0; j < Map::dim; ++j) {
-      CHECK(gsl::at(gsl::at(expected_identity, i), j) ==
-            approx(i == j ? 1. : 0.));
-    }
-  }
-}
-
-template <typename Map>
-void test_inv_jacobian(
-    const Map& map, const std::array<double, Map::dim>& test_point,
-    const double time,
-    const std::unordered_map<
-        std::string, std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&
-        functions_of_time) {
-  INFO("Test inverse time-dependent Jacobian");
-  CAPTURE(test_point);
-  CAPTURE(time);
-  const auto jacobian = map.jacobian(test_point, time, functions_of_time);
-  const auto inv_jacobian =
-      map.inv_jacobian(test_point, time, functions_of_time);
-
-  const auto expected_identity = [&jacobian, &inv_jacobian]() {
-    std::array<std::array<double, Map::dim>, Map::dim> identity{};
-    for (size_t i = 0; i < Map::dim; ++i) {
-      for (size_t j = 0; j < Map::dim; ++j) {
-        gsl::at(gsl::at(identity, i), j) = 0.;
-        for (size_t k = 0; k < Map::dim; ++k) {
-          gsl::at(gsl::at(identity, i), j) +=
-              jacobian.get(i, k) * inv_jacobian.get(k, j);
-        }
-      }
-    }
-    return identity;
-  }();
-
-  for (size_t i = 0; i < Map::dim; ++i) {
-    for (size_t j = 0; j < Map::dim; ++j) {
-      CHECK(gsl::at(gsl::at(expected_identity, i), j) ==
-            approx(i == j ? 1. : 0.));
-    }
-  }
-}
-
-template <typename Map>
-void test_inv_jacobian(const Map& map,
-                       const std::array<DataVector, Map::dim>& test_point) {
-  INFO("Test inverse Jacobian");
-  CAPTURE(test_point);
-  const auto jacobian = map.jacobian(test_point);
-  const auto inv_jacobian = map.inv_jacobian(test_point);
-
-  const auto expected_identity = [&jacobian, &inv_jacobian]() {
-    auto identity =
-        make_with_value<tnsr::Ij<DataVector, Map::dim, Frame::NoFrame>>(
-            jacobian.get(0, 0).size(), 0.0);
-    for (size_t i = 0; i < Map::dim; ++i) {
-      for (size_t j = 0; j < Map::dim; ++j) {
-        for (size_t l = 0; l < jacobian.get(0, 0).size(); l++) {
-          for (size_t k = 0; k < Map::dim; ++k) {
-            identity.get(i, j)[l] += gsl::at(jacobian.get(i, k), l) *
-                                     gsl::at(inv_jacobian.get(k, j), l);
-          }
-        }
-      }
-    }
-    return identity;
-  }();
-
-  for (size_t i = 0; i < Map::dim; ++i) {
-    for (size_t j = 0; j < Map::dim; ++j) {
-      for (size_t k = 0; k < gsl::at(test_point, 0).size(); k++) {
-        CHECK(gsl::at(expected_identity.get(i, j), k) ==
-              approx(i == j ? 1. : 0.));
-      }
-    }
-  }
-}
-
-template <typename Map>
-void test_inv_jacobian(
-    const Map& map, const std::array<DataVector, Map::dim>& test_point,
-    const double time,
-    const std::unordered_map<
-        std::string, std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&
-        functions_of_time) {
-  INFO("Test inverse Jacobian");
-  CAPTURE(test_point);
-  CAPTURE(time);
-  const auto jacobian = map.jacobian(test_point, time, functions_of_time);
-  const auto inv_jacobian =
-      map.inv_jacobian(test_point, time, functions_of_time);
-
-  const auto expected_identity = [&jacobian, &inv_jacobian]() {
-    auto identity =
-        make_with_value<tnsr::Ij<DataVector, Map::dim, Frame::NoFrame>>(
-            jacobian.get(0, 0).size(), 0.0);
-    for (size_t i = 0; i < Map::dim; ++i) {
-      for (size_t j = 0; j < Map::dim; ++j) {
-        for (size_t l = 0; l < jacobian.get(0, 0).size(); l++) {
-          for (size_t k = 0; k < Map::dim; ++k) {
-            identity.get(i, j)[l] += gsl::at(jacobian.get(i, k), l) *
-                                     gsl::at(inv_jacobian.get(k, j), l);
-          }
-        }
-      }
-    }
-    return identity;
-  }();
-  for (size_t i = 0; i < Map::dim; ++i) {
-    for (size_t j = 0; j < Map::dim; ++j) {
-      for (size_t k = 0; k < gsl::at(test_point, 0).size(); k++) {
-        CHECK(gsl::at(expected_identity.get(i, j), k) ==
-              approx(i == j ? 1. : 0.));
-      }
-    }
-  }
-}
-/// @}
-
 /*!
  * \ingroup TestingFrameworkGroup
  * \brief Given a Map `map`, checks that the frame velocity matches a
@@ -424,8 +276,6 @@ void test_coordinate_map_implementation(const Map& map) {
     for (size_t j = 0; j < Map::dim; ++j) {
       CHECK(coord_map.jacobian(test_point_tensor).get(i, j) ==
             map.jacobian(test_point).get(i, j));
-      CHECK(coord_map.inv_jacobian(test_point_tensor).get(i, j) ==
-            map.inv_jacobian(test_point).get(i, j));
     }
   }
 }
@@ -498,29 +348,6 @@ void test_coordinate_map_argument_types(
                            time_args...),
           make_tensor_data_vector(expected));
     }
-    {
-      INFO("Test inverse Jacobian");
-      const auto expected = the_map.inv_jacobian(point, time_args...);
-      // Set the scale according to the largest element of the inverse
-      // Jacobian. We can't resolve anything smaller than that in general
-      // since if we were to invert the Jacobian to get the inverse Jacobian,
-      // it's roughly the largest elements that set the limit.
-      Approx custom_approx = Approx::custom().epsilon(1.e-11).scale(
-          alg::accumulate(expected, std::numeric_limits<double>::lowest(),
-                          [](auto state, const double& element) {
-                            using std::max;
-                            return max(state, abs(element));
-                          }));
-      CHECK_ITERABLE_APPROX(
-          the_map.inv_jacobian(add_ref_wrap(point), time_args...), expected);
-      CHECK_ITERABLE_CUSTOM_APPROX(
-          the_map.inv_jacobian(make_arr_data_vec(point), time_args...),
-          make_tensor_data_vector(expected), custom_approx);
-      CHECK_ITERABLE_CUSTOM_APPROX(
-          the_map.inv_jacobian(add_ref_wrap(make_arr_data_vec(point)),
-                               time_args...),
-          make_tensor_data_vector(expected), custom_approx);
-    }
 
     return nullptr;
   };
@@ -592,17 +419,14 @@ void test_suite_for_map_on_unit_cube(const Map& map) {
     test_coordinate_map_argument_types(map_to_test, origin);
 
     test_jacobian(map_to_test, origin);
-    test_inv_jacobian(map_to_test, origin);
     test_inverse_map(map_to_test, origin);
 
     for (VolumeCornerIterator<Map::dim> vci{}; vci; ++vci) {
       test_jacobian(map_to_test, vci.coords_of_corner());
-      test_inv_jacobian(map_to_test, vci.coords_of_corner());
       test_inverse_map(map_to_test, vci.coords_of_corner());
     }
 
     test_jacobian(map_to_test, random_point);
-    test_inv_jacobian(map_to_test, random_point);
     test_inverse_map(map_to_test, random_point);
   };
   test_helper(map);
@@ -669,7 +493,6 @@ void test_suite_for_map_on_sphere(const Map& map,
     for (const auto& point : points_to_test) {
       test_coordinate_map_argument_types(map_to_test, point);
       test_jacobian(map_to_test, point);
-      test_inv_jacobian(map_to_test, point);
       test_inverse_map(map_to_test, point);
     };
   };
@@ -745,7 +568,6 @@ void test_suite_for_map_on_cylinder(
         for (const auto& point : points_to_test) {
           test_coordinate_map_argument_types(map_to_test, point);
           test_jacobian(map_to_test, point);
-          test_inv_jacobian(map_to_test, point);
           test_inverse_map(map_to_test, point);
         }
       };

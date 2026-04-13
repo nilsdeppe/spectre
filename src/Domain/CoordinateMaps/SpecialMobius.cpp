@@ -135,12 +135,6 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> SpecialMobius::jacobian(
   return result;
 }
 
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>
-SpecialMobius::inv_jacobian(const std::array<T, 3>& source_coords) const {
-  return mobius_distortion_jacobian((*this)(source_coords), -mu_);
-}
-
 void SpecialMobius::pup(PUP::er& p) {
   size_t version = 0;
   p | version;
@@ -170,9 +164,6 @@ bool operator!=(const SpecialMobius& lhs, const SpecialMobius& rhs) {
       const;                                                                   \
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>   \
   SpecialMobius::jacobian(const std::array<DTYPE(data), 3>& source_coords)     \
-      const;                                                                   \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>   \
-  SpecialMobius::inv_jacobian(const std::array<DTYPE(data), 3>& source_coords) \
       const;
 
 GENERATE_INSTANTIATIONS(

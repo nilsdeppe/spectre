@@ -104,13 +104,6 @@ CylindricalFlatEndcap::jacobian(const std::array<T, 3>& source_coords) const {
   return result;
 }
 
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>
-CylindricalFlatEndcap::inv_jacobian(
-    const std::array<T, 3>& source_coords) const {
-  return impl_.inv_jacobian(source_coords);
-}
-
 void CylindricalFlatEndcap::pup(PUP::er& p) { p | impl_; }
 
 bool operator==(const CylindricalFlatEndcap& lhs,
@@ -131,9 +124,6 @@ bool operator!=(const CylindricalFlatEndcap& lhs,
       const std::array<DTYPE(data), 3>& source_coords) const;                \
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame> \
   CylindricalFlatEndcap::jacobian(                                           \
-      const std::array<DTYPE(data), 3>& source_coords) const;                \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame> \
-  CylindricalFlatEndcap::inv_jacobian(                                       \
       const std::array<DTYPE(data), 3>& source_coords) const;
 
 GENERATE_INSTANTIATIONS(INSTANTIATE, (double, DataVector,

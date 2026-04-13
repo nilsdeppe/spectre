@@ -140,58 +140,6 @@ KerrHorizonConforming::jacobian(const std::array<T, 3>& source_coords) const {
 }
 
 template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>
-KerrHorizonConforming::inv_jacobian(
-    const std::array<T, 3>& source_coords) const {
-  using ReturnType = tt::remove_cvref_wrap_t<T>;
-
-  tnsr::Ij<ReturnType, 3, Frame::NoFrame> inv_jac(
-      get_size(dereference_wrapper(source_coords[0])));
-
-  ReturnType& mapped_mag_sq = get<0, 0>(inv_jac);
-  ReturnType& mapped_mag = get<0, 1>(inv_jac);
-  ReturnType& mapped_dot_spin = get<0, 2>(inv_jac);
-  ReturnType& mapped_sq_min_spin_sq = get<1, 0>(inv_jac);
-  ReturnType& r = get<1, 1>(inv_jac);
-  ReturnType& fac = get<1, 2>(inv_jac);
-  std::array<ReturnType, 3> dr_dx{};
-  if constexpr (std::is_same_v<ReturnType, DataVector>) {
-    dr_dx[0].set_data_ref(&get<2, 0>(inv_jac));
-    dr_dx[1].set_data_ref(&get<2, 1>(inv_jac));
-    dr_dx[2].set_data_ref(&get<2, 2>(inv_jac));
-  }
-
-  auto mapped = operator()(source_coords);
-
-  mapped_mag_sq = dot(mapped, mapped);
-  mapped_mag = sqrt(mapped_mag_sq);
-  mapped_dot_spin = dot(mapped, spin_parameter_);
-  mapped_sq_min_spin_sq = mapped_mag_sq - spin_mag_sq_;
-  r = sqrt(0.5 * (mapped_sq_min_spin_sq + sqrt(square(mapped_sq_min_spin_sq) +
-                                               4 * square(mapped_dot_spin))));
-  fac = 1. / (2. * cube(r) - mapped_sq_min_spin_sq * r);
-
-  for (size_t i = 0; i < 3; ++i) {
-    gsl::at(dr_dx, i) = (square(r) * mapped.at(i) +
-                         mapped_dot_spin * gsl::at(spin_parameter_, i)) *
-                        fac;
-  }
-
-  // normalized from this point
-  mapped = mapped / mapped_mag;
-  const ReturnType r_by_mapped = r / mapped_mag;
-
-  for (size_t i = 0; i < 3; ++i) {
-    for (size_t j = 0; j < 3; ++j) {
-      inv_jac.get(i, j) = gsl::at(dr_dx, j) * gsl::at(mapped, i) -
-                          r_by_mapped * gsl::at(mapped, i) * gsl::at(mapped, j);
-    }
-    inv_jac.get(i, i) += r_by_mapped;
-  }
-  return inv_jac;
-}
-
-template <typename T>
 void KerrHorizonConforming::stretch_factor_square(
     const gsl::not_null<tt::remove_cvref_wrap_t<T>*> result,
     const std::array<T, 3>& source_coords) const {
@@ -230,9 +178,6 @@ bool operator!=(const KerrHorizonConforming& lhs,
       const std::array<DTYPE(data), 3>& source_coords) const;                \
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame> \
   KerrHorizonConforming::jacobian(                                           \
-      const std::array<DTYPE(data), 3>& source_coords) const;                \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame> \
-  KerrHorizonConforming::inv_jacobian(                                       \
       const std::array<DTYPE(data), 3>& source_coords) const;
 
 GENERATE_INSTANTIATIONS(INSTANTIATE, (double, DataVector,

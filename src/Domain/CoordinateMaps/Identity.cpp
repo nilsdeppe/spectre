@@ -4,7 +4,7 @@
 #include "Domain/CoordinateMaps/Identity.hpp"
 
 #include "DataStructures/DataVector.hpp"
-#include "DataStructures/Tensor/Identity.hpp"
+#include "DataStructures/Tensor/Tensor.hpp"
 #include "Domain/CoordinateMaps/AutodiffInstantiationTypes.hpp"
 #include "Utilities/Autodiff/Autodiff.hpp"
 #include "Utilities/DereferenceWrapper.hpp"
@@ -75,13 +75,6 @@ Identity<Dim>::jacobian(const std::array<T, Dim>& source_coords) const {
   return result;
 }
 
-template <size_t Dim>
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame>
-Identity<Dim>::inv_jacobian(const std::array<T, Dim>& source_coords) const {
-  return identity<Dim>(dereference_wrapper(source_coords[0]));
-}
-
 template class Identity<1>;
 template class Identity<2>;
 template class Identity<3>;
@@ -97,10 +90,6 @@ template class Identity<3>;
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data),   \
                     Frame::NoFrame>                                    \
   Identity<DIM(data)>::jacobian(                                       \
-      const std::array<DTYPE(data), DIM(data)>& source_coords) const;  \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data),   \
-                    Frame::NoFrame>                                    \
-  Identity<DIM(data)>::inv_jacobian(                                   \
       const std::array<DTYPE(data), DIM(data)>& source_coords) const;
 
 GENERATE_INSTANTIATIONS(

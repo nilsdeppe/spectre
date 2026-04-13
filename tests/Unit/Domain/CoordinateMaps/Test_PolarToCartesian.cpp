@@ -24,7 +24,6 @@ void test_map_at_point(const CoordinateMaps::PolarToCartesian& map,
   test_inverse_map(map, source_point);
   if (source_point != std::array{0.0, 0.0}) {  // inv jac singular at origin
     test_coordinate_map_argument_types(map, source_point);
-    test_inv_jacobian(map, source_point);
   }
   CAPTURE(source_point);
   CAPTURE(target_point);

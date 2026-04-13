@@ -63,10 +63,6 @@ class Identity {
   tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame> jacobian(
       const std::array<T, Dim>& source_coords) const;
 
-  template <typename T>
-  tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame> inv_jacobian(
-      const std::array<T, Dim>& source_coords) const;
-
   // NOLINTNEXTLINE(google-runtime-references)
   void pup(PUP::er& /*p*/) {}
 

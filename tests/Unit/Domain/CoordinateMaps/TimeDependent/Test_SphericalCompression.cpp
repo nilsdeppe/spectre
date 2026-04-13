@@ -307,7 +307,6 @@ void test_suite(const gsl::not_null<std::mt19937*> generator) {
                                        functions_of_time);
     test_frame_velocity(map_to_test, random_point, time, functions_of_time);
     test_jacobian(map_to_test, random_point, time, functions_of_time);
-    test_inv_jacobian(map_to_test, random_point, time, functions_of_time);
     test_inverse_map(map_to_test, random_point, time, functions_of_time);
   };
   test_helper(map);

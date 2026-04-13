@@ -219,11 +219,7 @@ void test_rotation_map() {
 
     const auto jac{
         rotation_map.jacobian(initial_unmapped_point, t, f_of_t_list)};
-    const auto inv_jac{
-        rotation_map.inv_jacobian(initial_unmapped_point, t, f_of_t_list)};
     const auto jac_deserialized{rotation_map_deserialized.jacobian(
-        initial_unmapped_point, t, f_of_t_list)};
-    const auto inv_jac_deserialized{rotation_map_deserialized.inv_jacobian(
         initial_unmapped_point, t, f_of_t_list)};
 
     const double rotation_angle = square(t);
@@ -234,10 +230,6 @@ void test_rotation_map() {
         // Jacobian is same as rotation matrix
         CHECK(jac.get(i, j) == custom_approx(analytic_jac(i, j)));
         CHECK(jac_deserialized.get(i, j) == custom_approx(analytic_jac(i, j)));
-        // Inv Jacobian is same as inv of rotation matrix
-        CHECK(inv_jac.get(i, j) == custom_approx(analytic_jac(j, i)));
-        CHECK(inv_jac_deserialized.get(i, j) ==
-              custom_approx(analytic_jac(j, i)));
       }
     }
     t += dt;

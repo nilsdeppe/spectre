@@ -78,16 +78,6 @@ void test_product_of_2_maps_time_dep(
   CHECK_ITERABLE_APPROX(map2d.inverse(point_x, time, functions_of_time).value(),
                         point_xi);
 
-  const double inv_jacobian_00 =
-      (x_source_b - x_source_a) / (x_target_b - x_target_a);
-  const double inv_jacobian_11 =
-      (y_source_b - y_source_a) / (y_target_b - y_target_a);
-  const auto inv_jac_A =
-      map2d.inv_jacobian(point_source_a, time, functions_of_time);
-  const auto inv_jac_B =
-      map2d.inv_jacobian(point_source_b, time, functions_of_time);
-  const auto inv_jac_xi = map2d.inv_jacobian(point_xi, time, functions_of_time);
-
   const auto check_jac = [](const auto& jac, const auto& expected_jac_00,
                             const auto& expected_jac_11) {
     CHECK(get<0, 0>(jac) == expected_jac_00);
@@ -95,10 +85,6 @@ void test_product_of_2_maps_time_dep(
     CHECK(get<1, 0>(jac) == 0.0);
     CHECK(get<1, 1>(jac) == expected_jac_11);
   };
-
-  check_jac(inv_jac_A, inv_jacobian_00, inv_jacobian_11);
-  check_jac(inv_jac_B, inv_jacobian_00, inv_jacobian_11);
-  check_jac(inv_jac_xi, inv_jacobian_00, inv_jacobian_11);
 
   const double jacobian_00 =
       (x_target_b - x_target_a) / (x_source_b - x_source_a);
@@ -125,22 +111,15 @@ void test_product_of_2_maps_time_dep(
   const auto tensor_logical_coords = logical_coordinates(mesh);
   const std::array<DataVector, 2> logical_coords{
       {get<0>(tensor_logical_coords), get<1>(tensor_logical_coords)}};
-  const auto volume_inv_jac =
-      map2d.inv_jacobian(logical_coords, time, functions_of_time);
   const auto volume_jac =
       map2d.jacobian(logical_coords, time, functions_of_time);
   for (size_t i = 0; i < 2; ++i) {
     for (size_t j = 0; j < 2; ++j) {
       if (i == j) {
-        CHECK(volume_inv_jac.get(i, j) ==
-              DataVector(logical_coords[0].size(),
-                         i == 0 ? inv_jacobian_00 : inv_jacobian_11));
         CHECK(volume_jac.get(i, j) ==
               DataVector(logical_coords[0].size(),
                          i == 0 ? jacobian_00 : jacobian_11));
       } else {
-        CHECK(volume_inv_jac.get(i, j) ==
-              DataVector(logical_coords[0].size(), 0.0));
         CHECK(volume_jac.get(i, j) ==
               DataVector(logical_coords[0].size(), 0.0));
       }
@@ -354,18 +333,6 @@ void test_product_of_3_maps_time_dep(
   CHECK_ITERABLE_APPROX(map3d.inverse(point_x, time, functions_of_time).value(),
                         point_xi);
 
-  const double inv_jacobian_00 =
-      (x_source_b - x_source_a) / (x_target_b - x_target_a);
-  const double inv_jacobian_11 =
-      (y_source_b - y_source_a) / (y_target_b - y_target_a);
-  const double inv_jacobian_22 =
-      (z_source_b - z_source_a) / (z_target_b - z_target_a);
-  const auto inv_jac_A =
-      map3d.inv_jacobian(point_source_a, time, functions_of_time);
-  const auto inv_jac_B =
-      map3d.inv_jacobian(point_source_b, time, functions_of_time);
-  const auto inv_jac_xi = map3d.inv_jacobian(point_xi, time, functions_of_time);
-
   const auto check_jac = [](const auto& jac, const auto& expected_jac_00,
                             const auto& expected_jac_11,
                             const auto& expected_jac_22) {
@@ -379,10 +346,6 @@ void test_product_of_3_maps_time_dep(
     CHECK(get<1, 2>(jac) == 0.0);
     CHECK(get<2, 1>(jac) == 0.0);
   };
-
-  check_jac(inv_jac_A, inv_jacobian_00, inv_jacobian_11, inv_jacobian_22);
-  check_jac(inv_jac_B, inv_jacobian_00, inv_jacobian_11, inv_jacobian_22);
-  check_jac(inv_jac_xi, inv_jacobian_00, inv_jacobian_11, inv_jacobian_22);
 
   const double jacobian_00 =
       (x_target_b - x_target_a) / (x_source_b - x_source_a);
@@ -415,24 +378,16 @@ void test_product_of_3_maps_time_dep(
   const std::array<DataVector, 3> logical_coords{
       {get<0>(tensor_logical_coords), get<1>(tensor_logical_coords),
        get<2>(tensor_logical_coords)}};
-  const auto volume_inv_jac =
-      map3d.inv_jacobian(logical_coords, time, functions_of_time);
   const auto volume_jac =
       map3d.jacobian(logical_coords, time, functions_of_time);
   for (size_t i = 0; i < 3; ++i) {
     for (size_t j = 0; j < 3; ++j) {
       if (i == j) {
-        CHECK(volume_inv_jac.get(i, j) ==
-              DataVector(logical_coords[0].size(),
-                         i == 0 ? inv_jacobian_00
-                                : i == 1 ? inv_jacobian_11 : inv_jacobian_22));
         CHECK(volume_jac.get(i, j) ==
               DataVector(
                   logical_coords[0].size(),
                   i == 0 ? jacobian_00 : i == 1 ? jacobian_11 : jacobian_22));
       } else {
-        CHECK(volume_inv_jac.get(i, j) ==
-              DataVector(logical_coords[0].size(), 0.0));
         CHECK(volume_jac.get(i, j) ==
               DataVector(logical_coords[0].size(), 0.0));
       }

@@ -7,6 +7,7 @@
 #include <pup.h>
 
 #include "DataStructures/DataVector.hpp"
+#include "DataStructures/Tensor/EagerMath/DeterminantAndInverse.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Domain/CoordinateMaps/FocallyLiftedEndcap.hpp"
 #include "Domain/CoordinateMaps/FocallyLiftedFlatEndcap.hpp"
@@ -202,99 +203,6 @@ FocallyLiftedMap<InnerMap>::jacobian(
 }
 
 template <typename InnerMap>
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>
-FocallyLiftedMap<InnerMap>::inv_jacobian(
-    const std::array<T, 3>& source_coords) const {
-  using ReturnType = tt::remove_cvref_wrap_t<T>;
-
-  // lower_coords are the mapped coords on the surface.
-  std::array<ReturnType, 3> lower_coords{};
-  inner_map_.forward_map(&lower_coords, source_coords);
-
-  ReturnType lambda{};
-  FocallyLiftedMapHelpers::scale_factor(
-      &lambda, lower_coords, proj_center_, center_, radius_,
-      source_is_between_focus_and_target_);
-
-  // upper_coords are the mapped coords on the surface of the sphere.
-  std::array<ReturnType, 3> upper_coords{};
-  for (size_t i = 0; i < 3; ++i) {
-    gsl::at(upper_coords, i) =
-        gsl::at(proj_center_, i) +
-        (gsl::at(lower_coords, i) - gsl::at(proj_center_, i)) * lambda;
-  }
-
-  // Derivative of lambda
-  std::array<ReturnType, 3> d_lambda_d_lower_coords{};
-  FocallyLiftedMapHelpers::d_scale_factor_d_src_point<ReturnType>(
-      &d_lambda_d_lower_coords, upper_coords, proj_center_, center_, lambda);
-
-  // Lambda_tilde is the scale factor between mapped coords and lower coords.
-  // We can compute it with a shortcut because there is a relationship
-  // between lambda, lambda_tilde, and sigma.
-  ReturnType sigma {};
-  inner_map_.sigma(&sigma, source_coords);
-  const ReturnType lambda_tilde = 1.0 / (1.0 - sigma * (1.0 - lambda));
-
-  // Derivative of lambda_tilde
-  std::array<ReturnType, 3> d_lambda_tilde_d_mapped_coords{};
-  inner_map_.deriv_lambda_tilde(&d_lambda_tilde_d_mapped_coords, lower_coords,
-                                lambda_tilde, proj_center_);
-
-  // Deriv of x_0 with respect to x
-  auto dx_inner_dx =
-      make_with_value<tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>>(
-          dereference_wrapper(source_coords[0]), 0.0);
-  for (size_t i = 0; i < 3; ++i) {
-    for (size_t j = 0; j < 3; ++j) {
-      dx_inner_dx.get(i, j) = gsl::at(d_lambda_tilde_d_mapped_coords, j) *
-                         (gsl::at(lower_coords, i) - gsl::at(proj_center_, i)) /
-                         lambda_tilde;
-    }
-    dx_inner_dx.get(i, i) += lambda_tilde;
-  }
-
-  // Deriv of sigma with respect to x,y,z
-  auto d_sigma_d_mapped_coords =
-      make_with_value<tnsr::i<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>>(
-          sigma, 0.0);
-  ReturnType tmp{};
-  for (size_t i = 0; i < 3; ++i) {
-    tmp = d_lambda_d_lower_coords[0] * dx_inner_dx.get(0, i);
-    for (size_t j = 1; j < 3; ++j) {  // first iteration factored out above.
-      tmp += gsl::at(d_lambda_d_lower_coords, j) * dx_inner_dx.get(j, i);
-    }
-    d_sigma_d_mapped_coords.get(i) =
-        (sigma * tmp +
-         gsl::at(d_lambda_tilde_d_mapped_coords, i) / square(lambda_tilde)) /
-        (1.0 - lambda);
-  }
-
-  tnsr::Ij<ReturnType, 3, Frame::NoFrame> dxbar_dx_inner{};
-  inner_map_.inv_jacobian(&dxbar_dx_inner, source_coords);
-  std::array<tt::remove_cvref_wrap_t<T>, 3> dxbar_dsigma{};
-  inner_map_.dxbar_dsigma(&dxbar_dsigma, source_coords);
-
-  auto inv_jacobian_matrix =
-      make_with_value<tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>>(
-          dereference_wrapper(source_coords[0]), 0.0);
-
-  for (size_t i = 0; i < 3; ++i) {
-    for (size_t j = 0; j < 3; ++j) {
-      for (size_t k = 0; k < 3; ++k) {
-        inv_jacobian_matrix.get(i, j) +=
-            dxbar_dx_inner.get(i, k) * dx_inner_dx.get(k, j);
-      }
-      inv_jacobian_matrix.get(i, j) +=
-          gsl::at(dxbar_dsigma, i) * d_sigma_d_mapped_coords.get(j);
-    }
-  }
-
-  return inv_jacobian_matrix;
-}
-
-template <typename InnerMap>
 std::optional<std::array<double, 3>> FocallyLiftedMap<InnerMap>::inverse(
     const std::array<double, 3>& target_coords) const {
   // Scale factor taking target_coords to lower_coords.
@@ -347,7 +255,7 @@ std::optional<std::array<double, 3>> FocallyLiftedMap<InnerMap>::inverse(
   // Without the root polishing, the unit tests occasionally fail
   // the 'inverse(map(x))=x' test at a level slightly above roundoff.
   if (orig_coords) {
-    const auto inv_jac = inv_jacobian(*orig_coords);
+    const auto inv_jac = determinant_and_inverse(jacobian(*orig_coords)).second;
     const auto mapped_coords = operator()(*orig_coords);
     for (size_t i = 0; i < 3; ++i) {
       for (size_t j = 0; j < 3; ++j) {
@@ -418,9 +326,6 @@ GENERATE_INSTANTIATIONS(INSTANTIATE, (FocallyLiftedInnerMaps::Endcap,
       const std::array<DTYPE(data), 3>& source_coords) const;                \
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame> \
   FocallyLiftedMap<IMAP(data)>::jacobian(                                    \
-      const std::array<DTYPE(data), 3>& source_coords) const;                \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame> \
-  FocallyLiftedMap<IMAP(data)>::inv_jacobian(                                \
       const std::array<DTYPE(data), 3>& source_coords) const;
 
 GENERATE_INSTANTIATIONS(INSTANTIATE,

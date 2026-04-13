@@ -437,7 +437,6 @@ void test_points_shape_map(
 
   if (check_jacobians) {
     test_jacobian(shape, points, check_time, functions_of_time);
-    test_inv_jacobian(shape, points, check_time, functions_of_time);
   }
 }
 

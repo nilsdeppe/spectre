@@ -257,11 +257,6 @@ class Shape {
       const std::array<T, 3>& source_coords, double time,
       const FunctionsOfTimeMap& functions_of_time) const;
 
-  template <typename T>
-  tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> inv_jacobian(
-      const std::array<T, 3>& source_coords, double time,
-      const FunctionsOfTimeMap& functions_of_time) const;
-
   /*!
    * \brief An optimized call that computes the target coordinates, frame
    * velocity and jacobian at once to avoid duplicate calculations.

@@ -9,6 +9,7 @@
 #include <type_traits>
 #include <unordered_map>
 
+#include "DataStructures/Tensor/EagerMath/DeterminantAndInverse.hpp"
 #include "DataStructures/Tensor/Identity.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Domain/FunctionsOfTime/FunctionOfTime.hpp"
@@ -223,7 +224,7 @@ auto apply_inverse_jacobian(
     /*functions_of_time*/,
     const std::false_type /*is_time_independent*/) {
   if (LIKELY(not the_map.is_identity())) {
-    return the_map.inv_jacobian(source_points);
+    return determinant_and_inverse(the_map.jacobian(source_points)).second;
   }
   return identity<Dim>(dereference_wrapper(source_points[0]));
 }
@@ -245,7 +246,9 @@ auto apply_inverse_jacobian(
       }(),
       "The time must not be NaN for time-dependent maps.");
   if (LIKELY(not the_map.is_identity())) {
-    return the_map.inv_jacobian(source_points, t, functions_of_time);
+    return determinant_and_inverse(
+               the_map.jacobian(source_points, t, functions_of_time))
+        .second;
   }
   return identity<Dim>(dereference_wrapper(source_points[0]));
 }

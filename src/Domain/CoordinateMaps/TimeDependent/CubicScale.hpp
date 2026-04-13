@@ -135,14 +135,6 @@ class CubicScale {
           functions_of_time) const;
 
   template <typename T>
-  tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame> inv_jacobian(
-      const std::array<T, Dim>& source_coords, double time,
-      const std::unordered_map<
-          std::string,
-          std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&
-          functions_of_time) const;
-
-  template <typename T>
   tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame> jacobian(
       const std::array<T, Dim>& source_coords, double time,
       const std::unordered_map<

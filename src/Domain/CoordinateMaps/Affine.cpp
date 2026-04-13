@@ -77,14 +77,6 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame> Affine::jacobian(
   return result;
 }
 
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame> Affine::inv_jacobian(
-    const std::array<T, 1>& source_coords) const {
-  return make_with_value<
-      tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame>>(
-      dereference_wrapper(source_coords[0]), inverse_jacobian_);
-}
-
 void Affine::pup(PUP::er& p) {
   size_t version = 0;
   p | version;
@@ -121,9 +113,7 @@ bool operator==(const CoordinateMaps::Affine& lhs,
   template std::array<tt::remove_cvref_wrap_t<DTYPE(data)>, 1>               \
   Affine::operator()(const std::array<DTYPE(data), 1>& source_coords) const; \
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 1, Frame::NoFrame> \
-  Affine::jacobian(const std::array<DTYPE(data), 1>& source_coords) const;   \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 1, Frame::NoFrame> \
-  Affine::inv_jacobian(const std::array<DTYPE(data), 1>& source_coords) const;
+  Affine::jacobian(const std::array<DTYPE(data), 1>& source_coords) const;
 
 GENERATE_INSTANTIATIONS(
     INSTANTIATE, (double, DataVector,

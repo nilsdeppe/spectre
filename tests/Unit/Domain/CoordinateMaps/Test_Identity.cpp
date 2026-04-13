@@ -20,11 +20,9 @@ void test_identity() {
   const auto x = make_array<Dim>(1.0);
   CHECK(identity_map(xi) == x);
   CHECK(identity_map.inverse(x).value() == xi);
-  const auto inv_jac = identity_map.inv_jacobian(xi);
   const auto jac = identity_map.jacobian(xi);
   for (size_t i = 0; i < Dim; ++i) {
     for (size_t j = 0; j < Dim; ++j) {
-      CHECK(inv_jac.get(i, j) == (i == j ? 1.0 : 0.0));
       CHECK(jac.get(i, j) == (i == j ? 1.0 : 0.0));
     }
   }

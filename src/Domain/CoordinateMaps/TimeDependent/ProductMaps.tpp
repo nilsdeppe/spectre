@@ -201,29 +201,6 @@ template <typename Map1, typename Map2>
 template <typename T>
 tnsr::Ij<tt::remove_cvref_wrap_t<T>, ProductOf2Maps<Map1, Map2>::dim,
          Frame::NoFrame>
-ProductOf2Maps<Map1, Map2>::inv_jacobian(
-    const std::array<T, dim>& source_coords, const double time,
-    const std::unordered_map<
-        std::string, std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&
-        functions_of_time) const {
-  using UnwrappedT = tt::remove_cvref_wrap_t<T>;
-  return product_detail::apply_jac(
-      source_coords, map1_, map2_,
-      [&time, &functions_of_time](const auto& point, const auto& map) {
-        return CoordinateMap_detail::apply_inverse_jacobian(
-            map, point, time, functions_of_time,
-            domain::is_jacobian_time_dependent_t<
-                std::decay_t<decltype(map)>,
-                std::reference_wrapper<const UnwrappedT>>{});
-      },
-      std::make_index_sequence<Map1::dim>{},
-      std::make_index_sequence<Map2::dim>{});
-}
-
-template <typename Map1, typename Map2>
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, ProductOf2Maps<Map1, Map2>::dim,
-         Frame::NoFrame>
 ProductOf2Maps<Map1, Map2>::jacobian(
     const std::array<T, dim>& source_coords, const double time,
     const std::unordered_map<
@@ -352,45 +329,6 @@ auto ProductOf3Maps<Map1, Map2, Map3>::frame_velocity(
                {source_coords[2]}},
            time, functions_of_time,
            domain::is_map_time_dependent_t<Map3>{})[0]}};
-}
-
-template <typename Map1, typename Map2, typename Map3>
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, ProductOf3Maps<Map1, Map2, Map3>::dim,
-         Frame::NoFrame>
-ProductOf3Maps<Map1, Map2, Map3>::inv_jacobian(
-    const std::array<T, dim>& source_coords, const double time,
-    const std::unordered_map<
-        std::string, std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&
-        functions_of_time) const {
-  using UnwrappedT = tt::remove_cvref_wrap_t<T>;
-  tnsr::Ij<UnwrappedT, dim, Frame::NoFrame> inv_jacobian_matrix{
-      make_with_value<UnwrappedT>(dereference_wrapper(source_coords[0]), 0.0)};
-  get<0, 0>(inv_jacobian_matrix) =
-      get<0, 0>(CoordinateMap_detail::apply_inverse_jacobian(
-          map1_,
-          std::array<std::reference_wrapper<const UnwrappedT>, 1>{
-              {source_coords[0]}},
-          time, functions_of_time,
-          domain::is_jacobian_time_dependent_t<
-              Map1, std::reference_wrapper<const UnwrappedT>>{}));
-  get<1, 1>(inv_jacobian_matrix) =
-      get<0, 0>(CoordinateMap_detail::apply_inverse_jacobian(
-          map2_,
-          std::array<std::reference_wrapper<const UnwrappedT>, 1>{
-              {source_coords[1]}},
-          time, functions_of_time,
-          domain::is_jacobian_time_dependent_t<
-              Map2, std::reference_wrapper<const UnwrappedT>>{}));
-  get<2, 2>(inv_jacobian_matrix) =
-      get<0, 0>(CoordinateMap_detail::apply_inverse_jacobian(
-          map3_,
-          std::array<std::reference_wrapper<const UnwrappedT>, 1>{
-              {source_coords[2]}},
-          time, functions_of_time,
-          domain::is_jacobian_time_dependent_t<
-              Map3, std::reference_wrapper<const UnwrappedT>>{}));
-  return inv_jacobian_matrix;
 }
 
 template <typename Map1, typename Map2, typename Map3>

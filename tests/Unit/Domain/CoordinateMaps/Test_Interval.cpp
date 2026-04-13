@@ -29,7 +29,6 @@ void test_coordinate_map(
     test_coordinate_map_argument_types(map, random_point);
     test_inverse_map(map, random_point);
     test_jacobian(map, random_point);
-    test_inv_jacobian(map, random_point);
   }
   const std::array<double, 1> point_xA{{xA}};
   const std::array<double, 1> point_xB{{xB}};

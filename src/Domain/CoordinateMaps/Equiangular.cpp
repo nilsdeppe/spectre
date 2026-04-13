@@ -14,7 +14,6 @@
 #include "Utilities/DereferenceWrapper.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
 #include "Utilities/Gsl.hpp"
-#include "Utilities/MakeWithValue.hpp"
 
 namespace domain::CoordinateMaps {
 
@@ -90,19 +89,6 @@ tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame> Equiangular::jacobian(
   return result;
 }
 
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame>
-Equiangular::inv_jacobian(const std::array<T, 1>& source_coords) const {
-  const tt::remove_cvref_wrap_t<T> tan_variable =
-      tan(m_pi_4_over_length_of_domain_ * (-B_ - A_ + 2.0 * source_coords[0]));
-  auto inv_jacobian_matrix =
-      make_with_value<tnsr::Ij<tt::remove_cvref_wrap_t<T>, 1, Frame::NoFrame>>(
-          dereference_wrapper(source_coords[0]), 0.0);
-  get<0, 0>(inv_jacobian_matrix) =
-      linear_inverse_jacobian_over_m_pi_4_ / (1.0 + square(tan_variable));
-  return inv_jacobian_matrix;
-}
-
 void Equiangular::pup(PUP::er& p) {
   size_t version = 0;
   p | version;
@@ -148,9 +134,6 @@ bool operator==(const CoordinateMaps::Equiangular& lhs,
       const;                                                                 \
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 1, Frame::NoFrame> \
   Equiangular::jacobian(const std::array<DTYPE(data), 1>& source_coords)     \
-      const;                                                                 \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 1, Frame::NoFrame> \
-  Equiangular::inv_jacobian(const std::array<DTYPE(data), 1>& source_coords) \
       const;
 
 GENERATE_INSTANTIATIONS(

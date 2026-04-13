@@ -185,13 +185,6 @@ EquatorialCompression::jacobian(const std::array<T, 3>& source_coords) const {
   return result;
 }
 
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>
-EquatorialCompression::inv_jacobian(
-    const std::array<T, 3>& source_coords) const {
-  return angular_distortion_jacobian((*this)(source_coords), aspect_ratio_);
-}
-
 void EquatorialCompression::pup(PUP::er& p) {
   size_t version = 0;
   p | version;
@@ -228,9 +221,6 @@ bool operator!=(const EquatorialCompression& lhs,
       const std::array<DTYPE(data), 3>& source_coords) const;                \
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame> \
   EquatorialCompression::jacobian(                                           \
-      const std::array<DTYPE(data), 3>& source_coords) const;                \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame> \
-  EquatorialCompression::inv_jacobian(                                       \
       const std::array<DTYPE(data), 3>& source_coords) const;
 
 GENERATE_INSTANTIATIONS(INSTANTIATE, (double, DataVector,

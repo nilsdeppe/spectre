@@ -84,10 +84,6 @@ void test_bulged_cube(bool with_equiangular_map) {
   test_jacobian(map, test_point3);
   test_jacobian(map, test_point4);
 
-  test_inv_jacobian(map, test_point1);
-  test_inv_jacobian(map, test_point2);
-  test_inv_jacobian(map, test_point3);
-  test_inv_jacobian(map, test_point4);
 
   test_coordinate_map_implementation<CoordinateMaps::BulgedCube>(map);
 
@@ -121,9 +117,6 @@ SPECTRE_TEST_CASE("Unit.Domain.CoordinateMaps.BulgedCube", "[Domain][Unit]") {
   test_jacobian(map, test_point2);
   test_jacobian(map, test_point3);
 
-  test_inv_jacobian(map, test_point1);
-  test_inv_jacobian(map, test_point2);
-  test_inv_jacobian(map, test_point3);
 
   test_coordinate_map_implementation<CoordinateMaps::BulgedCube>(map);
 

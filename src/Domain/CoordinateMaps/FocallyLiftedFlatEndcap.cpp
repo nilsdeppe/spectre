@@ -67,24 +67,6 @@ void FlatEndcap::jacobian(
   get<1, 1>(*jacobian_out) = radius_;
 }
 
-template <typename T>
-void FlatEndcap::inv_jacobian(
-    const gsl::not_null<
-        tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>*>
-        inv_jacobian_out,
-    const std::array<T, 3>& source_coords) const {
-  set_number_of_grid_points(inv_jacobian_out, source_coords);
-  // Most of the inverse jacobian components are zero.
-  for (auto& jac_component : *inv_jacobian_out) {
-    jac_component = 0.0;
-  }
-
-  // dxbar/dx
-  get<0, 0>(*inv_jacobian_out) = 1.0 / radius_;
-  // dybar/dy
-  get<1, 1>(*inv_jacobian_out) = 1.0 / radius_;
-}
-
 std::optional<std::array<double, 3>> FlatEndcap::inverse(
     const std::array<double, 3>& target_coords, const double sigma_in) const {
   const double xbar = (target_coords[0] - center_[0]) / radius_;
@@ -189,11 +171,6 @@ bool operator!=(const FlatEndcap& lhs, const FlatEndcap& rhs) {
       const gsl::not_null<                                                    \
           tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>*> \
           jacobian_out,                                                       \
-      const std::array<DTYPE(data), 3>& source_coords) const;                 \
-  template void FlatEndcap::inv_jacobian(                                     \
-      const gsl::not_null<                                                    \
-          tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>*> \
-          inv_jacobian_out,                                                   \
       const std::array<DTYPE(data), 3>& source_coords) const;                 \
   template void FlatEndcap::sigma(                                            \
       const gsl::not_null<tt::remove_cvref_wrap_t<DTYPE(data)>*> sigma_out,   \

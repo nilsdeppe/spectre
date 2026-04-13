@@ -106,10 +106,6 @@ class KerrHorizonConforming {
   tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> jacobian(
       const std::array<T, 3>& source_coords) const;
 
-  template <typename T>
-  tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame> inv_jacobian(
-      const std::array<T, 3>& source_coords) const;
-
   bool is_identity() const {
     return spin_parameter_ == std::array<double, 3>{0., 0., 0.};
   }

@@ -41,7 +41,6 @@ void test_map_helpers(const gsl::not_null<std::mt19937*> generator) {
   test_coordinate_map_argument_types(map, random_point);
   test_inverse_map(map, random_point);
   test_jacobian(map, random_point);
-  test_inv_jacobian(map, random_point);
 }
 
 void test_no_spin(const gsl::not_null<std::mt19937*> generator) {

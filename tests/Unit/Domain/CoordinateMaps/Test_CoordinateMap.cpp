@@ -45,6 +45,7 @@
 #include "Utilities/Literals.hpp"
 #include "Utilities/MakeArray.hpp"
 #include "Utilities/MakeWithValue.hpp"
+#include "DataStructures/Tensor/EagerMath/DeterminantAndInverse.hpp"
 #include "Utilities/Serialization/Serialize.hpp"
 
 namespace domain {
@@ -126,25 +127,6 @@ auto compose_jacobians(const Map1& map1, const Map2& map2,
   return result;
 }
 
-template <typename Map1, typename Map2, typename DataType, size_t Dim>
-auto compose_inv_jacobians(const Map1& map1, const Map2& map2,
-                           const std::array<DataType, Dim>& point) {
-  const auto inv_jac1 = map1.inv_jacobian(point);
-  const auto inv_jac2 = map2.inv_jacobian(map1(point));
-
-  auto result = make_with_value<
-      InverseJacobian<DataType, Dim, Frame::BlockLogical, Frame::Grid>>(
-      point[0], 0.);
-  for (size_t target = 0; target < Dim; ++target) {
-    for (size_t source = 0; source < Dim; ++source) {
-      for (size_t dummy = 0; dummy < Dim; ++dummy) {
-        result.get(source, target) +=
-            inv_jac1.get(source, dummy) * inv_jac2.get(dummy, target);
-      }
-    }
-  }
-  return result;
-}
 
 void test_single_coordinate_map() {
   INFO("Single coordinate map");
@@ -190,15 +172,6 @@ void test_single_coordinate_map() {
     CHECK_ITERABLE_APPROX(map_base->jacobian(local_source_points),
                           local_expected_jac);
 
-    const auto expected_inv_jac_no_frame = first_map.inv_jacobian(local_coord);
-    InverseJacobian<double, dim, Frame::BlockLogical, Frame::Grid>
-        local_expected_inv_jac{};
-    REQUIRE(expected_inv_jac_no_frame.size() == local_expected_inv_jac.size());
-    for (size_t i = 0; i < local_expected_jac.size(); ++i) {
-      local_expected_inv_jac[i] = expected_inv_jac_no_frame[i];
-    }
-    CHECK_ITERABLE_APPROX(map_base->inv_jacobian(local_source_points),
-                          local_expected_inv_jac);
 
 #ifdef SPECTRE_AUTODIFF
     const auto local_expected_inv_hessian = make_with_value<
@@ -233,9 +206,6 @@ void test_single_coordinate_map() {
 
     CHECK(affine1d.jacobian(source_points).get(0, 0) ==
           first_affine1d.jacobian(coord).get(0, 0));
-
-    CHECK(affine1d.inv_jacobian(source_points).get(0, 0) ==
-          first_affine1d.inv_jacobian(coord).get(0, 0));
 
     check_map_ptr(first_affine1d, affine1d, affine1d_base, coord,
                   source_points);
@@ -293,16 +263,6 @@ void test_single_coordinate_map() {
       expected_jac_grid[i] = expected_jac_inertial[i];
     }
     CHECK(rotated2d.jacobian(source_points) == expected_jac_grid);
-
-    const auto expected_inv_jac_inertial = first_rotated2d.inv_jacobian(coord);
-    InverseJacobian<double, 2, Frame::BlockLogical, Frame::Grid>
-        expected_inv_jac_grid{};
-    REQUIRE(decltype(expected_inv_jac_inertial)::size() ==
-            decltype(expected_inv_jac_grid)::size());
-    for (size_t i = 0; i < decltype(expected_inv_jac_inertial)::size(); ++i) {
-      expected_inv_jac_grid[i] = expected_inv_jac_inertial[i];
-    }
-    CHECK(rotated2d.inv_jacobian(source_points) == expected_inv_jac_grid);
 
     check_map_ptr(first_rotated2d, rotated2d, rotated2d_base, coord,
                   source_points);
@@ -365,16 +325,6 @@ void test_single_coordinate_map() {
       expected_jac_grid[i] = expected_jac_inertial[i];
     }
     CHECK(rotated3d.jacobian(source_points) == expected_jac_grid);
-
-    const auto expected_inv_jac_inertial = first_rotated3d.inv_jacobian(coord);
-    InverseJacobian<double, 3, Frame::BlockLogical, Frame::Grid>
-        expected_inv_jac_grid{};
-    REQUIRE(decltype(expected_inv_jac_inertial)::size() ==
-            decltype(expected_inv_jac_grid)::size());
-    for (size_t i = 0; i < decltype(expected_inv_jac_inertial)::size(); ++i) {
-      expected_inv_jac_grid[i] = expected_inv_jac_inertial[i];
-    }
-    CHECK(rotated3d.inv_jacobian(source_points) == expected_inv_jac_grid);
 
     check_map_ptr(first_rotated3d, rotated3d, rotated3d_base, coord,
                   source_points);
@@ -605,8 +555,10 @@ void test_coordinate_map_with_rotation_map() {
     CHECK_ITERABLE_APPROX(jac, expected_jac);
 
     const auto inv_jac = double_rotated2d.inv_jacobian(source_points);
-    const auto expected_inv_jac = compose_inv_jacobians(
-        first_rotated2d, second_rotated2d, gsl::at(coords2d, i));
+    const auto expected_inv_jac =
+        determinant_and_inverse(compose_jacobians(
+            first_rotated2d, second_rotated2d, gsl::at(coords2d, i)))
+            .second;
     CHECK_ITERABLE_APPROX(inv_jac, expected_inv_jac);
 
 #ifdef SPECTRE_AUTODIFF
@@ -661,8 +613,10 @@ void test_coordinate_map_with_rotation_map() {
     CHECK_ITERABLE_APPROX(jac, expected_jac);
 
     const auto inv_jac = double_rotated3d.inv_jacobian(source_points);
-    const auto expected_inv_jac = compose_inv_jacobians(
-        first_rotated3d, second_rotated3d, gsl::at(coords3d, i));
+    const auto expected_inv_jac =
+        determinant_and_inverse(compose_jacobians(
+            first_rotated3d, second_rotated3d, gsl::at(coords3d, i)))
+            .second;
     CHECK_ITERABLE_APPROX(inv_jac, expected_inv_jac);
 
 #ifdef SPECTRE_AUTODIFF
@@ -719,8 +673,10 @@ void test_coordinate_map_with_rotation_map_datavector() {
     CHECK_ITERABLE_APPROX(jac, expected_jac);
 
     const auto inv_jac = double_rotated2d.inv_jacobian(coords2d);
-    const auto expected_inv_jac = compose_inv_jacobians(
-        first_rotated2d, second_rotated2d, coords2d_array);
+    const auto expected_inv_jac =
+        determinant_and_inverse(compose_jacobians(
+            first_rotated2d, second_rotated2d, coords2d_array))
+            .second;
     CHECK_ITERABLE_APPROX(inv_jac, expected_inv_jac);
 
 #ifdef SPECTRE_AUTODIFF
@@ -781,8 +737,10 @@ void test_coordinate_map_with_rotation_map_datavector() {
     CHECK_ITERABLE_APPROX(jac, expected_jac);
 
     const auto inv_jac = double_rotated3d.inv_jacobian(coords3d);
-    const auto expected_inv_jac = compose_inv_jacobians(
-        first_rotated3d, second_rotated3d, coords3d_array);
+    const auto expected_inv_jac =
+        determinant_and_inverse(compose_jacobians(
+            first_rotated3d, second_rotated3d, coords3d_array))
+            .second;
     CHECK_ITERABLE_APPROX(inv_jac, expected_inv_jac);
 
 #ifdef SPECTRE_AUTODIFF
@@ -842,7 +800,9 @@ void test_coordinate_map_with_rotation_wedge() {
 
   const auto inv_jac = composed_map.inv_jacobian(test_point_vector);
   const auto expected_inv_jac =
-      compose_inv_jacobians(first_map, second_map, test_point_array);
+      determinant_and_inverse(
+          compose_jacobians(first_map, second_map, test_point_array))
+          .second;
   CHECK_ITERABLE_APPROX(inv_jac, expected_inv_jac);
 
 #ifdef SPECTRE_AUTODIFF

@@ -31,7 +31,6 @@ void test_rotation_3(const CoordinateMaps::Rotation<3>& three_dim_rotation_map,
   const std::array<T, 3> eta{{0.0, 1.0, 0.0}};
   const std::array<T, 3> zeta{{0.0, 0.0, 1.0}};
 
-  const auto inv_jac = three_dim_rotation_map.inv_jacobian(zero_logical);
   const auto jac = three_dim_rotation_map.jacobian(zero_logical);
   for (size_t i = 0; i < 3; ++i) {
     CHECK(gsl::at(three_dim_rotation_map(zero_logical), i) ==
@@ -49,9 +48,6 @@ void test_rotation_3(const CoordinateMaps::Rotation<3>& three_dim_rotation_map,
           approx(gsl::at(eta, i)));
     CHECK(gsl::at(three_dim_rotation_map.inverse(zeta_hat).value(), i) ==
           approx(gsl::at(zeta, i)));
-    CHECK(inv_jac.get(0, i) == approx(gsl::at(xi_hat, i)));
-    CHECK(inv_jac.get(1, i) == approx(gsl::at(eta_hat, i)));
-    CHECK(inv_jac.get(2, i) == approx(gsl::at(zeta_hat, i)));
     CHECK(jac.get(i, 0) == approx(gsl::at(xi_hat, i)));
     CHECK(jac.get(i, 1) == approx(gsl::at(eta_hat, i)));
     CHECK(jac.get(i, 2) == approx(gsl::at(zeta_hat, i)));
@@ -93,12 +89,6 @@ void test_rotation_2() {
 
   CHECK(half_pi_rotation_map.inverse(x2).value()[0] == approx(xi2[0]));
   CHECK(half_pi_rotation_map.inverse(x2).value()[1] == approx(xi2[1]));
-
-  const auto inv_jac = half_pi_rotation_map.inv_jacobian(xi2);
-  CHECK((get<0, 0>(inv_jac)) == approx(0.0));
-  CHECK((get<0, 1>(inv_jac)) == approx(1.0));
-  CHECK((get<1, 0>(inv_jac)) == approx(-1.0));
-  CHECK((get<1, 1>(inv_jac)) == approx(0.0));
 
   const auto jac = half_pi_rotation_map.jacobian(xi2);
   CHECK((get<0, 0>(jac)) == approx(0.0));

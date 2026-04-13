@@ -52,18 +52,7 @@ SPECTRE_TEST_CASE("Unit.Domain.CoordinateMaps.Equiangular", "[Domain][Unit]") {
   CHECK(equiangular_map.inverse(point_r2).value()[0] ==
         approx(0.5 + 3.0 * atan(0.4 * r2 + 0.2) / M_PI_2));
 
-  CHECK((get<0, 0>(equiangular_map.inv_jacobian(point_A))) *
-            (get<0, 0>(equiangular_map.jacobian(point_A))) ==
-        approx(1.0));
-  CHECK((get<0, 0>(equiangular_map.inv_jacobian(point_B))) *
-            (get<0, 0>(equiangular_map.jacobian(point_B))) ==
-        approx(1.0));
-  CHECK((get<0, 0>(equiangular_map.inv_jacobian(point_xi))) *
-            (get<0, 0>(equiangular_map.jacobian(point_xi))) ==
-        approx(1.0));
-
   test_jacobian(equiangular_map, point_xi);
-  test_inv_jacobian(equiangular_map, point_xi);
   test_inverse_map(equiangular_map, point_xi);
 
   // Check inequivalence operator

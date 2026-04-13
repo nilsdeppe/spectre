@@ -82,14 +82,6 @@ class ProductOf2Maps {
           functions_of_time) const;
 
   template <typename T>
-  tnsr::Ij<tt::remove_cvref_wrap_t<T>, dim, Frame::NoFrame> inv_jacobian(
-      const std::array<T, dim>& source_coords, double time,
-      const std::unordered_map<
-          std::string,
-          std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&
-          functions_of_time) const;
-
-  template <typename T>
   tnsr::Ij<tt::remove_cvref_wrap_t<T>, dim, Frame::NoFrame> jacobian(
       const std::array<T, dim>& source_coords, double time,
       const std::unordered_map<
@@ -163,14 +155,6 @@ class ProductOf3Maps {
 
   template <typename T>
   std::array<tt::remove_cvref_wrap_t<T>, dim> frame_velocity(
-      const std::array<T, dim>& source_coords, double time,
-      const std::unordered_map<
-          std::string,
-          std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&
-          functions_of_time) const;
-
-  template <typename T>
-  tnsr::Ij<tt::remove_cvref_wrap_t<T>, dim, Frame::NoFrame> inv_jacobian(
       const std::array<T, dim>& source_coords, double time,
       const std::unordered_map<
           std::string,

@@ -8,6 +8,7 @@
 #include <optional>
 #include <random>
 
+#include "DataStructures/Tensor/EagerMath/DeterminantAndInverse.hpp"
 #include "DataStructures/Tensor/EagerMath/Magnitude.hpp"
 #include "DataStructures/Tensor/Identity.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
@@ -621,7 +622,8 @@ void test_wedge3d_large_radius() {
         CHECK_ITERABLE_APPROX(map.inverse(mapped_point).value(), logical_point);
 
         const auto jacobian = map.jacobian(logical_point);
-        const auto inv_jacobian = map.inv_jacobian(logical_point);
+        const auto inv_jacobian =
+            determinant_and_inverse(jacobian).second;
         CAPTURE(jacobian);
         CAPTURE(inv_jacobian);
         auto jacobian_approx = approx;
@@ -698,7 +700,8 @@ void test_wedge3d_large_radius() {
         CHECK(mapped_point[2] == approx(expected_radius));
 
         const auto jacobian = map.jacobian(logical_point);
-        const auto inv_jacobian = map.inv_jacobian(logical_point);
+        const auto inv_jacobian =
+            determinant_and_inverse(jacobian).second;
 
         std::array expected_jacobian_diagonal{
             expected_radius *

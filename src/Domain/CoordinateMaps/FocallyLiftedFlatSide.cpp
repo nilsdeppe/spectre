@@ -99,48 +99,6 @@ void FlatSide::jacobian(const gsl::not_null<tnsr::Ij<tt::remove_cvref_wrap_t<T>,
   }
 }
 
-template <typename T>
-void FlatSide::inv_jacobian(
-    const gsl::not_null<
-        tnsr::Ij<tt::remove_cvref_wrap_t<T>, 3, Frame::NoFrame>*>
-        inv_jacobian_out,
-    const std::array<T, 3>& source_coords) const {
-  using ReturnType = tt::remove_cvref_wrap_t<T>;
-  const ReturnType& xbar = source_coords[0];
-  const ReturnType& ybar = source_coords[1];
-
-  set_number_of_grid_points(inv_jacobian_out, source_coords);
-
-  // Use part of inverse Jacobian for temp storage to avoid allocations.
-  const double tmp =
-      (2.0 * inner_radius_ - outer_radius_) / (outer_radius_ - inner_radius_);
-  // Denominator in the next line is guaranteed to be nonzero.
-  get<0, 1>(*inv_jacobian_out) = 1.0 / sqrt(square(xbar) + square(ybar));
-  get<0, 1>(*inv_jacobian_out) =
-      cube(get<0, 1>(*inv_jacobian_out)) * tmp /
-      ((outer_radius_ - inner_radius_) +
-       (2.0 * inner_radius_ - outer_radius_) * get<0, 1>(*inv_jacobian_out));
-
-  // dxbar/dx
-  get<0, 0>(*inv_jacobian_out) = -square(ybar) * get<0, 1>(*inv_jacobian_out) +
-                                 1.0 / (outer_radius_ - inner_radius_);
-  // dybar/dy
-  get<1, 1>(*inv_jacobian_out) = -square(xbar) * get<0, 1>(*inv_jacobian_out) +
-                                 1.0 / (outer_radius_ - inner_radius_);
-  // dxbar/dy
-  get<0, 1>(*inv_jacobian_out) *= xbar * ybar;
-  // dybar/dx
-  get<1, 0>(*inv_jacobian_out) = get<0, 1>(*inv_jacobian_out);
-
-  // Set remaining components to zero
-  for (size_t i = 0; i < 3; ++i) {
-    inv_jacobian_out->get(i, 2) = 0.0;
-  }
-  for (size_t i = 0; i < 2; ++i) {
-    inv_jacobian_out->get(2, i) = 0.0;
-  }
-}
-
 std::optional<std::array<double, 3>> FlatSide::inverse(
     const std::array<double, 3>& target_coords, const double sigma_in) const {
   const double x = (target_coords[0] - center_[0]);
@@ -253,11 +211,6 @@ bool operator!=(const FlatSide& lhs, const FlatSide& rhs) {
       const gsl::not_null<                                                    \
           tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>*> \
           jacobian_out,                                                       \
-      const std::array<DTYPE(data), 3>& source_coords) const;                 \
-  template void FlatSide::inv_jacobian(                                       \
-      const gsl::not_null<                                                    \
-          tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, 3, Frame::NoFrame>*> \
-          inv_jacobian_out,                                                   \
       const std::array<DTYPE(data), 3>& source_coords) const;                 \
   template void FlatSide::sigma(                                              \
       const gsl::not_null<tt::remove_cvref_wrap_t<DTYPE(data)>*> sigma_out,   \

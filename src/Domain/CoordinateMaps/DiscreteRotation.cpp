@@ -15,7 +15,6 @@
 #include "Utilities/ErrorHandling/Assert.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
 #include "Utilities/Gsl.hpp"
-#include "Utilities/MakeWithValue.hpp"
 
 namespace domain::CoordinateMaps {
 template <size_t VolumeDim>
@@ -103,23 +102,6 @@ DiscreteRotation<VolumeDim>::jacobian(
 }
 
 template <size_t VolumeDim>
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, VolumeDim, Frame::NoFrame>
-DiscreteRotation<VolumeDim>::inv_jacobian(
-    const std::array<T, VolumeDim>& source_coords) const {
-  auto inv_jacobian_matrix = make_with_value<
-      tnsr::Ij<tt::remove_cvref_wrap_t<T>, VolumeDim, Frame::NoFrame>>(
-      dereference_wrapper(source_coords[0]), 0.0);
-  for (size_t d = 0; d < VolumeDim; d++) {
-    const auto new_direction =
-        orientation_(Direction<VolumeDim>(d, Side::Upper));
-    inv_jacobian_matrix.get(orientation_(d), d) =
-        new_direction.side() == Side::Upper ? 1.0 : -1.0;
-  }
-  return inv_jacobian_matrix;
-}
-
-template <size_t VolumeDim>
 void DiscreteRotation<VolumeDim>::pup(PUP::er& p) {
   size_t version = 0;
   p | version;
@@ -147,10 +129,6 @@ template class DiscreteRotation<3>;
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data),   \
                     Frame::NoFrame>                                    \
   DiscreteRotation<DIM(data)>::jacobian(                               \
-      const std::array<DTYPE(data), DIM(data)>& source_coords) const;  \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data),   \
-                    Frame::NoFrame>                                    \
-  DiscreteRotation<DIM(data)>::inv_jacobian(                           \
       const std::array<DTYPE(data), DIM(data)>& source_coords) const;
 
 GENERATE_INSTANTIATIONS(

@@ -208,29 +208,6 @@ void get_jacobian(
   *no_frame_jac = the_map.jacobian(point, t, funcs_of_time);
 }
 
-template <typename T, typename Map, size_t Dim>
-void get_inv_jacobian(
-    const gsl::not_null<tnsr::Ij<T, Dim, Frame::NoFrame>*> no_frame_inv_jac,
-    const Map& the_map, const std::array<T, Dim>& point, const double /*t*/,
-    const FunctionsOfTimeMap&
-    /*funcs_of_time*/,
-    std::false_type /*jacobian_is_time_dependent*/) {
-  if (LIKELY(not the_map.is_identity())) {
-    *no_frame_inv_jac = the_map.inv_jacobian(point);
-  } else {
-    *no_frame_inv_jac = identity<Dim>(point[0]);
-  }
-}
-
-template <typename T, typename Map, size_t Dim>
-void get_inv_jacobian(
-    const gsl::not_null<tnsr::Ij<T, Dim, Frame::NoFrame>*> no_frame_inv_jac,
-    const Map& the_map, const std::array<T, Dim>& point, const double t,
-    const FunctionsOfTimeMap& funcs_of_time,
-    std::true_type /*jacobian_is_time_dependent*/) {
-  *no_frame_inv_jac = the_map.inv_jacobian(point, t, funcs_of_time);
-}
-
 template <typename T, size_t Dim, typename SourceFrame, typename TargetFrame>
 void multiply_jacobian(
     const gsl::not_null<Jacobian<T, Dim, SourceFrame, TargetFrame>*> jac,
@@ -250,25 +227,6 @@ void multiply_jacobian(
   }
 }
 
-template <typename T, size_t Dim, typename SourceFrame, typename TargetFrame>
-void multiply_inv_jacobian(
-    const gsl::not_null<Jacobian<T, Dim, SourceFrame, TargetFrame>*> inv_jac,
-    const tnsr::Ij<T, Dim, Frame::NoFrame>& noframe_inv_jac) {
-  std::array<T, Dim> temp{};
-  for (size_t source = 0; source < Dim; ++source) {
-    for (size_t target = 0; target < Dim; ++target) {
-      gsl::at(temp, target) =
-          inv_jac->get(source, 0) * noframe_inv_jac.get(0, target);
-      for (size_t dummy = 1; dummy < Dim; ++dummy) {
-        gsl::at(temp, target) +=
-            inv_jac->get(source, dummy) * noframe_inv_jac.get(dummy, target);
-      }
-    }
-    for (size_t target = 0; target < Dim; ++target) {
-      inv_jac->get(source, target) = std::move(gsl::at(temp, target));
-    }
-  }
-}
 }  // namespace detail
 
 template <typename SourceFrame, typename TargetFrame, typename... Maps>
@@ -277,45 +235,9 @@ auto CoordinateMap<SourceFrame, TargetFrame, Maps...>::inv_jacobian_impl(
     tnsr::I<T, dim, SourceFrame>&& source_point, const double time,
     const FunctionsOfTimeMap& functions_of_time) const
     -> InverseJacobian<T, dim, SourceFrame, TargetFrame> {
-  check_functions_of_time(functions_of_time);
-  std::array<T, dim> mapped_point = make_array<T, dim>(std::move(source_point));
-
-  InverseJacobian<T, dim, SourceFrame, TargetFrame> inv_jac{};
-
-  tuple_transform(maps_, [&inv_jac, &mapped_point, time, &functions_of_time](
-                             const auto& map, auto index) {
-    constexpr size_t count = decltype(index)::value;
-    using Map = std::decay_t<decltype(map)>;
-
-    tnsr::Ij<T, dim, Frame::NoFrame> noframe_inv_jac{};
-
-    if (UNLIKELY(count == 0)) {
-      ::domain::detail::get_inv_jacobian(
-          make_not_null(&noframe_inv_jac), map, mapped_point, time,
-          functions_of_time, domain::is_jacobian_time_dependent_t<Map, T>{});
-      for (size_t source = 0; source < dim; ++source) {
-        for (size_t target = 0; target < dim; ++target) {
-          inv_jac.get(source, target) =
-              std::move(noframe_inv_jac.get(source, target));
-        }
-      }
-    } else if (LIKELY(not map.is_identity())) {
-      ::domain::detail::get_inv_jacobian(
-          make_not_null(&noframe_inv_jac), map, mapped_point, time,
-          functions_of_time, domain::is_jacobian_time_dependent_t<Map, T>{});
-      ::domain::detail::multiply_inv_jacobian(make_not_null(&inv_jac),
-                                              noframe_inv_jac);
-    }
-
-    // Compute the source coordinates for the next map, only if we are not
-    // the last map and the map is not the identity.
-    if (not map.is_identity() and count + 1 != sizeof...(Maps)) {
-      CoordinateMap_detail::apply_map(
-          make_not_null(&mapped_point), map, time, functions_of_time,
-          domain::is_map_time_dependent_t<decltype(map)>{});
-    }
-  });
-  return inv_jac;
+  return determinant_and_inverse(
+             jacobian_impl(std::move(source_point), time, functions_of_time))
+      .second;
 }
 
 #ifdef SPECTRE_AUTODIFF

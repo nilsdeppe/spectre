@@ -255,74 +255,6 @@ CubicScale<Dim>::jacobian(
 }
 
 template <size_t Dim>
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame>
-CubicScale<Dim>::inv_jacobian(
-    const std::array<T, Dim>& source_coords, const double time,
-    const std::unordered_map<
-        std::string, std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&
-        functions_of_time) const {
-  const double a_of_t = functions_of_time.at(f_of_t_a_)->func(time)[0][0];
-
-  if (functions_of_time_equal_) {
-    // optimization for linear radial scaling
-    auto inv_jac{make_with_value<
-        tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame>>(
-        dereference_wrapper(source_coords[0]), 0.0)};
-    const double one_over_a = 1.0 / a_of_t;
-    for (size_t i = 0; i < Dim; ++i) {
-      inv_jac.get(i, i) = one_over_a;
-    }
-    return inv_jac;
-  }
-
-  const double b_of_t = functions_of_time.at(f_of_t_b_)->func(time)[0][0];
-
-  tt::remove_cvref_wrap_t<T> rho_squared =
-      square(dereference_wrapper(source_coords[0]));
-  for (size_t i = 1; i < Dim; ++i) {
-    rho_squared += square(dereference_wrapper(gsl::at(source_coords, i)));
-  }
-  tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame> inv_jac{};
-  get<0, 0>(inv_jac) =
-      1.0 / (a_of_t + (b_of_t - a_of_t) * square(one_over_outer_boundary_) *
-                          rho_squared);
-  for (size_t i = 1; i < Dim; ++i) {
-    inv_jac.get(i, i) = get<0, 0>(inv_jac);
-  }
-
-  // Factor out `double` computations to ensure minimal DataVector operations
-  const double denom_constant_a = a_of_t / square(one_over_outer_boundary_);
-  const double denom_constant_b = 3.0 * (b_of_t - a_of_t);
-  const double numerator_constant = -2.0 * (b_of_t - a_of_t);
-  if (Dim == 1) {
-    get<0, 0>(inv_jac) *=
-        (1.0 + numerator_constant /
-                   (denom_constant_a + denom_constant_b * rho_squared) *
-                   square(source_coords[0]));
-  } else {
-    // Reuse rho^2 allocation
-    rho_squared = numerator_constant /
-                  (denom_constant_a + denom_constant_b * rho_squared) *
-                  get<0, 0>(inv_jac);
-
-    for (size_t i = 0; i < Dim; ++i) {
-      for (size_t j = 0; j < Dim; ++j) {
-        if (i == j) {
-          inv_jac.get(i, j) += rho_squared * gsl::at(source_coords, i) *
-                               gsl::at(source_coords, j);
-        } else {
-          inv_jac.get(i, j) = rho_squared * gsl::at(source_coords, i) *
-                              gsl::at(source_coords, j);
-        }
-      }
-    }
-  }
-
-  return inv_jac;
-}
-
-template <size_t Dim>
 void CubicScale<Dim>::pup(PUP::er& p) {
   size_t version = 0;
   p | version;
@@ -383,15 +315,6 @@ GENERATE_INSTANTIATIONS(INSTANTIATE, (1, 2, 3))
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data),   \
                     Frame::NoFrame>                                    \
   CubicScale<DIM(data)>::jacobian(                                     \
-      const std::array<DTYPE(data), DIM(data)>& source_coords,         \
-      const double time,                                               \
-      const std::unordered_map<                                        \
-          std::string,                                                 \
-          std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&   \
-          functions_of_time) const;                                    \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data),   \
-                    Frame::NoFrame>                                    \
-  CubicScale<DIM(data)>::inv_jacobian(                                 \
       const std::array<DTYPE(data), DIM(data)>& source_coords,         \
       const double time,                                               \
       const std::unordered_map<                                        \

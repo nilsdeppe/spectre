@@ -17,7 +17,6 @@
 
 #include "DataStructures/DataVector.hpp"
 #include "DataStructures/Matrix.hpp"
-#include "DataStructures/Tensor/EagerMath/DeterminantAndInverse.hpp"
 #include "DataStructures/Tensor/Identity.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Domain/CoordinateMaps/TimeDependent/RotationMatrixHelpers.hpp"
@@ -860,19 +859,6 @@ RotScaleTrans<Dim>::jacobian(
 }
 
 template <size_t Dim>
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, Dim, Frame::NoFrame>
-RotScaleTrans<Dim>::inv_jacobian(
-    const std::array<T, Dim>& source_coords, const double time,
-    const std::unordered_map<
-        std::string, std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&
-        functions_of_time) const {
-  return determinant_and_inverse(
-             jacobian(source_coords, time, functions_of_time))
-      .second;
-}
-
-template <size_t Dim>
 double RotScaleTrans<Dim>::root_helper(
     const std::optional<std::array<double, 2>> roots) const {
   ASSERT(roots.has_value(), "No roots found");
@@ -969,14 +955,6 @@ GENERATE_INSTANTIATIONS(INSTANTIATE, (2, 3))
   template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data),        \
                     Frame::NoFrame>                                         \
   RotScaleTrans<DIM(data)>::jacobian(                                       \
-      const std::array<DTYPE(data), DIM(data)>& source_coords, double time, \
-      const std::unordered_map<                                             \
-          std::string,                                                      \
-          std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&        \
-          functions_of_time) const;                                         \
-  template tnsr::Ij<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data),        \
-                    Frame::NoFrame>                                         \
-  RotScaleTrans<DIM(data)>::inv_jacobian(                                   \
       const std::array<DTYPE(data), DIM(data)>& source_coords, double time, \
       const std::unordered_map<                                             \
           std::string,                                                      \

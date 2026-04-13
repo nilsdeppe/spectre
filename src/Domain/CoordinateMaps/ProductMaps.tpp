@@ -170,21 +170,6 @@ ProductOf2Maps<Map1, Map2>::inverse(
 
 template <typename Map1, typename Map2>
 template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, ProductOf2Maps<Map1, Map2>::dim,
-         Frame::NoFrame>
-ProductOf2Maps<Map1, Map2>::inv_jacobian(
-    const std::array<T, dim>& source_coords) const {
-  return product_detail::apply_jac(
-      source_coords, map1_, map2_,
-      [](const auto& point, const auto& map) {
-        return map.inv_jacobian(point);
-      },
-      std::make_index_sequence<Map1::dim>{},
-      std::make_index_sequence<Map2::dim>{});
-}
-
-template <typename Map1, typename Map2>
-template <typename T>
 void ProductOf2Maps<Map1, Map2>::jacobian(
     const gsl::not_null<
         tnsr::Ij<tt::remove_cvref_wrap_t<T>, dim, Frame::NoFrame>*>
@@ -293,27 +278,6 @@ ProductOf3Maps<Map1, Map2, Map3>::inverse(
   } else {
     return std::nullopt;
   }
-}
-
-template <typename Map1, typename Map2, typename Map3>
-template <typename T>
-tnsr::Ij<tt::remove_cvref_wrap_t<T>, ProductOf3Maps<Map1, Map2, Map3>::dim,
-         Frame::NoFrame>
-ProductOf3Maps<Map1, Map2, Map3>::inv_jacobian(
-    const std::array<T, dim>& source_coords) const {
-  using UnwrappedT = tt::remove_cvref_wrap_t<T>;
-  tnsr::Ij<UnwrappedT, dim, Frame::NoFrame> inv_jacobian_matrix{
-      make_with_value<UnwrappedT>(dereference_wrapper(source_coords[0]), 0.0)};
-  get<0, 0>(inv_jacobian_matrix) = get<0, 0>(map1_.inv_jacobian(
-      std::array<std::reference_wrapper<const UnwrappedT>, 1>{
-          {source_coords[0]}}));
-  get<1, 1>(inv_jacobian_matrix) = get<0, 0>(map2_.inv_jacobian(
-      std::array<std::reference_wrapper<const UnwrappedT>, 1>{
-          {source_coords[1]}}));
-  get<2, 2>(inv_jacobian_matrix) = get<0, 0>(map3_.inv_jacobian(
-      std::array<std::reference_wrapper<const UnwrappedT>, 1>{
-          {source_coords[2]}}));
-  return inv_jacobian_matrix;
 }
 
 template <typename Map1, typename Map2, typename Map3>

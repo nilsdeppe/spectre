@@ -62,10 +62,6 @@ class ProductOf2Maps {
       const std::array<double, dim>& target_coords) const;
 
   template <typename T>
-  tnsr::Ij<tt::remove_cvref_wrap_t<T>, dim, Frame::NoFrame> inv_jacobian(
-      const std::array<T, dim>& source_coords) const;
-
-  template <typename T>
   void jacobian(
       gsl::not_null<tnsr::Ij<tt::remove_cvref_wrap_t<T>, dim, Frame::NoFrame>*>
           result,
@@ -123,10 +119,6 @@ class ProductOf3Maps {
 
   std::optional<std::array<double, dim>> inverse(
       const std::array<double, dim>& target_coords) const;
-
-  template <typename T>
-  tnsr::Ij<tt::remove_cvref_wrap_t<T>, dim, Frame::NoFrame> inv_jacobian(
-      const std::array<T, dim>& source_coords) const;
 
   template <typename T>
   void jacobian(
