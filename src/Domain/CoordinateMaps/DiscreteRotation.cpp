@@ -3,6 +3,7 @@
 
 #include "Domain/CoordinateMaps/DiscreteRotation.hpp"
 
+#include "DataStructures/DataVector.hpp"
 #include "DataStructures/Tensor/EagerMath/Determinant.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Domain/CoordinateMaps/AutodiffInstantiationTypes.hpp"
@@ -11,7 +12,9 @@
 #include "Domain/Structure/Side.hpp"
 #include "Utilities/Autodiff/Autodiff.hpp"
 #include "Utilities/DereferenceWrapper.hpp"
+#include "Utilities/ErrorHandling/Assert.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
+#include "Utilities/Gsl.hpp"
 #include "Utilities/MakeWithValue.hpp"
 
 namespace domain::CoordinateMaps {
@@ -33,10 +36,28 @@ DiscreteRotation<VolumeDim>::DiscreteRotation(
 
 template <size_t VolumeDim>
 template <typename T>
+void DiscreteRotation<VolumeDim>::operator()(
+    const gsl::not_null<std::array<tt::remove_cvref_wrap_t<T>, VolumeDim>*>
+        result,
+    const std::array<T, VolumeDim>& source_coords) const {
+  if constexpr (std::is_same_v<tt::remove_cvref_wrap_t<T>, DataVector>) {
+    const size_t size = dereference_wrapper(source_coords[0]).size();
+    for (size_t i = 0; i < VolumeDim; ++i) {
+      gsl::at(*result, i).destructive_resize(size);
+    }
+  }
+  *result = discrete_rotation(orientation_, source_coords);
+}
+
+template <size_t VolumeDim>
+template <typename T>
 std::array<tt::remove_cvref_wrap_t<T>, VolumeDim>
 DiscreteRotation<VolumeDim>::operator()(
     const std::array<T, VolumeDim>& source_coords) const {
-  return discrete_rotation(orientation_, source_coords);
+  using ReturnType = tt::remove_cvref_wrap_t<T>;
+  std::array<ReturnType, VolumeDim> result{};
+  (*this)(make_not_null(&result), source_coords);
+  return result;
 }
 
 template <size_t VolumeDim>
@@ -122,6 +143,21 @@ GENERATE_INSTANTIATIONS(
 
 GENERATE_INSTANTIATIONS(INSTANTIATE, (1, 2, 3), MAP_AUTODIFF_TYPES)
 
-#undef DTYPE
 #undef INSTANTIATE
+
+#define INSTANTIATE_NOT_NULL(_, data)                                   \
+  template void DiscreteRotation<DIM(data)>::operator()(                \
+      gsl::not_null<                                                    \
+          std::array<tt::remove_cvref_wrap_t<DTYPE(data)>, DIM(data)>*> \
+          result,                                                       \
+      const std::array<DTYPE(data), DIM(data)>& source_coords) const;
+
+GENERATE_INSTANTIATIONS(INSTANTIATE_NOT_NULL, (1, 2, 3),
+                        (double, DataVector,
+                         std::reference_wrapper<const double>,
+                         std::reference_wrapper<const DataVector>))
+
+#undef DIM
+#undef DTYPE
+#undef INSTANTIATE_NOT_NULL
 }  // namespace domain::CoordinateMaps
