@@ -521,13 +521,35 @@ std::optional<double> Wedge::original_radius_over_radius(
         // will be of order unity and not something super large, so we take the
         // smallest of the positive roots. If this turns out to not be robust
         // enough we can change this.
-        return *alg::min_element(roots);
+        double result = *alg::min_element(roots);
+        // The trigonometric formula loses precision when theta is near pi/2
+        // (large `factor`, i.e. small radial distortion): cos((theta-2pi)/3)
+        // is near zero and the floating-point error in 2*pi propagates after
+        // multiplication by the large factor 2*sqrt(Q). Polish the root with
+        // one Newton step on f(x)=x^3-factor*x+factor to restore machine
+        // precision.
+        const double fp = 3.0 * square(result) - factor;
+        if (fp != 0.0) {
+          result -= (cube(result) - factor * result + factor) / fp;
+        }
+        return result;
       } else {
         // Numerical Recipes (3rd edition) pg 228, eqs 5.6.13 - 5.6.17
         const double A = -sgn(R) * cbrt(abs(R) + sqrt(square(R) - cube(Q)));
         const double B = A == 0.0 ? 0.0 : Q / A;
-
-        return A + B;
+        // Cardano's formula can suffer catastrophic cancellation when A and B
+        // are large and nearly opposite in sign (large |factor|, small radial
+        // distortion). Polish the result with two Newton steps on
+        // f(x)=x^3-factor*x+factor to restore machine precision.
+        double result = A + B;
+        for (int i = 0; i < 2; ++i) {
+          const double fp = 3.0 * square(result) - factor;
+          if (fp == 0.0) {
+            break;
+          }
+          result -= (cube(result) - factor * result + factor) / fp;
+        }
+        return result;
       }
     } else if (equal_within_roundoff(
                    centered_coords_magnitude + radial_distortion,
