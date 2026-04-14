@@ -284,6 +284,86 @@ numerical_derivative(const Invocable& function,
          (0.75 / delta) * (function(x_1ahead) - function(x_1behind));
 }
 
+/*!
+ * \ingroup TestingFrameworkGroup
+ * \brief Calculates the second partial derivative of an Invocable at a point x
+ * -- represented by an array of doubles -- in the domain of `map`, using a
+ * fourth-order finite difference method.
+ *
+ * \details Intended for use with CoordinateMaps taking the domain
+ * {xi,eta,zeta} to the range {x,y,z}. This function calculates the second
+ * partial derivative with respect to directions `direction_i` and
+ * `direction_j`, with step size `delta`. When `direction_i == direction_j`,
+ * uses the 4th-order 5-point pure second derivative stencil:
+ *
+ * d^2f/dx^2 = (1/h^2)[-1/12*f(-2) + 4/3*f(-1) - 5/2*f(0)
+ *                      + 4/3*f(+1) - 1/12*f(+2)]
+ *
+ * When `direction_i != direction_j`, uses the 4th-order 8-point mixed stencil:
+ *
+ * d^2f/(dx dy) = 1/(3*h^2) [f(+h_i,+h_j) + f(-h_i,-h_j)
+ *                            - f(+h_i,-h_j) - f(-h_i,+h_j)]
+ *              - 1/(48*h^2)[f(+2h_i,+2h_j) + f(-2h_i,-2h_j)
+ *                           - f(+2h_i,-2h_j) - f(-2h_i,+2h_j)]
+ *
+ * \requires direction_i and direction_j be between 0 and VolumeDim
+ */
+template <typename Invocable, size_t VolumeDim>
+std::invoke_result_t<const Invocable&, const std::array<double, VolumeDim>&>
+numerical_second_derivative(const Invocable& function,
+                            const std::array<double, VolumeDim>& x,
+                            const size_t direction_i, const size_t direction_j,
+                            const double delta) {
+  ASSERT(direction_i < VolumeDim,
+         "direction_i " << direction_i << " out of bounds " << VolumeDim);
+  ASSERT(direction_j < VolumeDim,
+         "direction_j " << direction_j << " out of bounds " << VolumeDim);
+  const double delta_sq = delta * delta;
+  if (direction_i == direction_j) {
+    // Pure second derivative: 4th-order 5-point stencil.
+    const auto dx = [direction_i, delta]() {
+      auto d = make_array<VolumeDim>(0.0);
+      gsl::at(d, direction_i) = delta;
+      return d;
+    }();
+    const std::array<double, VolumeDim> x_1ahead = x + dx;
+    const std::array<double, VolumeDim> x_2ahead = x_1ahead + dx;
+    const std::array<double, VolumeDim> x_1behind = x - dx;
+    const std::array<double, VolumeDim> x_2behind = x_1behind - dx;
+    return (-1.0 / (12.0 * delta_sq)) *
+               (function(x_2ahead) + function(x_2behind)) +
+           (4.0 / (3.0 * delta_sq)) *
+               (function(x_1ahead) + function(x_1behind)) -
+           (5.0 / (2.0 * delta_sq)) * function(x);
+  } else {
+    // Mixed second derivative: 4th-order 8-point stencil.
+    const auto dx_i = [direction_i, delta]() {
+      auto d = make_array<VolumeDim>(0.0);
+      gsl::at(d, direction_i) = delta;
+      return d;
+    }();
+    const auto dx_j = [direction_j, delta]() {
+      auto d = make_array<VolumeDim>(0.0);
+      gsl::at(d, direction_j) = delta;
+      return d;
+    }();
+    const std::array<double, VolumeDim> x_pi_pj = x + dx_i + dx_j;
+    const std::array<double, VolumeDim> x_mi_mj = x - dx_i - dx_j;
+    const std::array<double, VolumeDim> x_pi_mj = x + dx_i - dx_j;
+    const std::array<double, VolumeDim> x_mi_pj = x - dx_i + dx_j;
+    const std::array<double, VolumeDim> x_2pi_2pj = x_pi_pj + dx_i + dx_j;
+    const std::array<double, VolumeDim> x_2mi_2mj = x_mi_mj - dx_i - dx_j;
+    const std::array<double, VolumeDim> x_2pi_2mj = x_pi_mj + dx_i - dx_j;
+    const std::array<double, VolumeDim> x_2mi_2pj = x_mi_pj - dx_i + dx_j;
+    return (1.0 / (3.0 * delta_sq)) *
+               (function(x_pi_pj) + function(x_mi_mj) - function(x_pi_mj) -
+                function(x_mi_pj)) -
+           (1.0 / (48.0 * delta_sq)) *
+               (function(x_2pi_2pj) + function(x_2mi_2mj) -
+                function(x_2pi_2mj) - function(x_2mi_2pj));
+  }
+}
+
 struct NonStreamable {
   int value{0};
 };
