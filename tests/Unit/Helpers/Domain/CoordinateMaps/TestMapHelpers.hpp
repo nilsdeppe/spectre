@@ -217,6 +217,35 @@ void test_jacobian(
 
 /*!
  * \ingroup TestingFrameworkGroup
+ * \brief Given a Map `map`, checks that the hessian gives expected results
+ * when compared to the numerical second derivative in each pair of directions.
+ */
+template <typename Map>
+void test_hessian(const Map& map,
+                  const std::array<double, Map::dim>& test_point) {
+  INFO("Test Hessian");
+  CAPTURE(test_point);
+  // Our default approx value is too stringent for this test.
+  // Use dx=1e-3 (larger than test_jacobian's 1e-4) so roundoff/dx^2
+  // noise stays at around 1e-10.
+  Approx local_approx = Approx::custom().epsilon(1e-10).scale(1.0);
+  const double dx = 1e-3;
+  const auto hessian = map.hessian(test_point);
+  for (size_t i = 0; i < Map::dim; ++i) {
+    for (size_t j = i; j < Map::dim; ++j) {
+      const auto numerical_second_deriv_ij =
+          numerical_second_derivative(map, test_point, i, j, dx);
+      for (size_t k = 0; k < Map::dim; ++k) {
+        INFO("k: " << k << " i: " << i << " j: " << j);
+        CHECK(hessian.get(k, i, j) ==
+              local_approx(gsl::at(numerical_second_deriv_ij, k)));
+      }
+    }
+  }
+}
+
+/*!
+ * \ingroup TestingFrameworkGroup
  * \brief Given a Map `map`, checks that the frame velocity matches a
  * sixth-order finite difference approximation.
  */
