@@ -1,0 +1,350 @@
+# Distributed under the MIT License.
+# See LICENSE.txt for details.
+
+Executable: EvolveGhSingleBlackHole
+Testing:
+  Check: parse;execute_check_output
+  Timeout: 120
+  Priority: High
+ExpectedOutput:
+  - GhKerrSchildVolume0.h5
+  - GhKerrSchildReductions.h5
+  - GhKerrSchildSurfaces.h5
+OutputFileChecks:
+  - Label: "check_horizon_find"
+    Subfile: "/ApparentHorizon.dat"
+    FileGlob: "GhKerrSchildReductions.h5"
+    AbsoluteTolerance: 1e2
+
+---
+
+Parallelization:
+  ElementDistribution: NumGridPointsAndGridSpacing
+
+InitialData: &InitialData
+  GeneralizedHarmonic(KerrSchild):
+    Mass: 1.0
+    Spin: [0.0, 0.0, 0.0]
+    Center: &Center [0.0, 0.0, 0.0]
+    Velocity: [0.0, 0.0, 0.0]
+
+DomainCreator:
+  SphericalShells:
+    InnerRadius: &InnerRadius 1.82
+    OuterRadius: 32.0
+    InitialRadialRefinement: 0
+    InitialNumberOfRadialGridPoints: 17
+    InitialSphericalHarmonicL: 11
+    RadialPartitioning: [6, 12, 22]
+    # RadialPartitioning: [6, 12, 20, 30, 50, 100, 150, 200, 250, 300, 350]
+    RadialDistribution: Logarithmic
+    TimeDependentMaps:
+      InitialTime: 0.0
+      ShapeMap: None
+        # LMax: &LMax 4
+        # #InitialValues:  # for Schwarzschild
+        # InitialValues:
+        #   Mass: *Mass
+        #   Spin: *Spin
+        # SizeInitialValues: [0.0, 0.0, 0.0]
+      RotationMap: None
+      ExpansionMap:
+        InitialValues: [1.0, 0.0, 0.0]
+        InitialValuesOuterBoundary: [1.0, -1.0e-6, 0.0]
+        DecayTimescale: 1.0
+        DecayTimescaleOuterBoundary: 1.0
+      TranslationMap: None
+      TransitionRotScaleTrans: False
+    InnerBoundaryCondition:
+      DemandOutgoingCharSpeeds:
+    OuterBoundaryCondition:
+      ConstraintPreservingBjorhus:
+        Type: ConstraintPreservingPhysical
+        IncomingWaveProfile: None
+        # IncomingWaveProfile:
+        #   Gaussian:
+        #     Amplitude: 1e-5
+        #     Width: 20.0
+        #     Center: 150.0
+
+Evolution:
+  InitialTime: 0.0
+  InitialTimeStep: 0.02
+  MinimumTimeStep: 1e-7
+  # *Important* this slab size was chosen for testing purposes, a more realistic
+  # slab size for evolutions would be 0.1 to observe constraints. If you would
+  # like more frequent output, consider using dense output.
+  InitialSlabSize: 1.0
+  VariableOrderAlgorithm:
+    GoalOrder: 4
+  LtsStepChoosers:
+    - LimitIncrease:
+        Factor: 2
+    - ErrorControl:
+        AbsoluteTolerance: 1e-10
+        RelativeTolerance: 1e-8
+        MaxFactor: 2
+        MinFactor: 0.25
+        SafetyFactor: 0.95
+  # Found that order 4 offers a significant speedup compared to order 5
+  TimeStepper:
+    AdamsMoultonPcMonotonic:
+      Order: 4
+
+EvolutionSystem:
+  GeneralizedHarmonic:
+    GaugeCondition:
+      AnalyticChristoffel:
+        AnalyticPrescription: *InitialData
+    # The parameter choices here come from our experience with the Spectral
+    # Einstein Code (SpEC). They should be suitable for evolutions of a
+    # perturbation of a Kerr-Schild black hole.
+    DampingFunctionGamma0:
+      # SpEC uses a sum of 2 gaussians. Here, the Expansion func of time
+      # is just the identity, so TimeDependentTripleGaussian ought to work.
+      # I set the Gaussian amplitudes, widths, and centers according to what
+      # spec does ringdown for q=1, spin=0, circular inspiral.
+      TimeDependentTripleGaussian:
+        Constant: 0.001
+        Gaussian1:
+          Amplitude: 7.0
+          Width: 2.5
+          Center: *Center
+        Gaussian2:
+          Amplitude: 0.1
+          Width: 100.0
+          Center: *Center
+        Gaussian3:
+          Amplitude: 0.0
+          Width: 100.0
+          Center: *Center
+        MovementMethod: ExpansionFactor
+    DampingFunctionGamma1:
+      Constant:
+        Value: -1.0
+    DampingFunctionGamma2:
+      TimeDependentTripleGaussian:
+        Constant: 0.001
+        Gaussian1:
+          Amplitude: 7.0
+          Width: 2.5
+          Center: *Center
+        Gaussian2:
+          Amplitude: 0.1
+          Width: 100.0
+          Center: *Center
+        Gaussian3:
+          Amplitude: 0.0
+          Width: 100.0
+          Center: *Center
+        MovementMethod: ExpansionFactor
+
+SpatialDiscretization:
+  BoundaryCorrection:
+    AveragedUpwindPenalty:
+  DiscontinuousGalerkin:
+    Formulation: StrongInertial
+    Quadrature: GaussLobatto
+    Filtering:
+      - SphericalShell:
+          NumModesToKill: 4
+          AngularHalfPower: None
+          RadialHalfPower: 64
+          Enable: true
+          BlocksToFilter: [Shell0]
+          VolumeFilterOnSubstep: false
+          BoundaryCorrectionFilterOnSubstep: true
+          VolumeFilterEveryNSteps: 2
+          BoundaryCorrectionFilterEveryNSteps: None
+      - SphericalShell:
+          NumModesToKill: 4
+          AngularHalfPower: None
+          RadialHalfPower: 64
+          Enable: true
+          BlocksToFilter: [Shell1,Shell2,Shell3]
+          VolumeFilterOnSubstep: false
+          BoundaryCorrectionFilterOnSubstep: true
+          VolumeFilterEveryNSteps: 8
+          BoundaryCorrectionFilterEveryNSteps: None
+
+Observers:
+  VolumeFileName: "GhKerrSchildVolume"
+  ReductionFileName: "GhKerrSchildReductions"
+  SurfaceFileName: "GhKerrSchildSurfaces"
+
+Amr:
+  Criteria:
+  EnableInBlocks: All
+  Policies:
+    EnforceTwoToOneBalanceInNormalDirection: true
+    Isotropy: Anisotropic
+    Limits:
+      RefinementLevel: Auto
+      NumGridPoints: Auto
+      ErrorBeyondLimits: False
+    AllowCoarsening: True
+  Verbosity: Quiet
+
+PhaseChangeAndTriggers:
+  - Trigger:
+      Slabs:
+       EvenlySpaced:
+         # Current implementation checks wallclock at these global syncs
+         Interval: 100
+         Offset: 0
+    PhaseChanges:
+      - CheckpointAndExitAfterWallclock:
+          WallclockHours: None
+
+EventsAndTriggersAtCheckpoints:
+
+EventsAndTriggersAtSlabs:
+  - Trigger:
+      Slabs:
+        EvenlySpaced:
+          Interval: 10
+          Offset: 0
+    Events:
+      - ObserveTimeStep:
+          SubfileName: TimeSteps
+          PrintTimeToTerminal: True
+          ObservePerCore: False
+      - ObserveNorms:
+          SubfileName: Errors
+          TensorsToObserve:
+            - Name: Error(SpacetimeMetric)
+              NormType: L2Norm
+              Components: Sum
+            - Name: Error(Pi)
+              NormType: L2Norm
+              Components: Sum
+            - Name: Error(Phi)
+              NormType: L2Norm
+              Components: Sum
+      - ObserveNorms:
+          SubfileName: Norms
+          TensorsToObserve:
+          - Name: Lapse
+            NormType: L2Norm
+            Components: Individual
+          - Name: PointwiseL2Norm(GaugeConstraint)
+            NormType: L2Norm
+            Components: Sum
+          - Name: PointwiseL2Norm(ThreeIndexConstraint)
+            NormType: L2Norm
+            Components: Sum
+  - Trigger:
+      Slabs:
+        EvenlySpaced:
+          Interval: 1000
+          Offset: 0
+    Events:
+      - ObserveFields:
+          SubfileName: VolumeData
+          VariablesToObserve:
+            - SpacetimeMetric
+            - Pi
+            - Phi
+            - GaugeH
+            - PointwiseL2Norm(GaugeConstraint)
+            - PointwiseL2Norm(ThreeIndexConstraint)
+            - PointwiseL2Norm(FourIndexConstraint)
+          InterpolateToMesh: None
+          ProjectToMesh: None
+          CoordinatesFloatingPointType: Double
+          FloatingPointTypes: [Double]
+          BlocksToObserve: All
+  - Trigger:
+      Slabs:
+        EvenlySpaced:
+          Interval: 1
+          Offset: 0
+    Events:
+      - ApparentHorizon
+      - ExcisionBoundary
+  - Trigger:
+      Slabs:
+        Specified:
+          Values: [5]
+    Events:
+      - Completion
+
+EventsAndTriggersAtSteps:
+
+EventsAndDenseTriggers:
+  # BondiSachs output needs to be often enough for CCE to run properly. An
+  # interval of 0.1 was found to work well in SpEC.
+  - Trigger:
+      Times:
+        EvenlySpaced:
+          Interval: 0.1
+          Offset: 0.0
+    Events:
+      - BondiSachsInterpolation
+
+EventsRunAtCleanup:
+  ObservationValue: -1000.0
+  Events:
+    - ObserveTimeStepVolume:
+        SubfileName: FailureTimeStep
+        FloatingPointType: Double
+        CoordinatesFloatingPointType: Float
+
+Interpolator:
+  Verbosity: Silent
+
+ApparentHorizons:
+  LMax: 10
+  ApparentHorizon: &Ah
+    Criteria:
+      - Residual:
+          MinResidual: 1.e-6
+          MaxResidual: 1.e-5
+          MinResolutionL: 4
+    InitialGuess:
+      LMax: &LMax 8
+      Radius: 2.2
+      Center: *Center
+    FastFlow:
+      Flow: Fast
+      Alpha: 1.0
+      Beta: 0.5
+      AbsTol: 1e-12
+      TruncationTol: 1e-2
+      DivergenceTol: 1.2
+      DivergenceIter: 5
+      MaxIts: 100
+    Verbosity: Silent
+    MaxComputeCoordsRetries: 3
+    BlocksForHorizonFind: All
+  ControlSystemSingleAh: *Ah
+  ControlSystemCharSpeedAh: *Ah
+
+InterpolationTargets:
+  BondiSachsInterpolation:
+    LMax: 16
+    Radius: [25, 28, 30]
+    Center: [0, 0, 0]
+    AngularOrdering: Cce
+  ExcisionBoundary: &ExBdry
+    LMax: *LMax
+    Center: *Center
+    Radius: *InnerRadius
+    AngularOrdering: "Strahlkorper"
+  ControlSystemCharSpeedExcision: *ExBdry
+
+Cce:
+  BondiSachsOutputFilePrefix: "BondiSachs"
+
+ControlSystems:
+  WriteDataToDisk: true
+  MeasurementsPerUpdate: 4
+  DelayUpdate: true
+  Verbosity: Silent
+  Translation: None
+  Shape: None
+  Size: None
+
+ResourceInfo:
+  AvoidGlobalProc0: false
+  Singletons: Auto
