@@ -71,7 +71,7 @@ namespace Filters {
  * #### Design decision:
  *
  * - The exponential coefficient is hardcoded to 36, matching the choice in
- * `Hypercube` in `Cube.hpp` and `Filters::Exponential`. `SphericalShell` is
+ * `Hypercube`. `SphericalShell` is
  * the `Filters::Filter`-based implementation that plugs into the filtering
  * action and supports per-block selection together with independent volume-
  * and boundary-filtering cadences. It is intended for spherical-shell
