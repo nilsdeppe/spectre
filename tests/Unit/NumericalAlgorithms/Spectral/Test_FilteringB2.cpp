@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <optional>
 #include <tuple>
 #include <vector>
 
@@ -451,6 +452,166 @@ void test_cylinder_filter_weights() {
   }
 }
 
+// Exercises the generalized `zernike_b2_{disk,cylinder}_filter` entry points:
+// independent disk/z half-powers, the top angular mode cutoff, identity when
+// nothing is requested, and a regression check that the `*_exponential_filter`
+// wrappers reproduce the generalized call.
+void test_generalized_filters() {
+  using TagsList = tmpl::list<::Tags::TempScalar<0>>;
+
+  const Mesh<3> mesh{
+      {5, 7, 4},
+      {Spectral::Basis::ZernikeB2, Spectral::Basis::ZernikeB2,
+       Spectral::Basis::Legendre},
+      {Spectral::Quadrature::GaussRadauUpper, Spectral::Quadrature::Equiangular,
+       Spectral::Quadrature::GaussLobatto}};
+  const Mesh<2> disk = mesh.slice_away(2);
+  const auto x = logical_coordinates(mesh);
+  const DataVector r = 0.5 * (x[0] + 1.0);
+  const DataVector& phi = x[1];
+  const size_t num_grid_points = mesh.number_of_grid_points();
+  const size_t M = 7 / 2;
+  const size_t n_order = 5 - 1;
+  const size_t n_rph = 5 * 7;
+  const size_t n_z = 4;
+
+  DataVector arbitrary(num_grid_points);
+  for (size_t i = 0; i < num_grid_points; ++i) {
+    arbitrary[i] = sin(0.3 * static_cast<double>(i)) + 1.1;
+  }
+
+  {
+    INFO("Regression: cylinder exponential wrapper == generalized call");
+    const double alpha = 36.0;
+    const unsigned half_power = 8;
+    Variables<TagsList> wrapper{num_grid_points};
+    Variables<TagsList> general{num_grid_points};
+    get(get<::Tags::TempScalar<0>>(wrapper)) = arbitrary;
+    get(get<::Tags::TempScalar<0>>(general)) = arbitrary;
+    Spectral::filtering::zernike_b2_cylinder_exponential_filter(
+        make_not_null(&wrapper), mesh, alpha, half_power);
+    Spectral::filtering::zernike_b2_cylinder_filter(
+        make_not_null(&general), mesh, alpha,
+        std::optional<unsigned>{half_power},
+        std::optional<unsigned>{half_power}, 0);
+    CHECK_VARIABLES_APPROX(wrapper, general);
+  }
+  {
+    INFO("Regression: disk exponential wrapper == generalized call");
+    const DataVector disk_data(arbitrary.data(), disk.number_of_grid_points());
+    const double alpha = 36.0;
+    const unsigned half_power = 8;
+    Variables<TagsList> wrapper{disk.number_of_grid_points()};
+    Variables<TagsList> general{disk.number_of_grid_points()};
+    get(get<::Tags::TempScalar<0>>(wrapper)) = disk_data;
+    get(get<::Tags::TempScalar<0>>(general)) = disk_data;
+    Spectral::filtering::zernike_b2_disk_exponential_filter(
+        make_not_null(&wrapper), disk, alpha, half_power);
+    Spectral::filtering::zernike_b2_disk_filter(
+        make_not_null(&general), disk, alpha,
+        std::optional<unsigned>{half_power}, 0);
+    CHECK_VARIABLES_APPROX(wrapper, general);
+  }
+  {
+    INFO("Identity: no half-powers and no cutoff leaves the data unchanged");
+    Variables<TagsList> u{num_grid_points};
+    Variables<TagsList> expected_result{num_grid_points};
+    get(get<::Tags::TempScalar<0>>(u)) = arbitrary;
+    get(get<::Tags::TempScalar<0>>(expected_result)) = arbitrary;
+    Spectral::filtering::zernike_b2_cylinder_filter(
+        make_not_null(&u), mesh, 36.0, std::nullopt, std::nullopt, 0);
+    CHECK_VARIABLES_APPROX(u, expected_result);
+  }
+  {
+    INFO("Disk half-power is independent of the (constant-in-z) z direction");
+    // A pure (r, phi) mode that is constant in z must be scaled only by the
+    // disk weight, regardless of the z half-power.
+    const double alpha = 20.0;
+    const unsigned disk_half = 4;
+    for (size_t m = 1; m <= M; ++m) {
+      CAPTURE(m);
+      const size_t ns = (m + 1) / 2;
+      const double disk_factor =
+          exp(-alpha *
+              pow(static_cast<double>(ns) / static_cast<double>(n_order),
+                  2 * disk_half)) *
+          exp(-alpha * pow(static_cast<double>(m) / static_cast<double>(M),
+                           2 * disk_half));
+      const DataVector f =
+          pow(r, static_cast<double>(m)) * cos(static_cast<double>(m) * phi);
+      // z_half_power = None and z_half_power = 6 must give the same result.
+      for (const std::optional<unsigned> z_half :
+           {std::optional<unsigned>{std::nullopt},
+            std::optional<unsigned>{6}}) {
+        Variables<TagsList> u{num_grid_points};
+        Variables<TagsList> expected_result{num_grid_points};
+        get(get<::Tags::TempScalar<0>>(u)) = f;
+        Spectral::filtering::zernike_b2_cylinder_filter(
+            make_not_null(&u), mesh, alpha, std::optional<unsigned>{disk_half},
+            z_half, 0);
+        get(get<::Tags::TempScalar<0>>(expected_result)) = disk_factor * f;
+        CHECK_VARIABLES_APPROX(u, expected_result);
+      }
+    }
+  }
+  {
+    INFO("Z half-power acts on z modes with the disk left unfiltered");
+    // A pure top-z Legendre mode, constant in (r, phi), is scaled only by the
+    // z weight when the disk half-power is None.
+    const double alpha = 36.0;
+    const unsigned z_half = 8;
+    const Matrix& mtn_z =
+        Spectral::modal_to_nodal_matrix(mesh.slice_through(2));
+    const auto n_z_order = static_cast<double>(n_z - 1);
+    for (size_t k = 0; k < n_z; ++k) {
+      CAPTURE(k);
+      const double z_factor =
+          exp(-alpha * pow(static_cast<double>(k) / n_z_order, 2 * z_half));
+      DataVector f_z_vals(num_grid_points, 0.0);
+      for (size_t kk = 0; kk < n_z; ++kk) {
+        const double z_nodal_val = mtn_z(kk, k);
+        for (size_t ij = 0; ij < n_rph; ++ij) {
+          f_z_vals[ij + n_rph * kk] = z_nodal_val;
+        }
+      }
+      Variables<TagsList> u{num_grid_points};
+      Variables<TagsList> expected_result{num_grid_points};
+      get(get<::Tags::TempScalar<0>>(u)) = f_z_vals;
+      Spectral::filtering::zernike_b2_cylinder_filter(
+          make_not_null(&u), mesh, alpha, std::nullopt,
+          std::optional<unsigned>{z_half}, 0);
+      get(get<::Tags::TempScalar<0>>(expected_result)) = z_factor * f_z_vals;
+      CHECK_VARIABLES_APPROX(u, expected_result);
+    }
+  }
+  {
+    INFO("NumModesToKill zeroes the top angular mode and keeps m = 0");
+    // f = 1 + r^M cos(M phi): killing one angular mode removes the top mode
+    // exactly while leaving the constant untouched, with no exponential
+    // roll-off applied.
+    const DataVector f_mixed = 1.0 + pow(r, static_cast<double>(M)) *
+                                         cos(static_cast<double>(M) * phi);
+    Variables<TagsList> u{num_grid_points};
+    Variables<TagsList> expected_result{num_grid_points};
+    get(get<::Tags::TempScalar<0>>(u)) = f_mixed;
+    get(get<::Tags::TempScalar<0>>(expected_result)) = 1.0;
+    Spectral::filtering::zernike_b2_cylinder_filter(
+        make_not_null(&u), mesh, 36.0, std::nullopt, std::nullopt, 1);
+    CHECK_VARIABLES_APPROX(u, expected_result);
+
+    // A lower angular mode (m = 1 <= M - num_modes_to_kill) is retained
+    // exactly when no exponential roll-off is requested.
+    const DataVector f_low = r * cos(phi);
+    Variables<TagsList> u_low{num_grid_points};
+    Variables<TagsList> expected_low{num_grid_points};
+    get(get<::Tags::TempScalar<0>>(u_low)) = f_low;
+    get(get<::Tags::TempScalar<0>>(expected_low)) = f_low;
+    Spectral::filtering::zernike_b2_cylinder_filter(
+        make_not_null(&u_low), mesh, 36.0, std::nullopt, std::nullopt, 1);
+    CHECK_VARIABLES_APPROX(u_low, expected_low);
+  }
+}
+
 #ifdef SPECTRE_DEBUG
 void test_asserts() {
   using TagsList = tmpl::list<::Tags::TempScalar<0>>;
@@ -526,6 +687,21 @@ void test_asserts() {
             "We choose to enforce the restriction that the Fourier modal space "
             "is not larger than the Zernike angular capabilities"));
   }
+  {
+    INFO("Cylinder: killing more angular modes than resolved triggers assert");
+    const Mesh<3> mesh{{5, 7, 3},
+                       {Spectral::Basis::ZernikeB2, Spectral::Basis::ZernikeB2,
+                        Spectral::Basis::Legendre},
+                       {Spectral::Quadrature::GaussRadauUpper,
+                        Spectral::Quadrature::Equiangular,
+                        Spectral::Quadrature::GaussLobatto}};
+    Variables<TagsList> u{mesh.number_of_grid_points()};
+    CHECK_THROWS_WITH(
+        Spectral::filtering::zernike_b2_cylinder_filter(
+            make_not_null(&u), mesh, 1.0, std::nullopt, std::nullopt, 4),
+        Catch::Matchers::ContainsSubstring(
+            "Cannot zero 4 angular modes when only 3"));
+  }
 }
 #endif
 
@@ -538,6 +714,7 @@ SPECTRE_TEST_CASE("Unit.Numerical.Spectral.B2Filter",
   test_disk_filter_weights();
   test_cylinder_filter();
   test_cylinder_filter_weights();
+  test_generalized_filters();
 #ifdef SPECTRE_DEBUG
   test_asserts();
 #endif  // SPECTRE_DEBUG
