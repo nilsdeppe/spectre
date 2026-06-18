@@ -48,7 +48,6 @@ DomainCreator:
     IncludeInnerSphereA: true
     IncludeInnerSphereB: true
     IncludeOuterSphere: true
-    UseEquiangularMap: true
     OuterRadius: 300.0
     InitialRefinement: 2
     InitialGridPoints: 7

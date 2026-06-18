@@ -15,7 +15,11 @@
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Domain/BoundaryConditions/BoundaryCondition.hpp"
 #include "Domain/BoundaryConditions/GetBoundaryConditionsBase.hpp"
+#include "Domain/CoordinateMaps/Affine.hpp"
 #include "Domain/CoordinateMaps/CoordinateMap.hpp"
+#include "Domain/CoordinateMaps/Identity.hpp"
+#include "Domain/CoordinateMaps/PolarToCartesian.hpp"
+#include "Domain/CoordinateMaps/SphericalToCartesianPfaffian.hpp"
 #include "Domain/Creators/DomainCreator.hpp"
 #include "Domain/Creators/TimeDependentOptions/BinaryCompactObject.hpp"
 #include "Domain/Domain.hpp"
@@ -152,40 +156,41 @@ namespace domain::creators {
  */
 class CylindricalBinaryCompactObject : public DomainCreator<3> {
  public:
-  using maps_list = tmpl::flatten<
-      tmpl::list<domain::CoordinateMap<
-                     Frame::BlockLogical, Frame::Inertial,
-                     CoordinateMaps::ProductOf3Maps<CoordinateMaps::Interval,
-                                                    CoordinateMaps::Interval,
-                                                    CoordinateMaps::Interval>,
-                     CoordinateMaps::UniformCylindricalEndcap,
-                     CoordinateMaps::DiscreteRotation<3>>,
-                 domain::CoordinateMap<
-                     Frame::BlockLogical, Frame::Inertial,
-                     CoordinateMaps::ProductOf2Maps<CoordinateMaps::Wedge<2>,
-                                                    CoordinateMaps::Interval>,
-                     CoordinateMaps::UniformCylindricalEndcap,
-                     CoordinateMaps::DiscreteRotation<3>>,
-                 domain::CoordinateMap<
-                     Frame::BlockLogical, Frame::Inertial,
-                     CoordinateMaps::ProductOf3Maps<CoordinateMaps::Interval,
-                                                    CoordinateMaps::Interval,
-                                                    CoordinateMaps::Interval>,
-                     CoordinateMaps::UniformCylindricalFlatEndcap,
-                     CoordinateMaps::DiscreteRotation<3>>,
-                 domain::CoordinateMap<
-                     Frame::BlockLogical, Frame::Inertial,
-                     CoordinateMaps::ProductOf2Maps<CoordinateMaps::Wedge<2>,
-                                                    CoordinateMaps::Interval>,
-                     CoordinateMaps::UniformCylindricalFlatEndcap,
-                     CoordinateMaps::DiscreteRotation<3>>,
-                 domain::CoordinateMap<
-                     Frame::BlockLogical, Frame::Inertial,
-                     CoordinateMaps::ProductOf2Maps<CoordinateMaps::Wedge<2>,
-                                                    CoordinateMaps::Interval>,
-                     CoordinateMaps::UniformCylindricalSide,
-                     CoordinateMaps::DiscreteRotation<3>>,
-                 bco::TimeDependentMapOptions<true>::maps_list>>;
+  // Each filled cylinder is a single ZernikeB2 block and each side is a single
+  // Fourier annular block, built by composing a polar disk/annulus map with the
+  // appropriate UniformCylindrical* endcap/side map and a DiscreteRotation.
+  using filled_cylinder_logical_map =
+      CoordinateMaps::ProductOf3Maps<CoordinateMaps::Affine,
+                                     CoordinateMaps::Identity<1>,
+                                     CoordinateMaps::Interval>;
+  using polar_to_cartesian_map =
+      CoordinateMaps::ProductOf2Maps<CoordinateMaps::PolarToCartesian,
+                                     CoordinateMaps::Identity<1>>;
+  using maps_list = tmpl::flatten<tmpl::list<
+      domain::CoordinateMap<Frame::BlockLogical, Frame::Inertial,
+                            filled_cylinder_logical_map, polar_to_cartesian_map,
+                            CoordinateMaps::DiscreteRotation<3>,
+                            CoordinateMaps::UniformCylindricalEndcap,
+                            CoordinateMaps::DiscreteRotation<3>>,
+      domain::CoordinateMap<Frame::BlockLogical, Frame::Inertial,
+                            filled_cylinder_logical_map, polar_to_cartesian_map,
+                            CoordinateMaps::DiscreteRotation<3>,
+                            CoordinateMaps::UniformCylindricalFlatEndcap,
+                            CoordinateMaps::DiscreteRotation<3>>,
+      domain::CoordinateMap<Frame::BlockLogical, Frame::Inertial,
+                            filled_cylinder_logical_map, polar_to_cartesian_map,
+                            CoordinateMaps::DiscreteRotation<3>,
+                            CoordinateMaps::UniformCylindricalSide,
+                            CoordinateMaps::DiscreteRotation<3>>,
+      domain::CoordinateMap<
+          Frame::BlockLogical, Frame::Inertial,
+          CoordinateMaps::ProductOf2Maps<CoordinateMaps::Affine,
+                                         CoordinateMaps::Identity<2>>,
+          CoordinateMaps::SphericalToCartesianPfaffian,
+          CoordinateMaps::ProductOf3Maps<CoordinateMaps::Affine,
+                                         CoordinateMaps::Affine,
+                                         CoordinateMaps::Affine>>,
+      bco::TimeDependentMapOptions<true>::maps_list>>;
 
   struct CenterA {
     using type = std::array<double, 3>;
@@ -227,13 +232,6 @@ class CylindricalBinaryCompactObject : public DomainCreator<3> {
     static constexpr Options::String help = {
         "Grid-coordinate radius of outer boundary."};
   };
-  struct UseEquiangularMap {
-    using type = bool;
-    static constexpr Options::String help = {
-        "Distribute grid points equiangularly in 2d wedges."};
-    static bool suggested_value() { return false; }
-  };
-
   struct InitialRefinement {
     using type =
         std::variant<size_t, std::array<size_t, 3>,
@@ -291,8 +289,7 @@ class CylindricalBinaryCompactObject : public DomainCreator<3> {
   using options = tmpl::append<
       tmpl::list<CenterA, CenterB, RadiusA, RadiusB, IncludeInnerSphereA,
                  IncludeInnerSphereB, IncludeOuterSphere, OuterRadius,
-                 UseEquiangularMap, InitialRefinement, InitialGridPoints,
-                 TimeDependentMaps>,
+                 InitialRefinement, InitialGridPoints, TimeDependentMaps>,
       tmpl::conditional_t<
           domain::BoundaryConditions::has_boundary_conditions_base_v<
               typename Metavariables::system>,
@@ -315,7 +312,7 @@ class CylindricalBinaryCompactObject : public DomainCreator<3> {
       std::array<double, 3> center_A, std::array<double, 3> center_B,
       double radius_A, double radius_B, bool include_inner_sphere_A,
       bool include_inner_sphere_B, bool include_outer_sphere,
-      double outer_radius, bool use_equiangular_map,
+      double outer_radius,
       const typename InitialRefinement::type& initial_refinement,
       const typename InitialGridPoints::type& initial_grid_points,
       std::optional<bco::TimeDependentMapOptions<true>> time_dependent_options =
@@ -380,7 +377,6 @@ class CylindricalBinaryCompactObject : public DomainCreator<3> {
   bool include_inner_sphere_B_{};
   bool include_outer_sphere_{};
   double outer_radius_{};
-  bool use_equiangular_map_{false};
   typename std::vector<std::array<size_t, 3>> initial_refinement_{};
   typename std::vector<std::array<size_t, 3>> initial_grid_points_{};
   // cut_spheres_offset_factor_ is eta in Eq. (A.9) of
