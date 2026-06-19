@@ -425,16 +425,13 @@ jobs:
         build_type: [Debug, Release]
         include:
           # Generate code coverage report for a single build
-          # Note: currently disabled because it exceeds the available disk space
-          # - compiler: gcc-9
-          #   build_type: Debug
-          #   COVERAGE: ON
-          #   TEST_TIMEOUT_FACTOR: 3
+          #
           # This configuration seems to run consistently slower than newer gcc
           # or clang builds, so we increase the test timeout a bit
           - compiler: gcc-10
             build_type: Debug
-            TEST_TIMEOUT_FACTOR: 2
+            COVERAGE: ON
+            TEST_TIMEOUT_FACTOR: 4
             # Test 3D rendering with ParaView
             # Note: currently disabled because of some unknown upstream issue
             # test_3d_rendering: ON
