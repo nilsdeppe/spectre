@@ -815,7 +815,7 @@ ${{ matrix.build_type }}-pch-${{ matrix.use_pch || 'ON' }}"
           rm -r docs/html/unit-test-coverage
       - name: Upload coverage report to codecov.io
         if: matrix.COVERAGE == 'ON'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           files: build/tmp/coverage.info
           token: ${{ secrets.CODECOV_TOKEN }}
