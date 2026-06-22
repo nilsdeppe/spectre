@@ -22,6 +22,19 @@ endif()
 
 option(COVERAGE "Enable code coverage analysis." OFF)
 
+# Whether to also generate the HTML coverage report. The lcov `.info` file
+# (consumed by codecov) is always produced; the HTML report is extra work that
+# CI doesn't need, so it can be disabled with `-D COVERAGE_HTML_REPORT=OFF`.
+option(COVERAGE_HTML_REPORT
+  "Generate the HTML coverage report in addition to the lcov .info file." ON)
+
+# Number of workers passed to lcov 2.x `--parallel` when processing the
+# per-translation-unit gcov data during capture. The capture is the dominant
+# cost of the coverage target, so raising this (e.g. to the number of available
+# cores) substantially speeds it up. Defaults to 1 (serial).
+set(SPECTRE_LCOV_CORES "1" CACHE STRING
+  "Number of parallel workers lcov uses when capturing coverage data.")
+
 # Code coverage analysis only supported if all prerequisites found and the user
 # has requested it via the cmake variable COVERAGE=on..
 if(COVERAGE)

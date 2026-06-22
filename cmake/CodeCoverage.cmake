@@ -82,37 +82,17 @@ function(SETUP_TARGET_FOR_COVERAGE
   set(OUTPUT ${OUTPUT_PATH}/${TARGET_NAME})
   file(MAKE_DIRECTORY ${OUTPUT_PATH})
 
-  # Setup code coverage target
-  add_custom_target(
-      ${TARGET_NAME}
-      # Cleanup any old intermediate data
-      COMMAND ${CMAKE_COMMAND} -E remove ${OUTPUT}.base.info
-      ${OUTPUT}.test.info ${OUTPUT}.total.info
-      ${OUTPUT}.filtered.info
-      # Cleanup lcov
-      COMMAND ${LCOV} --gcov-tool ${GCOV} --directory . --zerocounters
-      # Capture initial state yielding zero coverage baseline
-      COMMAND ${LCOV} --gcov-tool ${GCOV} --capture --initial
-      --directory . --output-file ${OUTPUT}.base.info
-      # Run test TEST_SUITE
-      COMMAND ${TEST_RUNNER} ${ARG_TESTRUNNER_ARGS}
-      # Capture lcov counters
-      COMMAND ${LCOV} --gcov-tool ${GCOV} --capture
-      --rc lcov_branch_coverage=0 --directory .
-      --output-file ${OUTPUT}.test.info
-      # Combine trace files
-      COMMAND ${LCOV} --gcov-tool ${GCOV} --rc lcov_branch_coverage=0
-      --add-tracefile ${OUTPUT}.base.info
-      --add-tracefile ${OUTPUT}.test.info
-      --output-file ${OUTPUT}.total.info
-      # Filter out unwanted files
-      COMMAND ${LCOV} --gcov-tool ${GCOV} --rc lcov_branch_coverage=0
-      --remove ${OUTPUT}.total.info '*/c++/*' '*/include/*'
-      '*/boost/*' '*/charm/*' '*.decl.h' '*.def.h'
-      '*/STDIN' '*/tut/*' '*/moduleinit*' '*InfoFromBuild.cpp'
-      '${CMAKE_SOURCE_DIR}/src/Executables/*'
-      ${ARG_IGNORE_COV}
-      --output-file ${OUTPUT}.filtered.info
+  # lcov 2.x treats many conditions as hard errors by default (e.g. ignore
+  # patterns that match nothing, or per-file gcov inconsistencies on a large
+  # generated build). Demote these to warnings so the capture completes.
+  set(LCOV_IGNORE_ERRORS
+    --ignore-errors inconsistent,unused,empty,mismatch,negative,gcov,format)
+
+  # The HTML customization steps only matter when COVERAGE_HTML_REPORT is on.
+  # The lcov `.info` file (used by codecov) is produced regardless.
+  set(HTML_COMMANDS "")
+  if(COVERAGE_HTML_REPORT)
+    set(HTML_COMMANDS
       # Generate HTML report
       COMMAND ${GENHTML} --legend --demangle-cpp
       --title ${GIT_HASH}
@@ -136,6 +116,56 @@ function(SETUP_TARGET_FOR_COVERAGE
       # Delete backup files created by sed
       COMMAND find ${OUTPUT} -type f -name \"*.bak\" -print | xargs file |
       grep text | cut -f1 -d: | xargs rm
+      )
+  endif()
+
+  # Setup code coverage target
+  add_custom_target(
+      ${TARGET_NAME}
+      # Cleanup any old intermediate data
+      COMMAND ${CMAKE_COMMAND} -E remove ${OUTPUT}.base.info
+      ${OUTPUT}.test.info ${OUTPUT}.total.info
+      ${OUTPUT}.filtered.info
+      # Cleanup lcov
+      COMMAND ${LCOV} --gcov-tool ${GCOV} ${LCOV_IGNORE_ERRORS}
+      --directory . --zerocounters
+      # Capture initial state yielding zero coverage baseline
+      COMMAND ${LCOV} --gcov-tool ${GCOV} ${LCOV_IGNORE_ERRORS}
+      --parallel ${SPECTRE_LCOV_CORES} --capture --initial
+      --exclude '${CMAKE_SOURCE_DIR}/*/Python/Bindings.cpp'
+      --exclude '${CMAKE_BINARY_DIR}/tmp/spectre_*'
+      --directory . --output-file ${OUTPUT}.base.info
+      # Run test TEST_SUITE
+      COMMAND ${TEST_RUNNER} ${ARG_TESTRUNNER_ARGS}
+      # Capture lcov counters
+      COMMAND ${LCOV} --gcov-tool ${GCOV} ${LCOV_IGNORE_ERRORS}
+      --parallel ${SPECTRE_LCOV_CORES} --capture
+      --rc branch_coverage=0 --directory .
+      --exclude '${CMAKE_SOURCE_DIR}/*/Python/Bindings.cpp'
+      --exclude '${CMAKE_BINARY_DIR}/tmp/spectre_*'
+      --output-file ${OUTPUT}.test.info
+      # Combine trace files
+      COMMAND ${LCOV} --gcov-tool ${GCOV} ${LCOV_IGNORE_ERRORS}
+      --rc branch_coverage=0
+      --exclude '${CMAKE_SOURCE_DIR}/*/Python/Bindings.cpp'
+      --exclude '${CMAKE_BINARY_DIR}/tmp/spectre_*'
+      --add-tracefile ${OUTPUT}.base.info
+      --add-tracefile ${OUTPUT}.test.info
+      --output-file ${OUTPUT}.total.info
+      # Filter out unwanted files
+      COMMAND ${LCOV} --gcov-tool ${GCOV} ${LCOV_IGNORE_ERRORS}
+      --rc branch_coverage=0
+      --exclude '${CMAKE_SOURCE_DIR}/*/Python/Bindings.cpp'
+      --exclude '${CMAKE_BINARY_DIR}/tmp/spectre_*'
+      --remove ${OUTPUT}.total.info '*/c++/*' '*/include/*'
+      '*/boost/*' '*/charm/*' '*.decl.h' '*.def.h'
+      '*/STDIN' '*/tut/*' '*/moduleinit*' '*InfoFromBuild.cpp'
+      '${CMAKE_SOURCE_DIR}/src/Executables/*'
+      '${CMAKE_SOURCE_DIR}/src/*/Python/Bindings.cpp'
+      ${ARG_IGNORE_COV}
+      --output-file ${OUTPUT}.filtered.info
+      # Optionally generate and customize the HTML report
+      ${HTML_COMMANDS}
       # Cleanup any intermediate data
       COMMAND ${CMAKE_COMMAND} -E remove ${OUTPUT}.base.info
       ${OUTPUT}.test.info ${OUTPUT}.total.info
