@@ -154,7 +154,7 @@ RUN apt-get update -y \
     apt-get install -y gcc g++ gfortran clang clang-format clang-tidy cmake lld; \
     fi \
     && apt-get install -y bison flex libncurses-dev gdb autoconf automake \
-    ninja-build lcov \
+    ninja-build \
     && if [ ${UBUNTU_VERSION} = 18.04 ]; then \
     if [ "$TARGETARCH" = "arm64" ]; then CMAKE_ARCH=aarch64; \
     else CMAKE_ARCH=x86_64; fi \
@@ -162,6 +162,21 @@ RUN apt-get update -y \
     "https://github.com/Kitware/CMake/releases/download/v3.28.1/cmake-3.28.1-linux-${CMAKE_ARCH}.sh" \
     && chmod +x ./cmake-install.sh && ./cmake-install.sh --skip-license \
     --prefix=/usr/local && rm cmake-install.sh; \
+    fi
+
+# Install lcov 2.x for code coverage reporting. The apt-provided lcov on Ubuntu
+# is 1.x, which processes the coverage capture serially and has no `--parallel`
+# option; lcov 2.x parallelizes the per-translation-unit gcov processing, which
+# is the dominant cost of the capture. Code coverage is only run on the Ubuntu
+# 22.04 image, so we only install it there.
+RUN if [ ${UBUNTU_VERSION} = 22.04 ]; then \
+    apt-get update -y \
+    && apt-get install -y libcapture-tiny-perl libdatetime-perl \
+    libjson-xs-perl libtimedate-perl libgd-perl \
+    && wget https://github.com/linux-test-project/lcov/releases/download/v2.4/lcov-2.4.tar.gz \
+    && tar xf lcov-2.4.tar.gz && cd lcov-2.4 \
+    && make install \
+    && cd .. && rm -rf lcov-2.4 lcov-2.4.tar.gz; \
     fi
 
 # Install SpECTRE dependencies that are available through apt
@@ -248,7 +263,7 @@ RUN apt-get update -y \
     else \
     apt-get install -y python3-pip python-is-python3 pkg-config \
     && pip3 --no-cache-dir install --only-binary=h5py -r requirements.txt \
-    -r dev_requirements.txt; \
+    -r dev_requirements.txt 'gcovr>=7'; \
     fi \
     && rm requirements.txt dev_requirements.txt
 
