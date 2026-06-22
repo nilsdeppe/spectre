@@ -771,6 +771,8 @@ ${{ matrix.build_type }}-pch-${{ matrix.use_pch || 'ON' }}"
           -D ENABLE_OPENMP=ON
           -D SPECTRE_KOKKOS=${KOKKOS:-'OFF'}
           -D COVERAGE=${COVERAGE:-'OFF'}
+          -D COVERAGE_HTML_REPORT=OFF
+          -D SPECTRE_LCOV_CORES=${NUMBER_OF_CORES}
           -D BUILD_PYTHON_BINDINGS=${BUILD_PYTHON_BINDINGS:-'ON'}
           -D BUILD_SHARED_LIBS=${BUILD_SHARED_LIBS:-'ON'}
           -D ASAN=${ASAN:-'OFF'}
@@ -811,8 +813,9 @@ ${{ matrix.build_type }}-pch-${{ matrix.use_pch || 'ON' }}"
         if: matrix.COVERAGE == 'ON'
         working-directory: build
         run: |
+          # Produces build/tmp/coverage.info for codecov. The HTML report is
+          # disabled via -D COVERAGE_HTML_REPORT=OFF, so nothing to clean up.
           make unit-test-coverage
-          rm -r docs/html/unit-test-coverage
       - name: Upload coverage report to codecov.io
         if: matrix.COVERAGE == 'ON'
         uses: codecov/codecov-action@v7
