@@ -41,7 +41,19 @@ if(COVERAGE)
       )
     set(GCOV "${CMAKE_BINARY_DIR}/llvm-gcov.sh")
   elseif( CMAKE_CXX_COMPILER_ID STREQUAL "GNU" )
-    find_program(GCOV gcov REQUIRED)
+    # Use the gcov matching the compiler version. The unversioned `gcov` on the
+    # system may belong to a different GCC than the one used to build, which
+    # produces .gcno/.gcda files gcov cannot read (version mismatch warnings
+    # like "version 'B05*', prefer version 'B14*'" and empty coverage data).
+    string(
+      REGEX MATCH "^[0-9]+" GCC_MAJOR_VERSION
+      "${CMAKE_CXX_COMPILER_VERSION}"
+      )
+    find_program(
+      GCOV
+      NAMES "gcov-${GCC_MAJOR_VERSION}" "gcov"
+      REQUIRED
+      )
   endif()
 
   find_program(LCOV lcov REQUIRED)
