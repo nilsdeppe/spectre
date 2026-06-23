@@ -72,8 +72,10 @@ class MathWrapper {
 
   explicit MathWrapper(const gsl::not_null<MutableT*> data) : data_(data) {}
 
+  // LCOV_EXCL_START
   friend MathWrapper<T> make_math_wrapper(
       tmpl::conditional_t<std::is_const_v<T>, T&, gsl::not_null<T*>>);
+  // LCOV_EXCL_STOP
 
  public:
   /// The class's template parameter.
