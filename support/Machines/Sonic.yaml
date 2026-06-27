@@ -7,6 +7,8 @@ Machine:
     HPC at ICTS-TIFR hosted by AstroRel.
     More information:
     https://it.icts.res.in/docs/sonic-cluster/
+  HostnameRegex: '^(sonic[0-9]+(\.sonic\.icts\.res\.in)?|(ib-)?cn[0-9]+)$'
+  LoginNodeRegex: '^(sonic[0-9]+)(\.sonic\.icts\.res\.in)?'
   DefaultTasksPerNode: 3
   DefaultProcsPerTask: 32
   DefaultQueue: "long"

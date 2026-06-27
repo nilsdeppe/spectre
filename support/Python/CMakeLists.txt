@@ -22,6 +22,18 @@ spectre_python_add_module(
   Yaml.py
 )
 
+# Copy all machine definitions into the Python prefix so that we can identify
+# the current machine from its hostname at runtime (see Machines.py).
+file(GLOB _machine_yamls ${CMAKE_SOURCE_DIR}/support/Machines/*.yaml)
+foreach(_machine_yaml ${_machine_yamls})
+  get_filename_component(_machine_yaml_name ${_machine_yaml} NAME)
+  configure_file(
+    ${_machine_yaml}
+    ${SPECTRE_PYTHON_PREFIX}/support/Machines/${_machine_yaml_name}
+    COPYONLY
+    )
+endforeach()
+
 if(MACHINE)
   message(STATUS "Selected machine: ${MACHINE}")
   configure_file(

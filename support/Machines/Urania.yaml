@@ -5,6 +5,7 @@ Machine:
   Name: Urania
   Description: |
     Supercomputer at the Max Planck Computing Data Facilty.
+  HostnameRegex: '^urania(01|[0-9][0-9][0-9])'
   DefaultTasksPerNode: 1
   DefaultProcsPerTask: 72
   DefaultQueue: "p.urania"

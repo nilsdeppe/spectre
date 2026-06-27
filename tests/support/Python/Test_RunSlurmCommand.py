@@ -13,6 +13,18 @@ from spectre.support.RunSlurmCommand import in_container, run_slurm_command
 
 
 class TestRunSlurmCommand(unittest.TestCase):
+    def setUp(self):
+        # '_ssh_identity_file' consults the machine we are running on for its
+        # 'ContainerSshKey'. Identifying it resolves the hostname, which can be
+        # slow (see 'Machines._fqdn'), and on a machine that defines a key the
+        # expected SSH command would depend on where the test runs. Report no
+        # machine instead; 'test_ssh_identity_file_from_env' covers the key.
+        machine_patcher = patch(
+            "spectre.support.RunSlurmCommand.this_machine", return_value=None
+        )
+        machine_patcher.start()
+        self.addCleanup(machine_patcher.stop)
+
     def test_in_container(self):
         with patch.dict("os.environ", {}, clear=False) as environ:
             environ.pop("SPECTRE_CONTAINER", None)
