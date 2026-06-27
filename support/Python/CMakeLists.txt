@@ -17,6 +17,7 @@ spectre_python_add_module(
   Machines.py
   Resubmit.py
   RunNext.py
+  RunSlurmCommand.py
   Schedule.py
   Yaml.py
 )

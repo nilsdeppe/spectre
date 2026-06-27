@@ -25,6 +25,7 @@ from spectre.support.DirectoryStructure import (
 )
 from spectre.support.Machines import this_machine
 from spectre.support.RunNext import run_next
+from spectre.support.RunSlurmCommand import run_slurm_command
 from spectre.support.Yaml import SafeDumper
 from spectre.tools.ValidateInputFile import validate_input_file
 from spectre.Visualization.ReadInputFile import find_phase_change
@@ -732,7 +733,7 @@ def schedule(
     ):
         if isinstance(scheduler, str):
             scheduler = [scheduler]
-        submit_process = subprocess.run(
+        submit_process = run_slurm_command(
             list(scheduler) + [submit_script_name],
             cwd=run_dir,
             capture_output=True,

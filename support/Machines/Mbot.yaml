@@ -13,3 +13,6 @@ Machine:
   DefaultTimeLimit: "1-00:00:00"
   LaunchCommandSingleNode: ["mpirun", "-n", "1"]
   LaunchCommandLoginNode: ["mpirun", "-n", "1"]
+  # SSH key used to reach the host from inside a container (the cluster-local
+  # key has a non-default name, so 'ssh' does not try it automatically).
+  ContainerSshKey: "~/.ssh/cluster"

@@ -22,6 +22,7 @@ import rich.table
 import yaml
 
 from spectre.support.DirectoryStructure import Segment
+from spectre.support.RunSlurmCommand import run_slurm_command
 
 from .ExecutableStatus import match_executable_status
 
@@ -54,7 +55,7 @@ def fetch_job_data(
 
     Returns: Pandas DataFrame with the job data.
     """
-    completed_process = subprocess.run(
+    completed_process = run_slurm_command(
         ["sacct", "-PX", "--format", ",".join(fields)]
         + (["-u", user] if user else [])
         + (["-a"] if allusers else [])
