@@ -7,6 +7,8 @@ Machine:
     Supercomputer at Cornell hosted by Nils Deppe.
     More information:
     https://github.com/sxs-collaboration/WelcomeToSXS/wiki/Mbot
+  HostnameRegex: '^(mbot\.cac\.cornell\.edu|c000[0-9])'
+  LoginNodeRegex: '^mbot\.cac\.cornell\.edu'
   DefaultTasksPerNode: 6
   DefaultProcsPerTask: 32
   DefaultQueue: "normal"

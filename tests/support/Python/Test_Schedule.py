@@ -42,6 +42,17 @@ class TestSchedule(unittest.TestCase):
         os.environ.pop("SPECTRE_CONTAINER", None)
         self.addCleanup(container_patcher.stop)
 
+        # Likewise, don't consult the machine we are running on: identifying it
+        # resolves the hostname, which can be slow (see 'Machines._fqdn'), and
+        # on a known machine 'schedule' would prefix the executable with that
+        # machine's launch command. Report no machine so the test exercises the
+        # plain local launch deterministically.
+        machine_patcher = patch(
+            "spectre.support.Schedule.this_machine", return_value=None
+        )
+        machine_patcher.start()
+        self.addCleanup(machine_patcher.stop)
+
         # Create an executable that just outputs all arguments passed to it
         self.executable = self.test_dir / "TestExec"
         self.executable.write_text("""#!/bin/bash

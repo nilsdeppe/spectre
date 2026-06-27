@@ -7,6 +7,8 @@ Machine:
     Supercomputer at Cal State Fullerton hosted by Geoffrey Lovelace
     More information:
     Contact Geoffrey Lovelace for more information.
+  HostnameRegex: '^(ocean2\.fullerton\.edu|node06[0-7])$'
+  LoginNodeRegex: '^ocean2\.fullerton\.edu$'
   DefaultTasksPerNode: 6
   DefaultProcsPerTask: 32
   DefaultQueue: "normal"
