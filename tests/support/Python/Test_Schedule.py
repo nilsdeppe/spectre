@@ -2,10 +2,12 @@
 # See LICENSE.txt for details.
 
 import logging
+import os
 import shutil
 import stat
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import yaml
 from click.testing import CliRunner
@@ -30,6 +32,15 @@ class TestSchedule(unittest.TestCase):
         self.spectre_cli = (
             Path(unit_test_build_path()).parent.parent / "bin/spectre"
         )
+
+        # When these tests run inside a container, SPECTRE_CONTAINER is set and
+        # 'schedule' would route the (stand-in) scheduler through SSH to the
+        # host. Clear it so the test exercises the local scheduler
+        # deterministically regardless of where it runs.
+        container_patcher = patch.dict("os.environ", clear=False)
+        container_patcher.start()
+        os.environ.pop("SPECTRE_CONTAINER", None)
+        self.addCleanup(container_patcher.stop)
 
         # Create an executable that just outputs all arguments passed to it
         self.executable = self.test_dir / "TestExec"

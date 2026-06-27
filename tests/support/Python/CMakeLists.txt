@@ -47,6 +47,12 @@ spectre_add_python_bindings_test(
   None)
 
 spectre_add_python_bindings_test(
+  "support.Python.RunSlurmCommand"
+  Test_RunSlurmCommand.py
+  "Python"
+  None)
+
+spectre_add_python_bindings_test(
   "support.Python.Schedule"
   Test_Schedule.py
   "Python"

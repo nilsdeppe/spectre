@@ -13,7 +13,7 @@ build.
 
 import os
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 # functools.cache was added in Py 3.9. Fall back to 'lru_cache' in earlier
 # versions, which is pretty much the same but slightly slower.
@@ -60,6 +60,13 @@ class Machine(yaml.YAMLObject):
       LaunchCommandLoginNode: Command to launch an executable on a the
         login node. This is the counterpart to `LaunchCommandSingleNode` which
         is to be used as a prefix for commands run on non-compute (login) nodes.
+      ContainerSshKey: Optional path to the SSH private key (identity file) used
+        to reach the host from inside a container. When the spectre CLI runs
+        inside a container (see 'SPECTRE_CONTAINER'), SLURM commands are routed
+        through 'ssh' to the host; on HPC systems the cluster-local key often
+        has a non-default name (e.g. '~/.ssh/cluster') that 'ssh' does not try
+        automatically. Set this to that key path. '~' is expanded. The
+        'SPECTRE_CONTAINER_SSH_KEY' environment variable overrides this value.
     """
 
     yaml_tag = "!Machine"
@@ -73,6 +80,9 @@ class Machine(yaml.YAMLObject):
     DefaultTimeLimit: str
     LaunchCommandSingleNode: List[str]
     LaunchCommandLoginNode: List[str]
+    # Optional attributes (may be absent in a machine's YAML file, so access
+    # them with 'getattr(machine, ..., default)'):
+    ContainerSshKey: Optional[str] = None
 
     def on_compute_node(self) -> bool:
         """Determines whether or not we are running on a compute node."""
