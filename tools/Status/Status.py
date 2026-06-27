@@ -9,6 +9,16 @@ import re
 import subprocess
 import time
 from io import StringIO
+
+# functools.cache was added in Py 3.9. Fall back to 'lru_cache' in earlier
+# versions, which is pretty much the same but slightly slower.
+try:
+    from functools import cache
+except ImportError:
+    from functools import lru_cache
+
+    cache = lru_cache(maxsize=None)
+
 from pathlib import Path
 from typing import Any, Optional, Sequence
 
@@ -27,6 +37,33 @@ from spectre.support.RunSlurmCommand import run_slurm_command
 from .ExecutableStatus import match_executable_status
 
 logger = logging.getLogger(__name__)
+
+
+@cache
+def supported_sacct_fields() -> Optional[frozenset]:
+    """The 'sacct --format' fields supported on this machine, or None.
+
+    Queries 'sacct --helpformat' once (the result is cached). Not all Slurm
+    accounting databases store every field that 'sacct' knows about; e.g.
+    'StdOut' and 'StdErr' are unavailable on many sites. We use this to request
+    only supported fields and silently skip the rest (see 'fetch_job_data')
+    instead of issuing a failed query for every unsupported field.
+
+    Returns: A frozenset of supported field names, or None if the query failed
+      (in which case callers should not filter and instead rely on the
+      invalid-field retry in 'fetch_job_data').
+    """
+    try:
+        completed_process = run_slurm_command(
+            ["sacct", "--helpformat"], capture_output=True, text=True
+        )
+        completed_process.check_returncode()
+    except (subprocess.CalledProcessError, OSError):
+        logger.debug(
+            "Could not query supported 'sacct --format' fields.", exc_info=True
+        )
+        return None
+    return frozenset(completed_process.stdout.split())
 
 
 def fetch_job_data(
@@ -55,6 +92,21 @@ def fetch_job_data(
 
     Returns: Pandas DataFrame with the job data.
     """
+    # Request only fields this machine's Slurm actually supports, skipping the
+    # rest silently (they are re-added as empty columns below). This avoids a
+    # failed 'sacct' query for every unsupported field (e.g. 'StdOut'/'StdErr',
+    # which many Slurm accounting databases don't store).
+    fields = list(fields)
+    supported_fields = supported_sacct_fields()
+    skipped_fields = []
+    if supported_fields is not None:
+        skipped_fields = [f for f in fields if f not in supported_fields]
+        if skipped_fields:
+            logger.debug(
+                "Skipping 'sacct --format' fields not supported on this"
+                f" machine: {', '.join(skipped_fields)}."
+            )
+            fields = [f for f in fields if f in supported_fields]
     completed_process = run_slurm_command(
         ["sacct", "-PX", "--format", ",".join(fields)]
         + (["-u", user] if user else [])
@@ -75,11 +127,12 @@ def fetch_job_data(
         )
         if match:
             invalid_field = match.group(1)
-            logger.warning(
+            # Defensive fallback: 'supported_sacct_fields' above normally
+            # filters unsupported fields, so this only fires if that query was
+            # unavailable. Log at debug to avoid noise.
+            logger.debug(
                 f"Field '{invalid_field}' is not valid for 'sacct --format'."
-                " Removing it and retrying. Some functionality may be"
-                " unavailable. Consider configuring Slurm to support this"
-                " field."
+                " Removing it and retrying."
             )
             fields.remove(invalid_field)
             job_data = fetch_job_data(
@@ -117,6 +170,10 @@ def fetch_job_data(
     # if "Elapsed" in fields:
     #     job_data["Elapsed"] = pd.to_timedelta(
     #         job_data["Elapsed"].apply(lambda v: v.replace("-", " days ")))
+    # Re-add unsupported fields as empty columns so downstream code (and the
+    # requested column layout) sees them.
+    for field in skipped_fields:
+        job_data[field] = None
     return job_data
 
 
@@ -405,7 +462,7 @@ def fetch_status(
         deleted_jobs = job_data[~job_data["WorkDir"].map(os.path.exists)]
         job_data.drop(deleted_jobs.index, inplace=True)
         if len(job_data) == 0:
-            return
+            return job_data
 
     # Keep only latest in a series of segments
     job_data[["SegmentsDir", "SegmentId"]] = [
@@ -430,7 +487,7 @@ def fetch_status(
             ]
             job_data.drop(drop_segment_jobs.index, inplace=True)
         if len(job_data) == 0:
-            return
+            return job_data
 
     # Rename columns from SLURM name to user name
     job_data.rename(columns=AVAILABLE_COLUMNS, inplace=True)
