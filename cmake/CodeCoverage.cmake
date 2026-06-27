@@ -88,6 +88,14 @@ function(SETUP_TARGET_FOR_COVERAGE
   set(LCOV_IGNORE_ERRORS
     --ignore-errors inconsistent,unused,empty,mismatch,negative,gcov,format)
 
+  # Most translation units record absolute source paths (the include dirs are
+  # absolute), but a few record a repo-root-relative name such as
+  # `src/Utilities/TMPL.hpp`. With no base directory, geninfo resolves those
+  # against a build-tree directory and fails to open the (real) source file.
+  # Point lcov at the source root so relative names resolve to the real files
+  # instead of being dropped.
+  set(LCOV_BASE_DIRECTORY --base-directory ${CMAKE_SOURCE_DIR})
+
   # The HTML customization steps only matter when COVERAGE_HTML_REPORT is on.
   # The lcov `.info` file (used by codecov) is produced regardless.
   set(HTML_COMMANDS "")
@@ -131,6 +139,7 @@ function(SETUP_TARGET_FOR_COVERAGE
       --directory . --zerocounters
       # Capture initial state yielding zero coverage baseline
       COMMAND ${LCOV} --gcov-tool ${GCOV} ${LCOV_IGNORE_ERRORS}
+      ${LCOV_BASE_DIRECTORY}
       --parallel ${SPECTRE_LCOV_CORES} --capture --initial
       --exclude '${CMAKE_SOURCE_DIR}/*/Python/Bindings.cpp'
       --exclude '${CMAKE_BINARY_DIR}/tmp/spectre_*'
@@ -139,6 +148,7 @@ function(SETUP_TARGET_FOR_COVERAGE
       COMMAND ${TEST_RUNNER} ${ARG_TESTRUNNER_ARGS}
       # Capture lcov counters
       COMMAND ${LCOV} --gcov-tool ${GCOV} ${LCOV_IGNORE_ERRORS}
+      ${LCOV_BASE_DIRECTORY}
       --parallel ${SPECTRE_LCOV_CORES} --capture
       --rc branch_coverage=0 --directory .
       --exclude '${CMAKE_SOURCE_DIR}/*/Python/Bindings.cpp'
