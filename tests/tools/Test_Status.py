@@ -4,16 +4,24 @@
 import logging
 import os
 import shutil
+import subprocess
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 import yaml
 
 import spectre.IO.H5 as spectre_h5
+import spectre.tools.Status.Status as status_module
 from spectre.Informer import unit_test_build_path
 from spectre.support.Logging import configure_logging
 from spectre.tools.Status.ExecutableStatus import match_executable_status
-from spectre.tools.Status.Status import get_executable_name, get_input_file
+from spectre.tools.Status.Status import (
+    fetch_job_data,
+    get_executable_name,
+    get_input_file,
+    supported_sacct_fields,
+)
 
 
 class TestExecutableStatus(unittest.TestCase):
@@ -209,6 +217,69 @@ class TestStatus(unittest.TestCase):
         self.assertEqual(
             get_executable_name("", self.input_file_path), "MyExec"
         )
+
+    def test_supported_sacct_fields(self):
+        supported_sacct_fields.cache_clear()
+        self.addCleanup(supported_sacct_fields.cache_clear)
+        with patch.object(
+            status_module, "run_slurm_command"
+        ) as mock_run_slurm_command:
+            mock_run_slurm_command.return_value = subprocess.CompletedProcess(
+                args=["sacct", "--helpformat"],
+                returncode=0,
+                stdout="JobID  State  End\nWorkDir  Comment\n",
+                stderr="",
+            )
+            fields = supported_sacct_fields()
+        self.assertEqual(
+            fields, frozenset({"JobID", "State", "End", "WorkDir", "Comment"})
+        )
+        # 'StdOut'/'StdErr' are unavailable on this (mocked) machine
+        self.assertNotIn("StdErr", fields)
+
+    def test_supported_sacct_fields_query_fails(self):
+        supported_sacct_fields.cache_clear()
+        self.addCleanup(supported_sacct_fields.cache_clear)
+        with patch.object(
+            status_module, "run_slurm_command"
+        ) as mock_run_slurm_command:
+            mock_run_slurm_command.return_value = subprocess.CompletedProcess(
+                args=["sacct", "--helpformat"],
+                returncode=1,
+                stdout="",
+                stderr="sacct: command not found",
+            )
+            # A failed query returns None so callers don't filter
+            self.assertIsNone(supported_sacct_fields())
+
+    def test_fetch_job_data_skips_unsupported_fields(self):
+        supported_sacct_fields.cache_clear()
+        self.addCleanup(supported_sacct_fields.cache_clear)
+        with patch.object(
+            status_module,
+            "supported_sacct_fields",
+            return_value=frozenset({"JobID", "State", "WorkDir"}),
+        ), patch.object(
+            status_module, "run_slurm_command"
+        ) as mock_run_slurm_command:
+            mock_run_slurm_command.return_value = subprocess.CompletedProcess(
+                args=["sacct"],
+                returncode=0,
+                stdout="JobID|State|WorkDir\n123|COMPLETED|/run/dir\n",
+                stderr="",
+            )
+            job_data = fetch_job_data(
+                ["JobID", "State", "WorkDir", "StdOut", "StdErr"]
+            )
+        # Only supported fields are passed to 'sacct --format'
+        dispatched = mock_run_slurm_command.call_args.args[0]
+        format_arg = dispatched[dispatched.index("--format") + 1]
+        self.assertEqual(format_arg, "JobID,State,WorkDir")
+        # Unsupported fields are re-added as empty columns
+        self.assertIn("StdOut", job_data.columns)
+        self.assertIn("StdErr", job_data.columns)
+        self.assertTrue(job_data["StdErr"].isnull().all())
+        self.assertEqual(job_data["State"].iloc[0], "COMPLETED")
 
 
 if __name__ == "__main__":
