@@ -20,6 +20,16 @@ export SPECTRE_EXECUTABLE={{ executable }}
 export SPECTRE_CHECKPOINT={{ from_checkpoint | default("") }}
 export SPECTRE_CLI={{ spectre_cli }}
 
+{% if launch_container %}
+# This submit script runs on the host, but the executable and CLI live inside
+# the container. Re-enter the container for each task (see Schedule.py).
+# We override the previous env variables with the container launch wrapper
+# to minimize the amount of special casing.
+SPECTRE_CONTAINER_EXEC="{{ container_command }} exec {{ container_image }}"
+SPECTRE_EXECUTABLE="${SPECTRE_CONTAINER_EXEC} ${SPECTRE_EXECUTABLE}"
+SPECTRE_CLI="${SPECTRE_CONTAINER_EXEC} ${SPECTRE_CLI}"
+{% endif %}
+
 {% block charm_ppn %}
 CHARM_PPN=$(expr ${SLURM_CPUS_PER_TASK} - 1)
 {% endblock %}

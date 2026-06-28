@@ -73,6 +73,11 @@ Option: {{ extra_option }}
         (self.test_dir / "SubmitTemplateBase.sh").write_text("""\
 SPECTRE_EXECUTABLE={{ executable }}
 SPECTRE_CLI={{ spectre_cli }}
+{% if launch_container %}
+SPECTRE_CONTAINER_EXEC="{{ container_command }} exec {{ container_image }}"
+SPECTRE_EXECUTABLE="${SPECTRE_CONTAINER_EXEC} ${SPECTRE_EXECUTABLE}"
+SPECTRE_CLI="${SPECTRE_CONTAINER_EXEC} ${SPECTRE_CLI}"
+{% endif %}
 {% block derived %}
 {% endblock %}
 """)
@@ -249,6 +254,7 @@ NUM_TASKS_PER_NODE={{ num_slurm_tasks | default (5) }}
                 context_file_name="SchedulerContext.yaml",
                 copy_executable=None,
                 executable=str(self.test_dir / "Segments/TestExec"),
+                launch_container=False,
                 executable_name="TestExec",
                 extra_option="TestOpt",
                 metadata_option="MetaOpt",
@@ -318,6 +324,93 @@ NUM_TASKS_PER_NODE=5
             (self.test_dir / "Segments/Segment_0002/jobid.txt").read_text(),
             "001",
         )
+
+    def test_container(self):
+        container_image = self.test_dir / "spectre.sif"
+        container_image.touch()
+
+        def submit_script(**kwargs):
+            run_dir = self.test_dir / "ContainerRun"
+            shutil.rmtree(run_dir, ignore_errors=True)
+            schedule(
+                input_file_template=self.input_file_template,
+                scheduler=["echo", "Submitted batch job 000"],
+                submit_script_template=self.submit_script_template,
+                executable=self.executable,
+                run_dir=run_dir,
+                extra_option="TestOpt",
+                metadata_option="MetaOpt",
+                submit=False,
+                **kwargs,
+            )
+            return (run_dir / "Submit.sh").read_text()
+
+        # Explicitly enabled with an image path
+        rendered = submit_script(
+            launch_container=True, container_image=container_image
+        )
+        self.assertIn(
+            f'SPECTRE_CONTAINER_EXEC="apptainer exec {container_image}"',
+            rendered,
+        )
+        self.assertIn(
+            (
+                'SPECTRE_EXECUTABLE="${SPECTRE_CONTAINER_EXEC}'
+                ' ${SPECTRE_EXECUTABLE}"'
+            ),
+            rendered,
+        )
+        self.assertIn(
+            'SPECTRE_CLI="${SPECTRE_CONTAINER_EXEC} ${SPECTRE_CLI}"', rendered
+        )
+
+        # Custom container runtime
+        rendered = submit_script(
+            launch_container=True,
+            container_image=container_image,
+            container_command="singularity",
+        )
+        self.assertIn(
+            f'SPECTRE_CONTAINER_EXEC="singularity exec {container_image}"',
+            rendered,
+        )
+
+        # Auto-detected from the environment when inside a container. Start from
+        # a clean slate so the test is independent of where it runs (the dev
+        # environment is itself a container).
+        with patch.dict("os.environ", clear=False):
+            for key in list(os.environ):
+                if key.startswith(("APPTAINER_", "SINGULARITY_")):
+                    os.environ.pop(key)
+            os.environ["SPECTRE_CONTAINER"] = "0"
+            # Apptainer sets 'APPTAINER_*' variables, so it is selected and
+            # provides the image.
+            os.environ["APPTAINER_CONTAINER"] = str(container_image)
+            rendered = submit_script()
+            self.assertIn(f"apptainer exec {container_image}", rendered)
+            # Only 'SINGULARITY_*' set (SingularityCE) selects 'singularity'.
+            os.environ.pop("APPTAINER_CONTAINER")
+            os.environ["SINGULARITY_CONTAINER"] = str(container_image)
+            rendered = submit_script()
+            self.assertIn(f"singularity exec {container_image}", rendered)
+            # An explicit runtime overrides auto-detection.
+            rendered = submit_script(container_command="apptainer")
+            self.assertIn(f"apptainer exec {container_image}", rendered)
+            # Disabled explicitly even when inside a container.
+            rendered = submit_script(launch_container=False)
+            self.assertNotIn("exec", rendered)
+
+        # Disabled by default outside a container (SPECTRE_CONTAINER cleared in
+        # setUp)
+        rendered = submit_script()
+        self.assertNotIn("exec", rendered)
+
+        # Enabling without an available image is an error
+        with patch.dict("os.environ", clear=False):
+            os.environ.pop("APPTAINER_CONTAINER", None)
+            os.environ.pop("SINGULARITY_CONTAINER", None)
+            with self.assertRaisesRegex(ValueError, "no container image"):
+                submit_script(launch_container=True)
 
     def test_cli(self):
         runner = CliRunner()

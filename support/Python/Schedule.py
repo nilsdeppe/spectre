@@ -25,7 +25,11 @@ from spectre.support.DirectoryStructure import (
 )
 from spectre.support.Machines import this_machine
 from spectre.support.RunNext import run_next
-from spectre.support.RunSlurmCommand import run_slurm_command
+from spectre.support.RunSlurmCommand import (
+    container_runtime,
+    in_container,
+    run_slurm_command,
+)
 from spectre.support.Yaml import SafeDumper
 from spectre.tools.ValidateInputFile import validate_input_file
 from spectre.Visualization.ReadInputFile import find_phase_change
@@ -140,6 +144,9 @@ def schedule(
     force: bool = False,
     validate: Optional[bool] = True,
     profile_with: Optional[str] = None,
+    launch_container: Optional[bool] = None,
+    container_image: Optional[Union[str, Path]] = None,
+    container_command: Optional[str] = None,
     extra_params: dict = {},
     **kwargs,
 ) -> Optional[subprocess.CompletedProcess]:
@@ -318,6 +325,24 @@ def schedule(
         https://spectre-code.org/profiling.html). This will modify the submit
         script to run the executable with 'hpcrun' and postprocess the profiling
         data with 'hpcstruct' and 'hpcprof'. (Default: False).
+      launch_container: Optional. When 'True', wrap the executable and CLI in
+        the submit script with '<container_command> exec <container_image>' so
+        each task re-enters the container (the submit script itself runs on the
+        host, outside the container). When 'None' (default), this is enabled
+        automatically when running inside a spectre container (see
+        'spectre.support.RunSlurmCommand.in_container'). Only applies when a
+        'scheduler' is set; direct runs already execute inside the container.
+      container_image: Optional. Path to the container image used when
+        'launch_container' is enabled. Defaults to the value of the
+        'APPTAINER_CONTAINER' or 'SINGULARITY_CONTAINER' environment variable
+        (set inside the container). The resolved absolute path is baked into the
+        submit script because the host job environment doesn't have these set.
+      container_command: Optional. Container runtime used in the submit script
+        when 'launch_container' is enabled. When 'None' (default), it is
+        detected automatically (see
+        'spectre.support.RunSlurmCommand.container_runtime'): 'apptainer' if
+        any 'APPTAINER_*' environment variable is set, else 'singularity' if
+        only 'SINGULARITY_*' is set. Set explicitly to override.
       extra_params: Optional. Dictionary of extra parameters passed to input
         file and submit script templates. Parameters can also be passed as
         keyword arguments to this function instead.
@@ -339,6 +364,32 @@ def schedule(
         from_checkpoint = from_checkpoint.path
     if from_checkpoint:
         from_checkpoint = Path(from_checkpoint).resolve()
+
+    # Resolve container launching. The submit script runs on the host (outside
+    # the container), so the executable and CLI must re-enter the container.
+    # Direct runs (no scheduler) already execute inside the container, so this
+    # only applies when scheduling.
+    if scheduler:
+        if launch_container is None:
+            launch_container = in_container()
+    else:
+        launch_container = False
+    if launch_container:
+        if not container_image:
+            container_image = os.environ.get(
+                "APPTAINER_CONTAINER"
+            ) or os.environ.get("SINGULARITY_CONTAINER")
+            if not container_image:
+                raise ValueError(
+                    "Container launching is enabled but no container image was"
+                    " found. Pass '--container-image', or run inside an"
+                    " Apptainer/Singularity container so '$APPTAINER_CONTAINER'"
+                    " / '$SINGULARITY_CONTAINER' is set."
+                )
+        if container_command is None:
+            container_command = container_runtime()
+    if container_image:
+        container_image = Path(container_image).resolve()
 
     # Snapshot function arguments for template substitutions
     kwargs.update(extra_params)
@@ -1028,6 +1079,36 @@ def scheduler_options(f):
         default="SchedulerContext.yaml",
         show_default=True,
         help="Name of the context file that supports resubmissions.",
+    )
+    @click.option(
+        "--container/--no-container",
+        "launch_container",
+        default=None,
+        help=(
+            "Wrap the run in '<container-command> exec <image>' in the submit "
+            "script so each task re-enters the container. The submit script "
+            "itself runs on the host, outside the container. Default: enabled "
+            "when running inside a spectre container."
+        ),
+    )
+    @click.option(
+        "--container-image",
+        type=click.Path(path_type=Path),
+        help=(
+            "Path to the container image used with '--container'. Default:"
+            " captured from the '$APPTAINER_CONTAINER' /"
+            " '$SINGULARITY_CONTAINER' environment variable."
+        ),
+    )
+    @click.option(
+        "--container-command",
+        default=None,
+        help=(
+            "Container runtime used in the submit script. Default: detected "
+            "from the environment ('apptainer' if any '$APPTAINER_*' variable "
+            "is set, else 'singularity'). Set explicitly to override, e.g. "
+            "'--container-command singularity'."
+        ),
     )
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
