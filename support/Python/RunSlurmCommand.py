@@ -26,6 +26,25 @@ def in_container() -> bool:
     return os.environ.get("SPECTRE_CONTAINER") is not None
 
 
+def container_runtime() -> str:
+    """Name of the container runtime executable: 'apptainer' or 'singularity'.
+
+    Apptainer sets 'APPTAINER_*' environment variables (and, for backwards
+    compatibility, also the 'SINGULARITY_*' aliases), whereas SingularityCE
+    sets only 'SINGULARITY_*'. So the presence of any 'APPTAINER_*' variable
+    indicates apptainer; if only 'SINGULARITY_*' variables are present we
+    assume singularity. Outside a container (neither family present) we
+    default to apptainer, the modern default; override with the
+    'container_command' argument of `spectre.support.schedule`
+    ('--container-command') if needed.
+    """
+    if any(key.startswith("APPTAINER_") for key in os.environ):
+        return "apptainer"
+    if any(key.startswith("SINGULARITY_") for key in os.environ):
+        return "singularity"
+    return "apptainer"
+
+
 def run_slurm_command(
     command: Sequence[str],
     *,

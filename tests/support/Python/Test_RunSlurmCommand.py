@@ -9,7 +9,11 @@ from pathlib import Path
 from unittest.mock import patch
 
 from spectre.support.Logging import configure_logging
-from spectre.support.RunSlurmCommand import in_container, run_slurm_command
+from spectre.support.RunSlurmCommand import (
+    container_runtime,
+    in_container,
+    run_slurm_command,
+)
 
 
 class TestRunSlurmCommand(unittest.TestCase):
@@ -35,6 +39,35 @@ class TestRunSlurmCommand(unittest.TestCase):
             self.assertTrue(in_container())
         with patch.dict("os.environ", {"SPECTRE_CONTAINER": "1"}):
             self.assertTrue(in_container())
+
+    def test_container_runtime(self):
+        # Start from a fully cleared environment so the result is independent of
+        # where the test runs (the dev environment is itself a container).
+        # Apptainer sets 'APPTAINER_*' variables (and 'SINGULARITY_*' aliases),
+        # while SingularityCE sets only 'SINGULARITY_*'.
+        with patch.dict("os.environ", {}, clear=True):
+            # Neither family present: default to apptainer.
+            self.assertEqual(container_runtime(), "apptainer")
+        with patch.dict(
+            "os.environ", {"SINGULARITY_CONTAINER": "/img.sif"}, clear=True
+        ):
+            # Only 'SINGULARITY_*' present: SingularityCE.
+            self.assertEqual(container_runtime(), "singularity")
+        with patch.dict(
+            "os.environ", {"APPTAINER_NAME": "img.sif"}, clear=True
+        ):
+            # Any 'APPTAINER_*' variable indicates apptainer.
+            self.assertEqual(container_runtime(), "apptainer")
+        with patch.dict(
+            "os.environ",
+            {
+                "APPTAINER_CONTAINER": "/img.sif",
+                "SINGULARITY_CONTAINER": "/img.sif",
+            },
+            clear=True,
+        ):
+            # Apptainer sets both families; it still selects apptainer.
+            self.assertEqual(container_runtime(), "apptainer")
 
     def test_outside_container_runs_locally(self):
         with patch.dict("os.environ", {}, clear=False) as environ:
