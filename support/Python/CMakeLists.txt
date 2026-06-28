@@ -34,7 +34,7 @@ foreach(_machine_yaml ${_machine_yamls})
     )
 endforeach()
 
-if(MACHINE)
+if(MACHINE AND NOT MACHINE STREQUAL "UNKNOWN")
   message(STATUS "Selected machine: ${MACHINE}")
   configure_file(
     ${CMAKE_SOURCE_DIR}/support/Machines/${MACHINE}.yaml
