@@ -23,6 +23,7 @@ namespace evolution::dg::subcell::Tags {
 /// store it when using Charm++ messages.
 template <size_t Dim>
 struct GhostDataForReconstruction : db::SimpleTag {
-  using type = DirectionalIdMap<Dim, GhostData>;
+  using type = std::unordered_map<DirectionalId<Dim>, GhostData>;
+  // using type = DirectionalIdMap<Dim, GhostData>;
 };
 }  // namespace evolution::dg::subcell::Tags

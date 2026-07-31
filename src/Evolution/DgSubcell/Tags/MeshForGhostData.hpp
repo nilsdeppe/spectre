@@ -6,6 +6,7 @@
 #include <cstddef>
 
 #include "DataStructures/DataBox/Tag.hpp"
+#include "Domain/Structure/DirectionalId.hpp"
 
 /// \cond
 template <size_t Dim, typename T>
@@ -24,6 +25,7 @@ namespace evolution::dg::subcell::Tags {
  */
 template <size_t Dim>
 struct MeshForGhostData : db::SimpleTag {
-  using type = DirectionalIdMap<Dim, ::Mesh<Dim>>;
+  using type = std::unordered_map<DirectionalId<Dim>, ::Mesh<Dim>>;
+  // using type = DirectionalIdMap<Dim, ::Mesh<Dim>>;
 };
 }  // namespace evolution::dg::subcell::Tags

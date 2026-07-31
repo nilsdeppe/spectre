@@ -64,40 +64,35 @@ struct SetPiAndPhiFromConstraints {
       const Parallel::GlobalCache<Metavariables>& cache,
       const ArrayIndex& /*array_index*/, ActionList /*meta*/,
       const ParallelComponent* const /*meta*/) {
-    db::mutate_apply<
-        tmpl::list<gh::Tags::Pi<DataVector, 3>, gh::Tags::Phi<DataVector, 3>>,
-        tmpl::list<
-            ::Tags::Time, domain::Tags::Mesh<3>,
-            domain::Tags::ElementMap<3, Frame::Grid>,
-            domain::CoordinateMaps::Tags::CoordinateMap<3, Frame::Grid,
-                                                        Frame::Inertial>,
-            domain::Tags::FunctionsOfTime,
-            domain::Tags::Coordinates<3, Frame::ElementLogical>,
-            gr::Tags::SpacetimeMetric<DataVector, 3>,
-            gh::gauges::Tags::GaugeCondition,
-            evolution::dg::subcell::Tags::Mesh<3>,
-            evolution::dg::subcell::Tags::Coordinates<3, Frame::ElementLogical>,
-            evolution::dg::subcell::Tags::ActiveGrid>>(
-        [](const gsl::not_null<tnsr::aa<DataVector, 3, Frame::Inertial>*> pi,
-           const gsl::not_null<tnsr::iaa<DataVector, 3, Frame::Inertial>*> phi,
-           const double initial_time, const Mesh<3>& dg_mesh,
-           const ElementMap<3, Frame::Grid>& logical_to_grid_map,
-           const domain::CoordinateMapBase<Frame::Grid, Frame::Inertial, 3>&
-               grid_to_inertial_map,
-           const std::unordered_map<
-               std::string,
-               std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&
-               functions_of_time,
-           const tnsr::I<DataVector, 3, Frame::ElementLogical>&
-               dg_logical_coordinates,
-           const tnsr::aa<DataVector, 3, Frame::Inertial>& spacetime_metric,
-           const gh::gauges::GaugeCondition& gauge_condition,
-           const Mesh<3>& subcell_mesh,
-           const tnsr::I<DataVector, 3, Frame::ElementLogical>&
-               subcell_logical_coordinates,
-           const evolution::dg::subcell::ActiveGrid active_grid,
-           const bool set_pi_and_phi_from_constraints) {
-          if (active_grid == evolution::dg::subcell::ActiveGrid::Dg) {
+    const auto active_grid =
+        db::get<evolution::dg::subcell::Tags::ActiveGrid>(box);
+    if (active_grid == evolution::dg::subcell::ActiveGrid::Dg) {
+      db::mutate_apply<
+          tmpl::list<gh::Tags::Pi<DataVector, 3>, gh::Tags::Phi<DataVector, 3>>,
+          tmpl::list<::Tags::Time, domain::Tags::Mesh<3>,
+                     domain::Tags::ElementMap<3, Frame::Grid>,
+                     domain::CoordinateMaps::Tags::CoordinateMap<
+                         3, Frame::Grid, Frame::Inertial>,
+                     domain::Tags::FunctionsOfTime,
+                     domain::Tags::Coordinates<3, Frame::ElementLogical>,
+                     gr::Tags::SpacetimeMetric<DataVector, 3>,
+                     gh::gauges::Tags::GaugeCondition>>(
+          [](const gsl::not_null<tnsr::aa<DataVector, 3, Frame::Inertial>*> pi,
+             const gsl::not_null<tnsr::iaa<DataVector, 3, Frame::Inertial>*>
+                 phi,
+             const double initial_time, const Mesh<3>& dg_mesh,
+             const ElementMap<3, Frame::Grid>& logical_to_grid_map,
+             const domain::CoordinateMapBase<Frame::Grid, Frame::Inertial, 3>&
+                 grid_to_inertial_map,
+             const std::unordered_map<
+                 std::string,
+                 std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&
+                 functions_of_time,
+             const tnsr::I<DataVector, 3, Frame::ElementLogical>&
+                 dg_logical_coordinates,
+             const tnsr::aa<DataVector, 3, Frame::Inertial>& spacetime_metric,
+             const gh::gauges::GaugeCondition& gauge_condition,
+             const bool set_pi_and_phi_from_constraints) {
             gh::gauges::SetPiAndPhiFromConstraints<
                 ghmhd::GhValenciaDivClean::InitialData::
                     analytic_solutions_and_data_list,
@@ -105,7 +100,38 @@ struct SetPiAndPhiFromConstraints {
                          grid_to_inertial_map, functions_of_time,
                          dg_logical_coordinates, spacetime_metric,
                          gauge_condition, set_pi_and_phi_from_constraints);
-          } else {
+          },
+          make_not_null(&box),
+          Parallel::get<gh::Tags::SetPiAndPhiFromConstraints>(cache));
+    } else {
+      db::mutate_apply<
+          tmpl::list<gh::Tags::Pi<DataVector, 3>, gh::Tags::Phi<DataVector, 3>>,
+          tmpl::list<::Tags::Time, domain::Tags::ElementMap<3, Frame::Grid>,
+                     domain::CoordinateMaps::Tags::CoordinateMap<
+                         3, Frame::Grid, Frame::Inertial>,
+                     domain::Tags::FunctionsOfTime,
+                     gr::Tags::SpacetimeMetric<DataVector, 3>,
+                     gh::gauges::Tags::GaugeCondition,
+                     evolution::dg::subcell::Tags::Mesh<3>,
+                     evolution::dg::subcell::Tags::Coordinates<
+                         3, Frame::ElementLogical>>>(
+          [](const gsl::not_null<tnsr::aa<DataVector, 3, Frame::Inertial>*> pi,
+             const gsl::not_null<tnsr::iaa<DataVector, 3, Frame::Inertial>*>
+                 phi,
+             const double initial_time,
+             const ElementMap<3, Frame::Grid>& logical_to_grid_map,
+             const domain::CoordinateMapBase<Frame::Grid, Frame::Inertial, 3>&
+                 grid_to_inertial_map,
+             const std::unordered_map<
+                 std::string,
+                 std::unique_ptr<domain::FunctionsOfTime::FunctionOfTime>>&
+                 functions_of_time,
+             const tnsr::aa<DataVector, 3, Frame::Inertial>& spacetime_metric,
+             const gh::gauges::GaugeCondition& gauge_condition,
+             const Mesh<3>& subcell_mesh,
+             const tnsr::I<DataVector, 3, Frame::ElementLogical>&
+                 subcell_logical_coordinates,
+             const bool set_pi_and_phi_from_constraints) {
             gh::gauges::SetPiAndPhiFromConstraints<
                 ghmhd::GhValenciaDivClean::InitialData::
                     analytic_solutions_and_data_list,
@@ -114,10 +140,10 @@ struct SetPiAndPhiFromConstraints {
                          functions_of_time, subcell_logical_coordinates,
                          spacetime_metric, gauge_condition,
                          set_pi_and_phi_from_constraints);
-          }
-        },
-        make_not_null(&box),
-        Parallel::get<gh::Tags::SetPiAndPhiFromConstraints>(cache));
+          },
+          make_not_null(&box),
+          Parallel::get<gh::Tags::SetPiAndPhiFromConstraints>(cache));
+    }
     return {Parallel::AlgorithmExecution::Continue, std::nullopt};
   }
 };

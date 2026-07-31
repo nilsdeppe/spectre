@@ -723,21 +723,12 @@ struct ReceiveDataForReconstruction {
         [&element,
          ghost_zone_size = Metavariables::SubcellOptions::ghost_zone_size(box),
          &received_data, &subcell_mesh, &mortar_meshes](
-            const gsl::not_null<DirectionalIdMap<Dim, GhostData>*>
-                ghost_data_ptr,
+            const auto ghost_data_ptr,
             const gsl::not_null<RdmpTciData*> rdmp_tci_data_ptr,
-            const gsl::not_null<
-                DirectionalIdMap<Dim, evolution::dg::MortarDataHolder<Dim>>*>
-                mortar_data,
-            const gsl::not_null<DirectionalIdMap<Dim, TimeStepId>*>
-                mortar_next_time_step_id,
-            const gsl::not_null<DirectionalIdMap<Dim, Mesh<Dim>>*>
-                neighbor_mesh,
-            const gsl::not_null<DirectionalIdMap<Dim, Mesh<Dim>>*>
-                mesh_for_ghost_data,
+            const auto mortar_data, const auto mortar_next_time_step_id,
+            const auto neighbor_mesh, const auto mesh_for_ghost_data,
             const auto neighbor_tci_decisions,
-            const DirectionalIdMap<Dim, std::optional<intrp::Irregular<Dim>>>&
-                neighbor_dg_to_fd_interpolants) {
+            const auto& neighbor_dg_to_fd_interpolants) {
           // Remove neighbor meshes for neighbors that don't exist anymore
           domain::remove_nonexistent_neighbors(neighbor_mesh, element);
           domain::remove_nonexistent_neighbors(mesh_for_ghost_data, element);

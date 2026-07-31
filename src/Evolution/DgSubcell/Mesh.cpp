@@ -67,6 +67,17 @@ void verify_subcell_mesh(const Mesh<Dim>& subcell_mesh, const bool neighbor) {
 template <size_t Dim>
 Mesh<Dim> mesh(const Mesh<Dim>& dg_mesh) {
   if (dg_mesh.basis(Dim - 1) != Spectral::Basis::Cartoon) {
+    if constexpr (Dim == 3) {
+      if (dg_mesh.basis() == std::array{Spectral::Basis::Legendre,
+                                        Spectral::Basis::SphericalHarmonic,
+                                        Spectral::Basis::SphericalHarmonic} or
+          dg_mesh.basis() == std::array{Spectral::Basis::Chebyshev,
+                                        Spectral::Basis::SphericalHarmonic,
+                                        Spectral::Basis::SphericalHarmonic}) {
+        // No subcell in spherical shells. Stub with a default-constructed mesh.
+        return dg_mesh;
+      }
+    }
     ASSERT(dg_mesh.basis() == make_array<Dim>(Spectral::Basis::Legendre) or
                dg_mesh.basis() == make_array<Dim>(Spectral::Basis::Chebyshev),
            "The DG basis for computing the subcell mesh must be Legendre or "

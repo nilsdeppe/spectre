@@ -129,7 +129,8 @@ void logical_coordinates(
         break;
       }
       default:
-        ERROR("Missing basis case for logical_coordinates");
+        ERROR("Missing basis case for logical_coordinates. Got "
+              << mesh.basis(d));
     }
   }
 }

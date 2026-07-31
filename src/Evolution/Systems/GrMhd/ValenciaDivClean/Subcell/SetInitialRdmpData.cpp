@@ -13,6 +13,7 @@
 #include "Evolution/DgSubcell/PerssonTci.hpp"
 #include "Evolution/DgSubcell/Projection.hpp"
 #include "Evolution/DgSubcell/TwoMeshRdmpTci.hpp"
+#include "NumericalAlgorithms/Spectral/Basis.hpp"
 #include "NumericalAlgorithms/Spectral/Mesh.hpp"
 
 namespace grmhd::ValenciaDivClean::subcell {
@@ -23,7 +24,9 @@ void SetInitialRdmpData::apply(
     const tnsr::I<DataVector, 3, Frame::Inertial>& tilde_b,
     const evolution::dg::subcell::ActiveGrid active_grid,
     const Mesh<3>& dg_mesh, const Mesh<3>& subcell_mesh) {
-  if (active_grid == evolution::dg::subcell::ActiveGrid::Subcell) {
+  if (active_grid == evolution::dg::subcell::ActiveGrid::Subcell or
+      (active_grid == evolution::dg::subcell::ActiveGrid::Dg and
+       dg_mesh.basis(1) == Spectral::Basis::SphericalHarmonic)) {
     const Scalar<DataVector> tilde_b_magnitude = magnitude(tilde_b);
 
     rdmp_tci_data->max_variables_values =

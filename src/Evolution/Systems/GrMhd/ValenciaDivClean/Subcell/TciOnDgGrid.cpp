@@ -21,6 +21,7 @@
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/PalenzuelaEtAl.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/PrimitiveFromConservative.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/Subcell/TciOptions.hpp"
+#include "NumericalAlgorithms/Spectral/Basis.hpp"
 #include "NumericalAlgorithms/Spectral/Mesh.hpp"
 #include "PointwiseFunctions/Hydro/EquationsOfState/EquationOfState.hpp"
 #include "Utilities/ErrorHandling/Assert.hpp"
@@ -50,6 +51,8 @@ TciOnDgGrid<RecoveryScheme>::apply(
     const double persson_exponent, const bool element_stays_on_dg) {
   evolution::dg::subcell::RdmpTciData rdmp_tci_data{};
 
+  const bool project = dg_mesh.basis(1) != Spectral::Basis::SphericalHarmonic;
+
   using std::max;
   using std::min;
   const size_t num_dg_pts = dg_mesh.number_of_grid_points();
@@ -68,42 +71,59 @@ TciOnDgGrid<RecoveryScheme>::apply(
       };
   Scalar<DataVector> subcell_tilde_d{};
   assign_data(make_not_null(&subcell_tilde_d), num_subcell_pts);
-  evolution::dg::subcell::fd::project(make_not_null(&get(subcell_tilde_d)),
-                                      get(tilde_d), dg_mesh,
-                                      subcell_mesh.extents());
+  if (project) {
+    evolution::dg::subcell::fd::project(make_not_null(&get(subcell_tilde_d)),
+                                        get(tilde_d), dg_mesh,
+                                        subcell_mesh.extents());
+  }
 
   Scalar<DataVector> subcell_tilde_ye{};
   assign_data(make_not_null(&subcell_tilde_ye), num_subcell_pts);
-  evolution::dg::subcell::fd::project(make_not_null(&get(subcell_tilde_ye)),
-                                      get(tilde_ye), dg_mesh,
-                                      subcell_mesh.extents());
+  if (project) {
+    evolution::dg::subcell::fd::project(make_not_null(&get(subcell_tilde_ye)),
+                                        get(tilde_ye), dg_mesh,
+                                        subcell_mesh.extents());
+  }
 
   Scalar<DataVector> subcell_tilde_tau{};
   assign_data(make_not_null(&subcell_tilde_tau), num_subcell_pts);
-  evolution::dg::subcell::fd::project(make_not_null(&get(subcell_tilde_tau)),
-                                      get(tilde_tau), dg_mesh,
-                                      subcell_mesh.extents());
+  if (project) {
+    evolution::dg::subcell::fd::project(make_not_null(&get(subcell_tilde_tau)),
+                                        get(tilde_tau), dg_mesh,
+                                        subcell_mesh.extents());
+  }
 
   Scalar<DataVector> mag_tilde_b{};
-  assign_data(make_not_null(&mag_tilde_b), num_dg_pts);
-  magnitude(make_not_null(&mag_tilde_b), tilde_b);
   Scalar<DataVector> subcell_mag_tilde_b{};
+  assign_data(make_not_null(&mag_tilde_b), num_dg_pts);
   assign_data(make_not_null(&subcell_mag_tilde_b), num_subcell_pts);
-  evolution::dg::subcell::fd::project(make_not_null(&get(subcell_mag_tilde_b)),
-                                      get(mag_tilde_b), dg_mesh,
-                                      subcell_mesh.extents());
+  magnitude(make_not_null(&mag_tilde_b), tilde_b);
+  if (project) {
+    evolution::dg::subcell::fd::project(
+        make_not_null(&get(subcell_mag_tilde_b)), get(mag_tilde_b), dg_mesh,
+        subcell_mesh.extents());
+  }
   const double max_mag_tilde_b = max(get(mag_tilde_b));
 
-  rdmp_tci_data.max_variables_values =
-      DataVector{max(max(get(subcell_tilde_d)), max(get(tilde_d))),
-                 max(max(get(subcell_tilde_ye)), max(get(tilde_ye))),
-                 max(max(get(subcell_tilde_tau)), max(get(tilde_tau))),
-                 max(max(get(subcell_mag_tilde_b)), max_mag_tilde_b)};
-  rdmp_tci_data.min_variables_values =
-      DataVector{min(min(get(subcell_tilde_d)), min(get(tilde_d))),
-                 min(min(get(subcell_tilde_ye)), min(get(tilde_ye))),
-                 min(min(get(subcell_tilde_tau)), min(get(tilde_tau))),
-                 min(min(get(subcell_mag_tilde_b)), min(get(mag_tilde_b)))};
+  if (project) {
+    rdmp_tci_data.max_variables_values =
+        DataVector{max(max(get(subcell_tilde_d)), max(get(tilde_d))),
+                   max(max(get(subcell_tilde_ye)), max(get(tilde_ye))),
+                   max(max(get(subcell_tilde_tau)), max(get(tilde_tau))),
+                   max(max(get(subcell_mag_tilde_b)), max_mag_tilde_b)};
+    rdmp_tci_data.min_variables_values =
+        DataVector{min(min(get(subcell_tilde_d)), min(get(tilde_d))),
+                   min(min(get(subcell_tilde_ye)), min(get(tilde_ye))),
+                   min(min(get(subcell_tilde_tau)), min(get(tilde_tau))),
+                   min(min(get(subcell_mag_tilde_b)), min(get(mag_tilde_b)))};
+  } else {
+    rdmp_tci_data.max_variables_values =
+        DataVector{max(get(tilde_d)), max(get(tilde_ye)), max(get(tilde_tau)),
+                   max_mag_tilde_b};
+    rdmp_tci_data.min_variables_values =
+        DataVector{min(get(tilde_d)), min(get(tilde_ye)), min(get(tilde_tau)),
+                   min(get(mag_tilde_b))};
+  }
 
   const double average_sqrt_det_spatial_metric =
       l1Norm(get(sqrt_det_spatial_metric));
@@ -118,20 +138,23 @@ TciOnDgGrid<RecoveryScheme>::apply(
   // value)
   if (min(get(tilde_d)) / average_sqrt_det_spatial_metric <
           tci_options.minimum_rest_mass_density_times_lorentz_factor or
-      min(get(subcell_tilde_d)) / average_sqrt_det_spatial_metric <
-          tci_options.minimum_rest_mass_density_times_lorentz_factor or
+      (project and
+       min(get(subcell_tilde_d)) / average_sqrt_det_spatial_metric <
+           tci_options.minimum_rest_mass_density_times_lorentz_factor) or
       min(get(tilde_ye)) / average_sqrt_det_spatial_metric <
           tci_options.minimum_rest_mass_density_times_lorentz_factor *
               tci_options.minimum_ye or
-      min(get(subcell_tilde_ye)) / average_sqrt_det_spatial_metric <
-          tci_options.minimum_rest_mass_density_times_lorentz_factor *
-              tci_options.minimum_ye) {
+      (project and
+       min(get(subcell_tilde_ye)) / average_sqrt_det_spatial_metric <
+           tci_options.minimum_rest_mass_density_times_lorentz_factor *
+               tci_options.minimum_ye)) {
     return {-1, std::move(rdmp_tci_data)};
   }
 
   // require: tilde_tau >= 0.0 (or some positive user-specified value)
   if (min(get(tilde_tau)) < tci_options.minimum_tilde_tau or
-      min(get(subcell_tilde_tau)) < tci_options.minimum_tilde_tau) {
+      (project and
+       min(get(subcell_tilde_tau)) < tci_options.minimum_tilde_tau)) {
     return {-2, std::move(rdmp_tci_data)};
   }
 

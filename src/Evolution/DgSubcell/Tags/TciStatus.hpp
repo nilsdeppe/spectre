@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cstddef>
+#include <unordered_map>
 
 #include "DataStructures/DataBox/Tag.hpp"
 #include "DataStructures/Tensor/TypeAliases.hpp"
@@ -34,7 +35,8 @@ struct TciDecision : db::SimpleTag {
 /// The TCI decision of neighboring elements.
 template <size_t Dim>
 struct NeighborTciDecisions : db::SimpleTag {
-  using type = DirectionalIdMap<Dim, int>;
+  // using type = DirectionalIdMap<Dim, int>;
+  using type = std::unordered_map<DirectionalId<Dim>, int>;
 };
 
 /// Stores the status of the troubled cell indicator in the element

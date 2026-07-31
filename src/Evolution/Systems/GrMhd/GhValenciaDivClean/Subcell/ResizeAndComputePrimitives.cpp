@@ -45,7 +45,8 @@ void ResizeAndComputePrims<OrderedListOfRecoverySchemes>::apply(
     const Scalar<DataVector> fd_pressure =
         get<hydro::Tags::Pressure<DataVector>>(*prim_vars);
     prim_vars->initialize(num_grid_points);
-    if (get(fd_pressure).size() == subcell_mesh.number_of_grid_points()) {
+    if (subcell_mesh != dg_mesh and
+        get(fd_pressure).size() == subcell_mesh.number_of_grid_points()) {
       evolution::dg::subcell::fd::reconstruct(
           make_not_null(
               &get(get<hydro::Tags::Pressure<DataVector>>(*prim_vars))),

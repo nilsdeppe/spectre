@@ -13,12 +13,14 @@
 #include "Domain/Structure/Direction.hpp"
 #include "Domain/Structure/DirectionalId.hpp"
 #include "Domain/Structure/ElementId.hpp"
+#include "Domain/Tags.hpp"
 #include "Evolution/DgSubcell/Tags/TciStatus.hpp"
 #include "Evolution/DiscontinuousGalerkin/BoundaryData.hpp"
 #include "NumericalAlgorithms/Spectral/Mesh.hpp"
 #include "Utilities/ErrorHandling/Assert.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/StdHelpers.hpp"
 
 namespace evolution::dg::subcell {
 template <size_t Dim>
@@ -27,14 +29,18 @@ void neighbor_tci_decision(
     const DirectionalId<Dim>& directional_element_id,
     const evolution::dg::BoundaryData<Dim>& neighbor_data) {
   db::mutate<subcell::Tags::NeighborTciDecisions<Dim>>(
-      [&](const auto neighbor_tci_decisions_ptr) {
+      [&](const auto neighbor_tci_decisions_ptr,
+          const ElementId<Dim> element_id) {
         ASSERT(neighbor_tci_decisions_ptr->contains(directional_element_id),
                "The NeighborTciDecisions tag does not contain the neighbor "
-                   << directional_element_id);
+                   << directional_element_id << "\nElementId: "
+                   << element_id
+                   << "\nKnown neighbor IDs are: "
+                   << keys_of(*neighbor_tci_decisions_ptr));
         neighbor_tci_decisions_ptr->at(directional_element_id) =
             neighbor_data.tci_status;
       },
-      box);
+      box, db::get<domain::Tags::Element<Dim>>(*box).id());
 }
 
 #define DIM(data) BOOST_PP_TUPLE_ELEM(0, data)

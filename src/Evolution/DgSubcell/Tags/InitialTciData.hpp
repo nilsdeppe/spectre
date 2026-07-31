@@ -25,9 +25,13 @@ namespace evolution::dg::subcell::Tags {
 template <size_t Dim>
 struct InitialTciData {
   using temporal_id = int;
+  // using type =
+  //     std::map<temporal_id,
+  //              irectionalIdMap<Dim, evolution::dg::subcell::InitialTciData>>;
   using type =
       std::map<temporal_id,
-               DirectionalIdMap<Dim, evolution::dg::subcell::InitialTciData>>;
+               std::unordered_map<DirectionalId<Dim>,
+                                  evolution::dg::subcell::InitialTciData>>;
 
   template <typename ReceiveDataType>
   static bool insert_into_inbox(const gsl::not_null<type*> inbox,
