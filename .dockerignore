@@ -8,3 +8,5 @@
 # we create our own `build` directory in the container
 build*
 containers/Dockerfile.buildenv
+# Container images pulled by ./compile
+spectre.sif*

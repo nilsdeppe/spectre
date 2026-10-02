@@ -6,6 +6,11 @@
 # in general arbitrary names are possible and cannot all be ignored.
 /build*
 
+# Machine detected by ./configure
+/.MachineInfo
+# Container image pulled by ./compile
+/spectre.sif*
+
 # Editor configurations
 .vscode
 compile_commands.json

@@ -225,6 +225,7 @@ find . \
      ! -name 'CircularOrbitCoeffs.cpp' \
      ! -name 'CircularOrbitConvertEffsource.cpp' \
      ! -name '*~' \
+     ! -name '*.sif*' \
      ! -name 'AGENTS.local.md' \
      ! -name 'CLAUDE.local.md' \
      ! -name deploy_key.enc \

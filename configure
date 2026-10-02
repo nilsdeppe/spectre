@@ -1,0 +1,172 @@
+#!/usr/bin/env bash
+
+# Distributed under the MIT License.
+# See LICENSE.txt for details.
+
+# Identify the machine we are on by matching the fully-qualified hostname
+# against the `LoginNodeRegex` of every machine definition in
+# `support/Machines/`, then record the result in `.MachineInfo` at the root of
+# the repository. The file can be sourced by bash scripts to define:
+#
+#   SPECTRE_MACHINE=Mbot
+#   SPECTRE_MACHINE_FILE=support/Machines/Mbot.yaml
+#   SPECTRE_LOGIN_NODE_REGEX='^mbot\.cac\.cornell\.edu'
+#
+# and, only if the machine YAML sets the corresponding key:
+#
+#   SPECTRE_BUILD_QUEUE=build         # `BuildQueue: "build"`
+#   SPECTRE_BUILD_CPUS=64             # `BuildCpus: 64`
+#   SPECTRE_BUILD_TIME_LIMIT=2:00:00  # `BuildTimeLimit: "2:00:00"`
+#   SPECTRE_CONTAINER_IMAGE=sxscollaboration/spectre:dev
+#                                     # `ContainerImage: "..."`
+#
+# The `Build*` keys tell `./compile` to build on a compute node in that queue.
+# `ContainerImage` is the Apptainer image `./compile` builds in by default.
+#
+# This mirrors the hostname detection in `cmake/SetupMachine.cmake`, but only
+# uses bash and common POSIX tools so it can run before anything else is set
+# up. The regexes are matched as POSIX extended regular expressions with an
+# unanchored search (like Python's `re.search`), so they must not use
+# Python-only syntax such as `\d` or `(?:...)`.
+
+set -euo pipefail
+
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") [-m|--machine NAME] [-h|--help]
+
+Detect the current machine from its hostname and write '.MachineInfo' to the
+root of the SpECTRE repository.
+
+Options:
+  -m, --machine NAME  Skip detection and use the machine NAME, which must have
+                      a definition in support/Machines/NAME.yaml.
+  -h, --help          Show this help message.
+EOF
+}
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+machines_dir="${repo_root}/support/Machines"
+output_file="${repo_root}/.MachineInfo"
+
+machine=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -m|--machine)
+      if [ $# -lt 2 ]; then
+        echo "Error: '$1' requires a machine name." >&2
+        exit 1
+      fi
+      machine="$2"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Error: Unknown argument '$1'." >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Print the value of a single- or double-quoted YAML key, e.g.
+# `  Key: 'value'` or `  Key: "value"`.
+yaml_quoted_value() {
+  sed -n \
+    -e "s/^[[:space:]]*$1:[[:space:]]*'\(.*\)'[[:space:]]*\$/\1/p" \
+    -e "s/^[[:space:]]*$1:[[:space:]]*\"\(.*\)\"[[:space:]]*\$/\1/p" \
+    "$2" | head -n 1
+}
+
+# Print the value of a plain YAML key, e.g. `  Key: value`.
+yaml_plain_value() {
+  sed -n "s/^[[:space:]]*$1:[[:space:]]*\([^[:space:]#]*\).*\$/\1/p" "$2" \
+    | head -n 1
+}
+
+if [ -n "${machine}" ]; then
+  machine_file="${machines_dir}/${machine}.yaml"
+  if [ ! -f "${machine_file}" ]; then
+    echo "Error: No machine definition found at '${machine_file}'." >&2
+    exit 1
+  fi
+else
+  # The patterns often match FQDNs (e.g. `mbot.cac.cornell.edu`), so prefer
+  # the fully-qualified hostname and fall back to the short one.
+  host="$(hostname -f 2>/dev/null || true)"
+  if [ -z "${host}" ]; then
+    host="$(hostname)"
+  fi
+
+  matched_machines=()
+  matched_files=()
+  for yaml in "${machines_dir}"/*.yaml; do
+    regex="$(yaml_quoted_value LoginNodeRegex "${yaml}")"
+    if [ -z "${regex}" ]; then
+      continue
+    fi
+    if printf '%s\n' "${host}" | grep -Eq -e "${regex}"; then
+      matched_machines+=("$(yaml_plain_value Name "${yaml}")")
+      matched_files+=("${yaml}")
+    fi
+  done
+
+  if [ ${#matched_machines[@]} -eq 0 ]; then
+    echo "Error: The hostname '${host}' does not match the 'LoginNodeRegex'" \
+      "of any machine in '${machines_dir}'. Specify the machine explicitly" \
+      "with '--machine NAME'." >&2
+    exit 1
+  elif [ ${#matched_machines[@]} -gt 1 ]; then
+    echo "Error: The hostname '${host}' matches multiple machines:" \
+      "${matched_machines[*]}. Make their 'LoginNodeRegex' patterns more" \
+      "specific or specify the machine with '--machine NAME'." >&2
+    exit 1
+  fi
+  machine="${matched_machines[0]}"
+  machine_file="${matched_files[0]}"
+fi
+
+login_node_regex="$(yaml_quoted_value LoginNodeRegex "${machine_file}")"
+build_queue="$(yaml_quoted_value BuildQueue "${machine_file}")"
+build_cpus="$(yaml_plain_value BuildCpus "${machine_file}")"
+build_time_limit="$(yaml_quoted_value BuildTimeLimit "${machine_file}")"
+container_image="$(yaml_quoted_value ContainerImage "${machine_file}")"
+
+# Builds on compute nodes need an explicit core count: without one, Slurm may
+# give the build a single core even when it reserves a whole node.
+if [ -n "${build_queue}" ]; then
+  if [ -z "${build_cpus}" ] || [ -z "${build_time_limit}" ]; then
+    echo "Error: '${machine_file}' sets 'BuildQueue', so it must also set" \
+      "'BuildCpus' and 'BuildTimeLimit'." >&2
+    exit 1
+  fi
+  if ! [[ "${build_cpus}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "Error: 'BuildCpus' in '${machine_file}' must be a positive" \
+      "integer, not '${build_cpus}'." >&2
+    exit 1
+  fi
+fi
+
+# Print `NAME=value` with the value quoted by `%q` so the file is safe to
+# source. Empty values are skipped.
+write_variable() {
+  if [ -n "$2" ]; then
+    printf '%s=%q\n' "$1" "$2"
+  fi
+}
+
+{
+  write_variable SPECTRE_MACHINE "${machine}"
+  write_variable SPECTRE_MACHINE_FILE "${machine_file#"${repo_root}/"}"
+  write_variable SPECTRE_LOGIN_NODE_REGEX "${login_node_regex}"
+  write_variable SPECTRE_BUILD_QUEUE "${build_queue}"
+  write_variable SPECTRE_BUILD_CPUS "${build_cpus}"
+  write_variable SPECTRE_BUILD_TIME_LIMIT "${build_time_limit}"
+  write_variable SPECTRE_CONTAINER_IMAGE "${container_image}"
+} > "${output_file}"
+
+echo "Detected machine: ${machine}"
+echo "Wrote ${output_file}"

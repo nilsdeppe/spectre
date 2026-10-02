@@ -60,6 +60,26 @@ class Machine(yaml.YAMLObject):
       LaunchCommandLoginNode: Command to launch an executable on a the
         login node. This is the counterpart to `LaunchCommandSingleNode` which
         is to be used as a prefix for commands run on non-compute (login) nodes.
+
+    These optional attributes are read by CMake and the `configure` and
+    `compile` scripts in the repository root, which only support POSIX
+    extended regular expressions (no Python-only syntax such as `\\d`):
+
+      HostnameRegex: Regex matching the hostnames of all nodes of the machine.
+        Used to identify the machine when configuring with CMake.
+      LoginNodeRegex: Regex matching the hostnames of the login nodes. Used
+        by `./configure` to identify the machine.
+      BuildQueue: If set, `./compile` builds on a compute node in this queue
+        instead of on the login node.
+      BuildCpus: Number of cores `./compile` requests for building. Required
+        if `BuildQueue` is set.
+      BuildTimeLimit: Wall time limit for `./compile` builds. Required if
+        `BuildQueue` is set.
+      ContainerImage: Apptainer image that `./compile` builds in by default,
+        e.g. "sxscollaboration/spectre:dev". It is pulled to `spectre.sif` in
+        the SpECTRE repository.
+        Images without a scheme such as `docker://` are pulled from Docker
+        Hub.
     """
 
     yaml_tag = "!Machine"
