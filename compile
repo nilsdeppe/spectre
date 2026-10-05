@@ -1,0 +1,595 @@
+#!/usr/bin/env bash
+
+# Distributed under the MIT License.
+# See LICENSE.txt for details.
+
+# Configure (if needed) and build SpECTRE targets. Run this on a login node.
+# On machines whose YAML file in `support/Machines/` sets `BuildQueue`, the
+# configure and build steps run on a compute node in that queue, either
+# blocking (`srun`, the default) or detached (`sbatch`, with `--detach`).
+# Everywhere else they run on the current host.
+#
+# The machine is read from `.MachineInfo`, which `./configure` writes. If it
+# does not exist yet, `./configure` is run automatically.
+#
+# The script re-invokes itself inside the Slurm job and inside the container
+# (with `--container`), so the same logic runs in every stage:
+#   login node -> (srun/sbatch) -> compute node
+#     -> (containers/Apptainer.sh) -> container
+# The container is always started through `containers/Apptainer.sh`, which
+# adds the system-specific bind mounts.
+# Requires bash 4.4 or newer.
+
+set -euo pipefail
+
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") [options] [-D VAR=VALUE ...] TARGET [TARGET ...]
+
+Configure (if needed) and build SpECTRE targets, on a compute node if the
+machine requires it.
+
+Build directory (one of):
+  --preset NAME       Configure with the CMake preset NAME. Unless '-B' is
+                      also given, the build directory is 'build-NAME' in the
+                      SpECTRE repository.
+  -B DIR              Use the build directory DIR.
+  (neither)           Use the current directory, which must already be a
+                      configured build directory (contain CMakeCache.txt).
+
+CMake configuration (runs the configure step if any is given):
+  -D VAR=VALUE        Set a CMake cache variable (also '-DVAR=VALUE').
+  -G GENERATOR        CMake generator for a new build directory.
+  --fresh             Reconfigure from scratch, discarding the CMake cache.
+  -- ARGS...          Pass all remaining arguments to CMake.
+
+Build:
+  -j N                Number of parallel build jobs (default: all cores).
+  --configure-only    Only configure, do not build any targets.
+
+Compute node (only used when the machine sets 'BuildQueue'):
+  --cpus N            Number of cores to request (default: 'BuildCpus' from
+                      the machine).
+  --time LIMIT        Time limit (default: 'BuildTimeLimit' from the
+                      machine).
+  --account ACCOUNT   Slurm account. By default Slurm uses your default
+                      account, or SBATCH_ACCOUNT/SLURM_ACCOUNT if set.
+  --detach            Submit with sbatch and return immediately. Output goes
+                      to 'compile-JOBID.log' in the build directory.
+  --local             Build on this host, even if the machine has a
+                      'BuildQueue' or is not recognized.
+
+Container:
+  --container IMAGE   Configure and build inside the Apptainer image IMAGE.
+                      The image is remembered for the build directory, so
+                      later builds there use it automatically. On machines
+                      that set 'ContainerImage', new build directories use
+                      'spectre.sif' in the SpECTRE repository by default,
+                      which is pulled from that image if it does not exist.
+  --pull-container [PATH]
+                      Pull the machine's 'ContainerImage' to PATH and exit,
+                      replacing an existing image. If PATH is a directory,
+                      the image is 'PATH/spectre.sif'. Default:
+                      'spectre.sif' in the SpECTRE repository.
+
+  --list-presets      List the CMake presets available on this machine and
+                      exit.
+  -h, --help          Show this help message.
+
+Examples:
+  $(basename "$0") --preset release Test_Spectral
+  $(basename "$0") -B build -D CMAKE_BUILD_TYPE=Debug Test_Spectral
+  cd build && ../$(basename "$0") Test_Spectral
+EOF
+}
+
+error() {
+  echo "Error: $*" >&2
+  exit 1
+}
+
+script_path="$(readlink -f "${BASH_SOURCE[0]}")"
+repo_root="$(dirname "${script_path}")"
+machine_info="${repo_root}/.MachineInfo"
+apptainer_hint="Load it first (e.g. 'module load apptainer')."
+default_container="${repo_root}/spectre.sif"
+
+preset=""
+build_dir=""
+cmake_args=()
+targets=()
+jobs=""
+cpus=""
+time_limit=""
+account=""
+container=""
+fresh=false
+configure_only=false
+detach=false
+local_build=false
+list_presets=false
+pull_only=false
+pull_path=""
+
+current_host() {
+  hostname -f 2>/dev/null || hostname
+}
+
+# Print the value of the variable `$1` in `.MachineInfo`, if any.
+machine_info_value() {
+  if [ -f "${machine_info}" ]; then
+    # shellcheck source=/dev/null
+    (. "${machine_info}" && echo "${!1:-}")
+  fi
+}
+
+# Exit with an error if the command `$1` is not available. `$2` is an optional
+# hint how to get it.
+require_command() {
+  if ! command -v "$1" > /dev/null; then
+    error "'$1' was not found.${2:+ $2}"
+  fi
+}
+
+# Pull the machine's container image to the file `$1`. The image is pulled to
+# a temporary file first so an interrupted pull never leaves a broken image
+# behind.
+pull_container() {
+  local destination="$1"
+  local image partial="${destination}.partial"
+  image="$(machine_info_value SPECTRE_CONTAINER_IMAGE)"
+  if [ -z "${image}" ]; then
+    error "The machine" \
+      "'$(machine_info_value SPECTRE_MACHINE)' does not set" \
+      "'ContainerImage' in its YAML file. Pass '--container IMAGE' instead."
+  fi
+  # Images without a scheme are on Docker Hub
+  case "${image}" in
+    *://*) ;;
+    *) image="docker://${image}" ;;
+  esac
+  require_command apptainer "${apptainer_hint}"
+  echo "Pulling ${image} to ${destination}."
+  rm -f "${partial}"
+  if ! apptainer pull "${partial}" "${image}"; then
+    rm -f "${partial}"
+    error "Pulling '${image}' failed."
+  fi
+  mv -f "${partial}" "${destination}"
+}
+
+# Run cmake. If the machine recorded in `.MachineInfo` has presets in
+# `support/Environments/`, set SPECTRE_MACHINE so CMakePresets.json includes
+# them.
+run_cmake() {
+  local machine
+  machine="$(machine_info_value SPECTRE_MACHINE)"
+  if [ -n "${machine}" ] && [ -f \
+    "${repo_root}/support/Environments/${machine}Presets.json" ]; then
+    SPECTRE_MACHINE="${machine}" cmake "$@"
+  else
+    cmake "$@"
+  fi
+}
+
+# Create or refresh `.MachineInfo` (so changes to the machine's YAML file are
+# picked up), load it, and check that it belongs to this host.
+load_machine_info() {
+  local machine
+  machine="$(machine_info_value SPECTRE_MACHINE)"
+  if [ -n "${machine}" ]; then
+    "${repo_root}/configure" --machine "${machine}" > /dev/null
+  else
+    echo "No .MachineInfo found, running ./configure to detect the machine."
+    if ! "${repo_root}/configure"; then
+      error "Could not identify this machine. Run" \
+        "'${repo_root}/configure --machine NAME', or pass '--local' to" \
+        "build on this host."
+    fi
+  fi
+  # shellcheck source=/dev/null
+  . "${machine_info}"
+  if [ -n "${SPECTRE_LOGIN_NODE_REGEX:-}" ]; then
+    local host
+    host="$(current_host)"
+    if ! printf '%s\n' "${host}" \
+      | grep -Eq -e "${SPECTRE_LOGIN_NODE_REGEX}"; then
+      error "'${machine_info}' is for the machine '${SPECTRE_MACHINE}'," \
+        "but this host '${host}' is not one of its login nodes. Rerun" \
+        "'${repo_root}/configure', or pass '--local' to build on this" \
+        "host."
+    fi
+  fi
+}
+
+# Exit with an error if the option `$1` is not followed by a value. Call with
+# all remaining arguments: `require_value "$@"`.
+require_value() {
+  if [ $# -lt 2 ]; then
+    error "'$1' requires a value."
+  fi
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --preset) require_value "$@"; preset="$2"; shift 2 ;;
+    -B) require_value "$@"; build_dir="$2"; shift 2 ;;
+    -j) require_value "$@"; jobs="$2"; shift 2 ;;
+    --cpus) require_value "$@"; cpus="$2"; shift 2 ;;
+    --time) require_value "$@"; time_limit="$2"; shift 2 ;;
+    --account) require_value "$@"; account="$2"; shift 2 ;;
+    --container) require_value "$@"; container="$2"; shift 2 ;;
+    -D|-G)
+      require_value "$@"
+      cmake_args+=("$1" "$2")
+      shift 2
+      ;;
+    -D?*|-G?*)
+      cmake_args+=("$1")
+      shift
+      ;;
+    -j?*)
+      jobs="${1#-j}"
+      shift
+      ;;
+    --fresh)
+      fresh=true
+      shift
+      ;;
+    --configure-only)
+      configure_only=true
+      shift
+      ;;
+    --detach)
+      detach=true
+      shift
+      ;;
+    --local)
+      local_build=true
+      shift
+      ;;
+    --list-presets)
+      list_presets=true
+      shift
+      ;;
+    --pull-container)
+      pull_only=true
+      # The path is optional, so only take the next argument if it is not
+      # an option
+      if [ $# -ge 2 ] && [[ "$2" != -* ]]; then
+        pull_path="$2"
+        shift
+      fi
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      cmake_args+=("$@")
+      break
+      ;;
+    -*)
+      error "Unknown option '$1'. See '$(basename "$0") --help'."
+      ;;
+    *)
+      targets+=("$1")
+      shift
+      ;;
+  esac
+done
+
+# Identify the machine, unless already on a compute node (e.g. re-invoked by
+# `submit`) or asked to build here.
+use_machine_info=false
+if [ -z "${SLURM_JOB_ID:-}" ] && ! ${local_build}; then
+  use_machine_info=true
+  load_machine_info
+fi
+
+if ${pull_only}; then
+  if [ -z "${pull_path}" ]; then
+    pull_path="${default_container}"
+  elif [ -d "${pull_path}" ]; then
+    pull_path="${pull_path%/}/spectre.sif"
+  fi
+  pull_container "${pull_path}"
+  exit 0
+fi
+if ${list_presets}; then
+  presets="$(run_cmake -S "${repo_root}" --list-presets)"
+  if [ -n "${presets}" ]; then
+    echo "${presets}"
+  else
+    machine="$(machine_info_value SPECTRE_MACHINE)"
+    echo "No CMake presets are available for the machine" \
+      "'${machine:-unknown}'. You can define your own in" \
+      "CMakeUserPresets.json."
+  fi
+  exit 0
+fi
+
+if [ ${#targets[@]} -eq 0 ] && ! ${configure_only}; then
+  error "No targets given. Name the targets to build (or 'all'), or pass" \
+    "'--configure-only'."
+fi
+for number in "${jobs}" "${cpus}"; do
+  if [ -n "${number}" ] && ! [[ "${number}" =~ ^[1-9][0-9]*$ ]]; then
+    error "'${number}' is not a positive integer."
+  fi
+done
+
+# Resolve the build directory to an absolute path
+if [ -z "${build_dir}" ]; then
+  if [ -n "${preset}" ]; then
+    build_dir="${repo_root}/build-${preset}"
+  elif [ -f CMakeCache.txt ]; then
+    build_dir="${PWD}"
+  else
+    error "No build directory given and '${PWD}' is not a configured build" \
+      "directory (it has no CMakeCache.txt). Pass '-B DIR' or" \
+      "'--preset NAME'."
+  fi
+fi
+case "${build_dir}" in
+  /*) ;;
+  *) build_dir="${PWD}/${build_dir}" ;;
+esac
+if [ -d "${build_dir}" ]; then
+  build_dir="$(cd "${build_dir}" && pwd -P)"
+fi
+if [ "${build_dir}" = "${repo_root}" ]; then
+  error "Refusing to build in the source directory '${repo_root}'. Pass" \
+    "'-B DIR' or '--preset NAME'."
+fi
+
+cache_file="${build_dir}/CMakeCache.txt"
+container_file="${build_dir}/.compile-container"
+if [ -f "${cache_file}" ]; then
+  # A build directory belongs to exactly one source tree
+  cache_source="$(sed -n 's/^CMAKE_HOME_DIRECTORY:INTERNAL=//p' \
+    "${cache_file}")"
+  cache_source_resolved="$(cd "${cache_source}" 2>/dev/null && pwd -P \
+    || true)"
+  if [ "${cache_source_resolved}" != "${repo_root}" ]; then
+    error "The build directory '${build_dir}' was configured for the" \
+      "source directory '${cache_source}', not '${repo_root}'. Use the" \
+      "'compile' script of that source directory or a different build" \
+      "directory."
+  fi
+elif [ -d "${build_dir}" ]; then
+  # Only configure new build directories into empty directories (ignoring
+  # files this script writes), so we never litter an unrelated directory.
+  other_files="$(ls -A "${build_dir}" \
+    | grep -v -E '^(\.compile-container|compile(-[0-9]+)?\.log)$' || true)"
+  if [ -n "${other_files}" ]; then
+    error "'${build_dir}' is not empty and is not a configured build" \
+      "directory (it has no CMakeCache.txt). Choose a new or empty" \
+      "directory."
+  fi
+fi
+
+# The container a build directory was configured in is remembered because
+# the CMake cache holds paths to that container's compilers and libraries.
+recorded_container=""
+if [ -f "${container_file}" ]; then
+  recorded_container="$(cat "${container_file}")"
+fi
+in_container=false
+if [ -n "${APPTAINER_CONTAINER:-}" ]; then
+  in_container=true
+fi
+# Inside the container the image file itself may not be visible
+if [ -n "${container}" ] && ! ${in_container}; then
+  if [ ! -e "${container}" ]; then
+    error "The container image '${container}' does not exist."
+  fi
+  container="$(readlink -f "${container}")"
+fi
+if [ -n "${container}" ]; then
+  if [ -f "${cache_file}" ] && ! ${fresh} \
+    && [ "${container}" != "${recorded_container}" ]; then
+    if [ -z "${recorded_container}" ]; then
+      error "The build directory '${build_dir}' was configured without a" \
+        "container, so it cannot be built with '--container'. Use a" \
+        "different build directory."
+    fi
+    error "The build directory '${build_dir}' was configured with the" \
+      "container '${recorded_container}', not '${container}'. Use a" \
+      "different build directory or pass '--fresh'."
+  fi
+elif [ -n "${recorded_container}" ]; then
+  container="${recorded_container}"
+elif ! ${in_container} && { [ ! -f "${cache_file}" ] || ${fresh}; } \
+  && [ -n "$(machine_info_value SPECTRE_CONTAINER_IMAGE)" ]; then
+  # New build directories use the machine's container image by default.
+  # Pull it here because compute nodes often have no internet access.
+  container="${default_container}"
+  if [ ! -e "${container}" ]; then
+    pull_container "${container}"
+  fi
+fi
+if ${in_container} && [ -n "${container}" ] \
+  && [ "${APPTAINER_CONTAINER}" != "${container}" ]; then
+  error "Running inside the container '${APPTAINER_CONTAINER}', but the" \
+    "build directory '${build_dir}' uses '${container}'."
+fi
+
+# Arguments for re-invoking this script in the job or the container. The
+# build directory is passed as an absolute path so the working directory
+# does not matter.
+forward_args=(-B "${build_dir}")
+if [ -n "${preset}" ]; then
+  forward_args+=(--preset "${preset}")
+fi
+if [ -n "${jobs}" ]; then
+  forward_args+=(-j "${jobs}")
+fi
+if [ -n "${container}" ]; then
+  forward_args+=(--container "${container}")
+fi
+if ${fresh}; then
+  forward_args+=(--fresh)
+fi
+if ${configure_only}; then
+  forward_args+=(--configure-only)
+fi
+if ${local_build}; then
+  forward_args+=(--local)
+fi
+forward_args+=("${targets[@]}")
+if [ ${#cmake_args[@]} -gt 0 ]; then
+  forward_args+=(-- "${cmake_args[@]}")
+fi
+
+# If a Slurm error in the output file `$1` is about the account, list the
+# accounts the user can submit with.
+print_account_hint() {
+  if ! grep -qiE '^s(run|batch): error:.*account' "$1"; then
+    return 0
+  fi
+  echo "Hint: Pass '--account ACCOUNT' or set SBATCH_ACCOUNT and" \
+    "SLURM_ACCOUNT in your shell startup file." >&2
+  if command -v sacctmgr > /dev/null; then
+    echo "Your Slurm accounts and partitions (account|partition):" >&2
+    sacctmgr -nP show associations user="${USER}" \
+      format=Account,Partition 2>/dev/null | sort -u >&2 || true
+  fi
+}
+
+# Request a compute node and re-invoke this script there.
+submit() {
+  if ${in_container}; then
+    error "Cannot request a compute node from inside a container, because" \
+      "the build would run outside of it. Run '$(basename "$0")' on the" \
+      "host and pass '--container ${APPTAINER_CONTAINER}'."
+  fi
+  # Fail now rather than after waiting for the compute node
+  if [ -n "${container}" ]; then
+    require_command apptainer "${apptainer_hint}"
+  fi
+  # `./configure` ensures that machines with a BuildQueue set BuildCpus and
+  # BuildTimeLimit. Always pass `-c`, because without it Slurm may give the
+  # build a single core even when it reserves a whole node.
+  local slurm_opts=(-p "${SPECTRE_BUILD_QUEUE}" -N 1 -n 1
+    -c "${cpus:-${SPECTRE_BUILD_CPUS}}"
+    -t "${time_limit:-${SPECTRE_BUILD_TIME_LIMIT}}"
+    -J spectre-compile)
+  # Build with as many jobs as reserved cores by default, since `nproc` may
+  # report all cores of the node. A `-j` in `forward_args` comes later and
+  # wins.
+  local command=("${script_path}" -j "${cpus:-${SPECTRE_BUILD_CPUS}}"
+    "${forward_args[@]}")
+  # The job writes its output into the build directory
+  mkdir -p "${build_dir}"
+
+  if ${detach}; then
+    require_command sbatch
+    # sbatch reads SBATCH_ACCOUNT itself
+    if [ -n "${account}" ]; then
+      slurm_opts+=(-A "${account}")
+    fi
+    local error_file job_id status=0
+    error_file="$(mktemp)"
+    job_id="$(sbatch --parsable "${slurm_opts[@]}" \
+      -o "${build_dir}/compile-%j.log" \
+      --wrap "$(printf '%q ' "${command[@]}")" 2> "${error_file}")" \
+      || status=$?
+    # Show warnings as well as errors
+    cat "${error_file}" >&2
+    if [ ${status} -ne 0 ]; then
+      print_account_hint "${error_file}"
+    fi
+    rm -f "${error_file}"
+    if [ ${status} -ne 0 ]; then
+      exit ${status}
+    fi
+    job_id="${job_id%%;*}"
+    echo "Submitted build job ${job_id} to queue '${SPECTRE_BUILD_QUEUE}'."
+    echo "Follow its output with:"
+    echo "  tail -f ${build_dir}/compile-${job_id}.log"
+    exit 0
+  fi
+
+  require_command srun
+  # srun reads SLURM_ACCOUNT, but not SBATCH_ACCOUNT
+  account="${account:-${SLURM_ACCOUNT:-${SBATCH_ACCOUNT:-}}}"
+  if [ -n "${account}" ]; then
+    slurm_opts+=(-A "${account}")
+  fi
+  local log_file="${build_dir}/compile.log"
+  echo "Building on a compute node in queue '${SPECTRE_BUILD_QUEUE}'." \
+    "Output is also written to ${log_file}."
+  local status=0
+  srun "${slurm_opts[@]}" "${command[@]}" 2>&1 | tee "${log_file}" \
+    || status=$?
+  if [ ${status} -ne 0 ]; then
+    print_account_hint "${log_file}"
+  fi
+  exit ${status}
+}
+
+# Re-invoke this script inside the container.
+run_in_container() {
+  require_command apptainer "${apptainer_hint}"
+  # Only existing directories can be bound into the container
+  mkdir -p "${build_dir}"
+  exec "${repo_root}/containers/Apptainer.sh" exec \
+    --bind "${repo_root},${build_dir}" "${container}" \
+    "${script_path}" "${forward_args[@]}"
+}
+
+# Configure (if needed) and build on this host.
+run_here() {
+  local new_cache=false
+  if [ ! -f "${cache_file}" ] || ${fresh}; then
+    new_cache=true
+  fi
+  if ${new_cache} || [ ${#cmake_args[@]} -gt 0 ]; then
+    local configure_command=(-S "${repo_root}" -B "${build_dir}")
+    # Apply the preset and machine only to a new cache, so they do not
+    # override variables that were changed after the first configure.
+    if ${new_cache}; then
+      if [ -n "${preset}" ]; then
+        configure_command+=(--preset "${preset}")
+      fi
+      if ${fresh}; then
+        configure_command+=(--fresh)
+      fi
+      # Tell CMake the machine identified by `./configure`. CMake can only
+      # guess it from the hostname, which is ambiguous for machines that
+      # share nodes. A `-D MACHINE=...` from the user comes later and wins.
+      local machine
+      machine="$(machine_info_value SPECTRE_MACHINE)"
+      if [ -n "${machine}" ]; then
+        configure_command+=(-D "MACHINE=${machine}")
+      fi
+    fi
+    configure_command+=("${cmake_args[@]}")
+    if [ -n "${container}" ]; then
+      mkdir -p "${build_dir}"
+      printf '%s\n' "${container}" > "${container_file}"
+    fi
+    echo "Configuring: cmake ${configure_command[*]}"
+    run_cmake "${configure_command[@]}"
+  fi
+
+  if ${configure_only}; then
+    return 0
+  fi
+  if [ -z "${jobs}" ]; then
+    jobs="$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN)"
+  fi
+  echo "Building on $(current_host): ${targets[*]}"
+  cmake --build "${build_dir}" -j "${jobs}" --target "${targets[@]}"
+}
+
+if ${use_machine_info} && [ -n "${SPECTRE_BUILD_QUEUE:-}" ]; then
+  submit
+elif [ -n "${container}" ] && ! ${in_container}; then
+  run_in_container
+else
+  run_here
+fi

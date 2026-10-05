@@ -22,6 +22,7 @@ set(SPECTRE_FORMALINE_LOCATIONS
   cmake
   CMakeLists.txt
   CMakePresets.json
+  compile
   configure
   containers
   docs
