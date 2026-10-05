@@ -592,7 +592,13 @@ ENV PATH="${PATH}:/sxscollaboration/paraview/bin"
 # - The MPI and PETSc libraries are registered with the dynamic linker cache
 #   rather than through LD_LIBRARY_PATH. That way a host MPI that is bound into
 #   the container and prepended to LD_LIBRARY_PATH takes precedence at runtime.
+#   The host MPI only has to provide the C library (libmpi.so.12 for MPICH,
+#   libmpi.so.40 for OpenMPI), because nothing links the MPI C++ bindings.
 # - /sxscollaboration/host-mpi/lib is an empty mount point for the host MPI.
+# - The MPI compiler wrappers wrap GCC, because Charm++ and PETSc are compiled
+#   through them and GCC links with `--as-needed` on Ubuntu. That way the
+#   unused MPI C++ bindings library (MPICH's libmpicxx) is not recorded as a
+#   dependency. `containers/BuildMpiDeps.sh` checks this.
 # - PETSC_DIR is set in the `mpich` and `openmpi` stages after PETSc is
 #   installed, because PETSc's configure fails if PETSC_DIR is set to anything
 #   but the source directory.
@@ -617,6 +623,7 @@ RUN wget https://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPICH_V
         --with-device=ch3:nemesis \
         --disable-fortran \
         --enable-fast=O2 \
+        CC=gcc CXX=g++ \
         CFLAGS="-O2 -std=gnu17 -fpermissive" \
         CXXFLAGS="-O2" \
     && make ${PARALLEL_MAKE_ARG} \
@@ -643,6 +650,7 @@ RUN wget https://download.open-mpi.org/release/open-mpi/v${OPENMPI_VERSION%.*}/o
     && ./configure --prefix=/sxscollaboration/mpi \
         --disable-mpi-fortran \
         --with-slurm \
+        CC=gcc CXX=g++ \
     && make ${PARALLEL_MAKE_ARG} \
     && make install \
     && ldconfig \
