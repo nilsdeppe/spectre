@@ -1,11 +1,19 @@
 # Distributed under the MIT License.
 # See LICENSE.txt for details.
 
-# Everything is installed in the `agents` image built from Dockerfile.buildenv.
-# This definition only installs the latest coding agents on top, so rebuild it
-# whenever they release a new version.
+# Everything is installed in the `agents-mpich` and `agents-openmpi` images
+# built from Dockerfile.buildenv. This definition only installs the latest
+# coding agents on top, so rebuild it whenever they release a new version.
+#
+# Choose the MPI flavor that is ABI-compatible with the MPI of the system you
+# run on with `--build-arg MPI=...` (requires Apptainer 1.2 or newer):
+# - `mpich` (default): MPICH, Cray MPICH, Intel MPI, MVAPICH2
+# - `openmpi`: OpenMPI
 Bootstrap: docker
-From: sxscollaboration/spectre:agents
+From: sxscollaboration/spectre:agents-{{ MPI }}
+
+%arguments
+    MPI=mpich
 
 %labels
     Author SXS Collaboration
@@ -58,6 +66,9 @@ From: sxscollaboration/spectre:agents
     Claude Code.
     - To build, run:
         apptainer build --fakeroot SpectreAi.sif ./CodingAgents.def
+      This uses MPICH. For systems with OpenMPI, build with
+        apptainer build --fakeroot --build-arg MPI=openmpi \
+          SpectreAi.sif ./CodingAgents.def
     - To change CLAUDE_CODE_VERSION at build time, set the environment variable
       CLAUDE_CODE_VERSION when building the container, for example:
         CLAUDE_CODE_VERSION=1.2.3 singularity build spectre.sif Singularity.def

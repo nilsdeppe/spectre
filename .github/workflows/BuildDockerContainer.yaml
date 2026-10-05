@@ -85,14 +85,50 @@ jobs:
           build-args: |
             PARALLEL_MAKE_ARG=-j4
             UBUNTU_VERSION=26.04
-      - name: Build agents container
+      - name: Build mpich container
         uses: docker/build-push-action@v7
         with:
           push: true
           context: .
           file: "./containers/Dockerfile.buildenv"
-          target: agents
-          tags: ${{ inputs.image_name }}:agents-${{ matrix.arch }}
+          target: mpich
+          tags: ${{ inputs.image_name }}:mpich-${{ matrix.arch }}
+          platforms: linux/${{ matrix.arch }}
+          build-args: |
+            PARALLEL_MAKE_ARG=-j4
+            UBUNTU_VERSION=26.04
+      - name: Build openmpi container
+        uses: docker/build-push-action@v7
+        with:
+          push: true
+          context: .
+          file: "./containers/Dockerfile.buildenv"
+          target: openmpi
+          tags: ${{ inputs.image_name }}:openmpi-${{ matrix.arch }}
+          platforms: linux/${{ matrix.arch }}
+          build-args: |
+            PARALLEL_MAKE_ARG=-j4
+            UBUNTU_VERSION=26.04
+      - name: Build agents-mpich container
+        uses: docker/build-push-action@v7
+        with:
+          push: true
+          context: .
+          file: "./containers/Dockerfile.buildenv"
+          target: agents-mpich
+          tags: ${{ inputs.image_name }}:agents-mpich-${{ matrix.arch }}
+          platforms: linux/${{ matrix.arch }}
+          build-args: |
+            PARALLEL_MAKE_ARG=-j4
+            UBUNTU_VERSION=26.04
+      - name: Build agents-openmpi container
+        uses: docker/build-push-action@v7
+        with:
+          push: true
+          context: .
+          file: "./containers/Dockerfile.buildenv"
+          target: agents-openmpi
+          tags: ${{ inputs.image_name }}:agents-openmpi-${{ matrix.arch }}
           platforms: linux/${{ matrix.arch }}
           build-args: |
             PARALLEL_MAKE_ARG=-j4
@@ -123,30 +159,23 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
-      - name: Create dev manifest
+      # Each tag is a manifest of the per-architecture images. `agents` is an
+      # alias for `agents-mpich`.
+      - name: Create manifests
         run: |
-          SOURCES="${{ inputs.image_name }}:dev-amd64"
-          if [ "${{ inputs.build_arm }}" = "true" ]; then
-            SOURCES="$SOURCES ${{ inputs.image_name }}:dev-arm64"
-          fi
-          docker buildx imagetools create \
-            --tag ${{ inputs.image_name }}:dev $SOURCES
-      - name: Create agents manifest
-        run: |
-          SOURCES="${{ inputs.image_name }}:agents-amd64"
-          if [ "${{ inputs.build_arm }}" = "true" ]; then
-            SOURCES="$SOURCES ${{ inputs.image_name }}:agents-arm64"
-          fi
-          docker buildx imagetools create \
-            --tag ${{ inputs.image_name }}:agents $SOURCES
-      - name: Create dev1804 manifest
-        run: |
-          SOURCES="${{ inputs.image_name }}:dev1804-amd64"
-          if [ "${{ inputs.build_arm }}" = "true" ]; then
-            SOURCES="$SOURCES ${{ inputs.image_name }}:dev1804-arm64"
-          fi
-          docker buildx imagetools create \
-            --tag ${{ inputs.image_name }}:dev1804 $SOURCES
+          create_manifest() {
+            local sources="${{ inputs.image_name }}:$2-amd64"
+            if [ "${{ inputs.build_arm }}" = "true" ]; then
+              sources="$sources ${{ inputs.image_name }}:$2-arm64"
+            fi
+            docker buildx imagetools create \
+              --tag ${{ inputs.image_name }}:$1 $sources
+          }
+          for name in dev dev1804 mpich openmpi agents-mpich agents-openmpi
+          do
+            create_manifest "$name" "$name"
+          done
+          create_manifest agents agents-mpich
       - name: Inspect manifest
         run: >
           docker buildx imagetools inspect ${{ inputs.image_name }}:dev

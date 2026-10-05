@@ -80,11 +80,20 @@
 #                 --platform linux/amd64,linux/arm64 \
 #                 -f ./containers/Dockerfile.buildenv --push .
 #
-# 2. `agents` Adds coding agents and the tools they use on top of `dev`.
+# 2. `mpich`, `openmpi`, `agents-mpich` and `agents-openmpi` add MPI, PETSc,
+#    ParaView, CUDA and other tools on top of `dev`, and the `agents-*` images
+#    also coding agents. Choose the MPI flavor that is ABI-compatible with the
+#    MPI on the system you run on (see the comments at the `hpc` stage). The
+#    tag name is the target name, e.g.
 #
-#   docker buildx build --target agents -t sxscollaboration/spectre:agents \
+#   docker buildx build --target mpich -t sxscollaboration/spectre:mpich \
 #                 --platform linux/amd64,linux/arm64 \
 #                 -f ./containers/Dockerfile.buildenv --push .
+#
+#    The `agents` tag is an alias for `agents-mpich`:
+#
+#   docker buildx imagetools create -t sxscollaboration/spectre:agents \
+#                 sxscollaboration/spectre:agents-mpich
 #
 # You DO NOT need to push the below. CI does that automatically.
 #
@@ -188,7 +197,9 @@ RUN apt-get update -y \
 # installed inside the container it makes it very difficult to use
 # Singularity on HPC systems to interface with the system MPI library.
 # The system MPI libraries are usually configured to take advantage of
-# InfiniBand or various other networking layers.
+# InfiniBand or various other networking layers. The `mpich` and `openmpi`
+# images below deliberately install an MPI that is ABI-compatible with common
+# host MPIs, so that the host MPI can replace it at runtime.
 RUN apt-get update -y \
     && apt-get install -y \
         libopenblas-dev liblapack-dev \
@@ -241,13 +252,13 @@ RUN apt-get update -y \
 
 # Install Python.
 #
-# Set up the Python environment in /opt/venv. It is prepended to the PATH, so
-# `python`, `python3`, `pip` and `pip3` all resolve to it and `pip install` just
-# works. Ubuntu marks its system Python as "externally managed" (PEP 668) and
-# refuses `pip install` into it, so a venv is the supported way to install
-# packages.
+# Set up the Python environment in /sxscollaboration/venv. It is prepended to
+# the PATH, so `python`, `python3`, `pip` and `pip3` all resolve to it and `pip
+# install` just works. Ubuntu marks its system Python as "externally managed"
+# (PEP 668) and refuses `pip install` into it, so a venv is the supported way to
+# install packages.
 ENV DEBIAN_FRONTEND noninteractive
-ENV VIRTUAL_ENV=/opt/venv
+ENV VIRTUAL_ENV=/sxscollaboration/venv
 ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 RUN apt-get update -y \
     && if [ ${UBUNTU_VERSION} = 18.04 ]; then \
@@ -435,6 +446,10 @@ WORKDIR /sxscollaboration
 # Download and build the Charm++ version used by SpECTRE
 # We check out only a specific branch in order to reduce the repo size.
 #
+# Software that we install on top of Ubuntu goes into /sxscollaboration rather
+# than e.g. /opt or /work, because HPC systems may bind their own directories
+# to those paths when running the container, which would hide our files.
+#
 # We remove the `doc` and `example` directories since these aren't useful to us
 # in the container and we want to reduce the size of the container. We do NOT
 # remove the `tmp` directories inside the Charm++ build directories because
@@ -445,7 +460,7 @@ WORKDIR /sxscollaboration
 # easier for people, and build with O2 to reduce build size. Charm++ 8.0.0
 # advertises compatibility with CMake 3.4, which CMake 4 no longer supports.
 RUN git clone --single-branch --branch v8.0.0 --depth 1 \
-        https://github.com/UIUC-PPL/charm charm \
+        https://github.com/UIUC-PPL/charm /sxscollaboration/charm \
     && cd /sxscollaboration/charm \
     && sed -i 's/cmake_minimum_required(VERSION 3.4...3.5)/cmake_minimum_required(VERSION 3.5)/' CMakeLists.txt \
     && ./build charm++ multicore-linux-${CHARM_ARCH} gcc \
@@ -483,7 +498,7 @@ RUN apt-get update -y \
 # live `tlnet` (see https://ctan.org/mirrors), or fall back to a frozen historic
 # snapshot under https://texlive.info/historic/systems/texlive/<year>/tlnet-final .
 RUN if [ ${UBUNTU_VERSION} = 26.04 ]; then \
-    mkdir /sxscollaboration/texlive && cd /sxscollaboration/texlive \
+    mkdir -p /sxscollaboration/texlive && cd /sxscollaboration/texlive \
     && wget https://ctan.math.illinois.edu/systems/texlive/tlnet/install-tl-unx.tar.gz \
     && tar -xzf install-tl-unx.tar.gz \
     && rm install-tl-unx.tar.gz \
@@ -501,31 +516,42 @@ RUN apt-get -y clean
 WORKDIR /sxscollaboration
 
 
-# Development container with coding agents (Claude Code, Codex, Copilot) and the
-# tools they use, so agents can develop, build and run SpECTRE and SpEC in one
-# image.
-FROM dev AS agents
+# Development and HPC images with the tools and libraries on top of `dev` that
+# SpECTRE and SpEC use: CUDA and Kokkos' `nvcc_wrapper`, MPI, PETSc, ParaView
+# and debugging and profiling tools.
+#
+# - `hpc` is the shared, MPI-independent part. It is not meant to be pushed.
+# - `mpich` and `openmpi` add an MPI and the software that is compiled against
+#   it (Charm++ with the MPI-SMP layer and PETSc). Choose the image whose MPI is
+#   ABI-compatible with the MPI of the system you run on, so the host MPI can be
+#   used inside the container: `mpich` (MPICH 3.3) for MPICH, Cray MPICH,
+#   Intel MPI and MVAPICH2, `openmpi` (OpenMPI 4.1) for OpenMPI.
+# - `agents-mpich` and `agents-openmpi` add coding agents (Claude Code, Codex,
+#   Copilot) and the tools they use.
+#
+# The MPI-dependent build steps are in `containers/BuildMpiDeps.sh` and the
+# agent installation is in `containers/InstallAgents.sh`, so both flavors share
+# them.
+FROM dev AS hpc
 ARG TARGETARCH
 ARG UBUNTU_VERSION=26.04
-ARG PARALLEL_MAKE_ARG=-j4
 ARG DEBIAN_FRONTEND=noninteractive
 ARG CUDA_VERSION=13.3
 ARG KOKKOS_VERSION=5.2.1
-ARG PETSC_VERSION=3.25.5
 
 # Disable OpenBLAS threading
 ENV OPENBLAS_NUM_THREADS=1
 
 # Install basic tools
 # - clangd and common debugging and profiling tools on top of the `dev` image.
-# - Bubblewrap is the sandbox backend of Codex on Linux.
+# - git-annex and bear for SpEC.
 RUN apt-get update -y \
     && apt-get install -y --no-install-recommends \
         less git procps man-db unzip gnupg2 curl ca-certificates gh \
         iputils-ping netcat-openbsd lynx dnsutils aggregate jq nano vim \
         emacs-nox tmux screen time inotify-tools psmisc lsof rsync strace \
         hwloc pciutils ripgrep valgrind heaptrack elfutils numactl bc \
-        libgoogle-perftools4 bubblewrap clangd lldb \
+        libgoogle-perftools4 clangd lldb git-annex bear \
     && apt-get -y clean
 
 # CUDA compiler and Kokkos' nvcc_wrapper to build SpECTRE with Kokkos + CUDA,
@@ -549,53 +575,97 @@ RUN CUDA_REPOS=https://developer.download.nvidia.com/compute/cuda/repos \
 ENV CUDA_HOME="/usr/local/cuda-${CUDA_VERSION}"
 ENV PATH="${CUDA_HOME}/bin:${PATH}"
 
-# MPI and PETSc for SpEC
-RUN apt-get update -y \
-    && apt-get install -y libopenmpi-dev git-annex bear \
-    && apt-get -y clean \
-    && wget https://web.cels.anl.gov/projects/petsc/download/release-snapshots/petsc-${PETSC_VERSION}.tar.gz \
-    && tar -xzf petsc-${PETSC_VERSION}.tar.gz \
-    && cd petsc-${PETSC_VERSION} \
-    && python ./configure --prefix=/usr/local --with-mpi-dir=/usr \
-        --enable-debug=0 --COPTFLAGS=-O3 --CXXOPTFLAGS=-O3 --FOPTFLAGS=-O3 \
-        --with-hdf5=0 --download-hdf5=0 \
-    && make MAKE_NP=4 \
-    && make install \
-    && ldconfig \
-    && cd .. && rm -r petsc-${PETSC_VERSION} petsc-${PETSC_VERSION}.tar.gz
-
 # ParaView with Python, as in the `demo` image. Append it to the PATH so the
-# bundled Python doesn't shadow the container's Python.
+# bundled Python doesn't shadow the container's Python. ParaView bundles its own
+# libraries (including an MPI), so it must stay in its own directory and off the
+# library search path.
 RUN if [ "$TARGETARCH" != "arm64" ] ; then \
         wget -O paraview.tar.gz --no-check-certificate "https://www.paraview.org/paraview-downloads/download.php?submit=Download&version=v5.10&type=binary&os=Linux&downloadFile=ParaView-5.10.1-osmesa-MPI-Linux-Python3.9-x86_64.tar.gz" \
         && tar -xzf paraview.tar.gz \
         && rm paraview.tar.gz \
-        && mv ParaView-* /opt/paraview; \
+        && mv ParaView-* /sxscollaboration/paraview; \
     fi
-ENV PATH="${PATH}:/opt/paraview/bin"
+ENV PATH="${PATH}:/sxscollaboration/paraview/bin"
 
-# Install coding agents
-RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
-    && apt-get -y clean \
-    && npm install -g @anthropic-ai/claude-code @openai/codex @github/copilot
+# Locations of the MPI and of the software compiled against it, which the
+# `mpich` and `openmpi` stages install.
+# - The MPI and PETSc libraries are registered with the dynamic linker cache
+#   rather than through LD_LIBRARY_PATH. That way a host MPI that is bound into
+#   the container and prepended to LD_LIBRARY_PATH takes precedence at runtime.
+# - /sxscollaboration/host-mpi/lib is an empty mount point for the host MPI.
+# - PETSC_DIR is set in the `mpich` and `openmpi` stages after PETSc is
+#   installed, because PETSc's configure fails if PETSC_DIR is set to anything
+#   but the source directory.
+ENV PATH="/sxscollaboration/mpi/bin:${PATH}"
+RUN printf '%s\n' /sxscollaboration/mpi/lib /sxscollaboration/petsc/lib \
+        > /etc/ld.so.conf.d/sxscollaboration.conf \
+    && mkdir -p /sxscollaboration/host-mpi/lib
 
-# Install pyright to help coding agents understand Python code better
-RUN python -m pip --no-cache-dir install pyright
-# Install a wrapper that installs the clangd and pyright plugins for Claude Code
-# before launching it
-COPY --chmod=755 <<'EOF' /usr/local/bin/claude
-#!/bin/bash
-if ! /usr/bin/claude plugin list 2>/dev/null | grep -q "clangd-lsp"; then
-    /usr/bin/claude plugin marketplace update claude-plugins-official || true
-    /usr/bin/claude plugin install clangd-lsp@claude-plugins-official || true
-fi
-if ! /usr/bin/claude plugin list 2>/dev/null | grep -q "pyright"; then
-    /usr/bin/claude plugin marketplace update claude-plugins-official || true
-    /usr/bin/claude plugin install pyright-lsp@claude-plugins-official || true
-fi
-exec env ENABLE_LSP_TOOL=1 /usr/bin/claude "$@"
-EOF
+
+# MPICH 3.3, whose ABI (libmpi.so.12) is shared by MPICH >= 3.1, Cray MPICH,
+# Intel MPI and MVAPICH2.
+FROM hpc AS mpich
+ARG PARALLEL_MAKE_ARG=-j4
+ARG MPICH_VERSION=3.3.2
+ARG PETSC_VERSION=3.25.5
+
+# MPICH 3.3 predates C23, which GCC 15 uses by default, so compile it as C17.
+RUN wget https://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPICH_VERSION}.tar.gz \
+    && tar -xzf mpich-${MPICH_VERSION}.tar.gz \
+    && cd mpich-${MPICH_VERSION} \
+    && ./configure --prefix=/sxscollaboration/mpi \
+        --with-device=ch3:nemesis \
+        --disable-fortran \
+        --enable-fast=O2 \
+        CFLAGS="-O2 -std=gnu17 -fpermissive" \
+        CXXFLAGS="-O2" \
+    && make ${PARALLEL_MAKE_ARG} \
+    && make install \
+    && ldconfig \
+    && cd .. && rm -rf mpich-${MPICH_VERSION} mpich-${MPICH_VERSION}.tar.gz
+
+COPY --chmod=755 containers/BuildMpiDeps.sh /tmp/BuildMpiDeps.sh
+RUN /tmp/BuildMpiDeps.sh && rm /tmp/BuildMpiDeps.sh
+ENV CHARM_ROOT="/sxscollaboration/charm/mpi-linux-${CHARM_ARCH}-smp"
+ENV PETSC_DIR=/sxscollaboration/petsc
+ENV PKG_CONFIG_PATH=/sxscollaboration/petsc/lib/pkgconfig
+
+
+# OpenMPI 4.1. OpenMPI does not keep its ABI stable across major versions.
+FROM hpc AS openmpi
+ARG PARALLEL_MAKE_ARG=-j4
+ARG OPENMPI_VERSION=4.1.8
+ARG PETSC_VERSION=3.25.5
+
+RUN wget https://download.open-mpi.org/release/open-mpi/v${OPENMPI_VERSION%.*}/openmpi-${OPENMPI_VERSION}.tar.gz \
+    && tar -xzf openmpi-${OPENMPI_VERSION}.tar.gz \
+    && cd openmpi-${OPENMPI_VERSION} \
+    && ./configure --prefix=/sxscollaboration/mpi \
+        --disable-mpi-fortran \
+        --with-slurm \
+    && make ${PARALLEL_MAKE_ARG} \
+    && make install \
+    && ldconfig \
+    && cd .. && rm -rf openmpi-${OPENMPI_VERSION} \
+        openmpi-${OPENMPI_VERSION}.tar.gz
+
+COPY --chmod=755 containers/BuildMpiDeps.sh /tmp/BuildMpiDeps.sh
+RUN /tmp/BuildMpiDeps.sh && rm /tmp/BuildMpiDeps.sh
+ENV CHARM_ROOT="/sxscollaboration/charm/mpi-linux-${CHARM_ARCH}-smp"
+ENV PETSC_DIR=/sxscollaboration/petsc
+ENV PKG_CONFIG_PATH=/sxscollaboration/petsc/lib/pkgconfig
+
+
+# Development containers with coding agents (Claude Code, Codex, Copilot) and
+# the tools they use, so agents can develop, build and run SpECTRE and SpEC in
+# one image. The `agents` tag is an alias for `agents-mpich`.
+FROM mpich AS agents-mpich
+COPY --chmod=755 containers/InstallAgents.sh /tmp/InstallAgents.sh
+RUN /tmp/InstallAgents.sh && rm /tmp/InstallAgents.sh
+
+FROM openmpi AS agents-openmpi
+COPY --chmod=755 containers/InstallAgents.sh /tmp/InstallAgents.sh
+RUN /tmp/InstallAgents.sh && rm /tmp/InstallAgents.sh
 
 # Deploy compiled executables to an image that can be run on HPC systems.
 # - We could also compile in the dev container and then copy the executables to
@@ -612,6 +682,8 @@ ARG TARGETARCH
 ARG UBUNTU_VERSION=26.04
 ARG PARALLEL_MAKE_ARG=-j2
 
+# Set explicitly so it doesn't depend on which `dev` image was pulled
+WORKDIR /sxscollaboration
 COPY . spectre/
 
 RUN mkdir spectre/build && cd spectre/build \
@@ -666,10 +738,11 @@ RUN if [ "$TARGETARCH" != "arm64" ] ; then \
         wget -O paraview.tar.gz --no-check-certificate "https://www.paraview.org/paraview-downloads/download.php?submit=Download&version=v5.10&type=binary&os=Linux&downloadFile=ParaView-5.10.1-osmesa-MPI-Linux-Python3.9-x86_64.tar.gz" \
         && tar -xzf paraview.tar.gz \
         && rm paraview.tar.gz \
-        && mv ParaView-* /opt/paraview; \
+        && mkdir -p /sxscollaboration \
+        && mv ParaView-* /sxscollaboration/paraview; \
     fi
 
-ENV PATH "/opt/paraview/bin:$PATH"
+ENV PATH "/sxscollaboration/paraview/bin:$PATH"
 
 # Build the executables used in the tutorial
 RUN if [ "$TARGETARCH" = "$BUILDARCH" ] ; then \
