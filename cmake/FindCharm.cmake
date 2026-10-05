@@ -424,12 +424,25 @@ target_compile_definitions(
 # to turn MPI linking on automatically. In the future it may be necessary to
 # further extend support for Charm++ wrapping other compiler wrappers and turn
 # them into CMake targets, as is done with MPI here.
+#
+# Charm++ only uses the MPI C API, so we link only the MPI C library and not the
+# MPI C++ bindings library (e.g. `libmpicxx` for MPICH). That way an
+# ABI-compatible MPI that replaces the one we built with at runtime (e.g. the
+# host MPI when running in a container) only has to provide the C library. We
+# also skip the C++ bindings header, as Charm++ does, so `mpi.h` doesn't
+# reference the library we don't link.
 if (CHARM_CXX MATCHES ".*mpicxx.*")
   set(CHARM_USE_MPI ON)
 endif()
 if (CHARM_USE_MPI)
-  find_package(MPI REQUIRED)
-  target_link_libraries(Charmxx::charmxx INTERFACE MPI::MPI_CXX)
+  find_package(MPI REQUIRED COMPONENTS C)
+  target_link_libraries(Charmxx::charmxx INTERFACE MPI::MPI_C)
+  target_compile_definitions(
+    Charmxx::charmxx
+    INTERFACE
+    MPICH_SKIP_MPICXX
+    OMPI_SKIP_MPICXX
+    )
 endif()
 
 include(FindPackageHandleStandardArgs)
