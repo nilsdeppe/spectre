@@ -563,6 +563,8 @@ struct EvolutionMetavars<tmpl::list<InterpolationTargetTags...>,
               Actions::MutateApply<
                   grmhd::ValenciaDivClean::subcell::ResizeAndComputePrims<
                       ordered_list_of_primitive_recovery_schemes>>,
+              evolution::dg::subcell::Actions::ResetInitialDataIfOnDg<
+                  volume_dim, system, false>,
               parameterized_deleptonization,
               VariableFixing::Actions::FixVariables<
                   VariableFixing::FixToAtmosphere<volume_dim>>,
