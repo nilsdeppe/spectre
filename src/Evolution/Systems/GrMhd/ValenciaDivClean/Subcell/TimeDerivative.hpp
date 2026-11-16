@@ -48,6 +48,7 @@
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/Fluxes.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/Sources.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/Subcell/ComputeFluxes.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/Subcell/NonConservativeTerms.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/System.hpp"
 #include "NumericalAlgorithms/FiniteDifference/DerivativeOrder.hpp"
 #include "NumericalAlgorithms/FiniteDifference/HighOrderFluxCorrection.hpp"
@@ -99,6 +100,13 @@ struct TimeDerivative {
             *box);
     std::array<DirectionMap<3, tnsr::i<DataVector, 3, Frame::Inertial>>, 3>
         ghost_cells_conormal;
+
+    // Data on the cell faces used for the non-conservative terms: the average
+    // of the two reconstructed states of TildeB and TildePhi, and the conormal
+    // J d\xi^{\hat i}/dx^j
+    std::array<tnsr::I<DataVector, 3, Frame::Inertial>, 3> face_tilde_b{};
+    std::array<Scalar<DataVector>, 3> face_tilde_phi{};
+    std::array<tnsr::i<DataVector, 3, Frame::Inertial>, 3> face_conormal{};
 
     const Mesh<3>& subcell_mesh =
         db::get<evolution::dg::subcell::Tags::Mesh<3>>(*box);
@@ -274,6 +282,22 @@ struct TimeDerivative {
 
             auto& vars_upper_face = gsl::at(package_data_argvars_upper_face, i);
             auto& vars_lower_face = gsl::at(package_data_argvars_lower_face, i);
+
+            gsl::at(face_tilde_b, i) =
+                get<grmhd::ValenciaDivClean::Tags::TildeB<>>(vars_upper_face);
+            for (size_t j = 0; j < 3; ++j) {
+              gsl::at(face_tilde_b, i).get(j) =
+                  0.5 *
+                  (gsl::at(face_tilde_b, i).get(j) +
+                   get<grmhd::ValenciaDivClean::Tags::TildeB<>>(vars_lower_face)
+                       .get(j));
+            }
+            get(gsl::at(face_tilde_phi, i)) =
+                0.5 * (get(get<grmhd::ValenciaDivClean::Tags::TildePhi>(
+                           vars_upper_face)) +
+                       get(get<grmhd::ValenciaDivClean::Tags::TildePhi>(
+                           vars_lower_face)));
+
             grmhd::ValenciaDivClean::subcell::compute_fluxes(
                 make_not_null(&vars_upper_face));
             grmhd::ValenciaDivClean::subcell::compute_fluxes(
@@ -362,6 +386,10 @@ struct TimeDerivative {
                 evolution::dg::subcell::fd::project_to_faces(
                     get(det_inv_jacobian_dg), dg_mesh, face_mesh_extents, i,
                     Spectral::Parity::Even);
+            gsl::at(face_conormal, i) = lower_outward_conormal_face;
+            for (size_t j = 0; j < 3; j++) {
+              gsl::at(face_conormal, i).get(j) /= det_inv_jacobian_face;
+            }
 
             const Scalar<DataVector> normalization{sqrt(get(dot_product(
                 lower_outward_conormal_face, lower_outward_conormal_face,
@@ -594,6 +622,48 @@ struct TimeDerivative {
             }
           });
     }
+
+    // Add the non-conservative Powell and GLM terms
+    grmhd::ValenciaDivClean::subcell::add_non_conservative_terms(
+        make_not_null(&get<::Tags::dt<grmhd::ValenciaDivClean::Tags::TildeB<>>>(
+            *dt_vars_ptr)),
+        make_not_null(&get<::Tags::dt<grmhd::ValenciaDivClean::Tags::TildePhi>>(
+            *dt_vars_ptr)),
+        make_not_null(&get<::Tags::dt<grmhd::ValenciaDivClean::Tags::TildeTau>>(
+            *dt_vars_ptr)),
+        make_not_null(&get<::Tags::dt<grmhd::ValenciaDivClean::Tags::TildeS<>>>(
+            *dt_vars_ptr)),
+        face_tilde_b, face_tilde_phi, face_conormal,
+        db::get<grmhd::ValenciaDivClean::Tags::TildeB<>>(*box),
+        db::get<gr::Tags::Lapse<DataVector>>(*box),
+        db::get<hydro::Tags::SpatialVelocity<DataVector, 3>>(*box),
+        db::get<hydro::Tags::LorentzFactor<DataVector>>(*box),
+        db::get<hydro::Tags::MagneticField<DataVector, 3>>(*box),
+        db::get<gr::Tags::SpatialMetric<DataVector, 3>>(*box),
+        get(cell_centered_det_inv_jacobian), one_over_delta_xi,
+        subcell_mesh.extents(), comp_dim,
+        [&box, &cell_centered_det_inv_jacobian, comp_dim, &one_over_delta_xi,
+         &subcell_mesh](const gsl::not_null<DataVector*> result,
+                        const DataVector& flux, const size_t dim) {
+          if (comp_dim == 3) {
+            evolution::dg::subcell::add_cartesian_flux_divergence(
+                result, gsl::at(one_over_delta_xi, dim),
+                get(cell_centered_det_inv_jacobian), flux,
+                subcell_mesh.extents(), dim);
+          } else {
+            evolution::dg::subcell::add_cartoon_cartesian_flux_divergence(
+                result, gsl::at(one_over_delta_xi, dim),
+                get(cell_centered_det_inv_jacobian), flux,
+                subcell_mesh.extents(), dim,
+                db::get<evolution::dg::subcell::Tags::Coordinates<
+                    3, Frame::Inertial>>(*box),
+                get<domain::Tags::ElementMap<3, Frame::Grid>>(*box),
+                get<domain::CoordinateMaps::Tags::CoordinateMap<
+                    3, Frame::Grid, Frame::Inertial>>(*box),
+                get<::Tags::Time>(*box),
+                get<domain::Tags::FunctionsOfTime>(*box));
+          }
+        });
 
     evolution::dg::subcell::store_reconstruction_order_in_databox(
         box, reconstruction_order);

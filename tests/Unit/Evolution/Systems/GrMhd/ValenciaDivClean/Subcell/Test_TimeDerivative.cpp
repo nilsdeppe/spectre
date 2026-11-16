@@ -586,6 +586,13 @@ SPECTRE_TEST_CASE(
   std::array<double, 5> second_order_error_6{};
   std::optional<double> dummy_expansion_velocity{};
   using DO = ::fd::DerivativeOrder;
+  // The errors are those of (TildeD, TildeYe, TildeTau, TildeS, TildeB). The
+  // non-conservative Powell and GLM terms in the TildeTau, TildeS and TildeB
+  // equations are computed with second-order derivatives independent of the FD
+  // derivative order. Their truncation error does not decrease when increasing
+  // the FD derivative order, so we only check that the error decreases with
+  // the FD derivative order for TildeD and TildeYe.
+  const size_t number_of_vars_without_non_conservative_terms = 2;
   // Note: This test case is successful for higher derivative orders as well,
   // but including so many checks slows down the test case, resulting in
   // timeouts. Since it is not explicitly necessary to test to highest order,
@@ -608,10 +615,12 @@ SPECTRE_TEST_CASE(
       CHECK(gsl::at(six_pts_data, i) < gsl::at(five_pts_data, i));
       // Check that as we increase the order of the FD derivative the error
       // decreases.
-      if (previous_error_5.has_value()) {
+      if (previous_error_5.has_value() and
+          i < number_of_vars_without_non_conservative_terms) {
         CHECK(gsl::at(five_pts_data, i) < gsl::at(previous_error_5.value(), i));
       }
-      if (previous_error_6.has_value()) {
+      if (previous_error_6.has_value() and
+          i < number_of_vars_without_non_conservative_terms) {
         CHECK(gsl::at(six_pts_data, i) < gsl::at(previous_error_6.value(), i));
       }
     }
@@ -637,10 +646,12 @@ SPECTRE_TEST_CASE(
       CHECK(gsl::at(six_pts_data, i) < gsl::at(five_pts_data, i));
       // Check that as we increase the order of the FD derivative the error
       // decreases.
-      if (previous_error_5.has_value()) {
+      if (previous_error_5.has_value() and
+          i < number_of_vars_without_non_conservative_terms) {
         CHECK(gsl::at(five_pts_data, i) < gsl::at(previous_error_5.value(), i));
       }
-      if (previous_error_6.has_value()) {
+      if (previous_error_6.has_value() and
+          i < number_of_vars_without_non_conservative_terms) {
         CHECK(gsl::at(six_pts_data, i) < gsl::at(previous_error_6.value(), i));
       }
     }
@@ -688,10 +699,12 @@ SPECTRE_TEST_CASE(
       CHECK(gsl::at(six_pts_data, i) < gsl::at(five_pts_data, i));
       // Check that as we increase the order of the FD derivative the error
       // decreases.
-      if (previous_error_5.has_value()) {
+      if (previous_error_5.has_value() and
+          i < number_of_vars_without_non_conservative_terms) {
         CHECK(gsl::at(five_pts_data, i) < gsl::at(previous_error_5.value(), i));
       }
-      if (previous_error_6.has_value()) {
+      if (previous_error_6.has_value() and
+          i < number_of_vars_without_non_conservative_terms) {
         CHECK(gsl::at(six_pts_data, i) < gsl::at(previous_error_6.value(), i));
       }
     }

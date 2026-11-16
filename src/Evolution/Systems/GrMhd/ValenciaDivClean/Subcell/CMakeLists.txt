@@ -6,6 +6,7 @@ spectre_target_sources(
   PRIVATE
   FixConservativesAndComputePrims.cpp
   NeighborPackagedData.cpp
+  NonConservativeTerms.cpp
   PrimitiveGhostData.cpp
   PrimsAfterRollback.cpp
   ResizeAndComputePrimitives.cpp
@@ -23,6 +24,7 @@ spectre_target_headers(
   ComputeFluxes.hpp
   FixConservativesAndComputePrims.hpp
   NeighborPackagedData.hpp
+  NonConservativeTerms.hpp
   PrimitiveGhostData.hpp
   PrimsAfterRollback.hpp
   ResizeAndComputePrimitives.hpp
