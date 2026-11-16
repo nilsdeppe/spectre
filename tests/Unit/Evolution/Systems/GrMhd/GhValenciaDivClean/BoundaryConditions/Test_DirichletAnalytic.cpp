@@ -98,16 +98,16 @@ void test_dg(const gsl::not_null<std::mt19937*> generator,
   const auto expected_vars = [&analytic_solution_or_data, &coords,
                               &interior_gamma1, &interior_gamma2, time]() {
     Vars expected{num_points};
-    auto& [spacetime_metric, pi, phi, tilde_d, tilde_ye, tilde_tau, tilde_s,
-           tilde_b, tilde_phi,
+    auto& [spacetime_metric, pi, phi, tilde_b, tilde_phi, tilde_d, tilde_ye,
+           tilde_tau, tilde_s,
 
            rest_mass_density, electron_fraction, specific_internal_energy,
            spatial_velocity, magnetic_field, divergence_cleaning_field,
            lorentz_factor, pressure, temperature,
            lorentz_factor_times_spatial_velocity,
 
-           tilde_d_flux, tilde_ye_flux, tilde_tau_flux, tilde_s_flux,
-           tilde_b_flux, tilde_phi_flux, gamma1, gamma2, lapse, shift,
+           tilde_b_flux, tilde_phi_flux, tilde_d_flux, tilde_ye_flux,
+           tilde_tau_flux, tilde_s_flux, gamma1, gamma2, lapse, shift,
 
            spatial_velocity_one_form, spatial_metric, sqrt_det_spatial_metric,
 
@@ -149,9 +149,9 @@ void test_dg(const gsl::not_null<std::mt19937*> generator,
         spatial_velocity(ti::J) * spatial_metric(ti::i, ti::j));
 
     grmhd::ValenciaDivClean::ConservativeFromPrimitive::apply(
+        make_not_null(&tilde_b), make_not_null(&tilde_phi),
         make_not_null(&tilde_d), make_not_null(&tilde_ye),
         make_not_null(&tilde_tau), make_not_null(&tilde_s),
-        make_not_null(&tilde_b), make_not_null(&tilde_phi),
         get<hydro::Tags::RestMassDensity<DataVector>>(analytic_vars),
         get<hydro::Tags::ElectronFraction<DataVector>>(analytic_vars),
         get<hydro::Tags::SpecificInternalEnergy<DataVector>>(analytic_vars),
@@ -164,10 +164,10 @@ void test_dg(const gsl::not_null<std::mt19937*> generator,
         get<hydro::Tags::DivergenceCleaningField<DataVector>>(analytic_vars));
 
     grmhd::ValenciaDivClean::ComputeFluxes::apply(
+        make_not_null(&tilde_b_flux), make_not_null(&tilde_phi_flux),
         make_not_null(&tilde_d_flux), make_not_null(&tilde_ye_flux),
-        make_not_null(&tilde_tau_flux), make_not_null(&tilde_s_flux),
-        make_not_null(&tilde_b_flux), make_not_null(&tilde_phi_flux), tilde_d,
-        tilde_ye, tilde_tau, tilde_s, tilde_b, tilde_phi, lapse, shift,
+        make_not_null(&tilde_tau_flux), make_not_null(&tilde_s_flux), tilde_b,
+        tilde_phi, tilde_d, tilde_ye, tilde_tau, tilde_s, lapse, shift,
         get<gr::Tags::SqrtDetSpatialMetric<DataVector>>(analytic_vars),
         get<gr::Tags::SpatialMetric<DataVector, 3>>(analytic_vars),
         get<gr::Tags::InverseSpatialMetric<DataVector, 3>>(analytic_vars),
@@ -178,16 +178,16 @@ void test_dg(const gsl::not_null<std::mt19937*> generator,
 
     return expected;
   }();
-  auto& [spacetime_metric, pi, phi, tilde_d, tilde_ye, tilde_tau, tilde_s,
-         tilde_b, tilde_phi,
+  auto& [spacetime_metric, pi, phi, tilde_b, tilde_phi, tilde_d, tilde_ye,
+         tilde_tau, tilde_s,
 
          rest_mass_density, electron_fraction, specific_internal_energy,
          spatial_velocity, magnetic_field, divergence_cleaning_field,
          lorentz_factor, pressure, temperature,
          lorentz_factor_times_spatial_velocity,
 
-         tilde_d_flux, tilde_ye_flux, tilde_tau_flux, tilde_s_flux,
-         tilde_b_flux, tilde_phi_flux, gamma1, gamma2, lapse, shift,
+         tilde_b_flux, tilde_phi_flux, tilde_d_flux, tilde_ye_flux,
+         tilde_tau_flux, tilde_s_flux, gamma1, gamma2, lapse, shift,
 
          spatial_velocity_one_form, spatial_metric, sqrt_det_spatial_metric,
 
@@ -195,12 +195,12 @@ void test_dg(const gsl::not_null<std::mt19937*> generator,
 
   const auto result = boundary_condition.dg_ghost(
       make_not_null(&spacetime_metric), make_not_null(&pi), make_not_null(&phi),
+      make_not_null(&tilde_b), make_not_null(&tilde_phi),
       make_not_null(&tilde_d), make_not_null(&tilde_ye),
       make_not_null(&tilde_tau), make_not_null(&tilde_s),
-      make_not_null(&tilde_b), make_not_null(&tilde_phi),
+      make_not_null(&tilde_b_flux), make_not_null(&tilde_phi_flux),
       make_not_null(&tilde_d_flux), make_not_null(&tilde_ye_flux),
       make_not_null(&tilde_tau_flux), make_not_null(&tilde_s_flux),
-      make_not_null(&tilde_b_flux), make_not_null(&tilde_phi_flux),
       make_not_null(&gamma1), make_not_null(&gamma2), make_not_null(&lapse),
       make_not_null(&shift), make_not_null(&spatial_velocity_one_form),
       make_not_null(&rest_mass_density), make_not_null(&electron_fraction),

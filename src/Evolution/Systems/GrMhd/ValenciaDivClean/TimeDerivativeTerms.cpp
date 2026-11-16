@@ -21,23 +21,23 @@
 
 namespace grmhd::ValenciaDivClean {
 evolution::dg::TimeDerivativeDecisions<3> TimeDerivativeTerms::apply(
+    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
+        non_flux_terms_dt_tilde_b,
+    const gsl::not_null<Scalar<DataVector>*> non_flux_terms_dt_tilde_phi,
     const gsl::not_null<Scalar<DataVector>*> /*non_flux_terms_dt_tilde_d*/,
     const gsl::not_null<Scalar<DataVector>*> /*non_flux_terms_dt_tilde_ye*/,
     const gsl::not_null<Scalar<DataVector>*> non_flux_terms_dt_tilde_tau,
     const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
         non_flux_terms_dt_tilde_s,
-    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
-        non_flux_terms_dt_tilde_b,
-    const gsl::not_null<Scalar<DataVector>*> non_flux_terms_dt_tilde_phi,
 
+    const gsl::not_null<tnsr::IJ<DataVector, 3, Frame::Inertial>*> tilde_b_flux,
+    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
+        tilde_phi_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_d_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_ye_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
         tilde_tau_flux,
     const gsl::not_null<tnsr::Ij<DataVector, 3, Frame::Inertial>*> tilde_s_flux,
-    const gsl::not_null<tnsr::IJ<DataVector, 3, Frame::Inertial>*> tilde_b_flux,
-    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
-        tilde_phi_flux,
 
     const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
         spatial_velocity_one_form,

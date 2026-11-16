@@ -103,9 +103,9 @@ void test_potentially_eos_dependent_primitive_corrections(
   Scalar<DataVector> tilde_phi(number_of_points);
 
   grmhd::ValenciaDivClean::ConservativeFromPrimitive::apply(
+      make_not_null(&tilde_b), make_not_null(&tilde_phi),
       make_not_null(&tilde_d), make_not_null(&tilde_ye),
       make_not_null(&tilde_tau), make_not_null(&tilde_s),
-      make_not_null(&tilde_b), make_not_null(&tilde_phi),
       expected_rest_mass_density, expected_electron_fraction,
       expected_specific_internal_energy, expected_pressure,
       expected_spatial_velocity, expected_lorentz_factor,
@@ -220,9 +220,9 @@ void test_primitive_from_conservative_random(
   Scalar<DataVector> tilde_phi(number_of_points);
 
   grmhd::ValenciaDivClean::ConservativeFromPrimitive::apply(
+      make_not_null(&tilde_b), make_not_null(&tilde_phi),
       make_not_null(&tilde_d), make_not_null(&tilde_ye),
       make_not_null(&tilde_tau), make_not_null(&tilde_s),
-      make_not_null(&tilde_b), make_not_null(&tilde_phi),
       expected_rest_mass_density, expected_electron_fraction,
       expected_specific_internal_energy, expected_pressure,
       expected_spatial_velocity, expected_lorentz_factor,
@@ -343,9 +343,9 @@ void test_primitive_from_conservative_known(const DataVector& used_for_size) {
                                           kastaun_max_lorentz);
 
   grmhd::ValenciaDivClean::ConservativeFromPrimitive::apply(
+      make_not_null(&tilde_b), make_not_null(&tilde_phi),
       make_not_null(&tilde_d), make_not_null(&tilde_ye),
       make_not_null(&tilde_tau), make_not_null(&tilde_s),
-      make_not_null(&tilde_b), make_not_null(&tilde_phi),
       expected_rest_mass_density, expected_electron_fraction,
       expected_specific_internal_energy, expected_pressure,
       expected_spatial_velocity, expected_lorentz_factor,

@@ -324,6 +324,22 @@ def soln_flux_tilde_d(
     dim,
 ):
     return fluxes.tilde_d_flux(
+        soln_tilde_b(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
+        soln_tilde_phi(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
         soln_tilde_d(
             face_mesh_velocity,
             outward_directed_normal_covector,
@@ -349,22 +365,6 @@ def soln_flux_tilde_d(
             dim,
         ),
         soln_tilde_s(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        soln_tilde_b(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        soln_tilde_phi(
             face_mesh_velocity,
             outward_directed_normal_covector,
             outward_directed_normal_vector,
@@ -407,6 +407,22 @@ def soln_flux_tilde_ye(
     dim,
 ):
     return fluxes.tilde_ye_flux(
+        soln_tilde_b(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
+        soln_tilde_phi(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
         soln_tilde_d(
             face_mesh_velocity,
             outward_directed_normal_covector,
@@ -432,22 +448,6 @@ def soln_flux_tilde_ye(
             dim,
         ),
         soln_tilde_s(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        soln_tilde_b(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        soln_tilde_phi(
             face_mesh_velocity,
             outward_directed_normal_covector,
             outward_directed_normal_vector,
@@ -490,6 +490,22 @@ def soln_flux_tilde_tau(
     dim,
 ):
     return fluxes.tilde_tau_flux(
+        soln_tilde_b(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
+        soln_tilde_phi(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
         soln_tilde_d(
             face_mesh_velocity,
             outward_directed_normal_covector,
@@ -515,22 +531,6 @@ def soln_flux_tilde_tau(
             dim,
         ),
         soln_tilde_s(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        soln_tilde_b(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        soln_tilde_phi(
             face_mesh_velocity,
             outward_directed_normal_covector,
             outward_directed_normal_vector,
@@ -573,6 +573,22 @@ def soln_flux_tilde_s(
     dim,
 ):
     return fluxes.tilde_s_flux(
+        soln_tilde_b(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
+        soln_tilde_phi(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
         soln_tilde_d(
             face_mesh_velocity,
             outward_directed_normal_covector,
@@ -598,22 +614,6 @@ def soln_flux_tilde_s(
             dim,
         ),
         soln_tilde_s(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        soln_tilde_b(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        soln_tilde_phi(
             face_mesh_velocity,
             outward_directed_normal_covector,
             outward_directed_normal_vector,
@@ -656,6 +656,22 @@ def soln_flux_tilde_b(
     dim,
 ):
     return fluxes.tilde_b_flux(
+        soln_tilde_b(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
+        soln_tilde_phi(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
         soln_tilde_d(
             face_mesh_velocity,
             outward_directed_normal_covector,
@@ -681,22 +697,6 @@ def soln_flux_tilde_b(
             dim,
         ),
         soln_tilde_s(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        soln_tilde_b(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        soln_tilde_phi(
             face_mesh_velocity,
             outward_directed_normal_covector,
             outward_directed_normal_vector,
@@ -739,6 +739,22 @@ def soln_flux_tilde_phi(
     dim,
 ):
     return fluxes.tilde_phi_flux(
+        soln_tilde_b(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
+        soln_tilde_phi(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
         soln_tilde_d(
             face_mesh_velocity,
             outward_directed_normal_covector,
@@ -764,22 +780,6 @@ def soln_flux_tilde_phi(
             dim,
         ),
         soln_tilde_s(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        soln_tilde_b(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        soln_tilde_phi(
             face_mesh_velocity,
             outward_directed_normal_covector,
             outward_directed_normal_vector,
@@ -1077,6 +1077,22 @@ def data_flux_tilde_d(
     dim,
 ):
     return fluxes.tilde_d_flux(
+        data_tilde_b(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
+        data_tilde_phi(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
         data_tilde_d(
             face_mesh_velocity,
             outward_directed_normal_covector,
@@ -1102,22 +1118,6 @@ def data_flux_tilde_d(
             dim,
         ),
         data_tilde_s(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        data_tilde_b(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        data_tilde_phi(
             face_mesh_velocity,
             outward_directed_normal_covector,
             outward_directed_normal_vector,
@@ -1160,6 +1160,22 @@ def data_flux_tilde_ye(
     dim,
 ):
     return fluxes.tilde_ye_flux(
+        data_tilde_b(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
+        data_tilde_phi(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
         data_tilde_d(
             face_mesh_velocity,
             outward_directed_normal_covector,
@@ -1185,22 +1201,6 @@ def data_flux_tilde_ye(
             dim,
         ),
         data_tilde_s(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        data_tilde_b(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        data_tilde_phi(
             face_mesh_velocity,
             outward_directed_normal_covector,
             outward_directed_normal_vector,
@@ -1243,6 +1243,22 @@ def data_flux_tilde_tau(
     dim,
 ):
     return fluxes.tilde_tau_flux(
+        data_tilde_b(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
+        data_tilde_phi(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
         data_tilde_d(
             face_mesh_velocity,
             outward_directed_normal_covector,
@@ -1268,22 +1284,6 @@ def data_flux_tilde_tau(
             dim,
         ),
         data_tilde_s(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        data_tilde_b(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        data_tilde_phi(
             face_mesh_velocity,
             outward_directed_normal_covector,
             outward_directed_normal_vector,
@@ -1326,6 +1326,22 @@ def data_flux_tilde_s(
     dim,
 ):
     return fluxes.tilde_s_flux(
+        data_tilde_b(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
+        data_tilde_phi(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
         data_tilde_d(
             face_mesh_velocity,
             outward_directed_normal_covector,
@@ -1351,22 +1367,6 @@ def data_flux_tilde_s(
             dim,
         ),
         data_tilde_s(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        data_tilde_b(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        data_tilde_phi(
             face_mesh_velocity,
             outward_directed_normal_covector,
             outward_directed_normal_vector,
@@ -1409,6 +1409,22 @@ def data_flux_tilde_b(
     dim,
 ):
     return fluxes.tilde_b_flux(
+        data_tilde_b(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
+        data_tilde_phi(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
         data_tilde_d(
             face_mesh_velocity,
             outward_directed_normal_covector,
@@ -1434,22 +1450,6 @@ def data_flux_tilde_b(
             dim,
         ),
         data_tilde_s(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        data_tilde_b(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        data_tilde_phi(
             face_mesh_velocity,
             outward_directed_normal_covector,
             outward_directed_normal_vector,
@@ -1492,6 +1492,22 @@ def data_flux_tilde_phi(
     dim,
 ):
     return fluxes.tilde_phi_flux(
+        data_tilde_b(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
+        data_tilde_phi(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            coords,
+            time,
+            dim,
+        ),
         data_tilde_d(
             face_mesh_velocity,
             outward_directed_normal_covector,
@@ -1517,22 +1533,6 @@ def data_flux_tilde_phi(
             dim,
         ),
         data_tilde_s(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        data_tilde_b(
-            face_mesh_velocity,
-            outward_directed_normal_covector,
-            outward_directed_normal_vector,
-            coords,
-            time,
-            dim,
-        ),
-        data_tilde_phi(
             face_mesh_velocity,
             outward_directed_normal_covector,
             outward_directed_normal_vector,

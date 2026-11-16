@@ -12,12 +12,12 @@
 
 namespace {
 using valencia_tags =
-    tmpl::list<grmhd::ValenciaDivClean::Tags::TildeD,
+    tmpl::list<grmhd::ValenciaDivClean::Tags::TildeB<Frame::Inertial>,
+               grmhd::ValenciaDivClean::Tags::TildePhi,
+               grmhd::ValenciaDivClean::Tags::TildeD,
                grmhd::ValenciaDivClean::Tags::TildeYe,
                grmhd::ValenciaDivClean::Tags::TildeTau,
-               grmhd::ValenciaDivClean::Tags::TildeS<Frame::Inertial>,
-               grmhd::ValenciaDivClean::Tags::TildeB<Frame::Inertial>,
-               grmhd::ValenciaDivClean::Tags::TildePhi>;
+               grmhd::ValenciaDivClean::Tags::TildeS<Frame::Inertial>>;
 }  // namespace
 
 template class Filters::Hypercube<3, valencia_tags>;

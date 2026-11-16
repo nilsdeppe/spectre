@@ -135,7 +135,7 @@ struct TimeDerivativeTermsImpl {
       // Point into the right memory, then set it to zero.
 
       ASSERT(
-          max(get(get<tmpl::front<dt_type_aliases::valencia_dt_tags>>(
+          max(get(get<::Tags::dt<grmhd::ValenciaDivClean::Tags::TildeD>>(
               *dt_vars_ptr))) == 0.0,
           "GH+GRMHD assumes the time derivatives are set to zero in general."
           " If this is no longer the case, please set them to zero in "

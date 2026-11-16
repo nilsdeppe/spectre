@@ -15,23 +15,23 @@
 
 namespace {
 void forward_to_time_deriv(
+    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
+        non_flux_terms_dt_tilde_b,
+    const gsl::not_null<Scalar<DataVector>*> non_flux_terms_dt_tilde_phi,
     const gsl::not_null<Scalar<DataVector>*> non_flux_terms_dt_tilde_d,
     const gsl::not_null<Scalar<DataVector>*> non_flux_terms_dt_tilde_ye,
     const gsl::not_null<Scalar<DataVector>*> non_flux_terms_dt_tilde_tau,
     const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
         non_flux_terms_dt_tilde_s,
-    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
-        non_flux_terms_dt_tilde_b,
-    const gsl::not_null<Scalar<DataVector>*> non_flux_terms_dt_tilde_phi,
 
+    const gsl::not_null<tnsr::IJ<DataVector, 3, Frame::Inertial>*> tilde_b_flux,
+    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
+        tilde_phi_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_d_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_ye_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
         tilde_tau_flux,
     const gsl::not_null<tnsr::Ij<DataVector, 3, Frame::Inertial>*> tilde_s_flux,
-    const gsl::not_null<tnsr::IJ<DataVector, 3, Frame::Inertial>*> tilde_b_flux,
-    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
-        tilde_phi_flux,
 
     const Scalar<DataVector>& tilde_d, const Scalar<DataVector>& tilde_ye,
     const Scalar<DataVector>& tilde_tau,
@@ -63,12 +63,12 @@ void forward_to_time_deriv(
       temp{get(lapse).size(), 0.0};
 
   grmhd::ValenciaDivClean::TimeDerivativeTerms::apply(
+      non_flux_terms_dt_tilde_b, non_flux_terms_dt_tilde_phi,
       non_flux_terms_dt_tilde_d, non_flux_terms_dt_tilde_ye,
       non_flux_terms_dt_tilde_tau, non_flux_terms_dt_tilde_s,
-      non_flux_terms_dt_tilde_b, non_flux_terms_dt_tilde_phi,
 
-      tilde_d_flux, tilde_ye_flux, tilde_tau_flux, tilde_s_flux, tilde_b_flux,
-      tilde_phi_flux,
+      tilde_b_flux, tilde_phi_flux, tilde_d_flux, tilde_ye_flux, tilde_tau_flux,
+      tilde_s_flux,
 
       make_not_null(
           &get<hydro::Tags::SpatialVelocityOneForm<DataVector, 3,
@@ -133,9 +133,9 @@ SPECTRE_TEST_CASE("Unit.GrMhd.ValenciaDivClean.TimeDerivativeTerms",
 
   pypp::check_with_random_values<1>(
       &forward_to_time_deriv, "TimeDerivative",
-      {"source_tilde_d", "source_tilde_ye", "source_tilde_tau",
-       "source_tilde_s", "source_tilde_b", "source_tilde_phi", "tilde_d_flux",
-       "tilde_ye_flux", "tilde_tau_flux", "tilde_s_flux", "tilde_b_flux",
-       "tilde_phi_flux"},
+      {"source_tilde_b", "source_tilde_phi", "source_tilde_d",
+       "source_tilde_ye", "source_tilde_tau", "source_tilde_s", "tilde_b_flux",
+       "tilde_phi_flux", "tilde_d_flux", "tilde_ye_flux", "tilde_tau_flux",
+       "tilde_s_flux"},
       {{{0.0, 1.0}}}, DataVector{5});
 }

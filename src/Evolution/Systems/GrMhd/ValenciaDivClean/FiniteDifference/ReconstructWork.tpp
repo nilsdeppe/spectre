@@ -126,14 +126,14 @@ void compute_conservatives_for_reconstruction(
   }
 
   ConservativeFromPrimitive::apply(
+      make_not_null(
+          &get<ValenciaDivClean::Tags::TildeB<Frame::Inertial>>(*vars_on_face)),
+      make_not_null(&get<ValenciaDivClean::Tags::TildePhi>(*vars_on_face)),
       make_not_null(&get<ValenciaDivClean::Tags::TildeD>(*vars_on_face)),
       make_not_null(&get<ValenciaDivClean::Tags::TildeYe>(*vars_on_face)),
       make_not_null(&get<ValenciaDivClean::Tags::TildeTau>(*vars_on_face)),
       make_not_null(
           &get<ValenciaDivClean::Tags::TildeS<Frame::Inertial>>(*vars_on_face)),
-      make_not_null(
-          &get<ValenciaDivClean::Tags::TildeB<Frame::Inertial>>(*vars_on_face)),
-      make_not_null(&get<ValenciaDivClean::Tags::TildePhi>(*vars_on_face)),
       rest_mass_density, electron_fraction, specific_internal_energy, pressure,
       spatial_velocity, lorentz_factor,
       get<hydro::Tags::MagneticField<DataVector, 3, Frame::Inertial>>(

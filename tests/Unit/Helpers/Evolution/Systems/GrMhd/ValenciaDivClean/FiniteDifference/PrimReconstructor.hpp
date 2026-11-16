@@ -320,12 +320,12 @@ void test_prim_reconstructor_impl(
         upper_face_spatial_metric;
 
     mhd::ConservativeFromPrimitive::apply(
+        make_not_null(&get<mhd::Tags::TildeB<>>(expected_lower_face_values)),
+        make_not_null(&get<mhd::Tags::TildePhi>(expected_lower_face_values)),
         make_not_null(&get<mhd::Tags::TildeD>(expected_lower_face_values)),
         make_not_null(&get<mhd::Tags::TildeYe>(expected_lower_face_values)),
         make_not_null(&get<mhd::Tags::TildeTau>(expected_lower_face_values)),
         make_not_null(&get<mhd::Tags::TildeS<>>(expected_lower_face_values)),
-        make_not_null(&get<mhd::Tags::TildeB<>>(expected_lower_face_values)),
-        make_not_null(&get<mhd::Tags::TildePhi>(expected_lower_face_values)),
         get<Rho>(expected_lower_face_values),
         get<ElectronFraction>(expected_lower_face_values),
         get<SpecificInternalEnergy>(expected_lower_face_values),
@@ -338,12 +338,12 @@ void test_prim_reconstructor_impl(
         get<gr::Tags::SpatialMetric<DataVector, 3>>(expected_lower_face_values),
         get<Phi>(expected_lower_face_values));
     mhd::ConservativeFromPrimitive::apply(
+        make_not_null(&get<mhd::Tags::TildeB<>>(expected_upper_face_values)),
+        make_not_null(&get<mhd::Tags::TildePhi>(expected_upper_face_values)),
         make_not_null(&get<mhd::Tags::TildeD>(expected_upper_face_values)),
         make_not_null(&get<mhd::Tags::TildeYe>(expected_upper_face_values)),
         make_not_null(&get<mhd::Tags::TildeTau>(expected_upper_face_values)),
         make_not_null(&get<mhd::Tags::TildeS<>>(expected_upper_face_values)),
-        make_not_null(&get<mhd::Tags::TildeB<>>(expected_upper_face_values)),
-        make_not_null(&get<mhd::Tags::TildePhi>(expected_upper_face_values)),
         get<Rho>(expected_upper_face_values),
         get<ElectronFraction>(expected_upper_face_values),
         get<SpecificInternalEnergy>(expected_upper_face_values),

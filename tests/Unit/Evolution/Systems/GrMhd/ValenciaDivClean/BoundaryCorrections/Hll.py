@@ -10,18 +10,18 @@ _polytropic_gamma = 2.0
 
 
 def dg_package_data(
+    tilde_b,
+    tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
-    tilde_phi,
+    flux_tilde_b,
+    flux_tilde_phi,
     flux_tilde_d,
     flux_tilde_ye,
     flux_tilde_tau,
     flux_tilde_s,
-    flux_tilde_b,
-    flux_tilde_phi,
     lapse,
     shift,
     spatial_velocity_one_form,
@@ -202,10 +202,10 @@ def dg_boundary_terms(
         )
 
     return (
+        impl("tilde_b"),
+        impl("tilde_phi"),
         impl("tilde_d"),
         impl("tilde_ye"),
         impl("tilde_tau"),
         impl("tilde_s"),
-        impl("tilde_b"),
-        impl("tilde_phi"),
     )

@@ -48,6 +48,10 @@ SPECTRE_TEST_CASE(
   Variables<ComputeFluxes::return_tags> expected_fluxes{num_pts};
   ConservativeFromPrimitive::apply(
       make_not_null(
+          &get<grmhd::ValenciaDivClean::Tags::TildeB<>>(expected_conservative)),
+      make_not_null(
+          &get<grmhd::ValenciaDivClean::Tags::TildePhi>(expected_conservative)),
+      make_not_null(
           &get<grmhd::ValenciaDivClean::Tags::TildeD>(expected_conservative)),
       make_not_null(
           &get<grmhd::ValenciaDivClean::Tags::TildeYe>(expected_conservative)),
@@ -55,10 +59,6 @@ SPECTRE_TEST_CASE(
           &get<grmhd::ValenciaDivClean::Tags::TildeTau>(expected_conservative)),
       make_not_null(
           &get<grmhd::ValenciaDivClean::Tags::TildeS<>>(expected_conservative)),
-      make_not_null(
-          &get<grmhd::ValenciaDivClean::Tags::TildeB<>>(expected_conservative)),
-      make_not_null(
-          &get<grmhd::ValenciaDivClean::Tags::TildePhi>(expected_conservative)),
       get<hydro::Tags::RestMassDensity<DataVector>>(boundary_vars),
       get<hydro::Tags::ElectronFraction<DataVector>>(boundary_vars),
       get<hydro::Tags::SpecificInternalEnergy<DataVector>>(boundary_vars),
@@ -70,6 +70,12 @@ SPECTRE_TEST_CASE(
       get<gr::Tags::SpatialMetric<DataVector, 3>>(boundary_vars),
       get<hydro::Tags::DivergenceCleaningField<DataVector>>(boundary_vars));
   ComputeFluxes::apply(
+      make_not_null(&get<::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildeB<>,
+                                      tmpl::size_t<3>, Frame::Inertial>>(
+          expected_fluxes)),
+      make_not_null(&get<::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildePhi,
+                                      tmpl::size_t<3>, Frame::Inertial>>(
+          expected_fluxes)),
       make_not_null(&get<::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildeD,
                                       tmpl::size_t<3>, Frame::Inertial>>(
           expected_fluxes)),
@@ -82,18 +88,12 @@ SPECTRE_TEST_CASE(
       make_not_null(&get<::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildeS<>,
                                       tmpl::size_t<3>, Frame::Inertial>>(
           expected_fluxes)),
-      make_not_null(&get<::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildeB<>,
-                                      tmpl::size_t<3>, Frame::Inertial>>(
-          expected_fluxes)),
-      make_not_null(&get<::Tags::Flux<grmhd::ValenciaDivClean::Tags::TildePhi,
-                                      tmpl::size_t<3>, Frame::Inertial>>(
-          expected_fluxes)),
+      get<grmhd::ValenciaDivClean::Tags::TildeB<>>(expected_conservative),
+      get<grmhd::ValenciaDivClean::Tags::TildePhi>(expected_conservative),
       get<grmhd::ValenciaDivClean::Tags::TildeD>(expected_conservative),
       get<grmhd::ValenciaDivClean::Tags::TildeYe>(expected_conservative),
       get<grmhd::ValenciaDivClean::Tags::TildeTau>(expected_conservative),
       get<grmhd::ValenciaDivClean::Tags::TildeS<>>(expected_conservative),
-      get<grmhd::ValenciaDivClean::Tags::TildeB<>>(expected_conservative),
-      get<grmhd::ValenciaDivClean::Tags::TildePhi>(expected_conservative),
       get<gr::Tags::Lapse<DataVector>>(boundary_vars),
       get<gr::Tags::Shift<DataVector, 3>>(boundary_vars),
       get<gr::Tags::SqrtDetSpatialMetric<DataVector>>(boundary_vars),

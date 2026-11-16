@@ -822,9 +822,9 @@ void test_cartoon_dg_time_derivative() {
     tnsr::I<DataVector, 3, Frame::Inertial> tilde_b(num_pts);
     Scalar<DataVector> tilde_phi(num_pts);
     grmhd::ValenciaDivClean::ConservativeFromPrimitive::apply(
+        make_not_null(&tilde_b), make_not_null(&tilde_phi),
         make_not_null(&tilde_d), make_not_null(&tilde_ye),
-        make_not_null(&tilde_tau), make_not_null(&tilde_s),
-        make_not_null(&tilde_b), make_not_null(&tilde_phi), rho,
+        make_not_null(&tilde_tau), make_not_null(&tilde_s), rho,
         get<hydro::Tags::ElectronFraction<DataVector>>(vars), eps_int, p,
         get<hydro::Tags::SpatialVelocity<DataVector, 3>>(vars),
         get<hydro::Tags::LorentzFactor<DataVector>>(vars),
@@ -853,13 +853,13 @@ void test_cartoon_dg_time_derivative() {
     tnsr::I<DataVector, 3, Frame::Inertial> tilde_phi_flux(num_pts, 0.0);
 
     grmhd::ValenciaDivClean::TimeDerivativeTerms::apply(
+        make_not_null(&dt_tilde_b), make_not_null(&dt_tilde_phi),
         make_not_null(&dt_tilde_d), make_not_null(&dt_tilde_ye),
         make_not_null(&dt_tilde_tau), make_not_null(&dt_tilde_s),
-        make_not_null(&dt_tilde_b), make_not_null(&dt_tilde_phi),
 
+        make_not_null(&tilde_b_flux), make_not_null(&tilde_phi_flux),
         make_not_null(&tilde_d_flux), make_not_null(&tilde_ye_flux),
         make_not_null(&tilde_tau_flux), make_not_null(&tilde_s_flux),
-        make_not_null(&tilde_b_flux), make_not_null(&tilde_phi_flux),
 
         // Temporary variables
         make_not_null(&get<hydro::Tags::SpatialVelocityOneForm<

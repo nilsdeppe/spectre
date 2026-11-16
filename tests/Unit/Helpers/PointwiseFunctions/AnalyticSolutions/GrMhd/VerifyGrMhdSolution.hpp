@@ -88,6 +88,10 @@ Variables<valencia_tags> numerical_dt(
         get<gr::Tags::SqrtDetSpatialMetric<DataVector>>(vars);
 
     grmhd::ValenciaDivClean::ConservativeFromPrimitive::apply(
+        make_not_null(&get<grmhd::ValenciaDivClean::Tags::TildeB<>>(
+            gsl::at(solution_at_six_times, i))),
+        make_not_null(&get<grmhd::ValenciaDivClean::Tags::TildePhi>(
+            gsl::at(solution_at_six_times, i))),
         make_not_null(&get<grmhd::ValenciaDivClean::Tags::TildeD>(
             gsl::at(solution_at_six_times, i))),
         make_not_null(&get<grmhd::ValenciaDivClean::Tags::TildeYe>(
@@ -95,10 +99,6 @@ Variables<valencia_tags> numerical_dt(
         make_not_null(&get<grmhd::ValenciaDivClean::Tags::TildeTau>(
             gsl::at(solution_at_six_times, i))),
         make_not_null(&get<grmhd::ValenciaDivClean::Tags::TildeS<>>(
-            gsl::at(solution_at_six_times, i))),
-        make_not_null(&get<grmhd::ValenciaDivClean::Tags::TildeB<>>(
-            gsl::at(solution_at_six_times, i))),
-        make_not_null(&get<grmhd::ValenciaDivClean::Tags::TildePhi>(
             gsl::at(solution_at_six_times, i))),
         rest_mass_density, electron_fraction, specific_internal_energy,
         pressure, spatial_velocity, lorentz_factor, magnetic_field,
@@ -203,9 +203,9 @@ void verify_grmhd_solution(const Solution& solution, const Block<3>& block,
   Scalar<DataVector> tilde_phi(number_of_points);
 
   grmhd::ValenciaDivClean::ConservativeFromPrimitive::apply(
+      make_not_null(&tilde_b), make_not_null(&tilde_phi),
       make_not_null(&tilde_d), make_not_null(&tilde_ye),
-      make_not_null(&tilde_tau), make_not_null(&tilde_s),
-      make_not_null(&tilde_b), make_not_null(&tilde_phi), rest_mass_density,
+      make_not_null(&tilde_tau), make_not_null(&tilde_s), rest_mass_density,
       electron_fraction, specific_internal_energy, pressure, spatial_velocity,
       lorentz_factor, magnetic_field, sqrt_det_spatial_metric, spatial_metric,
       divergence_cleaning_field);
@@ -244,10 +244,10 @@ void verify_grmhd_solution(const Solution& solution, const Block<3>& block,
                      Frame::Inertial>>(fluxes);
 
   grmhd::ValenciaDivClean::ComputeFluxes::apply(
+      make_not_null(&flux_tilde_b), make_not_null(&flux_tilde_phi),
       make_not_null(&flux_tilde_d), make_not_null(&flux_tilde_ye),
-      make_not_null(&flux_tilde_tau), make_not_null(&flux_tilde_s),
-      make_not_null(&flux_tilde_b), make_not_null(&flux_tilde_phi), tilde_d,
-      tilde_ye, tilde_tau, tilde_s, tilde_b, tilde_phi, lapse, shift,
+      make_not_null(&flux_tilde_tau), make_not_null(&flux_tilde_s), tilde_b,
+      tilde_phi, tilde_d, tilde_ye, tilde_tau, tilde_s, lapse, shift,
       sqrt_det_spatial_metric, spatial_metric, inv_spatial_metric, pressure,
       spatial_velocity, lorentz_factor, magnetic_field);
 

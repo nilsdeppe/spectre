@@ -92,13 +92,17 @@ class CartoonGhost final : public BoundaryCondition,
       /*spacetime_metric*/,
       gsl::not_null<tnsr::aa<DataVector, 3, Frame::Inertial>*> /*pi*/,
       gsl::not_null<tnsr::iaa<DataVector, 3, Frame::Inertial>*> /*phi*/,
+      gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> /*tilde_b*/,
+      gsl::not_null<Scalar<DataVector>*> /*tilde_phi*/,
       gsl::not_null<Scalar<DataVector>*> /*tilde_d*/,
       gsl::not_null<Scalar<DataVector>*> /*tilde_ye*/,
       gsl::not_null<Scalar<DataVector>*> /*tilde_tau*/,
       gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*> /*tilde_s*/,
-      gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> /*tilde_b*/,
-      gsl::not_null<Scalar<DataVector>*> /*tilde_phi*/,
 
+      gsl::not_null<tnsr::IJ<DataVector, 3, Frame::Inertial>*>
+      /*tilde_b_flux*/,
+      gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
+      /*tilde_phi_flux*/,
       gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
       /*tilde_d_flux*/,
       gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
@@ -107,10 +111,6 @@ class CartoonGhost final : public BoundaryCondition,
       /*tilde_tau_flux*/,
       gsl::not_null<tnsr::Ij<DataVector, 3, Frame::Inertial>*>
       /*tilde_s_flux*/,
-      gsl::not_null<tnsr::IJ<DataVector, 3, Frame::Inertial>*>
-      /*tilde_b_flux*/,
-      gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
-      /*tilde_phi_flux*/,
 
       gsl::not_null<Scalar<DataVector>*> /*gamma1*/,
       gsl::not_null<Scalar<DataVector>*> /*gamma2*/,

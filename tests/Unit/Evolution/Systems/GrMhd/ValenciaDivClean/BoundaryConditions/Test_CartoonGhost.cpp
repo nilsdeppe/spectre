@@ -283,12 +283,12 @@ void test_dg_ghost_error() {
   Scalar<DataVector> temp{};
   const std::optional<tnsr::I<DataVector, 3>> face_mesh_vel{};
   CHECK_THROWS_WITH(
-      bc.dg_ghost(make_not_null(&tilde_d), make_not_null(&tilde_ye),
+      bc.dg_ghost(make_not_null(&tilde_b), make_not_null(&tilde_phi),
+                  make_not_null(&tilde_d), make_not_null(&tilde_ye),
                   make_not_null(&tilde_tau), make_not_null(&tilde_s),
-                  make_not_null(&tilde_b), make_not_null(&tilde_phi),
+                  make_not_null(&tilde_b_flux), make_not_null(&tilde_phi_flux),
                   make_not_null(&tilde_d_flux), make_not_null(&tilde_ye_flux),
                   make_not_null(&tilde_tau_flux), make_not_null(&tilde_s_flux),
-                  make_not_null(&tilde_b_flux), make_not_null(&tilde_phi_flux),
                   make_not_null(&lapse), make_not_null(&shift),
                   make_not_null(&svof), make_not_null(&rho), make_not_null(&ye),
                   make_not_null(&temp), make_not_null(&vel),

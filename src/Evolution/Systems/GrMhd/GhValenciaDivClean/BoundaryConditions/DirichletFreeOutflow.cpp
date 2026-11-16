@@ -100,21 +100,21 @@ std::optional<std::string> DirichletFreeOutflow<System>::dg_ghost(
         spacetime_metric,
     const gsl::not_null<tnsr::aa<DataVector, 3, Frame::Inertial>*> pi,
     const gsl::not_null<tnsr::iaa<DataVector, 3, Frame::Inertial>*> phi,
+    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_b,
+    const gsl::not_null<Scalar<DataVector>*> tilde_phi,
     const gsl::not_null<Scalar<DataVector>*> tilde_d,
     const gsl::not_null<Scalar<DataVector>*> tilde_ye,
     const gsl::not_null<Scalar<DataVector>*> tilde_tau,
     const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*> tilde_s,
-    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_b,
-    const gsl::not_null<Scalar<DataVector>*> tilde_phi,
 
+    const gsl::not_null<tnsr::IJ<DataVector, 3, Frame::Inertial>*> tilde_b_flux,
+    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
+        tilde_phi_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_d_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> tilde_ye_flux,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
         tilde_tau_flux,
     const gsl::not_null<tnsr::Ij<DataVector, 3, Frame::Inertial>*> tilde_s_flux,
-    const gsl::not_null<tnsr::IJ<DataVector, 3, Frame::Inertial>*> tilde_b_flux,
-    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
-        tilde_phi_flux,
 
     const gsl::not_null<Scalar<DataVector>*> gamma1,
     const gsl::not_null<Scalar<DataVector>*> gamma2,
@@ -192,10 +192,10 @@ std::optional<std::string> DirichletFreeOutflow<System>::dg_ghost(
       get<gr::Tags::InverseSpatialMetric<DataVector, 3>>(boundary_values);
 
   return grmhd::ValenciaDivClean::BoundaryConditions::HydroFreeOutflow::
-      dg_ghost(tilde_d, tilde_ye, tilde_tau, tilde_s, tilde_b, tilde_phi,
+      dg_ghost(tilde_b, tilde_phi, tilde_d, tilde_ye, tilde_tau, tilde_s,
 
-               tilde_d_flux, tilde_ye_flux, tilde_tau_flux, tilde_s_flux,
-               tilde_b_flux, tilde_phi_flux,
+               tilde_b_flux, tilde_phi_flux, tilde_d_flux, tilde_ye_flux,
+               tilde_tau_flux, tilde_s_flux,
 
                lapse, shift, spatial_velocity_one_form, rest_mass_density,
                electron_fraction, temperature, spatial_velocity,

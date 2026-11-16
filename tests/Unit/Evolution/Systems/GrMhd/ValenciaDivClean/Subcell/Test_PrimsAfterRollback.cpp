@@ -93,12 +93,12 @@ void test(const gsl::not_null<std::mt19937*> gen,
                                            spatial_metric)));
     }
     ConservativeFromPrimitive::apply(
+        make_not_null(&get<Tags::TildeB<Frame::Inertial>>(subcell_cons)),
+        make_not_null(&get<Tags::TildePhi>(subcell_cons)),
         make_not_null(&get<Tags::TildeD>(subcell_cons)),
         make_not_null(&get<Tags::TildeYe>(subcell_cons)),
         make_not_null(&get<Tags::TildeTau>(subcell_cons)),
         make_not_null(&get<Tags::TildeS<Frame::Inertial>>(subcell_cons)),
-        make_not_null(&get<Tags::TildeB<Frame::Inertial>>(subcell_cons)),
-        make_not_null(&get<Tags::TildePhi>(subcell_cons)),
         get<hydro::Tags::RestMassDensity<DataVector>>(subcell_prims),
         get<hydro::Tags::ElectronFraction<DataVector>>(subcell_prims),
         get<hydro::Tags::SpecificInternalEnergy<DataVector>>(subcell_prims),
@@ -231,12 +231,12 @@ void test_zernike_b1() {
 
   ConsVars subcell_cons{subcell_num_pts};
   ConservativeFromPrimitive::apply(
+      make_not_null(&get<Tags::TildeB<Frame::Inertial>>(subcell_cons)),
+      make_not_null(&get<Tags::TildePhi>(subcell_cons)),
       make_not_null(&get<Tags::TildeD>(subcell_cons)),
       make_not_null(&get<Tags::TildeYe>(subcell_cons)),
       make_not_null(&get<Tags::TildeTau>(subcell_cons)),
       make_not_null(&get<Tags::TildeS<Frame::Inertial>>(subcell_cons)),
-      make_not_null(&get<Tags::TildeB<Frame::Inertial>>(subcell_cons)),
-      make_not_null(&get<Tags::TildePhi>(subcell_cons)),
       get<hydro::Tags::RestMassDensity<DataVector>>(subcell_prims),
       get<hydro::Tags::ElectronFraction<DataVector>>(subcell_prims),
       get<hydro::Tags::SpecificInternalEnergy<DataVector>>(subcell_prims),

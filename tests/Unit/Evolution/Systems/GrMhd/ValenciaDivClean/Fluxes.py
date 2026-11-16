@@ -29,12 +29,12 @@ def spatial_velocity_one_form(spatial_velocity, spatial_metric):
 
 
 def tilde_d_flux(
+    tilde_b,
+    tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
-    tilde_phi,
     lapse,
     shift,
     sqrt_det_spatial_metric,
@@ -49,12 +49,12 @@ def tilde_d_flux(
 
 
 def tilde_ye_flux(
+    tilde_b,
+    tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
-    tilde_phi,
     lapse,
     shift,
     sqrt_det_spatial_metric,
@@ -69,12 +69,12 @@ def tilde_ye_flux(
 
 
 def tilde_tau_flux(
+    tilde_b,
+    tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
-    tilde_phi,
     lapse,
     shift,
     sqrt_det_spatial_metric,
@@ -102,12 +102,12 @@ def tilde_tau_flux(
 
 
 def tilde_s_flux(
+    tilde_b,
+    tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
-    tilde_phi,
     lapse,
     shift,
     sqrt_det_spatial_metric,
@@ -142,12 +142,12 @@ def tilde_s_flux(
 
 
 def tilde_b_flux(
+    tilde_b,
+    tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
-    tilde_phi,
     lapse,
     shift,
     sqrt_det_spatial_metric,
@@ -165,12 +165,12 @@ def tilde_b_flux(
 
 
 def tilde_phi_flux(
+    tilde_b,
+    tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
     tilde_s,
-    tilde_b,
-    tilde_phi,
     lapse,
     shift,
     sqrt_det_spatial_metric,

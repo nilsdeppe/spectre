@@ -431,12 +431,12 @@ def flux_tilde_d(
     )
 
     return fluxes.tilde_d_flux(
+        cons_vars["tilde_b"],
+        cons_vars["tilde_phi"],
         cons_vars["tilde_d"],
         cons_vars["tilde_ye"],
         cons_vars["tilde_tau"],
         cons_vars["tilde_s"],
-        cons_vars["tilde_b"],
-        cons_vars["tilde_phi"],
         lapse,
         shift,
         sqrt_det_spatial_metric,
@@ -491,12 +491,12 @@ def flux_tilde_ye(
     )
 
     return fluxes.tilde_ye_flux(
+        cons_vars["tilde_b"],
+        cons_vars["tilde_phi"],
         cons_vars["tilde_d"],
         cons_vars["tilde_ye"],
         cons_vars["tilde_tau"],
         cons_vars["tilde_s"],
-        cons_vars["tilde_b"],
-        cons_vars["tilde_phi"],
         lapse,
         shift,
         sqrt_det_spatial_metric,
@@ -551,12 +551,12 @@ def flux_tilde_tau(
     )
 
     return fluxes.tilde_tau_flux(
+        cons_vars["tilde_b"],
+        cons_vars["tilde_phi"],
         cons_vars["tilde_d"],
         cons_vars["tilde_ye"],
         cons_vars["tilde_tau"],
         cons_vars["tilde_s"],
-        cons_vars["tilde_b"],
-        cons_vars["tilde_phi"],
         lapse,
         shift,
         sqrt_det_spatial_metric,
@@ -611,12 +611,12 @@ def flux_tilde_s(
     )
 
     return fluxes.tilde_s_flux(
+        cons_vars["tilde_b"],
+        cons_vars["tilde_phi"],
         cons_vars["tilde_d"],
         cons_vars["tilde_ye"],
         cons_vars["tilde_tau"],
         cons_vars["tilde_s"],
-        cons_vars["tilde_b"],
-        cons_vars["tilde_phi"],
         lapse,
         shift,
         sqrt_det_spatial_metric,
@@ -671,12 +671,12 @@ def flux_tilde_b(
     )
 
     return fluxes.tilde_b_flux(
+        cons_vars["tilde_b"],
+        cons_vars["tilde_phi"],
         cons_vars["tilde_d"],
         cons_vars["tilde_ye"],
         cons_vars["tilde_tau"],
         cons_vars["tilde_s"],
-        cons_vars["tilde_b"],
-        cons_vars["tilde_phi"],
         lapse,
         shift,
         sqrt_det_spatial_metric,
@@ -731,12 +731,12 @@ def flux_tilde_phi(
     )
 
     return fluxes.tilde_phi_flux(
+        cons_vars["tilde_b"],
+        cons_vars["tilde_phi"],
         cons_vars["tilde_d"],
         cons_vars["tilde_ye"],
         cons_vars["tilde_tau"],
         cons_vars["tilde_s"],
-        cons_vars["tilde_b"],
-        cons_vars["tilde_phi"],
         lapse,
         shift,
         sqrt_det_spatial_metric,
