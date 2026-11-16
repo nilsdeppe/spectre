@@ -13,6 +13,7 @@
 #include "Domain/Structure/DirectionalId.hpp"
 #include "Domain/Structure/DirectionalIdMap.hpp"
 #include "Domain/Structure/ElementId.hpp"
+#include "Evolution/Systems/GeneralizedHarmonic/System.hpp"
 #include "Evolution/Systems/GrMhd/GhValenciaDivClean/System.hpp"
 #include "NumericalAlgorithms/LinearOperators/PartialDerivatives.hpp"
 #include "Utilities/Gsl.hpp"
@@ -39,7 +40,7 @@ namespace grmhd::GhValenciaDivClean::fd {
 template <typename System>
 void spacetime_derivatives(
     gsl::not_null<Variables<
-        db::wrap_tags_in<::Tags::deriv, typename System::gradients_tags,
+        db::wrap_tags_in<::Tags::deriv, typename gh::System<3>::gradients_tags,
                          tmpl::size_t<3>, Frame::Inertial>>*>
         result,
     const Variables<typename System::variables_tag::tags_list>&

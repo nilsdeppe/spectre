@@ -150,6 +150,9 @@ struct TimeDerivativeTerms {
       gsl::not_null<tnsr::II<DataVector, 3, Frame::Inertial>*>
           temp_inverse_spatial_metric,
 
+      const tnsr::iJ<DataVector, 3, Frame::Inertial>& d_tilde_b,
+      const tnsr::i<DataVector, 3, Frame::Inertial>& d_tilde_phi,
+
       const Scalar<DataVector>& tilde_d, const Scalar<DataVector>& tilde_ye,
       const Scalar<DataVector>& tilde_tau,
       const tnsr::i<DataVector, 3, Frame::Inertial>& tilde_s,

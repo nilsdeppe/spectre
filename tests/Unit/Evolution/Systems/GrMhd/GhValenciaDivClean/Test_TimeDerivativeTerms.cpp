@@ -122,8 +122,12 @@ SPECTRE_TEST_CASE(
       grmhd::GhValenciaDivClean::TimeDerivativeTerms::gh_gradient_tags,
       tmpl::bind<::Tags::deriv, tmpl::_1, tmpl::pin<tmpl::size_t<3_st>>,
                  tmpl::pin<Frame::Inertial>>>;
-  using valencia_gradient_tags = tmpl::list<>;
-  using gradient_variables_type = Variables<gh_gradient_tags>;
+  using valencia_gradient_tags =
+      db::wrap_tags_in<::Tags::deriv,
+                       grmhd::ValenciaDivClean::System::gradient_variables,
+                       tmpl::size_t<3_st>, Frame::Inertial>;
+  using gradient_variables_type =
+      Variables<tmpl::append<gh_gradient_tags, valencia_gradient_tags>>;
 
   using gh_arg_tags =
       grmhd::GhValenciaDivClean::TimeDerivativeTerms::gh_arg_tags;

@@ -71,6 +71,9 @@ evolution::dg::TimeDerivativeDecisions<3> TimeDerivativeTerms::apply(
     const gsl::not_null<tnsr::II<DataVector, 3, Frame::Inertial>*>
         temp_inverse_spatial_metric,
 
+    const tnsr::iJ<DataVector, 3, Frame::Inertial>& d_tilde_b,
+    const tnsr::i<DataVector, 3, Frame::Inertial>& d_tilde_phi,
+
     const Scalar<DataVector>& tilde_d, const Scalar<DataVector>& tilde_ye,
     const Scalar<DataVector>& tilde_tau,
     const tnsr::i<DataVector, 3, Frame::Inertial>& tilde_s,
@@ -154,6 +157,25 @@ evolution::dg::TimeDerivativeDecisions<3> TimeDerivativeTerms::apply(
 
       rest_mass_density, electron_fraction, pressure, specific_internal_energy,
       extrinsic_curvature, constraint_damping_parameter);
+
+  // Non-conservative Powell terms proportional to the divergence of TildeB
+  for (size_t j = 0; j < 3; ++j) {
+    const DataVector& d_j_tilde_b_j = d_tilde_b.get(j, j);
+    get(*non_flux_terms_dt_tilde_tau) -=
+        get(lapse) * get(*magnetic_field_dot_spatial_velocity) * d_j_tilde_b_j;
+    for (size_t i = 0; i < 3; ++i) {
+      non_flux_terms_dt_tilde_b->get(i) -=
+          get(lapse) * spatial_velocity.get(i) * d_j_tilde_b_j;
+      non_flux_terms_dt_tilde_s->get(i) -=
+          lapse_b_over_w->get(i) * d_j_tilde_b_j;
+    }
+  }
+  // Non-conservative terms proportional to the gradient of TildePhi
+  for (size_t i = 0; i < 3; ++i) {
+    get(*non_flux_terms_dt_tilde_tau) -= tilde_b.get(i) * d_tilde_phi.get(i);
+    get(*non_flux_terms_dt_tilde_phi) -=
+        get(lapse) * spatial_velocity.get(i) * d_tilde_phi.get(i);
+  }
   return {true};
 }
 }  // namespace grmhd::ValenciaDivClean

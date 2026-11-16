@@ -68,6 +68,8 @@
 #include "Helpers/PointwiseFunctions/GeneralRelativity/TestHelpers.hpp"
 #include "NumericalAlgorithms/LinearOperators/Divergence.hpp"
 #include "NumericalAlgorithms/LinearOperators/Divergence.tpp"
+#include "NumericalAlgorithms/LinearOperators/PartialDerivatives.hpp"
+#include "NumericalAlgorithms/LinearOperators/PartialDerivatives.tpp"
 #include "NumericalAlgorithms/Spectral/Basis.hpp"
 #include "NumericalAlgorithms/Spectral/InterpolationMatrix.hpp"
 #include "NumericalAlgorithms/Spectral/Mesh.hpp"
@@ -852,6 +854,23 @@ void test_cartoon_dg_time_derivative() {
     tnsr::IJ<DataVector, 3, Frame::Inertial> tilde_b_flux(num_pts, 0.0);
     tnsr::I<DataVector, 3, Frame::Inertial> tilde_phi_flux(num_pts, 0.0);
 
+    // Need ElementLogical-to-Inertial inv_jac; since grid_to_inertial is
+    // Identity, construct from block directly in Frame::Inertial
+    const ElementMap<3, Frame::Inertial> elem_map_inertial{element_id, block};
+    const auto inv_jac = elem_map_inertial.inv_jacobian(logical_coords);
+
+    // Derivatives of TildeB and TildePhi for the non-conservative terms
+    using GradientTags = tmpl::list<grmhd::ValenciaDivClean::Tags::TildeB<>,
+                                    grmhd::ValenciaDivClean::Tags::TildePhi>;
+    Variables<GradientTags> gradient_vars(num_pts);
+    get<grmhd::ValenciaDivClean::Tags::TildeB<>>(gradient_vars) = tilde_b;
+    get<grmhd::ValenciaDivClean::Tags::TildePhi>(gradient_vars) = tilde_phi;
+    Variables<db::wrap_tags_in<::Tags::deriv, GradientTags, tmpl::size_t<3>,
+                               Frame::Inertial>>
+        d_gradient_vars(num_pts);
+    partial_derivatives(make_not_null(&d_gradient_vars), gradient_vars, mesh,
+                        inv_jac, inertial_coords);
+
     grmhd::ValenciaDivClean::TimeDerivativeTerms::apply(
         make_not_null(&dt_tilde_b), make_not_null(&dt_tilde_phi),
         make_not_null(&dt_tilde_d), make_not_null(&dt_tilde_ye),
@@ -915,6 +934,12 @@ void test_cartoon_dg_time_derivative() {
         make_not_null(
             &get<gr::Tags::InverseSpatialMetric<DataVector, 3>>(temp_vars)),
 
+        // Derivatives of gradient variables
+        get<::Tags::deriv<grmhd::ValenciaDivClean::Tags::TildeB<>,
+                          tmpl::size_t<3>, Frame::Inertial>>(d_gradient_vars),
+        get<::Tags::deriv<grmhd::ValenciaDivClean::Tags::TildePhi,
+                          tmpl::size_t<3>, Frame::Inertial>>(d_gradient_vars),
+
         // Input variables
         tilde_d, tilde_ye, tilde_tau, tilde_s, tilde_b, tilde_phi,
         get<gr::Tags::Lapse<DataVector>>(vars),
@@ -958,10 +983,6 @@ void test_cartoon_dg_time_derivative() {
       get<FB>(volume_fluxes) = tilde_b_flux;
       get<FPhi>(volume_fluxes) = tilde_phi_flux;
 
-      // Need ElementLogical-to-Inertial inv_jac; since grid_to_inertial is
-      // Identity, construct from block directly in Frame::Inertial
-      const ElementMap<3, Frame::Inertial> elem_map_inertial{element_id, block};
-      const auto inv_jac = elem_map_inertial.inv_jacobian(logical_coords);
       Variables<db::wrap_tags_in<Tags::div, FluxTags>> div_fluxes(num_pts);
       divergence(make_not_null(&div_fluxes), volume_fluxes, mesh, inv_jac,
                  inertial_coords);

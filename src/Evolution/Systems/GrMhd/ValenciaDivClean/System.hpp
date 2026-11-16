@@ -165,6 +165,31 @@ namespace ValenciaDivClean {
  * divergence-free (no-monopole) condition \f$\Phi = \partial_i {\tilde B}^i =
  * 0\f$.
  *
+ * In addition to the conservative fluxes and the source terms above, the
+ * following non-conservative terms \f$N(U)\f$ are added to the right-hand
+ * side, \f$\partial_t U + \partial_i F^i(U) = S(U) + N(U)\f$,
+ *
+ * \f{align*}
+ * N({\tilde D}) &= 0 \\
+ * N({\tilde Y}_e) &= 0 \\
+ * N({\tilde S}_j) &= -\frac{\alpha b_j}{W} \partial_i {\tilde B}^i \\
+ * N({\tilde \tau}) &= -\alpha B^m v_m \partial_i {\tilde B}^i
+ *      - {\tilde B}^i \partial_i {\tilde \Phi} \\
+ * N({\tilde B}^j) &= -\alpha v^j \partial_i {\tilde B}^i \\
+ * N({\tilde \Phi}) &= -\alpha v^i \partial_i {\tilde \Phi}
+ * \f}
+ *
+ * The terms proportional to \f$\partial_i {\tilde B}^i\f$ are the Powell
+ * source terms \cite Powell1999, and the terms proportional to
+ * \f$\partial_i {\tilde \Phi}\f$ are the corresponding terms for the
+ * generalized Lagrange multiplier divergence cleaning field
+ * \cite Dedner2002. They vanish if the no-monopole constraint is satisfied
+ * and \f${\tilde \Phi}\f$ is constant, but otherwise advect monopole
+ * errors with the fluid.
+ *
+ * \note The non-conservative terms use the Eulerian velocity
+ * \f$\alpha v^i\f$ rather than the transport velocity \f$v^i_{tr}\f$.
+ *
  * \note On the electron fraction side, the source term is currently set to
  * \f$S(\tilde{Y}_e) = 0\f$. Implementing the source term using neutrino scheme
  * is in progress (Last update : Oct 2022).
@@ -186,7 +211,7 @@ struct System {
       tmpl::list<Tags::TildeB<>, Tags::TildePhi, Tags::TildeD, Tags::TildeYe,
                  Tags::TildeTau, Tags::TildeS<>>;
   using non_conservative_variables = tmpl::list<>;
-  using gradient_variables = tmpl::list<>;
+  using gradient_variables = tmpl::list<Tags::TildeB<>, Tags::TildePhi>;
   using primitive_variables_tag =
       ::Tags::Variables<hydro::grmhd_tags<DataVector>>;
   using spacetime_variables_tag =

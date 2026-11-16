@@ -6,7 +6,25 @@ import numpy as np
 import Sources
 
 
+def _div_tilde_b(d_tilde_b):
+    # d_tilde_b[i][j] = \partial_i \tilde{B}^j
+    return np.trace(d_tilde_b)
+
+
+def _lapse_b_over_w(
+    lapse, magnetic_field, spatial_velocity, lorentz_factor, spatial_metric
+):
+    return lapse * (
+        Fluxes.magnetic_field_one_form(magnetic_field, spatial_metric)
+        / lorentz_factor**2
+        + Fluxes.b_dot_v(magnetic_field, spatial_velocity, spatial_metric)
+        * Fluxes.spatial_velocity_one_form(spatial_velocity, spatial_metric)
+    )
+
+
 def tilde_d_flux(
+    d_tilde_b,
+    d_tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
@@ -51,6 +69,8 @@ def tilde_d_flux(
 
 
 def tilde_ye_flux(
+    d_tilde_b,
+    d_tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
@@ -95,6 +115,8 @@ def tilde_ye_flux(
 
 
 def tilde_tau_flux(
+    d_tilde_b,
+    d_tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
@@ -139,6 +161,8 @@ def tilde_tau_flux(
 
 
 def tilde_s_flux(
+    d_tilde_b,
+    d_tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
@@ -183,6 +207,8 @@ def tilde_s_flux(
 
 
 def tilde_b_flux(
+    d_tilde_b,
+    d_tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
@@ -227,6 +253,8 @@ def tilde_b_flux(
 
 
 def tilde_phi_flux(
+    d_tilde_b,
+    d_tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
@@ -271,6 +299,8 @@ def tilde_phi_flux(
 
 
 def source_tilde_d(
+    d_tilde_b,
+    d_tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
@@ -299,6 +329,8 @@ def source_tilde_d(
 
 
 def source_tilde_ye(
+    d_tilde_b,
+    d_tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
@@ -327,6 +359,8 @@ def source_tilde_ye(
 
 
 def source_tilde_tau(
+    d_tilde_b,
+    d_tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
@@ -351,7 +385,12 @@ def source_tilde_tau(
     extrinsic_curvature,
     constraint_damping_parameter,
 ):
-    return Sources.source_tilde_tau(
+    return -(
+        lapse
+        * Fluxes.b_dot_v(magnetic_field, spatial_velocity, spatial_metric)
+        * _div_tilde_b(d_tilde_b)
+        + np.dot(tilde_b, d_tilde_phi)
+    ) + Sources.source_tilde_tau(
         tilde_d,
         tilde_ye,
         tilde_tau,
@@ -379,6 +418,8 @@ def source_tilde_tau(
 
 
 def source_tilde_s(
+    d_tilde_b,
+    d_tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
@@ -403,7 +444,9 @@ def source_tilde_s(
     extrinsic_curvature,
     constraint_damping_parameter,
 ):
-    return Sources.source_tilde_s(
+    return -_lapse_b_over_w(
+        lapse, magnetic_field, spatial_velocity, lorentz_factor, spatial_metric
+    ) * _div_tilde_b(d_tilde_b) + Sources.source_tilde_s(
         tilde_d,
         tilde_ye,
         tilde_tau,
@@ -431,6 +474,8 @@ def source_tilde_s(
 
 
 def source_tilde_b(
+    d_tilde_b,
+    d_tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
@@ -455,7 +500,9 @@ def source_tilde_b(
     extrinsic_curvature,
     constraint_damping_parameter,
 ):
-    return Sources.source_tilde_b(
+    return -lapse * spatial_velocity * _div_tilde_b(
+        d_tilde_b
+    ) + Sources.source_tilde_b(
         tilde_d,
         tilde_ye,
         tilde_tau,
@@ -483,6 +530,8 @@ def source_tilde_b(
 
 
 def source_tilde_phi(
+    d_tilde_b,
+    d_tilde_phi,
     tilde_d,
     tilde_ye,
     tilde_tau,
@@ -507,7 +556,9 @@ def source_tilde_phi(
     extrinsic_curvature,
     constraint_damping_parameter,
 ):
-    return Sources.source_tilde_phi(
+    return -lapse * np.dot(
+        spatial_velocity, d_tilde_phi
+    ) + Sources.source_tilde_phi(
         tilde_d,
         tilde_ye,
         tilde_tau,

@@ -70,9 +70,9 @@ SPECTRE_TEST_CASE(
   get<gh::Tags::Pi<DataVector, 3>>(volume_evolved_vars) =
       get<gh::Tags::Pi<DataVector, 3>>(volume_prims_for_recons);
 
-  Variables<db::wrap_tags_in<Tags::deriv,
-                             typename System::gradients_tags,
-                             tmpl::size_t<3>, Frame::Inertial>>
+  Variables<
+      db::wrap_tags_in<Tags::deriv, typename gh::System<3>::gradients_tags,
+                       tmpl::size_t<3>, Frame::Inertial>>
       deriv_of_gh_vars{subcell_mesh.number_of_grid_points()};
 
   // needed for cartoon derivatives, not tested here
@@ -84,9 +84,9 @@ SPECTRE_TEST_CASE(
       fd_deriv_order, subcell_mesh,
       cell_centered_logical_to_inertial_inv_jacobian, inertial_coords);
 
-  Variables<db::wrap_tags_in<Tags::deriv,
-                             typename System::gradients_tags,
-                             tmpl::size_t<3>, Frame::Inertial>>
+  Variables<
+      db::wrap_tags_in<Tags::deriv, typename gh::System<3>::gradients_tags,
+                       tmpl::size_t<3>, Frame::Inertial>>
       expected_deriv_of_gh_vars{subcell_mesh.number_of_grid_points()};
 
   auto& expected_d_metric =

@@ -106,6 +106,8 @@ struct TimeDerivativeTermsImpl {
       const tnsr::iaa<DataVector, 3>& d_spacetime_metric,
       const tnsr::iaa<DataVector, 3>& d_pi,
       const tnsr::ijaa<DataVector, 3>& d_phi,
+      const tnsr::iJ<DataVector, 3>& d_tilde_b,
+      const tnsr::i<DataVector, 3>& d_tilde_phi,
 
       const tuples::TaggedTuple<ExtraTags...>& arguments) {
     generalized_harmonic_time_derivative(
@@ -156,7 +158,7 @@ struct TimeDerivativeTermsImpl {
 
       // MHD computation
       aggregate_time_derivative_terms(
-          dt_vars_ptr, fluxes_ptr, temps_ptr, arguments,
+          dt_vars_ptr, fluxes_ptr, temps_ptr, d_tilde_b, d_tilde_phi, arguments,
           dt_type_aliases::valencia_dt_tags{}, valencia_flux_tags{},
           valencia_temp_tags{}, valencia_time_derivative_arg_tags{},
           trace_reversed_stress_result_tags{},
@@ -274,6 +276,8 @@ struct TimeDerivativeTermsImpl {
           tmpl::size_t<3>, Frame::Inertial>>*>
           fluxes_ptr,
       const gsl::not_null<Variables<TemporaryTagsList>*> temps_ptr,
+      const tnsr::iJ<DataVector, 3>& d_tilde_b,
+      const tnsr::i<DataVector, 3>& d_tilde_phi,
       const tuples::TaggedTuple<ExtraTags...>& arguments,
       tmpl::list<ValenciaDtTags...> /*meta*/,
       tmpl::list<ValenciaFluxTags...> /*meta*/,
@@ -287,6 +291,8 @@ struct TimeDerivativeTermsImpl {
         get<ValenciaDtTags>(dt_vars_ptr)...,
         get<ValenciaFluxTags>(fluxes_ptr)...,
         get<ValenciaTempTags>(temps_ptr)...,
+
+        d_tilde_b, d_tilde_phi,
 
         get<tmpl::conditional_t<
             tmpl::list_contains_v<extra_tags_list,
@@ -401,7 +407,9 @@ struct TimeDerivativeTerms : evolution::PassVariables {
       const gsl::not_null<Variables<temporary_tags>*> temps_ptr,
       const tnsr::iaa<DataVector, 3>& d_spacetime_metric,
       const tnsr::iaa<DataVector, 3>& d_pi,
-      const tnsr::ijaa<DataVector, 3>& d_phi, const Args&... args) {
+      const tnsr::ijaa<DataVector, 3>& d_phi,
+      const tnsr::iJ<DataVector, 3>& d_tilde_b,
+      const tnsr::i<DataVector, 3>& d_tilde_phi, const Args&... args) {
     using args_list = tmpl::push_back<
         db::wrap_tags_in<Tags::detail::TemporaryReference, argument_tags>,
         gr::Tags::SpatialMetric<DataVector, 3>, d_spatial_metric>;
@@ -438,9 +446,9 @@ struct TimeDerivativeTerms : evolution::PassVariables {
       }
     }
 
-    return detail::TimeDerivativeTermsImpl::apply(dt_vars_ptr, fluxes_ptr,
-                                                  temps_ptr, d_spacetime_metric,
-                                                  d_pi, d_phi, arguments);
+    return detail::TimeDerivativeTermsImpl::apply(
+        dt_vars_ptr, fluxes_ptr, temps_ptr, d_spacetime_metric, d_pi, d_phi,
+        d_tilde_b, d_tilde_phi, arguments);
   }
 };
 }  // namespace grmhd::GhValenciaDivClean

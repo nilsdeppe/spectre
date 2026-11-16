@@ -98,9 +98,9 @@ struct ComputeTimeDerivImpl<
       const std::array<double, 3>& one_over_delta_xi,
       const std::array<Variables<tmpl::list<GrmhdDtTags...>>, 3>&
           boundary_corrections,
-      const Variables<
-          db::wrap_tags_in<::Tags::deriv, typename System::gradients_tags,
-                           tmpl::size_t<3>, Frame::Inertial>>& gh_derivs) {
+      const Variables<db::wrap_tags_in<
+          ::Tags::deriv, typename gh::System<3>::gradients_tags,
+          tmpl::size_t<3>, Frame::Inertial>>& gh_derivs) {
     const Mesh<3>& subcell_mesh =
         db::get<evolution::dg::subcell::Tags::Mesh<3>>(*box);
     const size_t number_of_points = subcell_mesh.number_of_grid_points();
@@ -477,7 +477,7 @@ struct TimeDerivative {
     using recons_prim_tags = tmpl::push_front<tmpl::push_back<
         prim_tags,
         hydro::Tags::LorentzFactorTimesSpatialVelocity<DataVector, 3>>>;
-    using gradients_tags = typename System::gradients_tags;
+    using gradients_tags = typename gh::System<3>::gradients_tags;
 
     const Mesh<3>& dg_mesh = db::get<domain::Tags::Mesh<3>>(*box);
     const Mesh<3>& subcell_mesh =

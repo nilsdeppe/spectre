@@ -33,6 +33,9 @@ void forward_to_time_deriv(
         tilde_tau_flux,
     const gsl::not_null<tnsr::Ij<DataVector, 3, Frame::Inertial>*> tilde_s_flux,
 
+    const tnsr::iJ<DataVector, 3, Frame::Inertial>& d_tilde_b,
+    const tnsr::i<DataVector, 3, Frame::Inertial>& d_tilde_phi,
+
     const Scalar<DataVector>& tilde_d, const Scalar<DataVector>& tilde_ye,
     const Scalar<DataVector>& tilde_tau,
     const tnsr::i<DataVector, 3, Frame::Inertial>& tilde_s,
@@ -110,6 +113,8 @@ void forward_to_time_deriv(
       make_not_null(&get<gr::Tags::Lapse<DataVector>>(temp)),
       make_not_null(&get<gr::Tags::Shift<DataVector, 3>>(temp)),
       make_not_null(&get<gr::Tags::InverseSpatialMetric<DataVector, 3>>(temp)),
+
+      d_tilde_b, d_tilde_phi,
 
       tilde_d, tilde_ye, tilde_tau, tilde_s, tilde_b, tilde_phi, lapse, shift,
       sqrt_det_spatial_metric, spatial_metric, inv_spatial_metric, d_lapse,

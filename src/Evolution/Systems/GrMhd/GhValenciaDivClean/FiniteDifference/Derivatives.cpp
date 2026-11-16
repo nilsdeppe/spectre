@@ -21,7 +21,7 @@ namespace grmhd::GhValenciaDivClean::fd {
 template <typename System>
 void spacetime_derivatives(
     const gsl::not_null<Variables<
-        db::wrap_tags_in<::Tags::deriv, typename System::gradients_tags,
+        db::wrap_tags_in<::Tags::deriv, typename gh::System<3>::gradients_tags,
                          tmpl::size_t<3>, Frame::Inertial>>*>
         result,
     const Variables<typename System::variables_tag::tags_list>&
@@ -33,7 +33,7 @@ void spacetime_derivatives(
                           Frame::Inertial>&
         cell_centered_logical_to_inertial_inv_jacobian,
     const tnsr::I<DataVector, 3, Frame::Inertial>& inertial_coords) {
-  using gradients_tags = typename System::gradients_tags;
+  using gradients_tags = typename gh::System<3>::gradients_tags;
   if (UNLIKELY(result->number_of_grid_points() !=
                volume_evolved_variables.number_of_grid_points())) {
     result->initialize(volume_evolved_variables.number_of_grid_points());
@@ -67,11 +67,9 @@ void spacetime_derivatives(
 #define INSTANTIATION(r, data)                                              \
   template void                                                             \
   spacetime_derivatives<grmhd::GhValenciaDivClean::System<NEUTRINO(data)>>( \
-      const gsl::not_null<Variables<                                        \
-          db::wrap_tags_in<::Tags::deriv,                                   \
-                           typename grmhd::GhValenciaDivClean::System<      \
-                               NEUTRINO(data)>::gradients_tags,             \
-                           tmpl::size_t<3>, Frame::Inertial>>*>             \
+      const gsl::not_null<Variables<db::wrap_tags_in<                       \
+          ::Tags::deriv, typename gh::System<3>::gradients_tags,            \
+          tmpl::size_t<3>, Frame::Inertial>>*>                              \
           result,                                                           \
       const Variables<typename grmhd::GhValenciaDivClean::System<NEUTRINO(  \
           data)>::variables_tag::tags_list>& volume_evolved_variables,      \
