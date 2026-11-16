@@ -43,6 +43,16 @@ double Rusanov::dg_package_data(
         packaged_normal_dot_flux_tilde_b,
     const gsl::not_null<Scalar<DataVector>*> packaged_normal_dot_flux_tilde_phi,
     const gsl::not_null<Scalar<DataVector>*> packaged_abs_char_speed,
+    const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
+        packaged_lapse_times_spatial_velocity,
+    const gsl::not_null<Scalar<DataVector>*>
+        packaged_normal_dot_lapse_times_spatial_velocity,
+    const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
+        packaged_normal_covector,
+    const gsl::not_null<Scalar<DataVector>*>
+        packaged_lapse_times_magnetic_field_dot_spatial_velocity,
+    const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
+        packaged_lapse_b_over_w,
 
     const tnsr::I<DataVector, 3, Frame::Inertial>& tilde_b,
     const Scalar<DataVector>& tilde_phi, const Scalar<DataVector>& tilde_d,
@@ -58,13 +68,15 @@ double Rusanov::dg_package_data(
 
     const Scalar<DataVector>& lapse,
     const tnsr::I<DataVector, 3, Frame::Inertial>& shift,
+    const Scalar<DataVector>& magnetic_field_dot_spatial_velocity,
+    const tnsr::i<DataVector, 3, Frame::Inertial>& lapse_b_over_w,
     const tnsr::i<DataVector, 3,
                   Frame::Inertial>& /*spatial_velocity_one_form*/,
 
     const Scalar<DataVector>& /*rest_mass_density*/,
     const Scalar<DataVector>& /*electron_fraction*/,
     const Scalar<DataVector>& /*temperature*/,
-    const tnsr::I<DataVector, 3, Frame::Inertial>& /*spatial_velocity*/,
+    const tnsr::I<DataVector, 3, Frame::Inertial>& spatial_velocity,
 
     const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector,
     const tnsr::I<DataVector, 3, Frame::Inertial>& /*normal_vector*/,
@@ -110,6 +122,14 @@ double Rusanov::dg_package_data(
   normal_dot_flux(packaged_normal_dot_flux_tilde_phi, normal_covector,
                   flux_tilde_phi);
 
+  package_non_conservative_data(
+      packaged_lapse_times_spatial_velocity,
+      packaged_normal_dot_lapse_times_spatial_velocity,
+      packaged_normal_covector,
+      packaged_lapse_times_magnetic_field_dot_spatial_velocity,
+      packaged_lapse_b_over_w, lapse, magnetic_field_dot_spatial_velocity,
+      lapse_b_over_w, spatial_velocity, normal_covector);
+
   return max(get(*packaged_abs_char_speed));
 }
 
@@ -135,6 +155,13 @@ void Rusanov::dg_boundary_terms(
     const tnsr::I<DataVector, 3, Frame::Inertial>& normal_dot_flux_tilde_b_int,
     const Scalar<DataVector>& normal_dot_flux_tilde_phi_int,
     const Scalar<DataVector>& abs_char_speed_int,
+    const tnsr::I<DataVector, 3, Frame::Inertial>&
+        lapse_times_spatial_velocity_int,
+    const Scalar<DataVector>& normal_dot_lapse_times_spatial_velocity_int,
+    const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector_int,
+    const Scalar<DataVector>&
+        lapse_times_magnetic_field_dot_spatial_velocity_int,
+    const tnsr::i<DataVector, 3, Frame::Inertial>& lapse_b_over_w_int,
     const Scalar<DataVector>& tilde_d_ext,
     const Scalar<DataVector>& tilde_ye_ext,
     const Scalar<DataVector>& tilde_tau_ext,
@@ -148,6 +175,13 @@ void Rusanov::dg_boundary_terms(
     const tnsr::I<DataVector, 3, Frame::Inertial>& normal_dot_flux_tilde_b_ext,
     const Scalar<DataVector>& normal_dot_flux_tilde_phi_ext,
     const Scalar<DataVector>& abs_char_speed_ext,
+    const tnsr::I<DataVector, 3, Frame::Inertial>&
+        lapse_times_spatial_velocity_ext,
+    const Scalar<DataVector>& normal_dot_lapse_times_spatial_velocity_ext,
+    const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector_ext,
+    const Scalar<DataVector>&
+        lapse_times_magnetic_field_dot_spatial_velocity_ext,
+    const tnsr::i<DataVector, 3, Frame::Inertial>& lapse_b_over_w_ext,
     const dg::Formulation dg_formulation) {
   if (dg_formulation == dg::Formulation::WeakInertial) {
     get(*boundary_correction_tilde_d) =
@@ -218,6 +252,16 @@ void Rusanov::dg_boundary_terms(
               (tilde_b_ext.get(i) - tilde_b_int.get(i));
     }
   }
+
+  add_non_conservative_boundary_terms(
+      boundary_correction_tilde_b, boundary_correction_tilde_phi,
+      boundary_correction_tilde_tau, boundary_correction_tilde_s, tilde_b_int,
+      tilde_phi_int, lapse_times_spatial_velocity_int,
+      normal_dot_lapse_times_spatial_velocity_int, normal_covector_int,
+      lapse_times_magnetic_field_dot_spatial_velocity_int, lapse_b_over_w_int,
+      tilde_b_ext, tilde_phi_ext, lapse_times_spatial_velocity_ext,
+      normal_dot_lapse_times_spatial_velocity_ext, normal_covector_ext,
+      lapse_times_magnetic_field_dot_spatial_velocity_ext, lapse_b_over_w_ext);
 }
 
 bool operator==(const Rusanov& /*lhs*/, const Rusanov& /*rhs*/) { return true; }

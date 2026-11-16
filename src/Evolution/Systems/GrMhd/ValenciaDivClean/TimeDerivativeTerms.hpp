@@ -7,6 +7,7 @@
 #include "DataStructures/Tensor/TypeAliases.hpp"
 #include "DataStructures/Variables.hpp"
 #include "Evolution/DiscontinuousGalerkin/TimeDerivativeDecisions.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/Tags.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/TagsDeclarations.hpp"
 #include "NumericalAlgorithms/LinearOperators/PartialDerivatives.hpp"
 #include "PointwiseFunctions/GeneralRelativity/TagsDeclarations.hpp"
@@ -50,9 +51,7 @@ struct TimeDerivativeTerms {
   struct EnthalpyTimesDensityWSquaredPlusBSquared : db::SimpleTag {
     using type = Scalar<DataVector>;
   };
-  struct LapseTimesbOverW : db::SimpleTag {
-    using type = tnsr::i<DataVector, 3, Frame::Inertial>;
-  };
+  using LapseTimesbOverW = Tags::LapseTimesbOverW;
 
   using temporary_tags = tmpl::list<
       // Flux terms

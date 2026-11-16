@@ -36,6 +36,7 @@
 #include "Evolution/Systems/GrMhd/GhValenciaDivClean/Tags.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/ConservativeFromPrimitive.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/Fluxes.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/LapseTimesbOverW.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/Tags.hpp"
 #include "Evolution/TypeTraits.hpp"
 #include "NumericalAlgorithms/Spectral/Mesh.hpp"
@@ -120,6 +121,10 @@ std::optional<std::string> DirichletAnalytic<System>::dg_ghost(
     const gsl::not_null<Scalar<DataVector>*> gamma2,
     const gsl::not_null<Scalar<DataVector>*> lapse,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> shift,
+    const gsl::not_null<Scalar<DataVector>*>
+        magnetic_field_dot_spatial_velocity,
+    const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
+        lapse_b_over_w,
     const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
         spatial_velocity_one_form,
     const gsl::not_null<Scalar<DataVector>*> rest_mass_density,
@@ -231,6 +236,13 @@ std::optional<std::string> DirichletAnalytic<System>::dg_ghost(
                                        boundary_values)(ti::i, ti::j)));
   *inv_spatial_metric =
       get<gr::Tags::InverseSpatialMetric<DataVector, 3>>(boundary_values);
+  grmhd::ValenciaDivClean::
+      magnetic_field_dot_spatial_velocity_and_lapse_times_b_over_w(
+          magnetic_field_dot_spatial_velocity, lapse_b_over_w, *lapse,
+          *spatial_velocity_one_form,
+          get<hydro::Tags::LorentzFactor<DataVector>>(boundary_values),
+          get<hydro::Tags::MagneticField<DataVector, 3>>(boundary_values),
+          get<gr::Tags::SpatialMetric<DataVector, 3>>(boundary_values));
 
   grmhd::ValenciaDivClean::ConservativeFromPrimitive::apply(
       tilde_b, tilde_phi, tilde_d, tilde_ye, tilde_tau, tilde_s,

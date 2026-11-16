@@ -175,6 +175,10 @@ void test_soln() {
 
           helpers::Tags::PythonFunctionName<gr::Tags::Lapse<DataVector>>,
           helpers::Tags::PythonFunctionName<gr::Tags::Shift<DataVector, 3>>,
+          helpers::Tags::PythonFunctionName<
+              hydro::Tags::MagneticFieldDotSpatialVelocity<DataVector>>,
+          helpers::Tags::PythonFunctionName<
+              grmhd::ValenciaDivClean::Tags::LapseTimesbOverW>,
           helpers::Tags::PythonFunctionName<hydro::Tags::SpatialVelocityOneForm<
               DataVector, 3, Frame::Inertial>>,
           helpers::Tags::PythonFunctionName<
@@ -189,7 +193,8 @@ void test_soln() {
           "soln_tilde_s", "soln_tilde_b", "soln_tilde_phi", "soln_flux_tilde_d",
           "soln_flux_tilde_ye", "soln_flux_tilde_tau", "soln_flux_tilde_s",
           "soln_flux_tilde_b", "soln_flux_tilde_phi", "soln_lapse",
-          "soln_shift",
+          "soln_shift", "soln_magnetic_field_dot_spatial_velocity",
+          "soln_lapse_b_over_w",
           "soln_spatial_velocity",  // flat spacetime, so up and down indices
                                     // are same
           "soln_rest_mass_density", "soln_electron_fraction_long",
@@ -260,6 +265,10 @@ void test_data() {
 
           helpers::Tags::PythonFunctionName<gr::Tags::Lapse<DataVector>>,
           helpers::Tags::PythonFunctionName<gr::Tags::Shift<DataVector, 3>>,
+          helpers::Tags::PythonFunctionName<
+              hydro::Tags::MagneticFieldDotSpatialVelocity<DataVector>>,
+          helpers::Tags::PythonFunctionName<
+              grmhd::ValenciaDivClean::Tags::LapseTimesbOverW>,
           helpers::Tags::PythonFunctionName<hydro::Tags::SpatialVelocityOneForm<
               DataVector, 3, Frame::Inertial>>,
           helpers::Tags::PythonFunctionName<
@@ -274,7 +283,8 @@ void test_data() {
           "data_tilde_s", "data_tilde_b", "data_tilde_phi", "data_flux_tilde_d",
           "data_flux_tilde_ye", "data_flux_tilde_tau", "data_flux_tilde_s",
           "data_flux_tilde_b", "data_flux_tilde_phi", "soln_lapse",
-          "soln_shift",
+          "soln_shift", "data_magnetic_field_dot_spatial_velocity",
+          "data_lapse_b_over_w",
           "data_spatial_velocity",  // flat spacetime, so up and down indices
                                     // are same
           "data_rest_mass_density", "data_electron_fraction_long",

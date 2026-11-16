@@ -62,11 +62,14 @@ SPECTRE_TEST_CASE("Unit.GrMhd.ValenciaDivClean.BoundaryCorrections.Rusanov",
   const tuples::TaggedTuple<hydro::Tags::GrmhdEquationOfState> volume_data{
       EquationsOfState::PolytropicFluid<true>{100.0, 2.0}.promote_to_3d_eos()};
 
+  // The boundary terms of the non-conservative Powell terms do not vanish
+  // when the solution is identical on both sides of the interface, see
+  // `add_non_conservative_boundary_terms()`.
   TestHelpers::evolution::dg::test_boundary_correction_conservation<system>(
       make_not_null(&gen),
       grmhd::ValenciaDivClean::BoundaryCorrections::Rusanov{},
       Mesh<2>{5, Spectral::Basis::Legendre, Spectral::Quadrature::Gauss},
-      volume_data, {});
+      volume_data, {}, TestHelpers::evolution::dg::ZeroOnSmoothSolution::No);
 
   TestHelpers::evolution::dg::test_boundary_correction_with_python<
       system, tmpl::list<ConvertPolytropic>>(

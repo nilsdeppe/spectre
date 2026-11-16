@@ -25,6 +25,7 @@
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/ConservativeFromPrimitive.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/FiniteDifference/Reconstructor.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/Fluxes.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/LapseTimesbOverW.hpp"
 #include "NumericalAlgorithms/Spectral/Mesh.hpp"
 #include "PointwiseFunctions/Hydro/LorentzFactor.hpp"
 #include "PointwiseFunctions/Hydro/Tags.hpp"
@@ -63,6 +64,10 @@ std::optional<std::string> HydroFreeOutflow::dg_ghost(
 
     const gsl::not_null<Scalar<DataVector>*> lapse,
     const gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*> shift,
+    const gsl::not_null<Scalar<DataVector>*>
+        magnetic_field_dot_spatial_velocity,
+    const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
+        lapse_b_over_w,
     const gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
         spatial_velocity_one_form,
     const gsl::not_null<Scalar<DataVector>*> rest_mass_density,
@@ -164,6 +169,10 @@ std::optional<std::string> HydroFreeOutflow::dg_ghost(
   tenex::evaluate<ti::i>(
       spatial_velocity_one_form,
       (*spatial_velocity)(ti::J) * (interior_spatial_metric(ti::i, ti::j)));
+  magnetic_field_dot_spatial_velocity_and_lapse_times_b_over_w(
+      magnetic_field_dot_spatial_velocity, lapse_b_over_w, *lapse,
+      *spatial_velocity_one_form, interior_lorentz_factor,
+      interior_magnetic_field, interior_spatial_metric);
 
   ConservativeFromPrimitive::apply(
       tilde_b, tilde_phi, tilde_d, tilde_ye, tilde_tau, tilde_s,

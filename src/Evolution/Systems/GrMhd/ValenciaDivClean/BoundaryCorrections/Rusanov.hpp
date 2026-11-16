@@ -9,6 +9,7 @@
 #include "DataStructures/DataBox/Prefixes.hpp"
 #include "DataStructures/Tensor/TypeAliases.hpp"
 #include "Evolution/BoundaryCorrection.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/BoundaryCorrections/NonConservativeTerms.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/Tags.hpp"
 #include "NumericalAlgorithms/DiscontinuousGalerkin/Formulation.hpp"
 #include "Options/String.hpp"
@@ -60,6 +61,9 @@ namespace grmhd::ValenciaDivClean::BoundaryCorrections {
  *
  * which correspond to the divergence cleaning field.
  *
+ * In addition to the Rusanov flux, the boundary terms of the non-conservative
+ * Powell and GLM terms are added, see `add_non_conservative_boundary_terms()`.
+ *
  * \note
  * - In the strong form the `dg_boundary_terms` function returns
  * \f$G - F_\text{int}\f$
@@ -95,7 +99,7 @@ class Rusanov final : public evolution::BoundaryCorrection {
 
   std::unique_ptr<BoundaryCorrection> get_clone() const override;
 
-  using dg_package_field_tags =
+  using dg_package_field_tags = tmpl::append<
       tmpl::list<Tags::TildeD, Tags::TildeYe, Tags::TildeTau,
                  Tags::TildeS<Frame::Inertial>, Tags::TildeB<Frame::Inertial>,
                  Tags::TildePhi, ::Tags::NormalDotFlux<Tags::TildeD>,
@@ -103,9 +107,12 @@ class Rusanov final : public evolution::BoundaryCorrection {
                  ::Tags::NormalDotFlux<Tags::TildeTau>,
                  ::Tags::NormalDotFlux<Tags::TildeS<Frame::Inertial>>,
                  ::Tags::NormalDotFlux<Tags::TildeB<Frame::Inertial>>,
-                 ::Tags::NormalDotFlux<Tags::TildePhi>, AbsCharSpeed>;
+                 ::Tags::NormalDotFlux<Tags::TildePhi>, AbsCharSpeed>,
+      non_conservative_package_field_tags>;
   using dg_package_data_temporary_tags = tmpl::list<
       gr::Tags::Lapse<DataVector>, gr::Tags::Shift<DataVector, 3>,
+      hydro::Tags::MagneticFieldDotSpatialVelocity<DataVector>,
+      Tags::LapseTimesbOverW,
       hydro::Tags::SpatialVelocityOneForm<DataVector, 3, Frame::Inertial>>;
   using dg_package_data_primitive_tags =
       tmpl::list<hydro::Tags::RestMassDensity<DataVector>,
@@ -132,6 +139,16 @@ class Rusanov final : public evolution::BoundaryCorrection {
           packaged_normal_dot_flux_tilde_b,
       gsl::not_null<Scalar<DataVector>*> packaged_normal_dot_flux_tilde_phi,
       gsl::not_null<Scalar<DataVector>*> packaged_abs_char_speed,
+      gsl::not_null<tnsr::I<DataVector, 3, Frame::Inertial>*>
+          packaged_lapse_times_spatial_velocity,
+      gsl::not_null<Scalar<DataVector>*>
+          packaged_normal_dot_lapse_times_spatial_velocity,
+      gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
+          packaged_normal_covector,
+      gsl::not_null<Scalar<DataVector>*>
+          packaged_lapse_times_magnetic_field_dot_spatial_velocity,
+      gsl::not_null<tnsr::i<DataVector, 3, Frame::Inertial>*>
+          packaged_lapse_b_over_w,
 
       const tnsr::I<DataVector, 3, Frame::Inertial>& tilde_b,
       const Scalar<DataVector>& tilde_phi, const Scalar<DataVector>& tilde_d,
@@ -147,13 +164,15 @@ class Rusanov final : public evolution::BoundaryCorrection {
 
       const Scalar<DataVector>& lapse,
       const tnsr::I<DataVector, 3, Frame::Inertial>& shift,
+      const Scalar<DataVector>& magnetic_field_dot_spatial_velocity,
+      const tnsr::i<DataVector, 3, Frame::Inertial>& lapse_b_over_w,
       const tnsr::i<DataVector, 3,
                     Frame::Inertial>& /*spatial_velocity_one_form*/,
 
       const Scalar<DataVector>& /*rest_mass_density*/,
       const Scalar<DataVector>& /*electron_fraction*/,
       const Scalar<DataVector>& /*temperature*/,
-      const tnsr::I<DataVector, 3, Frame::Inertial>& /*spatial_velocity*/,
+      const tnsr::I<DataVector, 3, Frame::Inertial>& spatial_velocity,
 
       const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector,
       const tnsr::I<DataVector, 3, Frame::Inertial>& normal_vector,
@@ -187,6 +206,13 @@ class Rusanov final : public evolution::BoundaryCorrection {
           normal_dot_flux_tilde_b_int,
       const Scalar<DataVector>& normal_dot_flux_tilde_phi_int,
       const Scalar<DataVector>& abs_char_speed_int,
+      const tnsr::I<DataVector, 3, Frame::Inertial>&
+          lapse_times_spatial_velocity_int,
+      const Scalar<DataVector>& normal_dot_lapse_times_spatial_velocity_int,
+      const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector_int,
+      const Scalar<DataVector>&
+          lapse_times_magnetic_field_dot_spatial_velocity_int,
+      const tnsr::i<DataVector, 3, Frame::Inertial>& lapse_b_over_w_int,
       const Scalar<DataVector>& tilde_d_ext,
       const Scalar<DataVector>& tilde_ye_ext,
       const Scalar<DataVector>& tilde_tau_ext,
@@ -202,6 +228,13 @@ class Rusanov final : public evolution::BoundaryCorrection {
           normal_dot_flux_tilde_b_ext,
       const Scalar<DataVector>& normal_dot_flux_tilde_phi_ext,
       const Scalar<DataVector>& abs_char_speed_ext,
+      const tnsr::I<DataVector, 3, Frame::Inertial>&
+          lapse_times_spatial_velocity_ext,
+      const Scalar<DataVector>& normal_dot_lapse_times_spatial_velocity_ext,
+      const tnsr::i<DataVector, 3, Frame::Inertial>& normal_covector_ext,
+      const Scalar<DataVector>&
+          lapse_times_magnetic_field_dot_spatial_velocity_ext,
+      const tnsr::i<DataVector, 3, Frame::Inertial>& lapse_b_over_w_ext,
       dg::Formulation dg_formulation);
 };
 

@@ -3,6 +3,7 @@
 
 import Evolution.Systems.GrMhd.ValenciaDivClean.ConservativeFromPrimitive as cons
 import Evolution.Systems.GrMhd.ValenciaDivClean.Fluxes as fluxes
+import Evolution.Systems.GrMhd.ValenciaDivClean.LapseTimesbOverW as lbw
 import numpy as np
 
 
@@ -852,6 +853,83 @@ def spatial_velocity_one_form(
     )
     spatial_metric = _spatial_metric(inv_spatial_metric)
     return np.einsum("i, ij", exterior_spatial_velocity, spatial_metric)
+
+
+def magnetic_field_dot_spatial_velocity(
+    face_mesh_velocity,
+    outward_directed_normal_covector,
+    outward_directed_normal_vector,
+    interior_rest_mass_density,
+    interior_electron_fraction,
+    interior_specific_internal_energy,
+    interior_spatial_velocity,
+    interior_magnetic_field,
+    interior_lorentz_factor,
+    interior_pressure,
+    interior_temperature,
+    shift,
+    lapse,
+    inv_spatial_metric,
+):
+    return np.dot(
+        interior_magnetic_field,
+        spatial_velocity_one_form(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            interior_rest_mass_density,
+            interior_electron_fraction,
+            interior_specific_internal_energy,
+            interior_spatial_velocity,
+            interior_magnetic_field,
+            interior_lorentz_factor,
+            interior_pressure,
+            interior_temperature,
+            shift,
+            lapse,
+            inv_spatial_metric,
+        ),
+    )
+
+
+def lapse_b_over_w(
+    face_mesh_velocity,
+    outward_directed_normal_covector,
+    outward_directed_normal_vector,
+    interior_rest_mass_density,
+    interior_electron_fraction,
+    interior_specific_internal_energy,
+    interior_spatial_velocity,
+    interior_magnetic_field,
+    interior_lorentz_factor,
+    interior_pressure,
+    interior_temperature,
+    shift,
+    lapse,
+    inv_spatial_metric,
+):
+    return lbw.lapse_b_over_w(
+        lapse,
+        spatial_velocity_one_form(
+            face_mesh_velocity,
+            outward_directed_normal_covector,
+            outward_directed_normal_vector,
+            interior_rest_mass_density,
+            interior_electron_fraction,
+            interior_specific_internal_energy,
+            interior_spatial_velocity,
+            interior_magnetic_field,
+            interior_lorentz_factor,
+            interior_pressure,
+            interior_temperature,
+            shift,
+            lapse,
+            inv_spatial_metric,
+        ),
+        interior_lorentz_factor,
+        interior_magnetic_field,
+        _spatial_metric(inv_spatial_metric),
+    )
 
 
 def rest_mass_density(

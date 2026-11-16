@@ -240,6 +240,8 @@ void test_gh_dg_ghost_error() {
   Scalar<DataVector> temp{};
   tnsr::i<DataVector, 3> tilde_s{};
   tnsr::i<DataVector, 3> svof{};
+  Scalar<DataVector> b_dot_v{};
+  tnsr::i<DataVector, 3> lapse_b_over_w{};
   const tnsr::i<DataVector, 3> normal_cov{};
   tnsr::I<DataVector, 3> tilde_b{};
   tnsr::I<DataVector, 3> tilde_d_flux{};
@@ -254,18 +256,20 @@ void test_gh_dg_ghost_error() {
   tnsr::II<DataVector, 3> inv_metric{};
   const std::optional<tnsr::I<DataVector, 3>> face_mesh_vel{};
   CHECK_THROWS_WITH(
-      bc.dg_ghost(
-          make_not_null(&psi), make_not_null(&pi), make_not_null(&phi),
-          make_not_null(&tilde_b), make_not_null(&tilde_phi),
-          make_not_null(&tilde_d), make_not_null(&tilde_ye),
-          make_not_null(&tilde_tau), make_not_null(&tilde_s),
-          make_not_null(&tilde_b_flux), make_not_null(&tilde_phi_flux),
-          make_not_null(&tilde_d_flux), make_not_null(&tilde_ye_flux),
-          make_not_null(&tilde_tau_flux), make_not_null(&tilde_s_flux),
-          make_not_null(&gamma1), make_not_null(&gamma2), make_not_null(&lapse),
-          make_not_null(&shift), make_not_null(&svof), make_not_null(&rho),
-          make_not_null(&ye), make_not_null(&temp), make_not_null(&vel),
-          make_not_null(&inv_metric), face_mesh_vel, normal_cov, normal_vec),
+      bc.dg_ghost(make_not_null(&psi), make_not_null(&pi), make_not_null(&phi),
+                  make_not_null(&tilde_b), make_not_null(&tilde_phi),
+                  make_not_null(&tilde_d), make_not_null(&tilde_ye),
+                  make_not_null(&tilde_tau), make_not_null(&tilde_s),
+                  make_not_null(&tilde_b_flux), make_not_null(&tilde_phi_flux),
+                  make_not_null(&tilde_d_flux), make_not_null(&tilde_ye_flux),
+                  make_not_null(&tilde_tau_flux), make_not_null(&tilde_s_flux),
+                  make_not_null(&gamma1), make_not_null(&gamma2),
+                  make_not_null(&lapse), make_not_null(&shift),
+                  make_not_null(&b_dot_v), make_not_null(&lapse_b_over_w),
+                  make_not_null(&svof), make_not_null(&rho), make_not_null(&ye),
+                  make_not_null(&temp), make_not_null(&vel),
+                  make_not_null(&inv_metric), face_mesh_vel, normal_cov,
+                  normal_vec),
       Catch::Matchers::ContainsSubstring("dg_ghost() should never be called"));
 }
 

@@ -60,6 +60,7 @@
 #include "Evolution/Systems/GrMhd/GhValenciaDivClean/System.hpp"
 #include "Evolution/Systems/GrMhd/GhValenciaDivClean/Tags.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/ConservativeFromPrimitive.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/LapseTimesbOverW.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/Tags.hpp"
 #include "Evolution/Systems/RadiationTransport/NoNeutrinos/System.hpp"
 #include "Evolution/VariableFixing/FixToAtmosphere.hpp"
@@ -504,9 +505,9 @@ double test(const size_t num_dg_pts, std::optional<double> expansion_velocity,
     }
 
     {
-      auto& spatial_velocity_one_form =
-          get<tmpl::at_c<dg_package_data_temporary_tags, 4>>(
-              prims_to_reconstruct);
+      auto& spatial_velocity_one_form = get<
+          hydro::Tags::SpatialVelocityOneForm<DataVector, 3, Frame::Inertial>>(
+          prims_to_reconstruct);
       const auto& spatial_velocity =
           get<hydro::Tags::SpatialVelocity<DataVector, 3>>(
               prims_to_reconstruct);
@@ -520,6 +521,21 @@ double test(const size_t num_dg_pts, std::optional<double> expansion_velocity,
               spatial_metric.get(i, j) * spatial_velocity.get(j);
         }
       }
+      grmhd::ValenciaDivClean::
+          magnetic_field_dot_spatial_velocity_and_lapse_times_b_over_w(
+              make_not_null(
+                  &get<
+                      hydro::Tags::MagneticFieldDotSpatialVelocity<DataVector>>(
+                      prims_to_reconstruct)),
+              make_not_null(
+                  &get<grmhd::ValenciaDivClean::Tags::LapseTimesbOverW>(
+                      prims_to_reconstruct)),
+              get<gr::Tags::Lapse<DataVector>>(prims_to_reconstruct),
+              spatial_velocity_one_form,
+              get<hydro::Tags::LorentzFactor<DataVector>>(prims_to_reconstruct),
+              get<hydro::Tags::MagneticField<DataVector, 3>>(
+                  prims_to_reconstruct),
+              spatial_metric);
     }
 
     using dg_package_fields =
@@ -563,6 +579,16 @@ double test(const size_t num_dg_pts, std::optional<double> expansion_velocity,
             &get<tmpl::at_c<dg_package_fields, 20>>(dg_packaged_data)),
         make_not_null(
             &get<tmpl::at_c<dg_package_fields, 21>>(dg_packaged_data)),
+        make_not_null(
+            &get<tmpl::at_c<dg_package_fields, 22>>(dg_packaged_data)),
+        make_not_null(
+            &get<tmpl::at_c<dg_package_fields, 23>>(dg_packaged_data)),
+        make_not_null(
+            &get<tmpl::at_c<dg_package_fields, 24>>(dg_packaged_data)),
+        make_not_null(
+            &get<tmpl::at_c<dg_package_fields, 25>>(dg_packaged_data)),
+        make_not_null(
+            &get<tmpl::at_c<dg_package_fields, 26>>(dg_packaged_data)),
 
         // vars,
         get<tmpl::at_c<evolved_tags, 0>>(prims_to_reconstruct),
@@ -593,6 +619,10 @@ double test(const size_t num_dg_pts, std::optional<double> expansion_velocity,
         get<tmpl::at_c<dg_package_data_temporary_tags, 3>>(
             prims_to_reconstruct),
         get<tmpl::at_c<dg_package_data_temporary_tags, 4>>(
+            prims_to_reconstruct),
+        get<tmpl::at_c<dg_package_data_temporary_tags, 5>>(
+            prims_to_reconstruct),
+        get<tmpl::at_c<dg_package_data_temporary_tags, 6>>(
             prims_to_reconstruct),
 
         // prims

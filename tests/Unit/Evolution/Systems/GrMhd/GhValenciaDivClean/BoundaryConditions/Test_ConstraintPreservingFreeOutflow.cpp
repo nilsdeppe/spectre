@@ -120,6 +120,7 @@ void test_dg(const gsl::not_null<std::mt19937*> generator,
 
            gamma1, gamma2, lapse, shift,
 
+           magnetic_field_dot_spatial_velocity, lapse_b_over_w,
            spatial_velocity_one_form, spatial_metric, sqrt_det_spatial_metric,
            inverse_spatial_metric] = expected;
 
@@ -217,6 +218,7 @@ void test_dg(const gsl::not_null<std::mt19937*> generator,
          tilde_b_flux, tilde_phi_flux, tilde_d_flux, tilde_ye_flux,
          tilde_tau_flux, tilde_s_flux, gamma1, gamma2, lapse, shift,
 
+         magnetic_field_dot_spatial_velocity, lapse_b_over_w,
          spatial_velocity_one_form, spatial_metric, sqrt_det_spatial_metric,
 
          inverse_spatial_metric] = vars;
@@ -234,6 +236,8 @@ void test_dg(const gsl::not_null<std::mt19937*> generator,
                   make_not_null(&tilde_s_flux), make_not_null(&gamma1),
                   make_not_null(&gamma2), make_not_null(&lapse),
                   make_not_null(&shift),
+                  make_not_null(&magnetic_field_dot_spatial_velocity),
+                  make_not_null(&lapse_b_over_w),
                   make_not_null(&spatial_velocity_one_form),
                   make_not_null(&rest_mass_density),
                   make_not_null(&electron_fraction),
@@ -370,46 +374,50 @@ void test_dg(const gsl::not_null<std::mt19937*> generator,
          tilde_ye_flux_expected, tilde_tau_flux_expected, tilde_s_flux_expected,
          gamma1_expected, gamma2_expected, lapse_expected, shift_expected,
 
+         magnetic_field_dot_spatial_velocity_expected, lapse_b_over_w_expected,
          spatial_velocity_one_form_expected, spatial_metric_expected,
          sqrt_det_spatial_metric_expected, inverse_spatial_metric_expected] =
       expected_vars;
 
-  CHECK(not grmhd_free_outflow
-                .dg_ghost(
-                    make_not_null(&tilde_b_expected),
-                    make_not_null(&tilde_phi_expected),
-                    make_not_null(&tilde_d_expected),
-                    make_not_null(&tilde_ye_expected),
-                    make_not_null(&tilde_tau_expected),
-                    make_not_null(&tilde_s_expected),
-                    make_not_null(&tilde_b_flux_expected),
-                    make_not_null(&tilde_phi_flux_expected),
-                    make_not_null(&tilde_d_flux_expected),
-                    make_not_null(&tilde_ye_flux_expected),
-                    make_not_null(&tilde_tau_flux_expected),
-                    make_not_null(&tilde_s_flux_expected),
-                    make_not_null(&lapse_expected),
-                    make_not_null(&shift_expected),
-                    make_not_null(&spatial_velocity_one_form_expected),
-                    make_not_null(&rest_mass_density_expected),
-                    make_not_null(&electron_fraction_expected),
-                    make_not_null(&temperature_expected),
-                    make_not_null(&spatial_velocity_expected),
-                    make_not_null(&inverse_spatial_metric_expected), {},
-                    normal_covector, normal_vector,
+  CHECK(
+      not grmhd_free_outflow
+              .dg_ghost(
+                  make_not_null(&tilde_b_expected),
+                  make_not_null(&tilde_phi_expected),
+                  make_not_null(&tilde_d_expected),
+                  make_not_null(&tilde_ye_expected),
+                  make_not_null(&tilde_tau_expected),
+                  make_not_null(&tilde_s_expected),
+                  make_not_null(&tilde_b_flux_expected),
+                  make_not_null(&tilde_phi_flux_expected),
+                  make_not_null(&tilde_d_flux_expected),
+                  make_not_null(&tilde_ye_flux_expected),
+                  make_not_null(&tilde_tau_flux_expected),
+                  make_not_null(&tilde_s_flux_expected),
+                  make_not_null(&lapse_expected),
+                  make_not_null(&shift_expected),
+                  make_not_null(&magnetic_field_dot_spatial_velocity_expected),
+                  make_not_null(&lapse_b_over_w_expected),
+                  make_not_null(&spatial_velocity_one_form_expected),
+                  make_not_null(&rest_mass_density_expected),
+                  make_not_null(&electron_fraction_expected),
+                  make_not_null(&temperature_expected),
+                  make_not_null(&spatial_velocity_expected),
+                  make_not_null(&inverse_spatial_metric_expected), {},
+                  normal_covector, normal_vector,
 
-                    get<hydro::Tags::RestMassDensity<DataVector>>(prim_vars),
-                    get<hydro::Tags::ElectronFraction<DataVector>>(prim_vars),
-                    get<hydro::Tags::SpecificInternalEnergy<DataVector>>(
-                        prim_vars),
-                    get<hydro::Tags::SpatialVelocity<DataVector, 3>>(prim_vars),
-                    get<hydro::Tags::MagneticField<DataVector, 3>>(prim_vars),
-                    get<hydro::Tags::LorentzFactor<DataVector>>(prim_vars),
-                    get<hydro::Tags::Pressure<DataVector>>(prim_vars),
-                    get<hydro::Tags::Temperature<DataVector>>(prim_vars),
+                  get<hydro::Tags::RestMassDensity<DataVector>>(prim_vars),
+                  get<hydro::Tags::ElectronFraction<DataVector>>(prim_vars),
+                  get<hydro::Tags::SpecificInternalEnergy<DataVector>>(
+                      prim_vars),
+                  get<hydro::Tags::SpatialVelocity<DataVector, 3>>(prim_vars),
+                  get<hydro::Tags::MagneticField<DataVector, 3>>(prim_vars),
+                  get<hydro::Tags::LorentzFactor<DataVector>>(prim_vars),
+                  get<hydro::Tags::Pressure<DataVector>>(prim_vars),
+                  get<hydro::Tags::Temperature<DataVector>>(prim_vars),
 
-                    shift, lapse, inverse_spatial_metric)
-                .has_value());
+                  shift, lapse, inverse_spatial_metric)
+              .has_value());
 
   tmpl::for_each<typename Vars::tags_list>([&expected_vars, &vars](auto tag_v) {
     using tag = tmpl::type_from<decltype(tag_v)>;

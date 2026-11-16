@@ -27,6 +27,7 @@
 #include "Evolution/DgSubcell/GhostData.hpp"
 #include "Evolution/DgSubcell/Mesh.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/ConservativeFromPrimitive.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/LapseTimesbOverW.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/Tags.hpp"
 #include "Evolution/VariableFixing/FixToAtmosphere.hpp"
 #include "NumericalAlgorithms/Spectral/Mesh.hpp"
@@ -50,6 +51,8 @@ void compute_conservatives_for_reconstruction(
   // 5. conserved variables
   // - note: spatial metric, inv spatial metric, lapse, and shift are
   //         all already in vars_on_face
+  // 6. B^m v_m and lapse b_i / W, which are temporaries needed by the boundary
+  //    corrections
   const auto& spatial_metric =
       get<gr::Tags::SpatialMetric<DataVector, 3>>(*vars_on_face);
   const auto& lorentz_factor_times_spatial_velocity =
@@ -94,6 +97,19 @@ void compute_conservatives_for_reconstruction(
           *vars_on_face);
   raise_or_lower_index(make_not_null(&spatial_velocity_one_form),
                        spatial_velocity, spatial_metric);
+  // Temporaries needed by the boundary corrections for the non-conservative
+  // terms
+  magnetic_field_dot_spatial_velocity_and_lapse_times_b_over_w(
+      make_not_null(
+          &get<hydro::Tags::MagneticFieldDotSpatialVelocity<DataVector>>(
+              *vars_on_face)),
+      make_not_null(&get<ValenciaDivClean::Tags::LapseTimesbOverW>(
+          *vars_on_face)),
+      get<gr::Tags::Lapse<DataVector>>(*vars_on_face),
+      spatial_velocity_one_form, lorentz_factor,
+      get<hydro::Tags::MagneticField<DataVector, 3, Frame::Inertial>>(
+          *vars_on_face),
+      spatial_metric);
   const auto& rest_mass_density =
       get<hydro::Tags::RestMassDensity<DataVector>>(*vars_on_face);
   const auto& electron_fraction =

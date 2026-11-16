@@ -265,6 +265,8 @@ void test_dg_ghost_error() {
   Scalar<DataVector> tilde_phi{};
   tnsr::i<DataVector, 3> tilde_s{};
   tnsr::i<DataVector, 3> svof{};
+  Scalar<DataVector> b_dot_v{};
+  tnsr::i<DataVector, 3> lapse_b_over_w{};
   const tnsr::i<DataVector, 3> normal_cov{};
   tnsr::I<DataVector, 3> tilde_b{};
   tnsr::I<DataVector, 3> tilde_d_flux{};
@@ -290,6 +292,7 @@ void test_dg_ghost_error() {
                   make_not_null(&tilde_d_flux), make_not_null(&tilde_ye_flux),
                   make_not_null(&tilde_tau_flux), make_not_null(&tilde_s_flux),
                   make_not_null(&lapse), make_not_null(&shift),
+                  make_not_null(&b_dot_v), make_not_null(&lapse_b_over_w),
                   make_not_null(&svof), make_not_null(&rho), make_not_null(&ye),
                   make_not_null(&temp), make_not_null(&vel),
                   make_not_null(&inv_metric), face_mesh_vel, normal_cov,

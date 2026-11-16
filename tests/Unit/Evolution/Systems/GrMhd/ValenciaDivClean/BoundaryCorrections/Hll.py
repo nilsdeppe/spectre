@@ -1,6 +1,7 @@
 # Distributed under the MIT License.
 # See LICENSE.txt for details.
 
+import NonConservativeTerms
 import numpy as np
 
 _atmosphere_density_cutoff = 1.0e-8
@@ -24,6 +25,8 @@ def dg_package_data(
     flux_tilde_s,
     lapse,
     shift,
+    magnetic_field_dot_spatial_velocity,
+    lapse_b_over_w,
     spatial_velocity_one_form,
     rest_mass_density,
     electron_fraction,
@@ -130,6 +133,12 @@ def dg_package_data(
         np.asarray(np.dot(flux_tilde_phi, normal_covector)),
         compute_char(1.0),
         compute_char(-1.0),
+    ) + NonConservativeTerms.package_data(
+        lapse,
+        magnetic_field_dot_spatial_velocity,
+        lapse_b_over_w,
+        spatial_velocity,
+        normal_covector,
     )
 
 
@@ -148,6 +157,11 @@ def dg_boundary_terms(
     interior_normal_dot_flux_tilde_phi,
     interior_largest_outgoing_char_speed,
     interior_largest_ingoing_char_speed,
+    interior_lapse_times_spatial_velocity,
+    interior_normal_dot_lapse_times_spatial_velocity,
+    interior_normal_covector,
+    interior_lapse_times_magnetic_field_dot_spatial_velocity,
+    interior_lapse_b_over_w,
     exterior_tilde_d,
     exterior_tilde_ye,
     exterior_tilde_tau,
@@ -162,6 +176,11 @@ def dg_boundary_terms(
     exterior_normal_dot_flux_tilde_phi,
     exterior_largest_outgoing_char_speed,
     exterior_largest_ingoing_char_speed,
+    exterior_lapse_times_spatial_velocity,
+    exterior_normal_dot_lapse_times_spatial_velocity,
+    exterior_normal_covector,
+    exterior_lapse_times_magnetic_field_dot_spatial_velocity,
+    exterior_lapse_b_over_w,
     use_strong_form,
 ):
     lambda_max = np.maximum(
@@ -201,11 +220,33 @@ def dg_boundary_terms(
             / (lambda_max - lambda_min)
         )
 
+    (
+        tilde_b_term,
+        tilde_phi_term,
+        tilde_tau_term,
+        tilde_s_term,
+    ) = NonConservativeTerms.boundary_terms(
+        interior_tilde_b,
+        interior_tilde_phi,
+        interior_lapse_times_spatial_velocity,
+        interior_normal_dot_lapse_times_spatial_velocity,
+        interior_normal_covector,
+        interior_lapse_times_magnetic_field_dot_spatial_velocity,
+        interior_lapse_b_over_w,
+        exterior_tilde_b,
+        exterior_tilde_phi,
+        exterior_lapse_times_spatial_velocity,
+        exterior_normal_dot_lapse_times_spatial_velocity,
+        exterior_normal_covector,
+        exterior_lapse_times_magnetic_field_dot_spatial_velocity,
+        exterior_lapse_b_over_w,
+    )
+
     return (
-        impl("tilde_b"),
-        impl("tilde_phi"),
+        impl("tilde_b") + tilde_b_term,
+        np.asarray(impl("tilde_phi") + tilde_phi_term),
         impl("tilde_d"),
         impl("tilde_ye"),
-        impl("tilde_tau"),
-        impl("tilde_s"),
+        np.asarray(impl("tilde_tau") + tilde_tau_term),
+        impl("tilde_s") + tilde_s_term,
     )

@@ -38,6 +38,7 @@ set(LIBRARY_SOURCES
   Test_FixConservatives.cpp
   Test_Flattener.cpp
   Test_Fluxes.cpp
+  Test_LapseTimesbOverW.cpp
   Test_PrimitiveFromConservative.cpp
   Test_QuadrupoleFormula.cpp
   Test_SetVariablesNeededFixingToFalse.cpp

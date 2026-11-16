@@ -18,6 +18,7 @@
 #include "DataStructures/Index.hpp"
 #include "DataStructures/Tensor/EagerMath/Determinant.hpp"
 #include "DataStructures/Tensor/EagerMath/DotProduct.hpp"
+#include "DataStructures/Tensor/EagerMath/RaiseOrLowerIndex.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "Domain/Structure/Direction.hpp"
 #include "Domain/Structure/DirectionMap.hpp"
@@ -32,6 +33,7 @@
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/ConservativeFromPrimitive.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/FiniteDifference/ReconstructWork.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/FiniteDifference/Reconstructor.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/LapseTimesbOverW.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/System.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/Tags.hpp"
 #include "Evolution/VariableFixing/FixToAtmosphere.hpp"
@@ -179,6 +181,9 @@ void test_prim_reconstructor_impl(
   const Scalar<DataVector> upper_face_sqrt_det_spatial_metric{
       sqrt(get(determinant(upper_face_spatial_metric)))};
 
+  // The lapse is only used to compute the temporaries needed for the
+  // non-conservative boundary terms
+  const double face_lapse = 0.9;
   std::array<Variables<dg_package_data_argument_tags>, 3> vars_on_lower_face =
       make_array<3>(
           Variables<dg_package_data_argument_tags>(reconstructed_num_pts));
@@ -195,6 +200,11 @@ void test_prim_reconstructor_impl(
         gsl::at(vars_on_lower_face, i)) = lower_face_spatial_metric;
     get<gr::Tags::SpatialMetric<DataVector, 3>>(
         gsl::at(vars_on_upper_face, i)) = upper_face_spatial_metric;
+
+    get(get<gr::Tags::Lapse<DataVector>>(gsl::at(vars_on_lower_face, i))) =
+        face_lapse;
+    get(get<gr::Tags::Lapse<DataVector>>(gsl::at(vars_on_upper_face, i))) =
+        face_lapse;
   }
 
   Variables<prims_tags> volume_prims{subcell_mesh.number_of_grid_points()};
@@ -319,6 +329,28 @@ void test_prim_reconstructor_impl(
     get<gr::Tags::SpatialMetric<DataVector, 3>>(expected_upper_face_values) =
         upper_face_spatial_metric;
 
+    using non_conservative_temporary_tags =
+        tmpl::list<hydro::Tags::MagneticFieldDotSpatialVelocity<DataVector>,
+                   mhd::Tags::LapseTimesbOverW>;
+    for (const auto expected_face_values :
+         {&expected_lower_face_values, &expected_upper_face_values}) {
+      get(get<gr::Tags::Lapse<DataVector>>(*expected_face_values)) = face_lapse;
+      const auto& spatial_metric =
+          get<gr::Tags::SpatialMetric<DataVector, 3>>(*expected_face_values);
+      mhd::magnetic_field_dot_spatial_velocity_and_lapse_times_b_over_w(
+          make_not_null(
+              &get<hydro::Tags::MagneticFieldDotSpatialVelocity<DataVector>>(
+                  *expected_face_values)),
+          make_not_null(
+              &get<mhd::Tags::LapseTimesbOverW>(*expected_face_values)),
+          get<gr::Tags::Lapse<DataVector>>(*expected_face_values),
+          raise_or_lower_index(get<Velocity>(*expected_face_values),
+                               spatial_metric),
+          get<LorentzFactor>(*expected_face_values),
+          get<hydro::Tags::MagneticField<DataVector, 3>>(*expected_face_values),
+          spatial_metric);
+    }
+
     mhd::ConservativeFromPrimitive::apply(
         make_not_null(&get<mhd::Tags::TildeB<>>(expected_lower_face_values)),
         make_not_null(&get<mhd::Tags::TildePhi>(expected_lower_face_values)),
@@ -356,7 +388,8 @@ void test_prim_reconstructor_impl(
         get<gr::Tags::SpatialMetric<DataVector, 3>>(expected_upper_face_values),
         get<Phi>(expected_upper_face_values));
 
-    tmpl::for_each<tmpl::append<cons_tags, prims_tags>>(
+    tmpl::for_each<
+        tmpl::append<cons_tags, prims_tags, non_conservative_temporary_tags>>(
         [dim, &expected_lower_face_values, &expected_upper_face_values,
          &vars_on_lower_face, &vars_on_upper_face](auto tag_to_check_v) {
           using tag_to_check = tmpl::type_from<decltype(tag_to_check_v)>;
@@ -374,6 +407,8 @@ void test_prim_reconstructor_impl(
         face_centered_mesh.slice_away(dim).number_of_grid_points();
     Variables<dg_package_data_argument_tags> upper_side_vars_on_mortar{
         num_pts_on_mortar};
+    get(get<gr::Tags::Lapse<DataVector>>(upper_side_vars_on_mortar)) =
+        face_lapse;
     // Slice GR variables onto the mortar
     data_on_slice(
         make_not_null(&get<gr::Tags::SqrtDetSpatialMetric<DataVector>>(
@@ -395,6 +430,8 @@ void test_prim_reconstructor_impl(
 
     Variables<dg_package_data_argument_tags> lower_side_vars_on_mortar{
         num_pts_on_mortar};
+    get(get<gr::Tags::Lapse<DataVector>>(lower_side_vars_on_mortar)) =
+        face_lapse;
     // Slice GR variables onto the mortar
     data_on_slice(
         make_not_null(&get<gr::Tags::SqrtDetSpatialMetric<DataVector>>(
@@ -414,7 +451,8 @@ void test_prim_reconstructor_impl(
                                  subcell_mesh, fix_to_atmosphere,
                                  Direction<3>{dim, Side::Lower});
 
-    tmpl::for_each<tmpl::append<cons_tags, prims_tags>>(
+    tmpl::for_each<
+        tmpl::append<cons_tags, prims_tags, non_conservative_temporary_tags>>(
         [dim, &expected_lower_face_values, &expected_upper_face_values,
          &lower_side_vars_on_mortar, &face_centered_mesh,
          &upper_side_vars_on_mortar](auto tag_to_check_v) {

@@ -262,11 +262,14 @@ void test_boundary_correction_combination(
       helpers::Tags::Range<gr::Tags::Lapse<DataVector>>,
       helpers::Tags::Range<gr::Tags::Shift<DataVector, 3>>>
       ranges{std::array{0.3, 1.0}, std::array{0.01, 0.02}};
+  // The boundary terms of the non-conservative GRMHD Powell terms do not
+  // vanish when the solution is identical on both sides of the interface.
   TestHelpers::evolution::dg::test_boundary_correction_conservation<
       grmhd::GhValenciaDivClean::System<NeutrinoTransportSystem>>(
       make_not_null(&gen), derived_product_correction,
       Mesh<2>{5, Spectral::Basis::Legendre, Spectral::Quadrature::Gauss},
-      volume_variables, ranges);
+      volume_variables, ranges,
+      TestHelpers::evolution::dg::ZeroOnSmoothSolution::No);
 }
 }  // namespace
 

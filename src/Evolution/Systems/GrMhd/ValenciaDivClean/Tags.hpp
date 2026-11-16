@@ -68,6 +68,12 @@ struct ComovingMagneticFieldOneForm : db::SimpleTag {
   using type = tnsr::a<DataVector, 3>;
 };
 
+/// The lapse times the spatial part of the comoving magnetic field one-form
+/// divided by the Lorentz factor, \f$\alpha b_i / W\f$
+struct LapseTimesbOverW : db::SimpleTag {
+  using type = tnsr::i<DataVector, 3, Frame::Inertial>;
+};
+
 /// \brief Set to `true` if the variables needed fixing.
 ///
 /// Used in DG-subcell hybrid scheme evolutions.

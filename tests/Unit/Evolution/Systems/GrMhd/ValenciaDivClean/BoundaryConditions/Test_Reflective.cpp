@@ -95,6 +95,10 @@ void test_stuffs(const bool reflect_both) {
 
           helpers::Tags::PythonFunctionName<gr::Tags::Lapse<DataVector>>,
           helpers::Tags::PythonFunctionName<gr::Tags::Shift<DataVector, 3>>,
+          helpers::Tags::PythonFunctionName<
+              hydro::Tags::MagneticFieldDotSpatialVelocity<DataVector>>,
+          helpers::Tags::PythonFunctionName<
+              grmhd::ValenciaDivClean::Tags::LapseTimesbOverW>,
           helpers::Tags::PythonFunctionName<hydro::Tags::SpatialVelocityOneForm<
               DataVector, 3, Frame::Inertial>>,
           helpers::Tags::PythonFunctionName<
@@ -123,6 +127,8 @@ void test_stuffs(const bool reflect_both) {
           "flux_tilde_phi",
           "lapse",
           "shift",
+          "magnetic_field_dot_spatial_velocity",
+          "lapse_b_over_w",
           "spatial_velocity_one_form",
           "rest_mass_density",
           "electron_fraction",

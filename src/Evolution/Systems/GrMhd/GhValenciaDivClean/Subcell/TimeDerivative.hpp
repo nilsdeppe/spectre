@@ -48,6 +48,7 @@
 #include "Evolution/Systems/GrMhd/GhValenciaDivClean/System.hpp"
 #include "Evolution/Systems/GrMhd/GhValenciaDivClean/Tags.hpp"
 #include "Evolution/Systems/GrMhd/GhValenciaDivClean/TimeDerivativeTerms.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/BoundaryCorrections/NonConservativeTerms.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/Fluxes.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/Sources.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/Subcell/ComputeFluxes.hpp"
@@ -799,6 +800,21 @@ struct TimeDerivative {
                 db::get<evolution::dg::Tags::MortarData<3>>(*box),
                 Variables<gh_dg_package_field_tags>::
                     number_of_independent_components);
+
+            // The interface fluxes of the FD scheme are conservative, so we
+            // disable the non-conservative GRMHD boundary terms by zeroing
+            // the data they are computed from.
+            tmpl::for_each<grmhd::ValenciaDivClean::BoundaryCorrections::
+                               non_conservative_package_field_tags>(
+                [&lower_packaged_data, &upper_packaged_data](auto tag_v) {
+                  using tag = tmpl::type_from<decltype(tag_v)>;
+                  for (auto& component : get<tag>(lower_packaged_data)) {
+                    component = 0.0;
+                  }
+                  for (auto& component : get<tag>(upper_packaged_data)) {
+                    component = 0.0;
+                  }
+                });
 
             // Compute the corrections on the faces. We only need to
             // compute this once because we can just flip the normal

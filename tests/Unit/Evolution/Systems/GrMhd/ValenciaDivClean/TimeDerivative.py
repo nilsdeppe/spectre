@@ -2,6 +2,7 @@
 # See LICENSE.txt for details.
 
 import Fluxes
+import LapseTimesbOverW
 import numpy as np
 import Sources
 
@@ -14,11 +15,12 @@ def _div_tilde_b(d_tilde_b):
 def _lapse_b_over_w(
     lapse, magnetic_field, spatial_velocity, lorentz_factor, spatial_metric
 ):
-    return lapse * (
-        Fluxes.magnetic_field_one_form(magnetic_field, spatial_metric)
-        / lorentz_factor**2
-        + Fluxes.b_dot_v(magnetic_field, spatial_velocity, spatial_metric)
-        * Fluxes.spatial_velocity_one_form(spatial_velocity, spatial_metric)
+    return LapseTimesbOverW.lapse_b_over_w(
+        lapse,
+        Fluxes.spatial_velocity_one_form(spatial_velocity, spatial_metric),
+        lorentz_factor,
+        magnetic_field,
+        spatial_metric,
     )
 
 

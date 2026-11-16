@@ -3,6 +3,7 @@
 
 import Evolution.Systems.GrMhd.ValenciaDivClean.ConservativeFromPrimitive as cons
 import Evolution.Systems.GrMhd.ValenciaDivClean.Fluxes as fluxes
+import Evolution.Systems.GrMhd.ValenciaDivClean.LapseTimesbOverW as lbw
 import numpy as np
 import PointwiseFunctions.AnalyticData.GrMhd.MagneticRotor as rotor
 import PointwiseFunctions.AnalyticSolutions.Hydro.SmoothFlow as hydro
@@ -313,6 +314,37 @@ def soln_shift(
     dim,
 ):
     return np.asarray([0.0, 0.0, 0.0])
+
+
+def soln_magnetic_field_dot_spatial_velocity(
+    face_mesh_velocity,
+    outward_directed_normal_covector,
+    outward_directed_normal_vector,
+    coords,
+    time,
+    dim,
+):
+    # flat spacetime, so up and down indices are the same
+    return np.dot(
+        soln_magnetic_field(coords, time), soln_velocity(coords, time)
+    )
+
+
+def soln_lapse_b_over_w(
+    face_mesh_velocity,
+    outward_directed_normal_covector,
+    outward_directed_normal_vector,
+    coords,
+    time,
+    dim,
+):
+    return lbw.lapse_b_over_w(
+        1.0,
+        soln_velocity(coords, time),
+        soln_lorentz_factor(coords, time),
+        soln_magnetic_field(coords, time),
+        soln_spatial_metric(coords, time),
+    )
 
 
 def soln_flux_tilde_d(
@@ -1065,6 +1097,35 @@ def data_tilde_phi(
         soln_sqrt_det_spatial_metric(coords, time),
         soln_spatial_metric(coords, time),
         divergence_cleaning_field(coords, time),
+    )
+
+
+def data_magnetic_field_dot_spatial_velocity(
+    face_mesh_velocity,
+    outward_directed_normal_covector,
+    outward_directed_normal_vector,
+    coords,
+    time,
+    dim,
+):
+    # flat spacetime, so up and down indices are the same
+    return np.dot(data_magnetic_field(coords), data_velocity(coords))
+
+
+def data_lapse_b_over_w(
+    face_mesh_velocity,
+    outward_directed_normal_covector,
+    outward_directed_normal_vector,
+    coords,
+    time,
+    dim,
+):
+    return lbw.lapse_b_over_w(
+        1.0,
+        data_velocity(coords),
+        data_lorentz_factor(coords),
+        data_magnetic_field(coords),
+        soln_spatial_metric(coords, time),
     )
 
 

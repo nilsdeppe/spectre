@@ -25,6 +25,7 @@
 #include "Evolution/Systems/GrMhd/GhValenciaDivClean/FiniteDifference/MonotonisedCentral.hpp"
 #include "Evolution/Systems/GrMhd/GhValenciaDivClean/FiniteDifference/ReconstructWork.hpp"
 #include "Evolution/Systems/GrMhd/GhValenciaDivClean/Tags.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/LapseTimesbOverW.hpp"
 #include "Evolution/Systems/RadiationTransport/NoNeutrinos/System.hpp"
 #include "Framework/TestCreation.hpp"
 #include "Framework/TestHelpers.hpp"
@@ -109,6 +110,7 @@ void test_dg(const gsl::not_null<std::mt19937*> generator,
            tilde_b_flux, tilde_phi_flux, tilde_d_flux, tilde_ye_flux,
            tilde_tau_flux, tilde_s_flux, gamma1, gamma2, lapse, shift,
 
+           magnetic_field_dot_spatial_velocity, lapse_b_over_w,
            spatial_velocity_one_form, spatial_metric, sqrt_det_spatial_metric,
 
            inverse_spatial_metric] = expected;
@@ -147,6 +149,11 @@ void test_dg(const gsl::not_null<std::mt19937*> generator,
     tenex::evaluate<ti::i>(
         make_not_null(&spatial_velocity_one_form),
         spatial_velocity(ti::J) * spatial_metric(ti::i, ti::j));
+    grmhd::ValenciaDivClean::
+        magnetic_field_dot_spatial_velocity_and_lapse_times_b_over_w(
+            make_not_null(&magnetic_field_dot_spatial_velocity),
+            make_not_null(&lapse_b_over_w), lapse, spatial_velocity_one_form,
+            lorentz_factor, magnetic_field, spatial_metric);
 
     grmhd::ValenciaDivClean::ConservativeFromPrimitive::apply(
         make_not_null(&tilde_b), make_not_null(&tilde_phi),
@@ -189,6 +196,7 @@ void test_dg(const gsl::not_null<std::mt19937*> generator,
          tilde_b_flux, tilde_phi_flux, tilde_d_flux, tilde_ye_flux,
          tilde_tau_flux, tilde_s_flux, gamma1, gamma2, lapse, shift,
 
+         magnetic_field_dot_spatial_velocity, lapse_b_over_w,
          spatial_velocity_one_form, spatial_metric, sqrt_det_spatial_metric,
 
          inverse_spatial_metric] = vars;
@@ -202,7 +210,9 @@ void test_dg(const gsl::not_null<std::mt19937*> generator,
       make_not_null(&tilde_d_flux), make_not_null(&tilde_ye_flux),
       make_not_null(&tilde_tau_flux), make_not_null(&tilde_s_flux),
       make_not_null(&gamma1), make_not_null(&gamma2), make_not_null(&lapse),
-      make_not_null(&shift), make_not_null(&spatial_velocity_one_form),
+      make_not_null(&shift),
+      make_not_null(&magnetic_field_dot_spatial_velocity),
+      make_not_null(&lapse_b_over_w), make_not_null(&spatial_velocity_one_form),
       make_not_null(&rest_mass_density), make_not_null(&electron_fraction),
       make_not_null(&temperature), make_not_null(&spatial_velocity),
       make_not_null(&inverse_spatial_metric), {}, {}, {}, coords,

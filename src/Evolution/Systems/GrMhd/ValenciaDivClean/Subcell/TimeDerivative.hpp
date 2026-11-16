@@ -41,6 +41,7 @@
 #include "Evolution/DiscontinuousGalerkin/Actions/NormalCovectorAndMagnitude.hpp"
 #include "Evolution/DiscontinuousGalerkin/Actions/PackageDataImpl.hpp"
 #include "Evolution/DiscontinuousGalerkin/MortarTags.hpp"
+#include "Evolution/Systems/GrMhd/ValenciaDivClean/BoundaryCorrections/NonConservativeTerms.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/FiniteDifference/BoundaryConditionGhostData.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/FiniteDifference/Reconstructor.hpp"
 #include "Evolution/Systems/GrMhd/ValenciaDivClean/FiniteDifference/Tag.hpp"
@@ -452,6 +453,22 @@ struct TimeDerivative {
                 make_not_null(&lower_packaged_data),
                 make_not_null(&upper_packaged_data), i, element, subcell_mesh,
                 db::get<evolution::dg::Tags::MortarData<3>>(*box), 0);
+
+            // The interface fluxes of the FD scheme are conservative. The
+            // non-conservative terms are added separately at the cell centers,
+            // so we disable the non-conservative boundary terms by zeroing
+            // the data they are computed from.
+            tmpl::for_each<
+                BoundaryCorrections::non_conservative_package_field_tags>(
+                [&lower_packaged_data, &upper_packaged_data](auto tag_v) {
+                  using tag = tmpl::type_from<decltype(tag_v)>;
+                  for (auto& component : get<tag>(lower_packaged_data)) {
+                    component = 0.0;
+                  }
+                  for (auto& component : get<tag>(upper_packaged_data)) {
+                    component = 0.0;
+                  }
+                });
 
             // Compute the corrections on the faces. We only need to
             // compute this once because we can just flip the normal

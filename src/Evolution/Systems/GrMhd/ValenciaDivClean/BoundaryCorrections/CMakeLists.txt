@@ -6,6 +6,7 @@ spectre_target_sources(
   ${LIBRARY}
   PRIVATE
   Hll.cpp
+  NonConservativeTerms.cpp
   Rusanov.cpp
   )
 
@@ -16,5 +17,6 @@ spectre_target_headers(
   Factory.hpp
   Hll.hpp
   NamespaceDocs.hpp
+  NonConservativeTerms.hpp
   Rusanov.hpp
   )

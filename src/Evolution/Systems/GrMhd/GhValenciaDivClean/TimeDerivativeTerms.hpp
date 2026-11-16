@@ -148,6 +148,16 @@ struct TimeDerivativeTermsImpl {
       //         .data(),
       //     0.0);
       fluxes_ptr->initialize(fluxes_ptr->number_of_grid_points(), 0.0);
+      // The boundary corrections use these temporaries for the
+      // non-conservative GRMHD boundary terms. Since we skip the GRMHD
+      // evolution we also disable the contribution of this element to those
+      // terms.
+      get(get<hydro::Tags::MagneticFieldDotSpatialVelocity<DataVector>>(
+          *temps_ptr)) = 0.0;
+      for (auto& component :
+           get<grmhd::ValenciaDivClean::Tags::LapseTimesbOverW>(*temps_ptr)) {
+        component = 0.0;
+      }
       return evolution::dg::TimeDerivativeDecisions<3>{false};
     } else {
       // MHD calls
