@@ -665,7 +665,7 @@ struct TimeDerivative {
     for (size_t i = 0; i < 3; ++i){
       get<::Tags::dt<grmhd::ValenciaDivClean::Tags::TildeB<>>>
         (*dt_vars_ptr).get(i) = 0;
-    } // sets time derivative of magnetic field to 0
+    }  // sets time derivative of magnetic field to 0
 
     //    Parallel::printf("\n\n tilde_s_before%s\n", get<::Tags::dt<
     //     grmhd::ValenciaDivClean::Tags::TildeS<>>>(*dt_vars_ptr));
