@@ -87,6 +87,7 @@ const std::array<double, 3> wave_vector = {{0.11, 0.23, 0.32}};
 const double pressure = 1.0;
 const double adiabatic_index = 1.4;
 const double perturbation_size = 0.3;
+const double magnetic_monopole_amplitude = 0.7;
 
 template <typename BoundaryConditionType>
 void test(const BoundaryConditionType& boundary_condition,
@@ -444,11 +445,11 @@ void test(const BoundaryConditionType& boundary_condition,
       const auto magnetic_field_py = pypp::call<tnsr::I<DataVector, 3>>(
           "GrMhd.SmoothFlow", "magnetic_field", ghost_inertial_coords, time,
           mean_velocity, wave_vector, pressure, adiabatic_index,
-          perturbation_size);
+          perturbation_size, magnetic_monopole_amplitude);
       const auto div_cleaning_field_py = pypp::call<Scalar<DataVector>>(
           "GrMhd.SmoothFlow", "divergence_cleaning_field",
           ghost_inertial_coords, time, mean_velocity, wave_vector, pressure,
-          adiabatic_index, perturbation_size);
+          adiabatic_index, perturbation_size, magnetic_monopole_amplitude);
 
       // check values
       CHECK_ITERABLE_APPROX(get<RestMassDensity>(fd_ghost_vars),
@@ -667,8 +668,9 @@ SPECTRE_TEST_CASE(
   pypp::SetupLocalPythonEnvironment local_python_env{
       "PointwiseFunctions/AnalyticSolutions/"};
 
-  const SolutionForTest solution{mean_velocity, wave_vector, pressure,
-                                 adiabatic_index, perturbation_size};
+  const SolutionForTest solution{
+      mean_velocity,   wave_vector,       pressure,
+      adiabatic_index, perturbation_size, magnetic_monopole_amplitude};
 
   for (const bool set_fluxes : {true, false}) {
     test(

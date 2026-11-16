@@ -65,8 +65,9 @@ struct ConvertSmoothFlow {
     const double pressure = 1.0;
     const double adiabatic_index = 5.0 / 3.0;
     const double perturbation_size = 0.2;
-    return {mean_velocity, wave_vector, pressure, adiabatic_index,
-            perturbation_size};
+    const double magnetic_monopole_amplitude = 0.7;
+    return {mean_velocity,   wave_vector,       pressure,
+            adiabatic_index, perturbation_size, magnetic_monopole_amplitude};
   }
 
   static inline unpacked_container unpack(const packed_container& /*packed*/,
@@ -206,7 +207,8 @@ void test_soln() {
       "      MeanVelocity: [0.9, 0.4, -0.1]\n"
       "      Pressure: 1.0\n"
       "      AdiabaticIndex: 1.6666666666666666\n"
-      "      PerturbationSize: 0.2",
+      "      PerturbationSize: 0.2\n"
+      "      MagneticMonopoleAmplitude: 0.7",
       Index<2>{5}, box_analytic_soln, tuples::TaggedTuple<>{});
 }
 

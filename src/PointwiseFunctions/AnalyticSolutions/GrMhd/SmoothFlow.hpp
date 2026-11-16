@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include <array>
+#include <limits>
+#include <memory>
 #include <pup.h>
 
 #include "DataStructures/TaggedTuple.hpp"
@@ -22,29 +25,47 @@ namespace grmhd::Solutions {
  * \brief Periodic GrMhd solution in Minkowski spacetime.
  *
  * An analytic solution to the 3-D GrMhd system. The user specifies the mean
- * flow velocity of the fluid, the wavevector of the density profile, and the
- * amplitude \f$A\f$ of the density profile. The magnetic field is taken to be
- * zero everywhere. In Cartesian coordinates \f$(x, y, z)\f$, and using
- * dimensionless units, the primitive quantities at a given time \f$t\f$ are
- * then
+ * flow velocity of the fluid, the wavevector of the density profile, the
+ * amplitude \f$A\f$ of the density profile, and the amplitude \f$A_B\f$ of
+ * an optional magnetic monopole field. In Cartesian coordinates
+ * \f$(x, y, z)\f$, and using dimensionless units, the primitive quantities at
+ * a given time \f$t\f$ are
  *
  * \f{align*}
  * \rho(\vec{x},t) &= 1 + A \sin(\vec{k}\cdot(\vec{x} - \vec{v}t)) \\
  * \vec{v}(\vec{x},t) &= [v_x, v_y, v_z]^{T},\\
  * P(\vec{x},t) &= P, \\
  * \epsilon(\vec{x}, t) &= \frac{P}{(\gamma - 1)\rho}\\
- * \vec{B}(\vec{x},t) &= [0, 0, 0]^{T}
+ * \vec{B}(\vec{x},t) &= [0, 0, A_B z e^{-z^2/2}]^{T}
  * \f}
+ *
+ * \warning If the `MagneticMonopoleAmplitude` \f$A_B\f$ is non-zero the
+ * magnetic field has a non-zero divergence, i.e. it is the field of a
+ * distribution of magnetic monopoles. This is intended for studying the
+ * divergence cleaning. In that case the primitive quantities above are not a
+ * solution of the GRMHD equations. Set `MagneticMonopoleAmplitude` to zero to
+ * obtain the unmagnetized analytic solution.
  */
 class SmoothFlow : virtual public MarkAsAnalyticSolution,
                    public RelativisticEuler::Solutions::SmoothFlow<3> {
   using smooth_flow = RelativisticEuler::Solutions::SmoothFlow<3>;
 
  public:
-  using options = smooth_flow::options;
+  /// The amplitude of the magnetic monopole field.
+  struct MagneticMonopoleAmplitude {
+    using type = double;
+    static constexpr Options::String help = {
+        "The amplitude A_B of the magnetic field B^z = A_B z exp(-z^2/2), "
+        "which has a non-zero divergence. Set to zero for the unmagnetized "
+        "analytic solution."};
+  };
+
+  using options =
+      tmpl::push_back<smooth_flow::options, MagneticMonopoleAmplitude>;
 
   static constexpr Options::String help = {
-      "Periodic smooth flow in Minkowski spacetime with zero magnetic field."};
+      "Periodic smooth flow in Minkowski spacetime with an optional magnetic "
+      "monopole field."};
 
   SmoothFlow() = default;
   SmoothFlow(const SmoothFlow& /*rhs*/) = default;
@@ -55,7 +76,8 @@ class SmoothFlow : virtual public MarkAsAnalyticSolution,
 
   SmoothFlow(const std::array<double, 3>& mean_velocity,
              const std::array<double, 3>& wavevector, double pressure,
-             double adiabatic_index, double perturbation_size);
+             double adiabatic_index, double perturbation_size,
+             double magnetic_monopole_amplitude);
 
   auto get_clone() const
       -> std::unique_ptr<evolution::initial_data::InitialData> override;
@@ -102,6 +124,9 @@ class SmoothFlow : virtual public MarkAsAnalyticSolution,
 
  protected:
   friend bool operator==(const SmoothFlow& lhs, const SmoothFlow& rhs);
+
+  double magnetic_monopole_amplitude_ =
+      std::numeric_limits<double>::signaling_NaN();
 };
 
 bool operator!=(const SmoothFlow& lhs, const SmoothFlow& rhs);

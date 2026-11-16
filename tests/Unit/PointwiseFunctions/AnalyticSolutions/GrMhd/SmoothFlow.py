@@ -25,8 +25,15 @@ def magnetic_field(
     pressure,
     adiabatic_index,
     density_amplitude,
+    magnetic_monopole_amplitude,
 ):
-    return np.array([0.0, 0.0, 0.0])
+    return np.array(
+        [
+            0.0,
+            0.0,
+            magnetic_monopole_amplitude * x[2] * np.exp(-0.5 * x[2] ** 2),
+        ]
+    )
 
 
 def divergence_cleaning_field(
@@ -37,5 +44,6 @@ def divergence_cleaning_field(
     pressure,
     adiabatic_index,
     density_amplitude,
+    magnetic_monopole_amplitude,
 ):
     return 0.0

@@ -50,10 +50,9 @@ struct SmoothFlowProxy : grmhd::Solutions::SmoothFlow {
                  hydro::Tags::SpecificEnthalpy<DataType>>;
 
   template <typename DataType>
-  using grmhd_variables_tags =
-      tmpl::push_back<hydro_variables_tags<DataType>,
-                      hydro::Tags::MagneticField<DataType, 3>,
-                      hydro::Tags::DivergenceCleaningField<DataType>>;
+  using magnetic_variables_tags =
+      tmpl::list<hydro::Tags::MagneticField<DataType, 3>,
+                 hydro::Tags::DivergenceCleaningField<DataType>>;
 
   template <typename DataType>
   tuples::tagged_tuple_from_typelist<hydro_variables_tags<DataType>>
@@ -62,9 +61,9 @@ struct SmoothFlowProxy : grmhd::Solutions::SmoothFlow {
   }
 
   template <typename DataType>
-  tuples::tagged_tuple_from_typelist<grmhd_variables_tags<DataType>>
-  grmhd_variables(const tnsr::I<DataType, 3>& x, double t) const {
-    return variables(x, t, grmhd_variables_tags<DataType>{});
+  tuples::tagged_tuple_from_typelist<magnetic_variables_tags<DataType>>
+  magnetic_variables(const tnsr::I<DataType, 3>& x, double t) const {
+    return variables(x, t, magnetic_variables_tags<DataType>{});
   }
 };
 
@@ -74,23 +73,27 @@ void test_create_from_options() {
       "WaveVector: [-0.13, -0.54, 0.04]\n"
       "Pressure: 1.23\n"
       "AdiabaticIndex: 1.4\n"
-      "PerturbationSize: 0.75");
+      "PerturbationSize: 0.75\n"
+      "MagneticMonopoleAmplitude: 0.6");
   CHECK(flow == grmhd::Solutions::SmoothFlow({{0.1, -0.2, 0.3}},
                                              {{-0.13, -0.54, 0.04}}, 1.23, 1.4,
-                                             0.75));
+                                             0.75, 0.6));
+  CHECK(flow != grmhd::Solutions::SmoothFlow({{0.1, -0.2, 0.3}},
+                                             {{-0.13, -0.54, 0.04}}, 1.23, 1.4,
+                                             0.75, 0.5));
 }
 
 void test_move() {
   grmhd::Solutions::SmoothFlow flow({{0.24, 0.11, 0.04}}, {{0.14, 0.42, -0.03}},
-                                    1.3, 1.5, 0.24);
-  grmhd::Solutions::SmoothFlow flow_copy({{0.24, 0.11, 0.04}},
-                                         {{0.14, 0.42, -0.03}}, 1.3, 1.5, 0.24);
+                                    1.3, 1.5, 0.24, 0.6);
+  grmhd::Solutions::SmoothFlow flow_copy(
+      {{0.24, 0.11, 0.04}}, {{0.14, 0.42, -0.03}}, 1.3, 1.5, 0.24, 0.6);
   test_move_semantics(std::move(flow), flow_copy);  //  NOLINT
 }
 
 void test_serialize() {
   grmhd::Solutions::SmoothFlow flow({{0.24, 0.11, 0.04}}, {{0.14, 0.42, -0.03}},
-                                    1.3, 1.5, 0.24);
+                                    1.3, 1.5, 0.24, 0.6);
   test_serialization(flow);
 }
 
@@ -101,11 +104,12 @@ void test_variables(const DataType& used_for_size) {
   const double pressure = 1.3;
   const double adiabatic_index = 4. / 3.;
   const double perturbation_size = 0.78;
+  const double magnetic_monopole_amplitude = 0.6;
 
   pypp::check_with_random_values<1>(
       &SmoothFlowProxy::hydro_variables<DataType>,
       SmoothFlowProxy(mean_velocity, wave_vector, pressure, adiabatic_index,
-                      perturbation_size),
+                      perturbation_size, magnetic_monopole_amplitude),
       "GrMhd.SmoothFlow",
       {"rest_mass_density", "electron_fraction", "spatial_velocity",
        "specific_internal_energy", "pressure", "lorentz_factor",
@@ -116,23 +120,20 @@ void test_variables(const DataType& used_for_size) {
       used_for_size);
 
   pypp::check_with_random_values<1>(
-      &SmoothFlowProxy::grmhd_variables<DataType>,
+      &SmoothFlowProxy::magnetic_variables<DataType>,
       SmoothFlowProxy(mean_velocity, wave_vector, pressure, adiabatic_index,
-                      perturbation_size),
-      "GrMhd.SmoothFlow",
-      {"rest_mass_density", "electron_fraction", "spatial_velocity",
-       "specific_internal_energy", "pressure", "lorentz_factor",
-       "specific_enthalpy_relativistic", "magnetic_field",
-       "divergence_cleaning_field"},
+                      perturbation_size, magnetic_monopole_amplitude),
+      "GrMhd.SmoothFlow", {"magnetic_field", "divergence_cleaning_field"},
       {{{-15., 15.}}},
       std::make_tuple(mean_velocity, wave_vector, pressure, adiabatic_index,
-                      perturbation_size),
+                      perturbation_size, magnetic_monopole_amplitude),
       used_for_size);
 
   // Test a few of the GR components to make sure that the implementation
   // correctly forwards to the background solution. Not meant to be extensive.
   grmhd::Solutions::SmoothFlow soln(mean_velocity, wave_vector, pressure,
-                                    adiabatic_index, perturbation_size);
+                                    adiabatic_index, perturbation_size,
+                                    magnetic_monopole_amplitude);
   const auto coords = make_with_value<tnsr::I<DataType, 3>>(used_for_size, 1.0);
   CHECK_ITERABLE_APPROX(
       make_with_value<Scalar<DataType>>(used_for_size, 1.0),
@@ -166,13 +167,16 @@ void test_solution() {
           "  WaveVector: [-0.13, -0.54, 0.04]\n"
           "  Pressure: 1.23\n"
           "  AdiabaticIndex: 1.4\n"
-          "  PerturbationSize: 0.75\n")
+          "  PerturbationSize: 0.75\n"
+          "  MagneticMonopoleAmplitude: 0.0\n")
           ->get_clone();
   const auto deserialized_option_solution =
       serialize_and_deserialize(option_solution);
   const auto& solution = dynamic_cast<const grmhd::Solutions::SmoothFlow&>(
       *deserialized_option_solution);
 
+  // SmoothFlow is only a solution of the GRMHD equations if the magnetic
+  // monopole amplitude is zero.
   const std::array<double, 3> x{{4.0, 4.0, 4.0}};
   const std::array<double, 3> dx{{1.e-3, 1.e-3, 1.e-3}};
 

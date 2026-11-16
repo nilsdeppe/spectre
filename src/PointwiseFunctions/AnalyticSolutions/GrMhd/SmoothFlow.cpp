@@ -3,9 +3,15 @@
 
 #include "PointwiseFunctions/AnalyticSolutions/GrMhd/SmoothFlow.hpp"
 
+#include <array>
+#include <memory>
+#include <pup.h>
+#include <utility>
+
 #include "DataStructures/DataVector.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "PointwiseFunctions/Hydro/Tags.hpp"
+#include "Utilities/ConstantExpressions.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
 #include "Utilities/MakeWithValue.hpp"
 
@@ -14,10 +20,12 @@ namespace grmhd::Solutions {
 SmoothFlow::SmoothFlow(const std::array<double, 3>& mean_velocity,
                        const std::array<double, 3>& wavevector,
                        const double pressure, const double adiabatic_index,
-                       const double perturbation_size)
+                       const double perturbation_size,
+                       const double magnetic_monopole_amplitude)
     : RelativisticEuler::Solutions::SmoothFlow<3>(mean_velocity, wavevector,
                                                   pressure, adiabatic_index,
-                                                  perturbation_size) {}
+                                                  perturbation_size),
+      magnetic_monopole_amplitude_(magnetic_monopole_amplitude) {}
 
 std::unique_ptr<evolution::initial_data::InitialData> SmoothFlow::get_clone()
     const {
@@ -29,6 +37,7 @@ SmoothFlow::SmoothFlow(CkMigrateMessage* msg)
 
 void SmoothFlow::pup(PUP::er& p) {
   RelativisticEuler::Solutions::SmoothFlow<3>::pup(p);
+  p | magnetic_monopole_amplitude_;
 }
 
 template <typename DataType>
@@ -36,7 +45,14 @@ tuples::TaggedTuple<hydro::Tags::MagneticField<DataType, 3>>
 SmoothFlow::variables(
     const tnsr::I<DataType, 3>& x, double /*t*/,
     tmpl::list<hydro::Tags::MagneticField<DataType, 3>> /*meta*/) const {
-  return {make_with_value<tnsr::I<DataType, 3>>(x, 0.0)};
+  // If the amplitude is non-zero this is a magnetic field with non-zero
+  // divergence, i.e. a distribution of magnetic monopoles, used to study the
+  // divergence cleaning. The field is smooth, vanishes at z=0 and decays for
+  // large |z|.
+  auto result = make_with_value<tnsr::I<DataType, 3>>(x, 0.0);
+  get<2>(result) =
+      magnetic_monopole_amplitude_ * get<2>(x) * exp(-0.5 * square(get<2>(x)));
+  return {std::move(result)};
 }
 
 template <typename DataType>
@@ -52,7 +68,8 @@ PUP::able::PUP_ID SmoothFlow::my_PUP_ID = 0;
 bool operator==(const SmoothFlow& lhs, const SmoothFlow& rhs) {
   using smooth_flow = RelativisticEuler::Solutions::SmoothFlow<3>;
   return *static_cast<const smooth_flow*>(&lhs) ==
-         *static_cast<const smooth_flow*>(&rhs);
+             *static_cast<const smooth_flow*>(&rhs) and
+         lhs.magnetic_monopole_amplitude_ == rhs.magnetic_monopole_amplitude_;
 }
 
 bool operator!=(const SmoothFlow& lhs, const SmoothFlow& rhs) {

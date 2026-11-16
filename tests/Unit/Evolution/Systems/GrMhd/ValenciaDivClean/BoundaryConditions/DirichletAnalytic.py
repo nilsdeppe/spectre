@@ -24,6 +24,7 @@ _soln_electron_fraction = 0.1
 _soln_pressure = 1.0
 _soln_adiabatic_index = 5.0 / 3.0
 _soln_perturbation_size = 0.2
+_soln_magnetic_monopole_amplitude = 0.7
 
 
 def _soln_mean_velocity():
@@ -117,7 +118,15 @@ def soln_temperature(coords, time):
 
 
 def soln_magnetic_field(coords, time):
-    return np.array([0.0, 0.0, 0.0])
+    return np.array(
+        [
+            0.0,
+            0.0,
+            _soln_magnetic_monopole_amplitude
+            * coords[2]
+            * np.exp(-0.5 * coords[2] ** 2),
+        ]
+    )
 
 
 def divergence_cleaning_field(coords, time):
