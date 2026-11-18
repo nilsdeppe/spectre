@@ -80,7 +80,12 @@ template <>
 struct hash<Parallel::ArrayComponentId> {
   size_t operator()(const Parallel::ArrayComponentId& t) const {
     size_t result = t.component_id();
-    boost::hash_combine(result, t.array_index().hash());
+#if defined(SPECTRE_USE_CHARM)
+    const auto array_index_hash = t.array_index().hash();
+#elif defined(SPECTRE_USE_FINDUS)
+    const auto array_index_hash = t.array_index();
+#endif  // SPECTRE_USE_CHARM
+    boost::hash_combine(result, array_index_hash);
     return result;
   }
 };
