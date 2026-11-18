@@ -190,7 +190,15 @@ PREDEFINED             = SPECTRE_ALWAYS_INLINE= \
                          OVERLOADER_CONSTEXPR= \
                          SPECTRE_DOXYGEN_INVOKED \
                          SPECTRE_AUTODIFF \
-                         SPECTRE_KOKKOS
+                         SPECTRE_KOKKOS \
+                         SPECTRE_USE_CHARM \
+                         SPECTRE_CHARM_PUPable(x)=PUP::able \
+                         SPECTRE_CHARM_PUPable_COPY(x)= \
+                         SPECTRE_CHARM_OVERRIDE()=override \
+                         FINDUS_OVERRIDE_SERIALIZATION_ID(x,y)= \
+                         SPECTRE_FINDUS_BASE(x)= \
+                         SPECTRE_FINDUS_DERIVED(x,y)= \
+                         SPECTRE_FINDUS_VIRTUAL()=
 
 #---------------------------------------------------------------------------
 # Configuration::additions related to external references
