@@ -71,7 +71,7 @@ struct VariableOrder {
 /// section of the class body, and
 /// TIME_STEPPER_DEFINE_OVERLOADS(derived_class), which must be placed
 /// in the cpp file.
-class TimeStepper : public PUP::able {
+class TimeStepper : public SPECTRE_CHARM_PUPable(TimeStepper) {
  public:
   static constexpr bool imex = false;
   using provided_time_stepper_interfaces = tmpl::list<TimeStepper>;

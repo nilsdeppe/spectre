@@ -29,7 +29,7 @@ namespace ScalarTensor::sgb::CouplingFunctions {
  * protected. Any class implementing a coupling function should inherit publicly
  * from this class and override only the latter three methods.
  */
-class CouplingFunction : public PUP::able {
+class CouplingFunction : public SPECTRE_CHARM_PUPable(CouplingFunction) {
  public:
   WRAPPED_PUPable_abstract(CouplingFunction);  // NOLINT
 

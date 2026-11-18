@@ -31,6 +31,7 @@
 #include "Utilities/FileSystem.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 
 namespace RelativisticEuler::Solutions {
 namespace detail {
@@ -480,7 +481,7 @@ RotatingStar::RotatingStar(
       equation_of_state_(std::move(equation_of_state)) {}
 
 RotatingStar::RotatingStar(const RotatingStar& rhs)
-    : evolution::initial_data::InitialData(rhs),
+    : SPECTRE_CHARM_PUPable_COPY(rhs) evolution::initial_data::InitialData(rhs),
       rot_ns_filename_(rhs.rot_ns_filename_),
       cst_solution_{rot_ns_filename_, rhs.is_polytrope_,
                     rhs.polytropic_constant_},

@@ -31,7 +31,8 @@ namespace Parallel {
  * serialization.
  */
 template <size_t Dim>
-class DgElementArrayMemberBase : PUP::able {
+class DgElementArrayMemberBase
+    : public SPECTRE_CHARM_PUPable(DgElementArrayMemberBase<Dim>) {
  public:
   DgElementArrayMemberBase() = default;
 
@@ -43,7 +44,9 @@ class DgElementArrayMemberBase : PUP::able {
       default;
   ~DgElementArrayMemberBase() override = default;
 
+#if defined(SPECTRE_USE_CHARM)
   WRAPPED_PUPable_abstract(DgElementArrayMemberBase);  // NOLINT
+#endif                                                 // SPECTRE_USE_CHARM
 
   /// Start execution of the phase-dependent action list in `next_phase`. If
   /// `next_phase` has already been visited, execution will resume at the point
@@ -115,7 +118,8 @@ class DgElementArrayMemberBase : PUP::able {
     return deadlock_analysis_next_iterable_action_;
   }
 
-  void pup(PUP::er& p) override;
+  SPECTRE_FINDUS_VIRTUAL()
+  void pup(PUP::er& p) SPECTRE_CHARM_OVERRIDE();
 
  protected:
   DgElementArrayMemberBase(ElementId<Dim> element_id, size_t node_number);

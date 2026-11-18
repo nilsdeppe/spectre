@@ -71,7 +71,7 @@ namespace Filters {
  * applies to every block in the domain.
  */
 template <size_t Dim, typename TagList>
-class Filter : public PUP::able {
+class Filter : public SPECTRE_CHARM_PUPable(SINGLE_ARG(Filter<Dim, TagList>)) {
  public:
   Filter() = default;
   ~Filter() noexcept override = default;

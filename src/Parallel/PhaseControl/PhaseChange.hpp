@@ -16,6 +16,7 @@
 #include "ParallelAlgorithms/EventsAndTriggers/Trigger.hpp"
 #include "Utilities/CallWithDynamicType.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// Contains utilities for determining control-flow among phases
@@ -136,7 +137,7 @@ enum ArbitrationStrategy {
  *   state of that sequential process can be recorded in
  *   `phase_change_decision_data`.
  */
-struct PhaseChange : public PUP::able {
+struct PhaseChange : public SPECTRE_CHARM_PUPable(PhaseChange) {
  protected:
   /// \cond
   PhaseChange() = default;

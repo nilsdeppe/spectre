@@ -11,6 +11,7 @@
 #include "DataStructures/TaggedTuple.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "IO/External/InterpolateFromSpec.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/System/ParallelInfo.hpp"
 
 namespace gr::AnalyticData {
@@ -22,7 +23,8 @@ SpecInitialData::SpecInitialData(std::string data_directory)
           vars_to_interpolate_)) {}
 
 SpecInitialData::SpecInitialData(const SpecInitialData& rhs)
-    : evolution::initial_data::InitialData(rhs) {
+    : SPECTRE_CHARM_PUPable_COPY(rhs) evolution::initial_data::InitialData(
+          rhs) {
   *this = rhs;
 }
 

@@ -14,6 +14,7 @@
 #include "Utilities/ErrorHandling/Error.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
 #include "Utilities/MakeWithValue.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 
 namespace RelativisticEuler::Solutions {
 
@@ -29,7 +30,7 @@ TovStar::TovStar(
                        coordinate_system_) {}
 
 TovStar::TovStar(const TovStar& rhs)
-    : evolution::initial_data::InitialData(rhs),
+    : SPECTRE_CHARM_PUPable_COPY(rhs) evolution::initial_data::InitialData(rhs),
       central_rest_mass_density_(rhs.central_rest_mass_density_),
       equation_of_state_(rhs.equation_of_state_->get_clone()),
       coordinate_system_(rhs.coordinate_system_),

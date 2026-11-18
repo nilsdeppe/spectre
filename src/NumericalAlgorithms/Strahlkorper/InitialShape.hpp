@@ -30,7 +30,7 @@ class Strahlkorper;
  * and a shape (such as spherical, or read from file).
  */
 template <typename Frame>
-class InitialShape : public PUP::able {
+class InitialShape : public SPECTRE_CHARM_PUPable(InitialShape<Frame>) {
  protected:
   /// \cond
   InitialShape() = default;

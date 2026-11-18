@@ -100,7 +100,9 @@ size_t DgElementArrayMemberBase<Dim>::get_core() const {
 
 template <size_t Dim>
 void DgElementArrayMemberBase<Dim>::pup(PUP::er& p) {
+#if defined(SPECTRE_USE_CHARM)
   PUP::able::pup(p);
+#endif  // SPECTRE_USE_CHARM
   p | performing_action_;
   p | phase_;
   p | phase_bookmarks_;

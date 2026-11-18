@@ -21,6 +21,7 @@
 #include "Options/ParseOptions.hpp"
 #include "Utilities/ErrorHandling/Error.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/Serialize.hpp"
 
 namespace evolution::initial_data {
@@ -77,7 +78,7 @@ std::ostream& operator<<(std::ostream& os, const NoiseAmplitudeType value) {
 }
 
 WithNoise::WithNoise(const WithNoise& rhs)
-    : InitialData(rhs),
+    : SPECTRE_CHARM_PUPable_COPY(rhs) InitialData(rhs),
       solution_(rhs.solution_ != nullptr ? rhs.solution_->get_clone()
                                          : nullptr),
       amplitude_(rhs.amplitude_),

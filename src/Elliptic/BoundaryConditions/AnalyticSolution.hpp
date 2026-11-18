@@ -86,7 +86,9 @@ class AnalyticSolution<System, Dim, tmpl::list<FieldTags...>,
       "Boundary conditions from the analytic solution";
 
   AnalyticSolution() = default;
-  AnalyticSolution(const AnalyticSolution& rhs) : Base(rhs) { *this = rhs; }
+  AnalyticSolution(const AnalyticSolution& rhs) : PUP::able(rhs), Base(rhs) {
+    *this = rhs;
+  }
   AnalyticSolution& operator=(const AnalyticSolution& rhs) {
     if (rhs.solution_ != nullptr) {
       solution_ = serialize_and_deserialize<

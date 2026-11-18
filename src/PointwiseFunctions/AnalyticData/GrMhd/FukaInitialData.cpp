@@ -6,6 +6,8 @@
 #include <memory>
 #include <pup.h>
 
+#include "Utilities/Serialization/CharmPupable.hpp"
+
 namespace grmhd::AnalyticData {
 
 FukaInitialData::FukaInitialData(std::string info_filename,
@@ -14,7 +16,8 @@ FukaInitialData::FukaInitialData(std::string info_filename,
       electron_fraction_(electron_fraction) {}
 
 FukaInitialData::FukaInitialData(const FukaInitialData& rhs)
-    : evolution::initial_data::InitialData(rhs) {
+    : SPECTRE_CHARM_PUPable_COPY(rhs) evolution::initial_data::InitialData(
+          rhs) {
   *this = rhs;
 }
 

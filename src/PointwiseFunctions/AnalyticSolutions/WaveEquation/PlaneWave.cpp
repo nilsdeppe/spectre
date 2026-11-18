@@ -12,6 +12,7 @@
 #include "Utilities/GenerateInstantiations.hpp"
 #include "Utilities/Gsl.hpp"
 #include "Utilities/MakeWithValue.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/StdArrayHelpers.hpp"
 
 namespace ScalarWave::Solutions {
@@ -27,7 +28,8 @@ PlaneWave<Dim>::PlaneWave(
 
 template <size_t Dim>
 PlaneWave<Dim>::PlaneWave(const PlaneWave& other)
-    : evolution::initial_data::InitialData(other),
+    : SPECTRE_CHARM_PUPable_COPY(other) evolution::initial_data::InitialData(
+          other),
       wave_vector_(other.wave_vector_),
       center_(other.center_),
       profile_(other.profile_->get_clone()),

@@ -22,11 +22,13 @@
 #include "PointwiseFunctions/GeneralRelativity/Tags.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace gh::gauges {
 AnalyticChristoffel::AnalyticChristoffel(const AnalyticChristoffel& rhs)
-    : GaugeCondition{dynamic_cast<const GaugeCondition&>(rhs)},
+    : SPECTRE_CHARM_PUPable_COPY(
+          rhs) GaugeCondition{dynamic_cast<const GaugeCondition&>(rhs)},
       analytic_prescription_(rhs.analytic_prescription_->get_clone()) {}
 
 AnalyticChristoffel& AnalyticChristoffel::operator=(

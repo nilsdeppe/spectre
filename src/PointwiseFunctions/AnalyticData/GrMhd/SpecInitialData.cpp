@@ -23,6 +23,7 @@
 #include "Utilities/ContainerHelpers.hpp"
 #include "Utilities/ErrorHandling/Error.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/PupStlCpp17.hpp"
 #include "Utilities/System/ParallelInfo.hpp"
 
@@ -45,7 +46,8 @@ SpecInitialData<ThermodynamicDim>::SpecInitialData(
 
 template <size_t ThermodynamicDim>
 SpecInitialData<ThermodynamicDim>::SpecInitialData(const SpecInitialData& rhs)
-    : evolution::initial_data::InitialData(rhs) {
+    : SPECTRE_CHARM_PUPable_COPY(rhs) evolution::initial_data::InitialData(
+          rhs) {
   *this = rhs;
 }
 

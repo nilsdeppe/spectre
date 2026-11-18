@@ -30,7 +30,7 @@ namespace ray_tracing {
  * spacetime should be valid within the bounds returned by the `time_bounds`
  * function.
  */
-class BackgroundSpacetime : public PUP::able {
+class BackgroundSpacetime : public SPECTRE_CHARM_PUPable(BackgroundSpacetime) {
  protected:
   static constexpr size_t Dim = 3;
   using DataType = double;

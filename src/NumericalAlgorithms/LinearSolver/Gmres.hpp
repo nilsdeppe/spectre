@@ -343,7 +343,7 @@ Gmres<VarsType, Preconditioner, LinearSolverRegistrars>::Gmres(
 template <typename VarsType, typename Preconditioner,
           typename LinearSolverRegistrars>
 Gmres<VarsType, Preconditioner, LinearSolverRegistrars>::Gmres(const Gmres& rhs)
-    : Base(rhs),
+    : SPECTRE_CHARM_PUPable_COPY(rhs) Base(rhs),
       convergence_criteria_(rhs.convergence_criteria_),
       verbosity_(rhs.verbosity_),
       restart_(rhs.restart_) {

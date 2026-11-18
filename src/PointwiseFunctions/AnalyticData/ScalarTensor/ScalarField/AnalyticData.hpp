@@ -23,7 +23,7 @@ namespace ScalarTensor::AnalyticData::ScalarField {
  * scalar-tensor theories.
  */
 template <size_t Dim>
-struct AnalyticData : public virtual PUP::able {
+struct AnalyticData : public SPECTRE_CHARM_PUPable(AnalyticData<Dim>) {
  public:
   using scalar_field_tags =
       tmpl::list<CurvedScalarWave::Tags::Psi,

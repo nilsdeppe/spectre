@@ -568,7 +568,7 @@ struct CauchySecondOrder;
  * `GlobalCache`.
  */
 template <>
-struct InitializeJ<true> : public PUP::able {
+struct InitializeJ<true> : public SPECTRE_CHARM_PUPable(InitializeJ<true>) {
   using boundary_tags = tmpl::list<Tags::BoundaryValue<Tags::BondiJ>,
                                    Tags::BoundaryValue<Tags::Dr<Tags::BondiJ>>,
                                    Tags::BoundaryValue<Tags::BondiR>,
@@ -634,7 +634,7 @@ struct InitializeJ<true> : public PUP::able {
  * `GlobalCache`.
  */
 template <>
-struct InitializeJ<false> : public PUP::able {
+struct InitializeJ<false> : public SPECTRE_CHARM_PUPable(InitializeJ<false>) {
   // Default boundary/mutate/argument tags used by the simple derived classes
   // (ConformalFactor, InverseCubic<false>, NoIncomingRadiation, ZeroNonSmooth).
   // A derived class can shadow these with its own list (see CauchySecondOrder),

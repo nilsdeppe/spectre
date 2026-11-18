@@ -17,6 +17,7 @@
 #include "Evolution/Systems/ScalarWave/Tags.hpp"
 #include "Utilities/ConstantExpressions.hpp"
 #include "Utilities/EqualWithinRoundoff.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 
 namespace ScalarWave::Solutions {
 
@@ -30,7 +31,8 @@ RegularSphericalWave::get_clone() const {
 }
 
 RegularSphericalWave::RegularSphericalWave(const RegularSphericalWave& other)
-    : evolution::initial_data::InitialData(other),
+    : SPECTRE_CHARM_PUPable_COPY(other) evolution::initial_data::InitialData(
+          other),
       profile_(other.profile_->get_clone()) {}
 
 RegularSphericalWave& RegularSphericalWave::operator=(

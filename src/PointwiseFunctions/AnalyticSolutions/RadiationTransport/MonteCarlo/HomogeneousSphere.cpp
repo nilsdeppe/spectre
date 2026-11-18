@@ -10,6 +10,7 @@
 #include "PointwiseFunctions/Hydro/Tags.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
 #include "Utilities/MakeWithValue.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 
 namespace RadiationTransport::MonteCarlo::Solutions {
 
@@ -48,7 +49,7 @@ HomogeneousSphere::get_clone() const {
 }
 
 HomogeneousSphere::HomogeneousSphere(const HomogeneousSphere& rhs)
-    : evolution::initial_data::InitialData(rhs),
+    : SPECTRE_CHARM_PUPable_COPY(rhs) evolution::initial_data::InitialData(rhs),
       radius_(rhs.radius_),
       densities_(rhs.densities_),
       temperatures_(rhs.temperatures_),
