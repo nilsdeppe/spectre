@@ -318,7 +318,6 @@ struct CauchySecondOrder : InitializeJ<false> {
       "Second-order initial data generator for the Cauchy CCE evolution."};
 
   WRAPPED_PUPable_decl_template(CauchySecondOrder);  // NOLINT
-  explicit CauchySecondOrder(CkMigrateMessage* /*unused*/) {}
 
   CauchySecondOrder(
       double max_partially_flat_j0, size_t j0_max_iterations,

@@ -20,9 +20,6 @@ NumericInitialData::NumericInitialData(
       hydro_numeric_id_(std::move(importer_options),
                         std::move(hydro_selected_variables), density_cutoff) {}
 
-NumericInitialData::NumericInitialData(CkMigrateMessage* msg)
-    : InitialData(msg) {}
-
 PUP::able::PUP_ID NumericInitialData::my_PUP_ID = 0;
 
 size_t NumericInitialData::volume_data_id() const {

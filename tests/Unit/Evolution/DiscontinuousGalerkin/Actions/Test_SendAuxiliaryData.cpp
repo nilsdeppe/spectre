@@ -98,7 +98,6 @@ struct TwoTimesPsi : db::SimpleTag {
 // A dummy boundary correction.
 template <size_t Dim>
 struct AuxiliaryCorrection final : public ::evolution::BoundaryCorrection {
-  explicit AuxiliaryCorrection(CkMigrateMessage* /*unused*/) {}
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(AuxiliaryCorrection);  // NOLINT
   AuxiliaryCorrection() = default;
@@ -177,8 +176,6 @@ class BoundaryCondition : public domain::BoundaryConditions::BoundaryCondition {
   BoundaryCondition(const BoundaryCondition&) = default;
   BoundaryCondition& operator=(const BoundaryCondition&) = default;
   ~BoundaryCondition() override = default;
-  explicit BoundaryCondition(CkMigrateMessage* msg)
-      : domain::BoundaryConditions::BoundaryCondition(msg) {}
 
   void pup(PUP::er& p) override {
     domain::BoundaryConditions::BoundaryCondition::pup(p);
@@ -194,8 +191,6 @@ class GhostPsi : public BoundaryCondition<Dim> {
   GhostPsi(const GhostPsi&) = default;
   GhostPsi& operator=(const GhostPsi&) = default;
   ~GhostPsi() override = default;
-
-  explicit GhostPsi(CkMigrateMessage* msg) : BoundaryCondition<Dim>(msg) {}
 
   WRAPPED_PUPable_decl_base_template(
       domain::BoundaryConditions::BoundaryCondition, GhostPsi);

@@ -83,7 +83,6 @@ class ObserveTimeStepVolume
       typename System::variables_tag>;
 
   /// \cond
-  explicit ObserveTimeStepVolume(CkMigrateMessage* m);
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(ObserveTimeStepVolume);  // NOLINT
   /// \endcond

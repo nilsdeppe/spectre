@@ -104,11 +104,6 @@ ConstraintPreservingBjorhus<Dim>& ConstraintPreservingBjorhus<Dim>::operator=(
 }
 
 template <size_t Dim>
-ConstraintPreservingBjorhus<Dim>::ConstraintPreservingBjorhus(
-    CkMigrateMessage* const msg)
-    : BoundaryCondition<Dim>(msg) {}
-
-template <size_t Dim>
 std::unique_ptr<domain::BoundaryConditions::BoundaryCondition>
 ConstraintPreservingBjorhus<Dim>::get_clone() const {
   return std::make_unique<ConstraintPreservingBjorhus>(*this);

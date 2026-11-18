@@ -108,8 +108,6 @@ class DirichletCharacteristics final : public BoundaryCondition<Dim> {
           analytic_prescription,
       bool copy_psi_from_interior);
 
-  explicit DirichletCharacteristics(CkMigrateMessage* msg);
-
   WRAPPED_PUPable_decl_base_template(  // NOLINT
       domain::BoundaryConditions::BoundaryCondition, DirichletCharacteristics);
 

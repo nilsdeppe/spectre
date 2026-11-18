@@ -64,8 +64,6 @@ struct Cartoon final : public SystemBoundaryConditionBaseClass,
   Cartoon& operator=(const Cartoon&) = default;
   ~Cartoon() override = default;
 
-  explicit Cartoon(CkMigrateMessage* msg);
-
   WRAPPED_PUPable_decl_base_template(
       domain::BoundaryConditions::BoundaryCondition, Cartoon);
 
@@ -74,10 +72,6 @@ struct Cartoon final : public SystemBoundaryConditionBaseClass,
 
   void pup(PUP::er& p) override;
 };
-
-template <typename SystemBoundaryConditionBaseClass>
-Cartoon<SystemBoundaryConditionBaseClass>::Cartoon(CkMigrateMessage* const msg)
-    : SystemBoundaryConditionBaseClass(msg) {}
 
 template <typename SystemBoundaryConditionBaseClass>
 std::unique_ptr<domain::BoundaryConditions::BoundaryCondition>

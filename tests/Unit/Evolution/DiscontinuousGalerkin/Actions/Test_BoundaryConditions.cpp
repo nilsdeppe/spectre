@@ -141,7 +141,6 @@ struct BoundaryTerms final : public evolution::BoundaryCorrection {
     using type = Scalar<DataVector>;
   };
 
-  explicit BoundaryTerms(CkMigrateMessage* /*unused*/) {}
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(BoundaryTerms);  // NOLINT
   BoundaryTerms(const bool mesh_is_moving, const double sign_of_normal)
@@ -1220,8 +1219,6 @@ class BoundaryCondition : public domain::BoundaryConditions::BoundaryCondition {
   BoundaryCondition(const BoundaryCondition&) = default;
   BoundaryCondition& operator=(const BoundaryCondition&) = default;
   ~BoundaryCondition() override = default;
-  explicit BoundaryCondition(CkMigrateMessage* msg)
-      : domain::BoundaryConditions::BoundaryCondition(msg) {}
 
   void pup(PUP::er& p) override {
     domain::BoundaryConditions::BoundaryCondition::pup(p);
@@ -1240,9 +1237,6 @@ class DemandOutgoingCharSpeeds : public BoundaryCondition<System> {
   DemandOutgoingCharSpeeds& operator=(const DemandOutgoingCharSpeeds&) =
       default;
   ~DemandOutgoingCharSpeeds() override = default;
-
-  explicit DemandOutgoingCharSpeeds(CkMigrateMessage* msg)
-      : BoundaryCondition<System>(msg) {}
 
   WRAPPED_PUPable_decl_base_template(
       domain::BoundaryConditions::BoundaryCondition, DemandOutgoingCharSpeeds);
@@ -1402,8 +1396,6 @@ class Ghost : public BoundaryCondition<System> {
   Ghost(const Ghost&) = default;
   Ghost& operator=(const Ghost&) = default;
   ~Ghost() override = default;
-
-  explicit Ghost(CkMigrateMessage* msg) : BoundaryCondition<System>(msg) {}
 
   WRAPPED_PUPable_decl_base_template(
       domain::BoundaryConditions::BoundaryCondition, Ghost);
@@ -1874,9 +1866,6 @@ class TimeDerivative : public BoundaryCondition<System> {
   TimeDerivative& operator=(const TimeDerivative&) = default;
   ~TimeDerivative() override = default;
 
-  explicit TimeDerivative(CkMigrateMessage* msg)
-      : BoundaryCondition<System>(msg) {}
-
   WRAPPED_PUPable_decl_base_template(
       domain::BoundaryConditions::BoundaryCondition, TimeDerivative);
 
@@ -2183,9 +2172,6 @@ class GhostAndTimeDerivative : public BoundaryCondition<System> {
   GhostAndTimeDerivative(const GhostAndTimeDerivative&) = default;
   GhostAndTimeDerivative& operator=(const GhostAndTimeDerivative&) = default;
   ~GhostAndTimeDerivative() override = default;
-
-  explicit GhostAndTimeDerivative(CkMigrateMessage* msg)
-      : BoundaryCondition<System>(msg) {}
 
   WRAPPED_PUPable_decl_base_template(
       domain::BoundaryConditions::BoundaryCondition, GhostAndTimeDerivative);
@@ -2602,8 +2588,6 @@ class WithBoundaryFields : public Base<System> {
   WithBoundaryFields(const WithBoundaryFields&) = default;
   WithBoundaryFields& operator=(const WithBoundaryFields&) = default;
   ~WithBoundaryFields() override = default;
-
-  explicit WithBoundaryFields(CkMigrateMessage* msg) : Base<System>(msg) {}
 
   WRAPPED_PUPable_decl_base_template(  // NOLINT
       domain::BoundaryConditions::BoundaryCondition, WithBoundaryFields);

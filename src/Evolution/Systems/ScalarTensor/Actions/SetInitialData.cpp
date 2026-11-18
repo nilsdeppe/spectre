@@ -32,9 +32,6 @@ NumericInitialData::NumericInitialData(
       scalar_numeric_id_(std::move(importer_options),
                          std::move(hydro_selected_variables)) {}
 
-NumericInitialData::NumericInitialData(CkMigrateMessage* msg)
-    : InitialData(msg) {}
-
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 PUP::able::PUP_ID NumericInitialData::my_PUP_ID = 0;
 

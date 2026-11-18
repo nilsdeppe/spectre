@@ -32,7 +32,6 @@ namespace ScalarTensor::sgb::CouplingFunctions {
 class CouplingFunction : public PUP::able {
  public:
   WRAPPED_PUPable_abstract(CouplingFunction);  // NOLINT
-  explicit CouplingFunction(CkMigrateMessage* m) : PUP::able(m) {}
 
   CouplingFunction() = default;
   ~CouplingFunction() override = default;

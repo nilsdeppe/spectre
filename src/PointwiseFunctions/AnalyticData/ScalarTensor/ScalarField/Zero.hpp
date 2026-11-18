@@ -42,8 +42,6 @@ class Zero : public ScalarTensor::AnalyticData::ScalarField::AnalyticData<Dim> {
   get_clone() const override;
 
   /// \cond
-  explicit Zero(CkMigrateMessage* m)
-      : ScalarTensor::AnalyticData::ScalarField::AnalyticData<Dim>(m) {}
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(Zero);  // NOLINT
   /// \endcond

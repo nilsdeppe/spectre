@@ -37,7 +37,6 @@ namespace Cce::Solutions::LinearizedBondiSachs_detail::InitializeJ {
 // cycle.
 struct LinearizedBondiSachs : ::Cce::InitializeJ::InitializeJ<false> {
   WRAPPED_PUPable_decl_template(LinearizedBondiSachs);  // NOLINT
-  explicit LinearizedBondiSachs(CkMigrateMessage* /*unused*/) {}
 
   LinearizedBondiSachs() = default;
 

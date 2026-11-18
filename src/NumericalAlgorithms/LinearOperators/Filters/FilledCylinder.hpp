@@ -203,7 +203,6 @@ class FilledCylinder : public Filter<3, TagList> {
 
   WRAPPED_PUPable_decl_base_template(  // NOLINT
       SINGLE_ARG(Filter<3, TagList>), FilledCylinder);
-  explicit FilledCylinder(CkMigrateMessage* msg) : Filter<3, TagList>(msg) {}
 
   // NOLINTNEXTLINE(google-runtime-references)
   void pup(PUP::er& p) override;

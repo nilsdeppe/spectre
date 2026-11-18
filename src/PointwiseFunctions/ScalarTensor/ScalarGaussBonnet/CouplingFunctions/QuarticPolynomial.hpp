@@ -70,7 +70,6 @@ class QuarticPolynomial : public CouplingFunction {
   QuarticPolynomial& operator=(QuarticPolynomial&&) = default;
   ~QuarticPolynomial() override = default;
 
-  explicit QuarticPolynomial(CkMigrateMessage* m) : CouplingFunction(m) {}
   WRAPPED_PUPable_decl_template(QuarticPolynomial);
   void pup(PUP::er& p) override;
 

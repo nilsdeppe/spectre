@@ -46,11 +46,6 @@ DirichletCharacteristics<Dim>& DirichletCharacteristics<Dim>::operator=(
 
 template <size_t Dim>
 DirichletCharacteristics<Dim>::DirichletCharacteristics(
-    CkMigrateMessage* const msg)
-    : BoundaryCondition<Dim>(msg) {}
-
-template <size_t Dim>
-DirichletCharacteristics<Dim>::DirichletCharacteristics(
     std::optional<std::unique_ptr<evolution::initial_data::InitialData>>
         analytic_prescription,
     const bool copy_psi_from_interior)

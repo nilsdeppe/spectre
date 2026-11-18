@@ -101,7 +101,6 @@ class ObserveFlux : public Event {
       // Integral of d(cos(theta)) over the outer boundary (should be 2)
       Parallel::ReductionDatum<double, funcl::Plus<>>>;
 
-  explicit ObserveFlux(CkMigrateMessage* msg) : Event(msg) {}
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(ObserveFlux);  // NOLINT
 

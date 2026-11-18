@@ -258,7 +258,6 @@ class CircularOrbit : public elliptic::analytic_data::Background,
       std::optional<std::array<double, 4>> hyperboloidal_slicing_transitions,
       bool penetrating_horizon, bool impose_equatorial_symmetry);
 
-  explicit CircularOrbit(CkMigrateMessage* m);
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(CircularOrbit);
 

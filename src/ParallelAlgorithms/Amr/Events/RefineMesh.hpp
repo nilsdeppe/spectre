@@ -72,7 +72,6 @@ struct get_tags {
 class RefineMesh : public Event {
  public:
   /// \cond
-  explicit RefineMesh(CkMigrateMessage* m);
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(RefineMesh);  // NOLINT
   /// \endcond

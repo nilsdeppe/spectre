@@ -111,7 +111,6 @@ class LaxFriedrichs final : public evolution::BoundaryCorrection {
   ~LaxFriedrichs() override = default;
 
   /// \cond
-  explicit LaxFriedrichs(CkMigrateMessage* msg);
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(LaxFriedrichs);  // NOLINT
   /// \endcond

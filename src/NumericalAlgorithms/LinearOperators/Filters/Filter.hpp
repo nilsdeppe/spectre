@@ -77,7 +77,6 @@ class Filter : public PUP::able {
   ~Filter() noexcept override = default;
 
   WRAPPED_PUPable_abstract(Filter);  // NOLINT
-  explicit Filter(CkMigrateMessage* m) : PUP::able(m) {}
 
   /// Return a heap-allocated deep copy of this filter.
   virtual std::unique_ptr<Filter<Dim, TagList>> get_clone() const = 0;

@@ -142,7 +142,6 @@ const tuples::tagged_tuple_from_typelist<extra_data> initial_extra_data{
 class TestTrigger : public DenseTrigger {
  public:
   TestTrigger() = default;
-  explicit TestTrigger(CkMigrateMessage* const msg) : DenseTrigger(msg) {}
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
   WRAPPED_PUPable_decl_template(TestTrigger);  // NOLINT
@@ -212,7 +211,6 @@ PUP::able::PUP_ID TestTrigger::my_PUP_ID = 0;  // NOLINT
 template <SystemVars Vars>
 struct TestEvent : public Event {
   TestEvent() = default;
-  explicit TestEvent(CkMigrateMessage* const /*msg*/) {}
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
   WRAPPED_PUPable_decl_template(TestEvent);  // NOLINT

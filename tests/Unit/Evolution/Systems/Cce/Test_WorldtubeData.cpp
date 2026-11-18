@@ -80,12 +80,6 @@ class DummyBufferUpdater  // NOLINT
   WRAPPED_PUPable_decl_base_template(
       WorldtubeBufferUpdater<cce_metric_input_tags<T>>, DummyBufferUpdater);
 
-  explicit DummyBufferUpdater(CkMigrateMessage* /*unused*/)
-      : extraction_radius_{1.0},
-        coordinate_amplitude_{0.0},
-        coordinate_frequency_{0.0},
-        l_max_{0} {}
-
   double update_buffers_for_time(
       const gsl::not_null<Variables<cce_metric_input_tags<T>>*> buffers,
       const gsl::not_null<size_t*> time_span_start,
@@ -276,8 +270,6 @@ class BondiBufferUpdater
   WRAPPED_PUPable_decl_base_template(WorldtubeBufferUpdater<tags_for_writing>,
                                      BondiBufferUpdater);
 
-  explicit BondiBufferUpdater(CkMigrateMessage* /*unused*/) {}
-
   double update_buffers_for_time(
       const gsl::not_null<Variables<tags_for_writing>*> buffers,
       const gsl::not_null<size_t*> time_span_start,
@@ -462,8 +454,6 @@ class SimplePolyBondiBufferUpdater
   // NOLINTNEXTLINE
   WRAPPED_PUPable_decl_base_template(WorldtubeBufferUpdater<tags_for_writing>,
                                      SimplePolyBondiBufferUpdater);
-
-  explicit SimplePolyBondiBufferUpdater(CkMigrateMessage* /*unused*/) {}
 
   double update_buffers_for_time(
       const gsl::not_null<Variables<tags_for_writing>*> buffers,

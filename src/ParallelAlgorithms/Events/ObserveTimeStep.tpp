@@ -24,10 +24,6 @@
 #include "Utilities/TMPL.hpp"
 
 namespace Events {
-template <typename System, typename... VariablesTags>
-ObserveTimeStep<System, tmpl::list<VariablesTags...>>::ObserveTimeStep(
-    CkMigrateMessage* const m)
-    : Event(m) {}
 
 template <typename System, typename... VariablesTags>
 ObserveTimeStep<System, tmpl::list<VariablesTags...>>::ObserveTimeStep() =

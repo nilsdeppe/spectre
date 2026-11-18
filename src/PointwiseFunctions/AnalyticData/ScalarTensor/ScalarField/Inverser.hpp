@@ -58,8 +58,6 @@ class Inverser
   explicit Inverser(double amplitude);
 
   /// \cond
-  explicit Inverser(CkMigrateMessage* m)
-      : ScalarTensor::AnalyticData::ScalarField::AnalyticData<Dim>(m) {}
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(Inverser);  // NOLINT
   /// \endcond

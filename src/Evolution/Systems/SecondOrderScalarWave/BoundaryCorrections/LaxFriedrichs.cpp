@@ -18,10 +18,6 @@
 namespace SecondOrderScalarWave::BoundaryCorrections {
 
 template <size_t Dim>
-LaxFriedrichs<Dim>::LaxFriedrichs(CkMigrateMessage* msg)
-    : BoundaryCorrection(msg) {}
-
-template <size_t Dim>
 LaxFriedrichs<Dim>::LaxFriedrichs(const double tau) : tau_(tau) {}
 
 template <size_t Dim>

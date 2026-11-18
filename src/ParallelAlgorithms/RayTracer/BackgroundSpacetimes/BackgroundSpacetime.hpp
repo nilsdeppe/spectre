@@ -52,7 +52,6 @@ class BackgroundSpacetime : public PUP::able {
   ~BackgroundSpacetime() override = default;
 
   /// \cond
-  explicit BackgroundSpacetime(CkMigrateMessage* msg) : PUP::able(msg) {}
   WRAPPED_PUPable_abstract(BackgroundSpacetime);
   /// \endcond
 

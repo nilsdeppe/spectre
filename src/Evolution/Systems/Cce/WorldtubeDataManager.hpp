@@ -161,8 +161,6 @@ class MetricWorldtubeDataManager
 
   WRAPPED_PUPable_decl_template(MetricWorldtubeDataManager);  // NOLINT
 
-  explicit MetricWorldtubeDataManager(CkMigrateMessage* /*unused*/) {}
-
   /*!
    * \brief Update the `boundary_data_box` entries for all tags in
    * `Tags::characteristic_worldtube_boundary_tags` to the boundary data at
@@ -255,8 +253,6 @@ class BondiWorldtubeDataManager
       std::unique_ptr<intrp::SpanInterpolator> interpolator);
 
   WRAPPED_PUPable_decl_template(BondiWorldtubeDataManager);  // NOLINT
-
-  explicit BondiWorldtubeDataManager(CkMigrateMessage* /*unused*/) {}
 
   /*!
    * \brief Update the `boundary_data_box` entries for all tags in
@@ -364,8 +360,6 @@ class KleinGordonWorldtubeDataManager
       std::unique_ptr<intrp::SpanInterpolator> interpolator);
 
   WRAPPED_PUPable_decl_template(KleinGordonWorldtubeDataManager);  // NOLINT
-
-  explicit KleinGordonWorldtubeDataManager(CkMigrateMessage* /*unused*/) {}
 
   /*!
    * \brief Update the `boundary_data_box` entries for all tags in

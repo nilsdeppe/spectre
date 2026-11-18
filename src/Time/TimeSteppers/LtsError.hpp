@@ -89,8 +89,6 @@ class LtsError : public LtsTimeStepper {
 #pragma GCC diagnostic pop
 #endif
 
-  explicit LtsError(CkMigrateMessage* /*unused*/) {}
-
   [[noreturn]] void pup(PUP::er& p) override;
 
  private:

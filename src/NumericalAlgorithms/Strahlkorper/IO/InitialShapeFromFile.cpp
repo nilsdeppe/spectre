@@ -31,9 +31,6 @@ FromFile<Frame>::FromFile(std::string h5_filename, std::string subfile_name,
       check_frame_(check_frame) {}
 
 template <typename Frame>
-FromFile<Frame>::FromFile(CkMigrateMessage* msg) : InitialShape<Frame>(msg) {}
-
-template <typename Frame>
 Strahlkorper<Frame> FromFile<Frame>::strahlkorper(
     const size_t l_max, const Options::Context& context) const {
   return Strahlkorper<Frame>{l_max,         h5_filename_, subfile_name_, time_,

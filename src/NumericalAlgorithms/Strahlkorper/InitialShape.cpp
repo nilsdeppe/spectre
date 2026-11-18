@@ -26,9 +26,6 @@ Sphere<Frame>::Sphere(std::array<double, 3> center, const double radius)
     : center_(std::move(center)), radius_(radius) {}
 
 template <typename Frame>
-Sphere<Frame>::Sphere(CkMigrateMessage* msg) : InitialShape<Frame>(msg) {}
-
-template <typename Frame>
 Strahlkorper<Frame> Sphere<Frame>::strahlkorper(
     const size_t l_max, const Options::Context& /*context*/) const {
   return Strahlkorper<Frame>{l_max, radius_, center_};

@@ -190,8 +190,6 @@ class HighSpinKerrPuncture : public MarkAsAnalyticSolution,
   HighSpinKerrPuncture& operator=(HighSpinKerrPuncture&& /*rhs*/) = default;
   ~HighSpinKerrPuncture() = default;
 
-  explicit HighSpinKerrPuncture(CkMigrateMessage* /*msg*/);
-
   template <typename DataType>
   using DerivLapse = ::Tags::deriv<gr::Tags::Lapse<DataType>,
                                    tmpl::size_t<volume_dim>, Frame::Inertial>;

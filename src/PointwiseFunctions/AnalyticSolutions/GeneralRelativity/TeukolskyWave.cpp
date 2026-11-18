@@ -416,8 +416,6 @@ metric_and_dt_spatial_metric(const DataType& x, const DataType& y,
 
 namespace gr::Solutions {
 
-TeukolskyWave::TeukolskyWave(CkMigrateMessage* /*msg*/) {}
-
 TeukolskyWave::TeukolskyWave(double amplitude, const int mode,
                              std::string parity, std::string direction,
                              std::array<double, 3> center, const double radius,

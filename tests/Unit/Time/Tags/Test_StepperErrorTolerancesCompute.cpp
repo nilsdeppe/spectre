@@ -61,7 +61,6 @@ class GlobalCache;
 namespace {
 class OtherEvent : public Event {
  public:
-  explicit OtherEvent(CkMigrateMessage* /*unused*/) {}
   using PUP::able::register_constructor;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
@@ -103,7 +102,6 @@ class ToleranceRequest : public StepChooser<StepChooserUse::Slab>,
                          public RequestsStepperErrorTolerances {
  public:
   ToleranceRequest() = default;
-  explicit ToleranceRequest(CkMigrateMessage* /*unused*/) {}
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(ToleranceRequest);  // NOLINT
 

@@ -39,7 +39,6 @@ class InitialData : public PUP::able {
   virtual const InitialData& unwrap() const { return *this; }
 
   /// \cond
-  explicit InitialData(CkMigrateMessage* msg) : PUP::able(msg) {}
   WRAPPED_PUPable_abstract(InitialData);
   /// \endcond
 };

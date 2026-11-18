@@ -17,9 +17,6 @@
 #include "Utilities/GenerateInstantiations.hpp"
 
 namespace SecondOrderScalarWave::Solutions {
-template <typename SolutionType>
-SecondOrderWrapper<SolutionType>::SecondOrderWrapper(CkMigrateMessage* msg)
-    : evolution::initial_data::InitialData(msg) {}
 
 template <typename SolutionType>
 std::unique_ptr<evolution::initial_data::InitialData>

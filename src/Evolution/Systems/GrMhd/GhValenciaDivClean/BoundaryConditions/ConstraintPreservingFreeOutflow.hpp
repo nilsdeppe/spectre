@@ -61,8 +61,6 @@ class ConstraintPreservingFreeOutflow final : public BoundaryCondition {
       const ConstraintPreservingFreeOutflow&) = default;
   ~ConstraintPreservingFreeOutflow() override = default;
 
-  explicit ConstraintPreservingFreeOutflow(CkMigrateMessage* msg);
-
   WRAPPED_PUPable_decl_base_template(
       domain::BoundaryConditions::BoundaryCondition,
       ConstraintPreservingFreeOutflow);

@@ -65,7 +65,6 @@ class FromFile : public InitialShape<Frame> {
            double time_epsilon, bool check_frame);
 
   /// \cond
-  explicit FromFile(CkMigrateMessage* msg);
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(FromFile);  // NOLINT
   /// \endcond

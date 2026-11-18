@@ -35,7 +35,6 @@ class RefineAtBoundary : public amr::Criterion {
   RefineAtBoundary() = default;
 
   /// \cond
-  explicit RefineAtBoundary(CkMigrateMessage* msg) : amr::Criterion(msg) {}
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(RefineAtBoundary);  // NOLINT
   /// \endcond

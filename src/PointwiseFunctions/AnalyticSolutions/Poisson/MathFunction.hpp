@@ -82,7 +82,6 @@ class MathFunction : public elliptic::analytic_data::AnalyticSolution {
   }
 
   /// \cond
-  explicit MathFunction(CkMigrateMessage* m);
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(MathFunction);  // NOLINT
   /// \endcond

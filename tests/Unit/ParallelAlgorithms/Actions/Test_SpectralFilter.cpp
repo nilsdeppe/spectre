@@ -66,7 +66,6 @@ class MockFilter : public FilterBase {
         need_jacs_(need_jacs),
         supports_mesh_(supports_mesh) {}
 
-  explicit MockFilter(CkMigrateMessage* m) : FilterBase(m) {}
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
   // NOLINTNEXTLINE

@@ -9,7 +9,6 @@ spectre_target_sources(
   DampedWaveHelpers.cpp
   DhGaugeParameters.cpp
   Dispatch.cpp
-  Gauges.cpp
   HalfPiPhiTwoNormals.cpp
   Harmonic.cpp
   RegisterDerived.cpp

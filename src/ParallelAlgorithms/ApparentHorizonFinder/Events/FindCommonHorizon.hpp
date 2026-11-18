@@ -64,7 +64,6 @@ class FindCommonHorizon<HorizonMetavars, tmpl::list<Tensors...>,
 
  public:
   /// \cond
-  explicit FindCommonHorizon(CkMigrateMessage* /*unused*/) {}
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(FindCommonHorizon);  // NOLINT
   /// \endcond

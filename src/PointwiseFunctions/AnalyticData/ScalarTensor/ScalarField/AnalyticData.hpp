@@ -36,7 +36,6 @@ struct AnalyticData : public virtual PUP::able {
   ~AnalyticData() override = default;
 
   /// \cond
-  explicit AnalyticData(CkMigrateMessage* msg) : PUP::able(msg) {}
   WRAPPED_PUPable_abstract(AnalyticData);
   /// \endcond
 

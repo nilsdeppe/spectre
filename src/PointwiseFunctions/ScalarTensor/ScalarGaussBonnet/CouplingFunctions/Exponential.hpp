@@ -58,7 +58,6 @@ class Exponential : public CouplingFunction {
   Exponential& operator=(Exponential&&) = default;
   ~Exponential() override = default;
 
-  explicit Exponential(CkMigrateMessage* m) : CouplingFunction(m) {}
   WRAPPED_PUPable_decl_template(Exponential);
   void pup(PUP::er& p) override;
 

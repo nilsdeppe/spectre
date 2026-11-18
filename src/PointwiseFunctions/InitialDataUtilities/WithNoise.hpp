@@ -208,7 +208,6 @@ class WithNoise : public evolution::initial_data::InitialData {
             std::optional<size_t> seed, std::vector<std::string> variables);
 
   /// \cond
-  explicit WithNoise(CkMigrateMessage* msg);
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(WithNoise);  // NOLINT
   /// \endcond

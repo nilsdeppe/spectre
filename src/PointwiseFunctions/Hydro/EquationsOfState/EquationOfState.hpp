@@ -173,8 +173,6 @@ class EquationOfState<IsRelativistic, 1> : public PUP::able {
   EquationOfState& operator=(EquationOfState&&) = default;
   ~EquationOfState() override = default;
 
-  explicit EquationOfState(CkMigrateMessage* msg) : PUP::able(msg) {}
-
   WRAPPED_PUPable_abstract(EquationOfState);  // NOLINT
 
   virtual std::unique_ptr<EquationOfState<IsRelativistic, 1>> get_clone()
@@ -390,8 +388,6 @@ class EquationOfState<IsRelativistic, 2> : public PUP::able {
   EquationOfState(EquationOfState&&) = default;
   EquationOfState& operator=(EquationOfState&&) = default;
   ~EquationOfState() override = default;
-
-  explicit EquationOfState(CkMigrateMessage* msg) : PUP::able(msg) {}
 
   WRAPPED_PUPable_abstract(EquationOfState);  // NOLINT
 
@@ -624,8 +620,6 @@ class EquationOfState<IsRelativistic, 3> : public PUP::able {
   EquationOfState(EquationOfState&&) = default;
   EquationOfState& operator=(EquationOfState&&) = default;
   ~EquationOfState() override = default;
-
-  explicit EquationOfState(CkMigrateMessage* msg) : PUP::able(msg) {}
 
   WRAPPED_PUPable_abstract(EquationOfState);  // NOLINT
 
@@ -967,9 +961,7 @@ bool operator!=(const EquationOfState<IsRelLhs, ThermoDimLhs>& lhs,
            EQUATION_OF_STATE_FUNCTIONS_3D))))                              \
                                                                            \
   /* clang-tidy: do not use non-const references */                        \
-  void pup(PUP::er& p) override; /* NOLINT */                              \
-                                                                           \
-  explicit DERIVED(CkMigrateMessage* msg);
+  void pup(PUP::er& p) override; /* NOLINT */
 
 /// \cond
 #define EQUATION_OF_STATE_FORWARD_ARGUMENTS(z, n, unused) \

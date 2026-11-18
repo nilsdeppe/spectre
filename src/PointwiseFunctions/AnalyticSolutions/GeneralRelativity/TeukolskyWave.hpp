@@ -148,8 +148,6 @@ class TeukolskyWave : public MarkAsAnalyticSolution {
   TeukolskyWave& operator=(TeukolskyWave&& /*rhs*/) = default;
   ~TeukolskyWave() = default;
 
-  explicit TeukolskyWave(CkMigrateMessage* /*msg*/);
-
   template <typename DataType, typename... RequestedTags>
   tuples::TaggedTuple<RequestedTags...> variables(
       const tnsr::I<DataType, volume_dim, Frame::Inertial>& x, double t,

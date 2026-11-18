@@ -18,9 +18,6 @@ NumericInitialData::NumericInitialData(
     : importer_options_(std::move(importer_options)),
       selected_variables_(std::move(selected_variables)) {}
 
-NumericInitialData::NumericInitialData(CkMigrateMessage* msg)
-    : InitialData(msg) {}
-
 const importers::ImporterOptions& NumericInitialData::importer_options() const {
   return importer_options_;
 }

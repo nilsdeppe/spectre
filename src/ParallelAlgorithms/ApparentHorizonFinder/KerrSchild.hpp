@@ -48,7 +48,6 @@ class KerrSchild : public ylm::InitialShape<Frame> {
              std::array<double, 3> spin);
 
   /// \cond
-  explicit KerrSchild(CkMigrateMessage* msg);
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(KerrSchild);  // NOLINT
   /// \endcond

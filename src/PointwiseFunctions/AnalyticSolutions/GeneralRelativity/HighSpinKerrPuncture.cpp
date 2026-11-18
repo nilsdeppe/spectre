@@ -42,8 +42,6 @@ HighSpinKerrPuncture::HighSpinKerrPuncture(const double mass,
   }
 }
 
-HighSpinKerrPuncture::HighSpinKerrPuncture(CkMigrateMessage* /*msg*/) {}
-
 void HighSpinKerrPuncture::pup(PUP::er& p) {
   p | mass_;
   p | dimensionless_spin_;

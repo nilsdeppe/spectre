@@ -113,7 +113,6 @@ class ErrorControl<StepChooserUse, System, tmpl::list<VariablesTags...>>
  public:
   /// \cond
   ErrorControl() = default;
-  explicit ErrorControl(CkMigrateMessage* /*unused*/) {}
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(ErrorControl);  // NOLINT
   /// \endcond

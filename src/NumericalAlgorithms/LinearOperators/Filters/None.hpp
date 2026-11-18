@@ -61,7 +61,6 @@ class None : public Filter<Dim, TagList> {
 
   WRAPPED_PUPable_decl_base_template(  // NOLINT
       SINGLE_ARG(Filter<Dim, TagList>), None);
-  explicit None(CkMigrateMessage* msg) : Filter<Dim, TagList>(msg) {}
 
   // NOLINTNEXTLINE(google-runtime-references)
   void pup(PUP::er& p) override;

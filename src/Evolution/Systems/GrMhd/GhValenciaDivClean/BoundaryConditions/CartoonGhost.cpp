@@ -29,9 +29,6 @@
 #include "Utilities/TMPL.hpp"
 
 namespace grmhd::GhValenciaDivClean::BoundaryConditions {
-template <typename System>
-CartoonGhost<System>::CartoonGhost(CkMigrateMessage* const msg)
-    : BoundaryCondition(msg) {}
 
 template <typename System>
 std::unique_ptr<domain::BoundaryConditions::BoundaryCondition>

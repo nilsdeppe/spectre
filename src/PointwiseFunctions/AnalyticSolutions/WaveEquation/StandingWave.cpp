@@ -37,9 +37,6 @@ StandingWave<Dim>::get_clone() const {
 }
 
 template <size_t Dim>
-StandingWave<Dim>::StandingWave(CkMigrateMessage* msg) : InitialData(msg) {}
-
-template <size_t Dim>
 tuples::TaggedTuple<Tags::Psi, Tags::Pi, Tags::Phi<Dim>>
 StandingWave<Dim>::variables(
     const tnsr::I<DataVector, Dim>& x, const double t,

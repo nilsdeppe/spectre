@@ -69,8 +69,6 @@ class CartoonGhost final : public BoundaryCondition,
   CartoonGhost& operator=(const CartoonGhost&) = default;
   ~CartoonGhost() override = default;
 
-  explicit CartoonGhost(CkMigrateMessage* msg);
-
   WRAPPED_PUPable_decl_base_template(
       domain::BoundaryConditions::BoundaryCondition, CartoonGhost);
 

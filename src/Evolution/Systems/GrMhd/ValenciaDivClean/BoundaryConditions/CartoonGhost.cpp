@@ -34,8 +34,6 @@
 #include "Utilities/TMPL.hpp"
 
 namespace grmhd::ValenciaDivClean::BoundaryConditions {
-CartoonGhost::CartoonGhost(CkMigrateMessage* const msg)
-    : BoundaryCondition(msg) {}
 
 std::unique_ptr<domain::BoundaryConditions::BoundaryCondition>
 CartoonGhost::get_clone() const {

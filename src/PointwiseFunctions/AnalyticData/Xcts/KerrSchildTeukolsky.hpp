@@ -211,9 +211,6 @@ class KerrSchildTeukolsky : public elliptic::analytic_data::Background,
   }
 
   /// \cond
-  explicit KerrSchildTeukolsky(CkMigrateMessage* m)
-      : elliptic::analytic_data::Background(m),
-        elliptic::analytic_data::InitialGuess(m) {}
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(KerrSchildTeukolsky);
   /// \endcond

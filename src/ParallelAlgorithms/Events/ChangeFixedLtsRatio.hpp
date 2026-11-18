@@ -111,7 +111,6 @@ class ChangeFixedLtsRatio : public Event,
   ChangeFixedLtsRatio() = default;
 
   /// \cond
-  explicit ChangeFixedLtsRatio(CkMigrateMessage* /*unused*/) {}
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(ChangeFixedLtsRatio);  // NOLINT
   /// \endcond

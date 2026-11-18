@@ -109,7 +109,6 @@ struct BoundaryTerms final : public evolution::BoundaryCorrection {
     using type = Scalar<DataVector>;
   };
 
-  explicit BoundaryTerms(CkMigrateMessage* /*unused*/) {}
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(BoundaryTerms);  // NOLINT
   BoundaryTerms() = default;
@@ -1785,7 +1784,6 @@ class MockBoundaryFilter
       : apply_substep_(apply_substep),
         apply_this_step_(apply_this_step),
         need_jacs_(need_jacs) {}
-  explicit MockBoundaryFilter(CkMigrateMessage* m) : Base(m) {}
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
   // NOLINTNEXTLINE

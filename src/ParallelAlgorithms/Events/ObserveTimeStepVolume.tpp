@@ -31,10 +31,6 @@ class FunctionOfTime;
 
 namespace dg::Events {
 template <typename System>
-ObserveTimeStepVolume<System>::ObserveTimeStepVolume(CkMigrateMessage* const m)
-    : ObserveConstantsPerElement<volume_dim>(m) {}
-
-template <typename System>
 ObserveTimeStepVolume<System>::ObserveTimeStepVolume() = default;
 
 template <typename System>

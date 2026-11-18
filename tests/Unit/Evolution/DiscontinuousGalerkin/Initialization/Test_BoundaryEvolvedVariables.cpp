@@ -72,9 +72,6 @@ class MockOptingBc : public domain::BoundaryConditions::BoundaryCondition {
   MockOptingBc& operator=(const MockOptingBc&) = default;
   ~MockOptingBc() override = default;
 
-  explicit MockOptingBc(CkMigrateMessage* msg)
-      : domain::BoundaryConditions::BoundaryCondition(msg) {}
-
   WRAPPED_PUPable_decl_base_template(
       domain::BoundaryConditions::BoundaryCondition, MockOptingBc);
 
@@ -105,9 +102,6 @@ class MockNonOptingBc : public domain::BoundaryConditions::BoundaryCondition {
   MockNonOptingBc(const MockNonOptingBc&) = default;
   MockNonOptingBc& operator=(const MockNonOptingBc&) = default;
   ~MockNonOptingBc() override = default;
-
-  explicit MockNonOptingBc(CkMigrateMessage* msg)
-      : domain::BoundaryConditions::BoundaryCondition(msg) {}
 
   WRAPPED_PUPable_decl_base_template(
       domain::BoundaryConditions::BoundaryCondition, MockNonOptingBc);

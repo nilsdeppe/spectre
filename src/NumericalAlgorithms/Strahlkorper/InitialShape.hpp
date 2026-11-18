@@ -42,7 +42,6 @@ class InitialShape : public PUP::able {
 
  public:
   ~InitialShape() override = default;
-  explicit InitialShape(CkMigrateMessage* msg) : PUP::able(msg) {}
 
   WRAPPED_PUPable_abstract(InitialShape);
 
@@ -80,7 +79,6 @@ class Sphere : public InitialShape<Frame> {
   Sphere(std::array<double, 3> center, double radius);
 
   /// \cond
-  explicit Sphere(CkMigrateMessage* msg);
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(Sphere);  // NOLINT
   /// \endcond

@@ -76,8 +76,6 @@ class SuperposedInverser
                      std::array<double, Dim> location_b);
 
   /// \cond
-  explicit SuperposedInverser(CkMigrateMessage* m)
-      : ScalarTensor::AnalyticData::ScalarField::AnalyticData<Dim>(m) {}
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(SuperposedInverser);  // NOLINT
   /// \endcond

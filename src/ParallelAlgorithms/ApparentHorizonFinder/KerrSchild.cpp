@@ -31,10 +31,6 @@ KerrSchild<Frame>::KerrSchild(std::array<double, 3> center, const double mass,
     : center_(std::move(center)), mass_(mass), spin_(std::move(spin)) {}
 
 template <typename Frame>
-KerrSchild<Frame>::KerrSchild(CkMigrateMessage* msg)
-    : ylm::InitialShape<Frame>(msg) {}
-
-template <typename Frame>
 ylm::Strahlkorper<Frame> KerrSchild<Frame>::strahlkorper(
     const size_t l_max, const Options::Context& context) const {
   if (mass_ <= 0.0) {

@@ -147,8 +147,6 @@ struct PhaseChange : public PUP::able {
   /// \endcond
 
  public:
-  PhaseChange(CkMigrateMessage* msg) : PUP::able(msg){};
-
   ~PhaseChange() override = default;
 
   WRAPPED_PUPable_abstract(PhaseChange);  // NOLINT

@@ -224,7 +224,6 @@ class HollowCylinder : public Filter<3, TagList> {
 
   WRAPPED_PUPable_decl_base_template(  // NOLINT
       SINGLE_ARG(Filter<3, TagList>), HollowCylinder);
-  explicit HollowCylinder(CkMigrateMessage* msg) : Filter<3, TagList>(msg) {}
 
   // NOLINTNEXTLINE(google-runtime-references)
   void pup(PUP::er& p) override;

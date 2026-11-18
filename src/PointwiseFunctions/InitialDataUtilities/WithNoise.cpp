@@ -112,8 +112,6 @@ WithNoise::WithNoise(
   }
 }
 
-WithNoise::WithNoise(CkMigrateMessage* msg) : InitialData(msg) {}
-
 std::unique_ptr<evolution::initial_data::InitialData> WithNoise::get_clone()
     const {
   return std::make_unique<WithNoise>(*this);

@@ -283,9 +283,6 @@ bool Tabulated3D<IsRelativistic>::operator!=(
 }
 
 template <bool IsRelativistic>
-Tabulated3D<IsRelativistic>::Tabulated3D(CkMigrateMessage* msg)
-    : EquationOfState<IsRelativistic, 3>(msg) {}
-template <bool IsRelativistic>
 template <class DataType>
 void Tabulated3D<IsRelativistic>::enforce_physicality(
     Scalar<DataType>& electron_fraction, Scalar<DataType>& rest_mass_density,
@@ -833,6 +830,14 @@ template Scalar<double> EquationsOfState::Tabulated3D<true>::
         Tensor<double, brigand::list<>, brigand::list<>> const&,
         Tensor<double, brigand::list<>, brigand::list<>> const&) const;
 template Scalar<DataVector> EquationsOfState::Tabulated3D<true>::
+    equilibrium_electron_fraction_from_density_temperature_impl(
+        Tensor<DataVector, brigand::list<>, brigand::list<>> const&,
+        Tensor<DataVector, brigand::list<>, brigand::list<>> const&) const;
+template Scalar<double> EquationsOfState::Tabulated3D<false>::
+    equilibrium_electron_fraction_from_density_temperature_impl(
+        Tensor<double, brigand::list<>, brigand::list<>> const&,
+        Tensor<double, brigand::list<>, brigand::list<>> const&) const;
+template Scalar<DataVector> EquationsOfState::Tabulated3D<false>::
     equilibrium_electron_fraction_from_density_temperature_impl(
         Tensor<DataVector, brigand::list<>, brigand::list<>> const&,
         Tensor<DataVector, brigand::list<>, brigand::list<>> const&) const;

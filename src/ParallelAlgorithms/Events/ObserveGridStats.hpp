@@ -213,7 +213,6 @@ class ObserveGridStats<Dim, tmpl::list<NonTensorComputeTags...>>
   };
 
   /// \cond
-  explicit ObserveGridStats(CkMigrateMessage* msg) : Event(msg) {}
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(ObserveGridStats);  // NOLINT
   /// \endcond
