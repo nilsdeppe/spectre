@@ -299,6 +299,10 @@ alphabetical order):
   - Specifies the number of cores to use for parallelizing LTO. Must be a
     positive integer or "auto". This is only available when `SPECTRE_LTO=ON` and
     the compiler supports LTO.
+- SPECTRE_PARALLEL_LIB
+  - The parallel runtime system to use, either `Charm` or `findus` (any
+    casing). Support for `findus` is experimental and incomplete.
+    (default is `Charm`)
 - SPECTRE_TEST_RUNNER
   - Run test executables through a wrapper.  This might be `charmrun`, for
     example.  (default is to not use one)
