@@ -52,3 +52,9 @@
 /// \brief Used for the base class of a serializable class hierarchy to inherit
 /// from.
 #define SPECTRE_CHARM_PUPable(className) virtual PUP::able
+
+/// \brief Only used for multi-inheritance auto-registration of derived classes
+/// for serialization by findus. Empty in Charm++ mode.
+///
+/// \note findus supplies this macro directly.
+#define FINDUS_OVERRIDE_SERIALIZATION_ID(Derived, Base)
