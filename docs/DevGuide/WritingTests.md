@@ -260,7 +260,7 @@ namespace.
 We have a suite of input file tests in addition to unit tests. Every input file
 in the `tests/InputFiles/` directory is added to the test suite automatically.
 If you don't want your input file tested at all, add the relative input file
-path to the whitelist in `cmake/AddInputFileTests.cmake`. If the input file is
+path to the whitelist in `tests/InputFiles/CMakeLists.txt`. If the input file is
 being tested, it must specify the `Executable` it should run with in the input
 file metadata (above the `---` marker in the input file). Properties of the test
 are controlled by the `Testing` section in the input file metadata. The

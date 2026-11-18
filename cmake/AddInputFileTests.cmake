@@ -125,7 +125,8 @@ endfunction()
 
 # Searches the directory INPUT_FILE_DIR for .yaml files and adds a test for each
 # one. See `WritingTests.md` for details on controlling input file tests. Add
-# input files to the whitelist at the bottom of this file to ignore those tests
+# input files to the whitelist in `tests/InputFiles/CMakeLists.txt` to ignore
+# those tests
 function(add_input_file_tests INPUT_FILE_DIR INPUT_FILE_WHITELIST)
   set(INPUT_FILE_LIST "")
   file(GLOB_RECURSE INPUT_FILE_LIST ${INPUT_FILE_DIR} "${INPUT_FILE_DIR}*.yaml")
@@ -275,12 +276,3 @@ configure_file(
   ${CMAKE_SOURCE_DIR}/cmake/RunInputFileTest.sh
   ${PROJECT_BINARY_DIR}/tmp/RunInputFileTest.sh
   @ONLY)
-
-# These paths should be relative to the input file directory passed to
-# `add_input_file_tests`
-set(INPUT_FILE_WHITELIST
-    "PreprocessCceWorldtube/PreprocessCceWorldtube.yaml"
-    "PreprocessCceWorldtube/AdmFirstOrderDriverPreprocessCceWorldtube.yaml"
-    "PreprocessCceWorldtube/AdmSecondOrderDriverPreprocessCceWorldtube.yaml")
-
-add_input_file_tests("${CMAKE_SOURCE_DIR}/tests/InputFiles/" "${INPUT_FILE_WHITELIST}")
