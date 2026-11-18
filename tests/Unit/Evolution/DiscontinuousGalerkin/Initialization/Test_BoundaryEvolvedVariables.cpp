@@ -89,9 +89,11 @@ class MockOptingBc : public domain::BoundaryConditions::BoundaryCondition {
   void boundary_field_time_derivatives() const {}
 };
 
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim>
 // NOLINTNEXTLINE
 PUP::able::PUP_ID MockOptingBc<Dim>::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 
 template <size_t Dim>
 class MockNonOptingBc : public domain::BoundaryConditions::BoundaryCondition {
@@ -117,9 +119,11 @@ class MockNonOptingBc : public domain::BoundaryConditions::BoundaryCondition {
   }
 };
 
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim>
 // NOLINTNEXTLINE
 PUP::able::PUP_ID MockNonOptingBc<Dim>::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 
 template <size_t Dim>
 using boundary_variables_tag =

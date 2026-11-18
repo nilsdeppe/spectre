@@ -94,7 +94,9 @@ class OtherEvent : public Event {
   bool needs_evolved_variables() const override { return false; }
 };
 
+#if defined(SPECTRE_USE_CHARM)
 PUP::able::PUP_ID OtherEvent::my_PUP_ID = 0;  // NOLINT
+#endif                                        // SPECTRE_USE_CHARM
 
 template <typename Tag>
 class ToleranceRequest : public StepChooser<StepChooserUse::Slab>,
@@ -154,8 +156,10 @@ class ToleranceRequest : public StepChooser<StepChooserUse::Slab>,
   double relative_tolerance_ = std::numeric_limits<double>::signaling_NaN();
 };
 
+#if defined(SPECTRE_USE_CHARM)
 template <typename Tag>
 PUP::able::PUP_ID ToleranceRequest<Tag>::my_PUP_ID = 0;  // NOLINT
+#endif                                                   // SPECTRE_USE_CHARM
 
 struct EvolvedVar1 : db::SimpleTag {
   using type = Scalar<DataVector>;

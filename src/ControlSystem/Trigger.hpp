@@ -190,8 +190,10 @@ class Trigger : public DenseTrigger {
 };
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <typename ControlSystems>
 PUP::able::PUP_ID Trigger<ControlSystems>::my_PUP_ID = 0;  // NOLINT
+#endif                                                     // SPECTRE_USE_CHARM
 /// \endcond
 
 // This metafunction is tested in Test_EventTriggerMetafunctions.cpp

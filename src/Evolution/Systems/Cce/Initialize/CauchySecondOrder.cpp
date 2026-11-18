@@ -516,5 +516,7 @@ void CauchySecondOrder::pup(PUP::er& p) {
   p | du_dr_j_interpolator_;
 }
 
+#if defined(SPECTRE_USE_CHARM)
 PUP::able::PUP_ID CauchySecondOrder::my_PUP_ID = 0;  // NOLINT
+#endif                                               // SPECTRE_USE_CHARM
 }  // namespace Cce::InitializeJ

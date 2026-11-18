@@ -466,12 +466,14 @@ class InterpolateWithoutInterpComponent<VolumeDim, InterpolationTargetTag,
 };
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <size_t VolumeDim, typename InterpolationTargetTag,
           typename... SourceVarTags>
 PUP::able::PUP_ID
     InterpolateWithoutInterpComponent<VolumeDim, InterpolationTargetTag,
                                       tmpl::list<SourceVarTags...>>::my_PUP_ID =
         0;  // NOLINT
+#endif      // SPECTRE_USE_CHARM
 /// \endcond
 
 }  // namespace intrp::Events

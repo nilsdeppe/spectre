@@ -32,8 +32,10 @@ NumericInitialData::NumericInitialData(
       scalar_numeric_id_(std::move(importer_options),
                          std::move(hydro_selected_variables)) {}
 
+#if defined(SPECTRE_USE_CHARM)
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 PUP::able::PUP_ID NumericInitialData::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 
 size_t NumericInitialData::volume_data_id() const {
   size_t hash = 0;

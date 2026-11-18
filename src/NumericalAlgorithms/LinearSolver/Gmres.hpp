@@ -475,11 +475,13 @@ Gmres<VarsType, Preconditioner, LinearSolverRegistrars>::solve(
 }
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <typename VarsType, typename Preconditioner,
           typename LinearSolverRegistrars>
 // NOLINTNEXTLINE
 PUP::able::PUP_ID
     Gmres<VarsType, Preconditioner, LinearSolverRegistrars>::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 /// \endcond
 
 }  // namespace Serial

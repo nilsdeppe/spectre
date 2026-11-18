@@ -164,8 +164,10 @@ struct AuxiliaryCorrection final : public ::evolution::BoundaryCorrection {
   }
 };
 
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim>
 PUP::able::PUP_ID AuxiliaryCorrection<Dim>::my_PUP_ID = 0;  // NOLINT
+#endif                                                      // SPECTRE_USE_CHARM
 
 template <size_t Dim>
 class BoundaryCondition : public domain::BoundaryConditions::BoundaryCondition {
@@ -229,8 +231,10 @@ class GhostPsi : public BoundaryCondition<Dim> {
   }
 };
 
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim>
 PUP::able::PUP_ID GhostPsi<Dim>::my_PUP_ID = 0;  // NOLINT
+#endif                                           // SPECTRE_USE_CHARM
 
 template <size_t Dim>
 struct TimeDerivativeTerms {

@@ -56,5 +56,7 @@ std::complex<double> LinearSpanInterpolator::derivative(
   return derivative_impl(source_points, values);
 }
 
+#if defined(SPECTRE_USE_CHARM)
 PUP::able::PUP_ID intrp::LinearSpanInterpolator::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 }  // namespace intrp

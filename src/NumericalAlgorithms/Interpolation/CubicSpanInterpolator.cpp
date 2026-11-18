@@ -101,5 +101,7 @@ std::complex<double> CubicSpanInterpolator::derivative(
   return derivative_impl(source_points, values, target_point);
 }
 
+#if defined(SPECTRE_USE_CHARM)
 PUP::able::PUP_ID intrp::CubicSpanInterpolator::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 }  // namespace intrp

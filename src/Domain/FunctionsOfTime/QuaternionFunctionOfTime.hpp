@@ -197,7 +197,9 @@ bool operator!=(const QuaternionFunctionOfTime<MaxDeriv>& lhs,
                 const QuaternionFunctionOfTime<MaxDeriv>& rhs);
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <size_t MaxDeriv>
 PUP::able::PUP_ID QuaternionFunctionOfTime<MaxDeriv>::my_PUP_ID = 0;  // NOLINT
+#endif  // SPECTRE_USE_CHARM
 /// \endcond
 }  // namespace domain::FunctionsOfTime

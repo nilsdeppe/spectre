@@ -160,11 +160,13 @@ class FindCommonHorizon<HorizonMetavars, tmpl::list<Tensors...>,
 
 /// \cond
 // NOLINTBEGIN
+#if defined(SPECTRE_USE_CHARM)
 template <typename HorizonMetavars, typename... Tensors,
           typename... NonTensorComputeTags>
 PUP::able::PUP_ID
     FindCommonHorizon<HorizonMetavars, tmpl::list<Tensors...>,
                       tmpl::list<NonTensorComputeTags...>>::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 // NOLINTEND
 /// \endcond
 }  // namespace ah::Events

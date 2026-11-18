@@ -95,8 +95,10 @@ SuperposedInverser<Dim>::variables(
   return result;
 }
 
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim>
 PUP::able::PUP_ID SuperposedInverser<Dim>::my_PUP_ID = 0;  // NOLINT
+#endif                                                     // SPECTRE_USE_CHARM
 
 template <size_t Dim>
 bool operator==(const SuperposedInverser<Dim>& lhs,

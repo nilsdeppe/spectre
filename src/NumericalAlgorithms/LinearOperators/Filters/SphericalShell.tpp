@@ -306,6 +306,8 @@ bool SphericalShell<TagList>::is_equal(const Filter<3, TagList>& other) const {
   return *this == *other_shell;
 }
 
+#if defined(SPECTRE_USE_CHARM)
 template <typename TagList>
 PUP::able::PUP_ID SphericalShell<TagList>::my_PUP_ID = 0;  // NOLINT
+#endif                                                     // SPECTRE_USE_CHARM
 }  // namespace Filters

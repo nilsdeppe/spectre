@@ -51,6 +51,8 @@ void QuarticPolynomial::pup(PUP::er& p) {
   p | cubic_;
   p | quartic_;
 }
+#if defined(SPECTRE_USE_CHARM)
 PUP::able::PUP_ID QuarticPolynomial::my_PUP_ID = 0;  // NOLINT
+#endif                                               // SPECTRE_USE_CHARM
 
 }  // namespace ScalarTensor::sgb::CouplingFunctions

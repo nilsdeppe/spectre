@@ -90,7 +90,9 @@ class Cfl : public StepChooser<StepChooserUse::Slab>,
 };
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <typename Frame, typename System>
 PUP::able::PUP_ID Cfl<Frame, System>::my_PUP_ID = 0;  // NOLINT
+#endif                                                // SPECTRE_USE_CHARM
 /// \endcond
 }  // namespace StepChoosers

@@ -48,5 +48,7 @@ GENERATE_INSTANTIATIONS(INSTANTIATE,
 #undef INSTANTIATE
 }  // namespace ylm::InitialShapes
 
+#if defined(SPECTRE_USE_CHARM)
 template <typename Frame>
 PUP::able::PUP_ID ylm::InitialShapes::Sphere<Frame>::my_PUP_ID = 0;  // NOLINT
+#endif  // SPECTRE_USE_CHARM

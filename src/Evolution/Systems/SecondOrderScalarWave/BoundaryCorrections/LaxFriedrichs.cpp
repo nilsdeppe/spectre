@@ -118,9 +118,11 @@ bool operator!=(const LaxFriedrichs<Dim>& lhs, const LaxFriedrichs<Dim>& rhs) {
   return not(lhs == rhs);
 }
 
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim>
 // NOLINTNEXTLINE
 PUP::able::PUP_ID LaxFriedrichs<Dim>::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 
 #define DIM(data) BOOST_PP_TUPLE_ELEM(0, data)
 

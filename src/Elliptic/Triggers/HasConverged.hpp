@@ -36,7 +36,9 @@ class HasConverged : public Trigger {
 };
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <typename Label>
 PUP::able::PUP_ID HasConverged<Label>::my_PUP_ID = 0;  // NOLINT
+#endif                                                 // SPECTRE_USE_CHARM
 /// \endcond
 }  // namespace elliptic::Triggers

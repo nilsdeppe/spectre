@@ -616,12 +616,14 @@ void Test_GlobalCache<Metavariables>::exit() {
 // --------- registration stuff below -------
 
 // clang-format off
+#if defined(SPECTRE_USE_CHARM)
 PUP::able::PUP_ID UseCkCallbackAsCallback::my_PUP_ID = 0;
 // clang-tidy: possibly throwing constructor static storage
 // clang-tidy: false positive: redundant declaration
 PUP::able::PUP_ID Triangle::my_PUP_ID = 0;  // NOLINT
 PUP::able::PUP_ID Square::my_PUP_ID = 0;        // NOLINT
 PUP::able::PUP_ID Arthropod::my_PUP_ID = 0;     // NOLINT
+#endif  // SPECTRE_USE_CHARM
 // clang-format on
 
 extern "C" void CkRegisterMainModule() {

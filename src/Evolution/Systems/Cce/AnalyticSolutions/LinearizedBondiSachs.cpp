@@ -112,7 +112,9 @@ LinearizedBondiSachs::get_clone() const {
   return std::make_unique<LinearizedBondiSachs>(*this);
 }
 
+#if defined(SPECTRE_USE_CHARM)
 PUP::able::PUP_ID LinearizedBondiSachs::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 }  // namespace InitializeJ
 
 namespace {
@@ -610,5 +612,7 @@ void LinearizedBondiSachs::pup(PUP::er& p) {
   p | frequency_;
 }
 
+#if defined(SPECTRE_USE_CHARM)
 PUP::able::PUP_ID LinearizedBondiSachs::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 }  // namespace Cce::Solutions

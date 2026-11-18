@@ -257,9 +257,11 @@ class ProductOfCorrections final : public evolution::BoundaryCorrection {
 };
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <typename DerivedGhCorrection, typename DerivedValenciaCorrection>
 PUP::able::PUP_ID ProductOfCorrections<DerivedGhCorrection,
                                        DerivedValenciaCorrection>::my_PUP_ID =
     0;  // NOLINT
+#endif  // SPECTRE_USE_CHARM
 /// \endcond
 }  // namespace grmhd::GhValenciaDivClean::BoundaryCorrections

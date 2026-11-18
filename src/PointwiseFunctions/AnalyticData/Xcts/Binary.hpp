@@ -526,9 +526,11 @@ class Binary : public elliptic::analytic_data::Background,
 };
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <typename IsolatedObjectBase, typename IsolatedObjectClasses>
 PUP::able::PUP_ID Binary<IsolatedObjectBase, IsolatedObjectClasses>::my_PUP_ID =
     0;  // NOLINT
+#endif  // SPECTRE_USE_CHARM
 /// \endcond
 
 }  // namespace Xcts::AnalyticData

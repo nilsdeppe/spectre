@@ -148,8 +148,10 @@ class ProductOfSinusoids : public elliptic::analytic_data::AnalyticSolution {
 };
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim, typename DataType>
 PUP::able::PUP_ID ProductOfSinusoids<Dim, DataType>::my_PUP_ID = 0;  // NOLINT
+#endif  // SPECTRE_USE_CHARM
 /// \endcond
 
 template <size_t Dim, typename DataType>

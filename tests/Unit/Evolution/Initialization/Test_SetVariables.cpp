@@ -152,8 +152,10 @@ struct SystemAnalyticSolution : public MarkAsAnalyticSolution,
   }
 };
 
+#if defined(SPECTRE_USE_CHARM)
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 PUP::able::PUP_ID SystemAnalyticSolution::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 
 struct SystemAnalyticData : public MarkAsAnalyticData,
                             public evolution::initial_data::InitialData {
@@ -221,8 +223,10 @@ struct SystemAnalyticData : public MarkAsAnalyticData,
   void pup(PUP::er& p) override { InitialData::pup(p); }
 };
 
+#if defined(SPECTRE_USE_CHARM)
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 PUP::able::PUP_ID SystemAnalyticData::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 
 template <size_t Dim, bool HasPrimitiveAndConservativeVars,
           bool HasBoundaryVariables>

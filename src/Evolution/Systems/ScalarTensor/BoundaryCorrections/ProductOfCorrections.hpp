@@ -229,6 +229,7 @@ class ProductOfCorrections<DerivedGhCorrection, DerivedScalarCorrection,
 /// @}
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <typename DerivedGhCorrection, typename DerivedScalarCorrection,
           typename... GhDgPackagedFieldTags,
           typename... ScalarDgPackagedFieldTags,
@@ -248,5 +249,6 @@ PUP::able::PUP_ID ProductOfCorrections<
     tmpl::list<ScalarDgPackageDataVolumeTags...>,
     tmpl::list<GhDgBoundaryTermsVolumeTags...>,
     tmpl::list<ScalarDgBoundaryTermsVolumeTags...>>::my_PUP_ID = 0;  // NOLINT
+#endif  // SPECTRE_USE_CHARM
 /// \endcond
 }  // namespace ScalarTensor::BoundaryCorrections

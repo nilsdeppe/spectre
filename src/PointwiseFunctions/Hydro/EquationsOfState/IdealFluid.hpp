@@ -155,7 +155,9 @@ class IdealFluid : public EquationOfState<IsRelativistic, 2> {
 };
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <bool IsRelativistic>
 PUP::able::PUP_ID EquationsOfState::IdealFluid<IsRelativistic>::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 /// \endcond
 }  // namespace EquationsOfState

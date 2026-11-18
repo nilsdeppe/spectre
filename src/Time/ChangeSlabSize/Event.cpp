@@ -19,5 +19,7 @@ ChangeSlabSize::tolerances() const {
   return tolerances;
 }
 
+#if defined(SPECTRE_USE_CHARM)
 PUP::able::PUP_ID ChangeSlabSize::my_PUP_ID = 0;  // NOLINT
+#endif                                            // SPECTRE_USE_CHARM
 }  // namespace Events

@@ -317,6 +317,8 @@ bool HollowCylinder<TagList>::is_equal(const Filter<3, TagList>& other) const {
   return *this == *other_cylinder;
 }
 
+#if defined(SPECTRE_USE_CHARM)
 template <typename TagList>
 PUP::able::PUP_ID HollowCylinder<TagList>::my_PUP_ID = 0;  // NOLINT
+#endif                                                     // SPECTRE_USE_CHARM
 }  // namespace Filters

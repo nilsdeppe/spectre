@@ -239,7 +239,9 @@ bool operator!=(const KerrSchildTeukolsky& lhs,
   return not(lhs == rhs);
 }
 
+#if defined(SPECTRE_USE_CHARM)
 PUP::able::PUP_ID KerrSchildTeukolsky::my_PUP_ID = 0;  // NOLINT
+#endif                                                 // SPECTRE_USE_CHARM
 
 }  // namespace Xcts::AnalyticData
 

@@ -60,8 +60,10 @@ void FixedLtsRatio<Dim>::pup(PUP::er& p) {
   p | regions_;
 }
 
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim>
 PUP::able::PUP_ID FixedLtsRatio<Dim>::my_PUP_ID = 0;  // NOLINT
+#endif                                                // SPECTRE_USE_CHARM
 
 #define DIM(data) BOOST_PP_TUPLE_ELEM(0, data)
 

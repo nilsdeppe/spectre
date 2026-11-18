@@ -224,8 +224,10 @@ class ObserveFlux : public Event {
 
 /// \cond
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
+#if defined(SPECTRE_USE_CHARM)
 template <typename ArraySectionIdTag>
 PUP::able::PUP_ID ObserveFlux<ArraySectionIdTag>::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 // NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 /// \endcond
 }  // namespace GrSelfForce::Events

@@ -358,8 +358,10 @@ struct ModifiedPoissonSolution : Poisson::Solutions::ProductOfSinusoids<Dim> {
   }
 };
 
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim>
 PUP::able::PUP_ID ModifiedPoissonSolution<Dim>::my_PUP_ID = 0;  // NOLINT
+#endif  // SPECTRE_USE_CHARM
 
 template <size_t Dim>
 struct ModifiedPoissonSolutionLinearized
@@ -440,9 +442,11 @@ struct ModifiedPoissonSolutionLinearized
   }
 };
 
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim>
 PUP::able::PUP_ID ModifiedPoissonSolutionLinearized<Dim>::my_PUP_ID =  // NOLINT
     0;
+#endif  // SPECTRE_USE_CHARM
 
 template <typename System, bool Linearized, typename AnalyticSolution>
 void register_dg_operator_factory_classes() {

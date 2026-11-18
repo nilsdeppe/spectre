@@ -419,6 +419,8 @@ bool Hypercube<Dim, TagList>::is_equal(
   return *this == *other_hypercube;
 }
 
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim, typename TagList>
 PUP::able::PUP_ID Hypercube<Dim, TagList>::my_PUP_ID = 0;  // NOLINT
+#endif                                                     // SPECTRE_USE_CHARM
 }  // namespace Filters

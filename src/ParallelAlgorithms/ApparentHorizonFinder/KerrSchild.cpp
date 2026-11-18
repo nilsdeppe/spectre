@@ -65,7 +65,9 @@ GENERATE_INSTANTIATIONS(INSTANTIATE,
 #undef INSTANTIATE
 }  // namespace ah::InitialShapes
 
+#if defined(SPECTRE_USE_CHARM)
 template <typename Frame>
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 PUP::able::PUP_ID ah::InitialShapes::KerrSchild<Frame>::my_PUP_ID =
     0;  // NOLINT
+#endif  // SPECTRE_USE_CHARM

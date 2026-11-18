@@ -166,9 +166,11 @@ class ErrorIfDataTooBig : public Event {
 };
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim, typename Tensors, typename NonTensorComputeTags>
 PUP::able::PUP_ID
     ErrorIfDataTooBig<Dim, Tensors,
                       NonTensorComputeTags>::my_PUP_ID = 0;  // NOLINT
+#endif  // SPECTRE_USE_CHARM
 /// \endcond
 }  // namespace Events

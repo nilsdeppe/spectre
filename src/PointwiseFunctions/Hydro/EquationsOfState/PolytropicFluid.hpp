@@ -131,8 +131,10 @@ class PolytropicFluid : public EquationOfState<IsRelativistic, 1> {
 };
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <bool IsRelativistic>
 PUP::able::PUP_ID EquationsOfState::PolytropicFluid<IsRelativistic>::my_PUP_ID =
     0;
+#endif  // SPECTRE_USE_CHARM
 /// \endcond
 }  // namespace EquationsOfState

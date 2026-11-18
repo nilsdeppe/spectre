@@ -171,6 +171,8 @@ struct VisitAndReturn : public PhaseChange {
 }  // namespace PhaseControl
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <Parallel::Phase TargetPhase>
 PUP::able::PUP_ID PhaseControl::VisitAndReturn<TargetPhase>::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 /// \endcond

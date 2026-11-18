@@ -338,9 +338,11 @@ class ObserveGridStats<Dim, tmpl::list<NonTensorComputeTags...>>
 
 /// \cond
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim, typename... NonTensorComputeTags>
 PUP::able::PUP_ID
     ObserveGridStats<Dim, tmpl::list<NonTensorComputeTags...>>::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 // NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 /// \endcond
 }  // namespace Events

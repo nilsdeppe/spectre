@@ -69,7 +69,9 @@ class ErrorChooser : public StepChooser<StepChooserUse::LtsStep> {
   bool must_set_step_size() const override { return false; }
 };
 
+#if defined(SPECTRE_USE_CHARM)
 PUP::able::PUP_ID ErrorChooser::my_PUP_ID = 0;  // NOLINT
+#endif                                          // SPECTRE_USE_CHARM
 
 struct Var1 {};
 struct Var2 {};
@@ -115,7 +117,9 @@ class ToleranceChooser : public StepChooser<StepChooserUse::LtsStep>,
   double var2_tol_{};
 };
 
+#if defined(SPECTRE_USE_CHARM)
 PUP::able::PUP_ID ToleranceChooser::my_PUP_ID = 0;  // NOLINT
+#endif                                              // SPECTRE_USE_CHARM
 
 template <size_t Dim>
 struct Metavariables {

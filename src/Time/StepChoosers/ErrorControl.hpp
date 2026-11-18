@@ -213,10 +213,12 @@ class ErrorControl<StepChooserUse, System, tmpl::list<VariablesTags...>>
   double safety_factor_ = std::numeric_limits<double>::signaling_NaN();
 };
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <typename StepChooserUse, typename System, typename... VariablesTags>
 PUP::able::PUP_ID
     ErrorControl<StepChooserUse, System,
                  tmpl::list<VariablesTags...>>::my_PUP_ID =  // NOLINT
     0;
+#endif  // SPECTRE_USE_CHARM
 /// \endcond
 }  // namespace StepChoosers

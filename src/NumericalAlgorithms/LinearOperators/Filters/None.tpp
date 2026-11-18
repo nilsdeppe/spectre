@@ -111,6 +111,8 @@ bool None<Dim, TagList>::is_equal(const Filter<Dim, TagList>& other) const {
   return *this == *other_none;
 }
 
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim, typename TagList>
 PUP::able::PUP_ID None<Dim, TagList>::my_PUP_ID = 0;  // NOLINT
+#endif                                                // SPECTRE_USE_CHARM
 }  // namespace Filters

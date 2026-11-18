@@ -220,8 +220,10 @@ class FindApparentHorizon : public Event {
 
 /// \cond
 // NOLINTBEGIN
+#if defined(SPECTRE_USE_CHARM)
 template <typename HorizonMetavars>
 PUP::able::PUP_ID FindApparentHorizon<HorizonMetavars>::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 // NOLINTEND
 /// \endcond
 }  // namespace ah::Events

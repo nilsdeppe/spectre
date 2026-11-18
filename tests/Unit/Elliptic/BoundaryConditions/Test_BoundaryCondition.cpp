@@ -102,7 +102,9 @@ class TestBoundaryCondition : public BoundaryCondition<1> {
   }
 };
 
+#if defined(SPECTRE_USE_CHARM)
 PUP::able::PUP_ID TestBoundaryCondition::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 
 }  // namespace
 

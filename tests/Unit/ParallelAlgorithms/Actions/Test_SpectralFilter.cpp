@@ -155,8 +155,10 @@ class MockFilter : public FilterBase {
   mutable bool saw_jac_{false};
 };
 
+#if defined(SPECTRE_USE_CHARM)
 // NOLINTNEXTLINE
 PUP::able::PUP_ID MockFilter::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 
 using VarsTag = ::Tags::Variables<tmpl::list<ScalarFieldTag>>;
 using InvJacTag =

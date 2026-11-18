@@ -140,6 +140,8 @@ ObserveTimeStep::ObserveTimeStep(const std::string& subfile_name,
       legend_(std::vector<std::string>{"Time", "Time Step"}) {}
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 PUP::able::PUP_ID ObserveTimeStep::my_PUP_ID = 0;  // NOLINT
+#endif                                             // SPECTRE_USE_CHARM
 /// \endcond
 }  // namespace Cce::Events

@@ -83,6 +83,8 @@ class PowX<1, Fr> : public MathFunction<1, Fr> {
 }  // namespace MathFunctions
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <typename Fr>
 PUP::able::PUP_ID MathFunctions::PowX<1, Fr>::my_PUP_ID = 0;  // NOLINT
+#endif  // SPECTRE_USE_CHARM
 /// \endcond

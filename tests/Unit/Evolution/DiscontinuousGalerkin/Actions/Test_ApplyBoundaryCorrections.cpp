@@ -202,8 +202,10 @@ struct BoundaryTerms final : public evolution::BoundaryCorrection {
   }
 };
 
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim>
 PUP::able::PUP_ID BoundaryTerms<Dim>::my_PUP_ID = 0;  // NOLINT
+#endif                                                // SPECTRE_USE_CHARM
 
 template <bool LocalTimeStepping>
 struct SetLocalMortarData {
@@ -1865,8 +1867,10 @@ class MockBoundaryFilter
   // NOLINTNEXTLINE(spectre-mutable)
   mutable bool saw_jac_{false};
 };
+#if defined(SPECTRE_USE_CHARM)
 // NOLINTNEXTLINE
 PUP::able::PUP_ID MockBoundaryFilter::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 
 // Runs a 1D GTS GaussLobatto scenario with the given filter and calls
 // callback(runner, self_id) after the boundary-correction action completes.

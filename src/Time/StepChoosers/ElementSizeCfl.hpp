@@ -103,7 +103,9 @@ class ElementSizeCfl : public StepChooser<StepChooserUse::Slab>,
 };
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim, typename System>
 PUP::able::PUP_ID ElementSizeCfl<Dim, System>::my_PUP_ID = 0;  // NOLINT
+#endif  // SPECTRE_USE_CHARM
 /// \endcond
 }  // namespace StepChoosers

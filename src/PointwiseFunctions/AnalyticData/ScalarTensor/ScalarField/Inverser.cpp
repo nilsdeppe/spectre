@@ -60,8 +60,10 @@ Inverser<Dim>::variables(
   return result;
 }
 
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim>
 PUP::able::PUP_ID Inverser<Dim>::my_PUP_ID = 0;  // NOLINT
+#endif                                           // SPECTRE_USE_CHARM
 
 template <size_t Dim>
 bool operator==(const Inverser<Dim>& lhs, const Inverser<Dim>& rhs) {

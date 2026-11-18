@@ -123,8 +123,10 @@ bool operator!=(const StandingWave<Dim>& lhs, const StandingWave<Dim>& rhs) {
   return not(lhs == rhs);
 }
 
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim>
 PUP::able::PUP_ID StandingWave<Dim>::my_PUP_ID = 0;  // NOLINT
+#endif                                               // SPECTRE_USE_CHARM
 }  // namespace ScalarWave::Solutions
 
 #define DIM(data) BOOST_PP_TUPLE_ELEM(0, data)

@@ -51,7 +51,9 @@ void SpecInitialData::pup(PUP::er& p) {
   }
 }
 
+#if defined(SPECTRE_USE_CHARM)
 PUP::able::PUP_ID SpecInitialData::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 
 template <typename DataType>
 tuples::tagged_tuple_from_typelist<

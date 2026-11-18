@@ -309,7 +309,9 @@ class ChangeFixedLtsRatio : public Event,
   std::optional<std::vector<std::string>> regions_{};
 };
 
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim, typename StepChoosersToUse>
 // NOLINTNEXTLINE
 PUP::able::PUP_ID ChangeFixedLtsRatio<Dim, StepChoosersToUse>::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 }  // namespace dg::Events

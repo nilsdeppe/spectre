@@ -74,8 +74,10 @@ class RefineAtBoundary : public amr::Criterion {
 };
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim, size_t DimToRefine>
 PUP::able::PUP_ID RefineAtBoundary<Dim, DimToRefine>::my_PUP_ID = 0;  // NOLINT
+#endif  // SPECTRE_USE_CHARM
 /// \endcond
 
 }  // namespace amr::Criteria

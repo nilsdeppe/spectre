@@ -541,11 +541,13 @@ class SimplePolyBondiBufferUpdater
   size_t dr_j_power_ = 1;
 };
 
+#if defined(SPECTRE_USE_CHARM)
 template <typename T>
 PUP::able::PUP_ID Cce::DummyBufferUpdater<T>::my_PUP_ID = 0;  // NOLINT
 template <typename T>
 PUP::able::PUP_ID Cce::BondiBufferUpdater<T>::my_PUP_ID = 0;         // NOLINT
 PUP::able::PUP_ID Cce::SimplePolyBondiBufferUpdater::my_PUP_ID = 0;  // NOLINT
+#endif  // SPECTRE_USE_CHARM
 
 template class Cce::DummyBufferUpdater<ComplexModalVector>;
 template class Cce::DummyBufferUpdater<DataVector>;

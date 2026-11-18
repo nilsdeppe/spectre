@@ -314,6 +314,7 @@ class PerformAlgorithmCallback : public Callback {
 };
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <typename Proxy>
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 PUP::able::PUP_ID PerformAlgorithmCallback<Proxy>::my_PUP_ID = 0;
@@ -335,6 +336,7 @@ template <typename ThreadedAction, typename Proxy>
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 PUP::able::PUP_ID ThreadedActionCallback<ThreadedAction, Proxy>::my_PUP_ID =
     0;  // NOLINT
+#endif  // SPECTRE_USE_CHARM
 /// \endcond
 
 }  // namespace Parallel

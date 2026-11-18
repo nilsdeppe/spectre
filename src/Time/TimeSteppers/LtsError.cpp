@@ -153,4 +153,6 @@ LTS_TIME_STEPPER_DEFINE_OVERLOADS(LtsError)
 #endif
 }  // namespace TimeSteppers
 
+#if defined(SPECTRE_USE_CHARM)
 PUP::able::PUP_ID TimeSteppers::LtsError::my_PUP_ID = 0;  // NOLINT
+#endif                                                    // SPECTRE_USE_CHARM

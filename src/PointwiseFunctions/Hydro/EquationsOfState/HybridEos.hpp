@@ -190,8 +190,10 @@ class HybridEos
 };
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <typename ColdEquationOfState>
 PUP::able::PUP_ID EquationsOfState::HybridEos<ColdEquationOfState>::my_PUP_ID =
     0;
+#endif  // SPECTRE_USE_CHARM
 /// \endcond
 }  // namespace EquationsOfState

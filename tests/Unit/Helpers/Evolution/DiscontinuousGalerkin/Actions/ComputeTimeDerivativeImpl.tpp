@@ -949,8 +949,10 @@ struct BoundaryTerms final : public ::evolution::BoundaryCorrection {
   /// [bt_mp]
 };
 
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim, bool HasPrims>
 PUP::able::PUP_ID BoundaryTerms<Dim, HasPrims>::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 
 // We only use an DemandOutgoingCharSpeeds boundary condition with a static
 // member variable that we set to verify the call went through. The actual
@@ -1014,8 +1016,10 @@ class DemandOutgoingCharSpeeds : public BoundaryCondition<Dim> {
   static size_t number_of_times_called;
 };
 
+#if defined(SPECTRE_USE_CHARM)
 template <size_t Dim>
 PUP::able::PUP_ID DemandOutgoingCharSpeeds<Dim>::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 
 template <size_t Dim>
 size_t DemandOutgoingCharSpeeds<Dim>::number_of_times_called = 0;

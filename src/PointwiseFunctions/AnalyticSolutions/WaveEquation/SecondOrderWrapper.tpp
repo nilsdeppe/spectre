@@ -89,8 +89,10 @@ void SecondOrderWrapper<SolutionType>::pup(PUP::er& p) {
   p | wrapped_solution_;
 }
 
+#if defined(SPECTRE_USE_CHARM)
 template <typename SolutionType>
 PUP::able::PUP_ID SecondOrderWrapper<SolutionType>::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 
 #define SECOND_ORDER_WRAPPER_SOLUTION_TYPE(data) BOOST_PP_TUPLE_ELEM(0, data)
 

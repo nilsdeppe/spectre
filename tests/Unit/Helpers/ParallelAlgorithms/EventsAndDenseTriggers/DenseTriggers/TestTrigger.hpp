@@ -140,7 +140,9 @@ class BoxTrigger : public DenseTrigger {
 };
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <typename Label>
 PUP::able::PUP_ID BoxTrigger<Label>::my_PUP_ID = 0;  // NOLINT
+#endif                                               // SPECTRE_USE_CHARM
 /// \endcond
 }  // namespace TestHelpers::DenseTriggers

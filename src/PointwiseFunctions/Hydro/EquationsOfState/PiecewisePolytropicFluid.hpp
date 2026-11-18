@@ -174,8 +174,10 @@ class PiecewisePolytropicFluid : public EquationOfState<IsRelativistic, 1> {
 };
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <bool IsRelativistic>
 PUP::able::PUP_ID
     EquationsOfState::PiecewisePolytropicFluid<IsRelativistic>::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 /// \endcond
 }  // namespace EquationsOfState

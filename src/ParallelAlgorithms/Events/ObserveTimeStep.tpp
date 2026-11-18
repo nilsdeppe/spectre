@@ -105,9 +105,11 @@ auto ObserveTimeStep<System, tmpl::list<VariablesTags...>>::assemble_data(
 }
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <typename System, typename... VariablesTags>
 PUP::able::PUP_ID
     ObserveTimeStep<System, tmpl::list<VariablesTags...>>::my_PUP_ID =
         0;  // NOLINT
+#endif      // SPECTRE_USE_CHARM
 /// \endcond
 }  // namespace Events

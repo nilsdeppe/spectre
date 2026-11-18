@@ -82,9 +82,11 @@ class PreventRapidIncrease<System, tmpl::list<VariablesTags...>>
 /// @}
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <typename System, typename... VariablesTags>
 PUP::able::PUP_ID PreventRapidIncrease<
     System, tmpl::list<VariablesTags...>>::my_PUP_ID =  // NOLINT
     0;
+#endif  // SPECTRE_USE_CHARM
 /// \endcond
 }  // namespace StepChoosers

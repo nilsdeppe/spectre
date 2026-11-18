@@ -85,9 +85,11 @@ void Cartoon<SystemBoundaryConditionBaseClass>::pup(PUP::er& p) {
 }
 
 /// \cond
+#if defined(SPECTRE_USE_CHARM)
 template <typename SystemBoundaryConditionBaseClass>
 // NOLINTNEXTLINE
 PUP::able::PUP_ID Cartoon<SystemBoundaryConditionBaseClass>::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 /// \endcond
 
 /// Check if a boundary condition inherits from `MarkAsCartoon`, which

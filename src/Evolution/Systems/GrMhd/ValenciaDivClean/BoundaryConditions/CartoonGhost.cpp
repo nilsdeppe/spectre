@@ -41,8 +41,10 @@ CartoonGhost::get_clone() const {
 }
 
 void CartoonGhost::pup(PUP::er& p) { BoundaryCondition::pup(p); }
+#if defined(SPECTRE_USE_CHARM)
 // NOLINTNEXTLINE
 PUP::able::PUP_ID CartoonGhost::my_PUP_ID = 0;
+#endif  // SPECTRE_USE_CHARM
 
 void CartoonGhost::fd_ghost(
     const gsl::not_null<Scalar<DataVector>*> rest_mass_density,
