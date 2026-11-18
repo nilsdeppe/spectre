@@ -16,6 +16,7 @@
 #include "DataStructures/DataVector.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
 #include "DataStructures/Variables.hpp"
+#include "Domain/BoundaryConditions/BoundaryCondition.hpp"
 #include "Domain/FaceNormal.hpp"
 #include "Domain/Structure/Direction.hpp"
 #include "Domain/Structure/DirectionMap.hpp"
@@ -117,7 +118,9 @@ void test_analytic_solution() {
   CAPTURE(Dim);
   // Test factory-creation
   register_factory_classes_with_charm<Metavariables<Dim>>();
-  const auto created = serialize_and_deserialize(
+  // Serialize through the base class that is registered for serialization
+  const auto created = serialize_and_deserialize<
+      std::unique_ptr<domain::BoundaryConditions::BoundaryCondition>>(
       TestHelpers::test_creation<std::unique_ptr<BoundaryCondition<Dim>>,
                                  Metavariables<Dim>>(
           "AnalyticSolution:\n"

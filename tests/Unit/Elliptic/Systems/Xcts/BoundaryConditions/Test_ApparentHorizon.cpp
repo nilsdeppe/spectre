@@ -13,6 +13,7 @@
 #include "DataStructures/Tensor/EagerMath/Magnitude.hpp"
 #include "DataStructures/Tensor/Slice.hpp"
 #include "DataStructures/Tensor/Tensor.hpp"
+#include "Domain/BoundaryConditions/BoundaryCondition.hpp"
 #include "Domain/CoordinateMaps/CoordinateMap.hpp"
 #include "Domain/CoordinateMaps/CoordinateMap.tpp"
 #include "Domain/CoordinateMaps/KerrHorizonConforming.hpp"
@@ -288,9 +289,11 @@ void test_creation(
     const std::string& option_string) {
   INFO("Test factory-creation");
   register_factory_classes_with_charm<FactoryMetavars>();
-  const auto created = TestHelpers::test_creation<
-      std::unique_ptr<elliptic::BoundaryConditions::BoundaryCondition<3>>,
-      FactoryMetavars>(option_string);
+  // Serialize through the base class that is registered for serialization
+  const std::unique_ptr<domain::BoundaryConditions::BoundaryCondition> created =
+      TestHelpers::test_creation<
+          std::unique_ptr<elliptic::BoundaryConditions::BoundaryCondition<3>>,
+          FactoryMetavars>(option_string);
   const auto serialized = serialize_and_deserialize(created);
   REQUIRE(dynamic_cast<const ApparentHorizon<Xcts::Geometry::Curved>*>(
               serialized.get()) != nullptr);
