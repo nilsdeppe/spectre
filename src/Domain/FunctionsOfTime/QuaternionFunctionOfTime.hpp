@@ -90,7 +90,7 @@ class QuaternionFunctionOfTime : public FunctionOfTime {
 
   // clang-tidy: google-runtime-references
   // clang-tidy: cppcoreguidelines-owning-memory,-warnings-as-errors
-  WRAPPED_PUPable_decl_template(QuaternionFunctionOfTime<MaxDeriv>);  // NOLINT
+  WRAPPED_PUPable_decl_template(QuaternionFunctionOfTime);  // NOLINT
 
   /// Returns domain of validity for the function of time
   std::array<double, 2> time_bounds() const override;

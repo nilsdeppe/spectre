@@ -157,8 +157,8 @@ class PositivityPreservingAdaptiveOrderPrim : public Reconstructor<System> {
 
   explicit PositivityPreservingAdaptiveOrderPrim(CkMigrateMessage* msg);
 
-  WRAPPED_PUPable_decl_base_template(
-      Reconstructor<System>, PositivityPreservingAdaptiveOrderPrim<System>);
+  WRAPPED_PUPable_decl_base_template(Reconstructor<System>,
+                                     PositivityPreservingAdaptiveOrderPrim);
 
   auto get_clone() const -> std::unique_ptr<Reconstructor<System>> override;
 

@@ -144,7 +144,7 @@ class Wcns5zPrim : public Reconstructor<System> {
 
   explicit Wcns5zPrim(CkMigrateMessage* msg);
 
-  WRAPPED_PUPable_decl_base_template(Reconstructor<System>, Wcns5zPrim<System>);
+  WRAPPED_PUPable_decl_base_template(Reconstructor<System>, Wcns5zPrim);
 
   auto get_clone() const -> std::unique_ptr<Reconstructor<System>> override;
 

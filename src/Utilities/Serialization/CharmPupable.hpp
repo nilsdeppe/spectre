@@ -18,8 +18,14 @@
  *
  * Any class that inherits from an abstract base class where the base class is
  * not a template class must contain this macro if it is to be serialized.
+ *
+ * The macro also defines the constructor `className(CkMigrateMessage*)` that
+ * Charm++ uses when unpacking. Therefore `className` must be the name of the
+ * class without template arguments, and all base classes and data members
+ * must be default constructible.
  */
-#define WRAPPED_PUPable_decl_template(className) \
+#define WRAPPED_PUPable_decl_template(className)      \
+  explicit className(CkMigrateMessage* /*unused*/) {} \
   PUPable_decl_template(SINGLE_ARG(className))  // NOLINT
 
 /*!
@@ -28,8 +34,14 @@
  *
  * Any class that inherits from an abstract base class where the base class is
  * a template class must contain this macro if it is to be serialized.
+ *
+ * The macro also defines the constructor `className(CkMigrateMessage*)` that
+ * Charm++ uses when unpacking. Therefore `className` must be the name of the
+ * class without template arguments, and all base classes and data members
+ * must be default constructible.
  */
 #define WRAPPED_PUPable_decl_base_template(baseClassName, className) \
+  explicit className(CkMigrateMessage* /*unused*/) {}                \
   PUPable_decl_base_template(SINGLE_ARG(baseClassName), /* NOLINT */ \
                              SINGLE_ARG(className))     // NOLINT
 

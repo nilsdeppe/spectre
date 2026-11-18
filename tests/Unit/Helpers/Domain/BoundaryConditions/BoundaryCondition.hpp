@@ -89,8 +89,7 @@ class TestBoundaryCondition final : public BoundaryConditionBase<Dim> {
   static constexpr Options::String help = {"Boundary condition for testing."};
 
   WRAPPED_PUPable_decl_base_template(
-      ::domain::BoundaryConditions::BoundaryCondition,
-      TestBoundaryCondition<Dim>);
+      ::domain::BoundaryConditions::BoundaryCondition, TestBoundaryCondition);
 
   const Direction<Dim>& direction() const { return direction_; }
   size_t block_id() const { return block_id_; }

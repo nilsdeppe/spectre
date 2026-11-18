@@ -49,7 +49,7 @@ class PiecewisePolynomial : public FunctionOfTime {
 
   // clang-tidy: google-runtime-references
   // clang-tidy: cppcoreguidelines-owning-memory,-warnings-as-errors
-  WRAPPED_PUPable_decl_template(PiecewisePolynomial<MaxDeriv>);  // NOLINT
+  WRAPPED_PUPable_decl_template(PiecewisePolynomial);  // NOLINT
 
   /// Returns the function at an arbitrary time `t`.  If `MaxDeriv` is
   /// 0 and `update` has been called for time `t`, the updated value
