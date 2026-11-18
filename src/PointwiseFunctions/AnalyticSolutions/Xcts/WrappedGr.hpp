@@ -273,7 +273,12 @@ template <typename GrSolution, bool HasMhd = false>
 class WrappedGr;
 
 template <typename GrSolution, bool HasMhd>
-class WrappedGr : public elliptic::analytic_data::AnalyticSolution {
+class WrappedGr
+    : public elliptic::analytic_data::AnalyticSolution
+      SPECTRE_FINDUS_DERIVED(SINGLE_ARG(WrappedGr<GrSolution, HasMhd>),
+                             elliptic::analytic_data::InitialGuess)
+          SPECTRE_FINDUS_DERIVED(SINGLE_ARG(WrappedGr<GrSolution, HasMhd>),
+                                 elliptic::analytic_data::Background) {
  public:
   static constexpr size_t Dim = 3;
 

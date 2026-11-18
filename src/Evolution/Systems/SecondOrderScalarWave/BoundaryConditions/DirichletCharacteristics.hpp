@@ -61,7 +61,10 @@ namespace SecondOrderScalarWave::BoundaryConditions {
  * mesh velocity is supplied.
  */
 template <size_t Dim>
-class DirichletCharacteristics final : public BoundaryCondition<Dim> {
+class DirichletCharacteristics final
+    : public BoundaryCondition<Dim>
+      SPECTRE_FINDUS_DERIVED(DirichletCharacteristics<Dim>,
+                             domain::BoundaryConditions::BoundaryCondition) {
  public:
   /// \brief Label for `AnalyticPrescription` setting the incoming
   /// characteristic mode \f$v^-\f$ to zero.

@@ -37,6 +37,7 @@
 #include "ParallelAlgorithms/Amr/Protocols/AmrMetavariables.hpp"
 #include "Utilities/Gsl.hpp"
 #include "Utilities/ProtocolHelpers.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 #include "Utilities/StdHelpers.hpp"
 #include "Utilities/TMPL.hpp"
@@ -61,7 +62,9 @@ auto wants_to_increase_resolution() {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
 template <size_t Dim>
-class BadCriterion : public amr::Criterion {
+class BadCriterion
+    : public amr::Criterion SPECTRE_FINDUS_DERIVED(BadCriterion<Dim>,
+                                                   amr::Criterion) {
  public:
   using options = tmpl::list<>;
 

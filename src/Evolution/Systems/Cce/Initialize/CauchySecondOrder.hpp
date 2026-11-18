@@ -205,7 +205,8 @@ std::string j0_max_iterations_hint(size_t number_of_linearized_sweeps,
  * match wants a low interpolation order for that derivative while the
  * evolution wants a high one for the values it interpolates every step.
  */
-struct CauchySecondOrder : InitializeJ<false> {
+struct CauchySecondOrder : public InitializeJ<false> SPECTRE_FINDUS_DERIVED(
+                               CauchySecondOrder, InitializeJ<false>) {
   /// The largest number of iterations of the potential solve. It reaches its
   /// minimum within a few, so this cap only bounds its cost on data it cannot
   /// solve.

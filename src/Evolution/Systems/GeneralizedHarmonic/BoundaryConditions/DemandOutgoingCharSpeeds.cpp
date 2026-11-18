@@ -29,7 +29,7 @@ DemandOutgoingCharSpeeds<Dim>::get_clone() const {
 
 template <size_t Dim>
 void DemandOutgoingCharSpeeds<Dim>::pup(PUP::er& p) {
-  BoundaryCondition<Dim>::pup(p);
+  BoundaryConditions::BoundaryCondition<Dim>::pup(p);
 }
 
 template <size_t Dim>

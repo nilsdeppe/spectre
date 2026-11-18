@@ -241,7 +241,7 @@ PreconditionedLinearSolver<Preconditioner, LinearSolverRegistrars>::
 template <typename Preconditioner, typename LinearSolverRegistrars>
 PreconditionedLinearSolver<Preconditioner, LinearSolverRegistrars>::
     PreconditionedLinearSolver(const PreconditionedLinearSolver& rhs)
-    : PUP::able(rhs), Base(rhs) {
+    : SPECTRE_CHARM_PUPable_COPY(rhs) Base(rhs) {
   if constexpr (not std::is_same_v<Preconditioner, NoPreconditioner>) {
     preconditioner_ = rhs.clone_preconditioner();
   }

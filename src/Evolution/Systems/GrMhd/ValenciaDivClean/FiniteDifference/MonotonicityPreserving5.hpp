@@ -62,7 +62,9 @@ namespace grmhd::ValenciaDivClean::fd {
  * ::fd::reconstruction::monotonicity_preserving_5() for details.
  *
  */
-class MonotonicityPreserving5Prim : public Reconstructor {
+class MonotonicityPreserving5Prim : public Reconstructor SPECTRE_FINDUS_DERIVED(
+                                        MonotonicityPreserving5Prim,
+                                        Reconstructor) {
  private:
   using prims_to_reconstruct_tags =
       tmpl::list<hydro::Tags::RestMassDensity<DataVector>,

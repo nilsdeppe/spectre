@@ -31,7 +31,7 @@ namespace DenseTriggers {
 /// \ingroup EventsAndTriggersGroup
 /// \ingroup TimeGroup
 /// Trigger at specified times.
-class Times : public DenseTrigger {
+class Times : public DenseTrigger SPECTRE_FINDUS_DERIVED(Times, DenseTrigger) {
  public:
   /// \cond
   Times() = default;

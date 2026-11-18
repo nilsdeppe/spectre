@@ -11,6 +11,7 @@
 #include "ParallelAlgorithms/Amr/Criteria/Criterion.hpp"
 #include "ParallelAlgorithms/Amr/Criteria/Type.hpp"
 #include "Utilities/MakeArray.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace amr::Criteria {
@@ -21,7 +22,8 @@ namespace amr::Criteria {
  * h-refinement criterion.
  */
 template <size_t Dim>
-class IncreaseResolution : public Criterion {
+class IncreaseResolution : public Criterion SPECTRE_FINDUS_DERIVED(
+                               IncreaseResolution<Dim>, Criterion) {
  public:
   using options = tmpl::list<>;
 

@@ -36,8 +36,10 @@ namespace grmhd::Solutions {
  * \vec{B}(\vec{x},t) &= [0, 0, 0]^{T}
  * \f}
  */
-class SmoothFlow : virtual public MarkAsAnalyticSolution,
-                   public RelativisticEuler::Solutions::SmoothFlow<3> {
+class SmoothFlow
+    : virtual public MarkAsAnalyticSolution,
+      public RelativisticEuler::Solutions::SmoothFlow<3>
+      SPECTRE_FINDUS_DERIVED(SmoothFlow, evolution::initial_data::InitialData) {
   using smooth_flow = RelativisticEuler::Solutions::SmoothFlow<3>;
 
  public:
@@ -101,6 +103,9 @@ class SmoothFlow : virtual public MarkAsAnalyticSolution,
 
  protected:
   friend bool operator==(const SmoothFlow& lhs, const SmoothFlow& rhs);
+
+  FINDUS_OVERRIDE_SERIALIZATION_ID(SmoothFlow,
+                                   evolution::initial_data::InitialData)
 };
 
 bool operator!=(const SmoothFlow& lhs, const SmoothFlow& rhs);

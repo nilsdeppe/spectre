@@ -23,6 +23,7 @@
 #include "Options/Context.hpp"
 #include "Options/String.hpp"
 #include "PointwiseFunctions/Hydro/Tags.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -60,7 +61,10 @@ namespace grmhd::ValenciaDivClean::fd {
  *
  * The rest mass density, electron fraction, and the pressure are kept positive.
  */
-class PositivityPreservingAdaptiveOrderPrim : public Reconstructor {
+class PositivityPreservingAdaptiveOrderPrim
+    : public Reconstructor
+      SPECTRE_FINDUS_DERIVED(PositivityPreservingAdaptiveOrderPrim,
+                             Reconstructor) {
  private:
   using prims_to_reconstruct_tags =
       tmpl::list<hydro::Tags::RestMassDensity<DataVector>,

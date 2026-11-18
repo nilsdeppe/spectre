@@ -35,7 +35,10 @@ namespace Cce::Solutions::LinearizedBondiSachs_detail::InitializeJ {
 // `InitializeJ.hpp` can bottom-include it for the `call_with_dynamic_type`
 // dispatch over `InitializeJ<false>::creatable_classes` without an include
 // cycle.
-struct LinearizedBondiSachs : ::Cce::InitializeJ::InitializeJ<false> {
+struct LinearizedBondiSachs
+    : public ::Cce::InitializeJ::InitializeJ<false>
+      SPECTRE_FINDUS_DERIVED(LinearizedBondiSachs,
+                             ::Cce::InitializeJ::InitializeJ<false>) {
   WRAPPED_PUPable_decl_template(LinearizedBondiSachs);  // NOLINT
 
   LinearizedBondiSachs() = default;

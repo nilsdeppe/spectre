@@ -11,6 +11,7 @@
 #include "Options/String.hpp"
 #include "PointwiseFunctions/AnalyticSolutions/AnalyticSolution.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -54,8 +55,10 @@ namespace Solutions {
  * rotation about \f$(x,y)=(0.5,0.5)\f$ with angular velocity being 1.0. We use
  * the periodic boundary condition for evolving this problem.
  */
-class Kuzmin : public evolution::initial_data::InitialData,
-               public MarkAsAnalyticSolution {
+class Kuzmin
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(Kuzmin, evolution::initial_data::InitialData) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help{

@@ -19,6 +19,7 @@
 #include "PointwiseFunctions/Hydro/Tags.hpp"
 #include "PointwiseFunctions/Hydro/Temperature.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace RelativisticEuler::Solutions {
@@ -315,10 +316,13 @@ class CstSolution {
  * polynomial fits might improve the situation but is a decent about of work to
  * implement.
  */
-class RotatingStar : public virtual evolution::initial_data::InitialData,
-                     public MarkAsAnalyticSolution,
-                     public AnalyticSolution<3>,
-                     public hydro::TemperatureInitialization<RotatingStar> {
+class RotatingStar
+    : public virtual evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution,
+      public AnalyticSolution<3>,
+      public hydro::TemperatureInitialization<RotatingStar>
+      SPECTRE_FINDUS_DERIVED(RotatingStar,
+                             evolution::initial_data::InitialData) {
   template <typename DataType>
   struct IntermediateVariables {
     IntermediateVariables(

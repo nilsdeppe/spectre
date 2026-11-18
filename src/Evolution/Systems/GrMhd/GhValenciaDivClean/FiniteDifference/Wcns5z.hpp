@@ -26,6 +26,7 @@
 #include "Options/Context.hpp"
 #include "Options/String.hpp"
 #include "PointwiseFunctions/Hydro/Tags.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -64,7 +65,8 @@ namespace grmhd::GhValenciaDivClean::fd {
  */
 // template on System instead
 template <typename System>
-class Wcns5zPrim : public Reconstructor<System> {
+class Wcns5zPrim : public Reconstructor<System> SPECTRE_FINDUS_DERIVED(
+                       Wcns5zPrim<System>, Reconstructor<System>) {
  private:
   using prims_to_reconstruct_tags =
       tmpl::list<hydro::Tags::RestMassDensity<DataVector>,

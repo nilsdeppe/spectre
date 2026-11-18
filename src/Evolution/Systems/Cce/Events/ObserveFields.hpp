@@ -39,6 +39,7 @@
 #include "Time/Tags/Time.hpp"
 #include "Utilities/Gsl.hpp"
 #include "Utilities/MakeString.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 #include "Utilities/TypeTraits/IsA.hpp"
 
@@ -156,7 +157,8 @@ std::string name() {
  * `/<SubgroupName>/OneMinusY.vol` with the elements in the same order as the
  * radial index order for the spin weighted quantities above.
  */
-class ObserveFields : public Event {
+class ObserveFields : public Event SPECTRE_FINDUS_DERIVED(ObserveFields,
+                                                          Event) {
   template <typename Tag, bool IncludeSecondDeriv = true>
   // clang-format off
   using zero_one_two_radial_derivs = tmpl::flatten<tmpl::list<

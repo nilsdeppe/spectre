@@ -66,6 +66,7 @@
 #include "Time/Tags/Time.hpp"
 #include "Utilities/CloneUniquePtrs.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 #include "Utilities/TMPL.hpp"
 
@@ -74,8 +75,11 @@ struct Var1 : db::SimpleTag {
   using type = Scalar<DataVector>;
 };
 
-struct SystemAnalyticSolution : public MarkAsAnalyticSolution,
-                                public evolution::initial_data::InitialData {
+struct SystemAnalyticSolution
+    : public MarkAsAnalyticSolution,
+      public evolution::initial_data::InitialData
+      SPECTRE_FINDUS_DERIVED(SystemAnalyticSolution,
+                             evolution::initial_data::InitialData) {
   SystemAnalyticSolution() = default;
   ~SystemAnalyticSolution() override = default;
 

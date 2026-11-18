@@ -64,10 +64,13 @@ namespace grmhd::AnalyticData {
  *
  * The magnetic field in the disk should rotate by about 90 degrees by t = 0.4.
  */
-class MagneticRotor : public evolution::initial_data::InitialData,
-                      public MarkAsAnalyticData,
-                      public AnalyticDataBase,
-                      public hydro::TemperatureInitialization<MagneticRotor> {
+class MagneticRotor
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticData,
+      public AnalyticDataBase,
+      public hydro::TemperatureInitialization<MagneticRotor>
+      SPECTRE_FINDUS_DERIVED(MagneticRotor,
+                             evolution::initial_data::InitialData) {
  public:
   using equation_of_state_type = EquationsOfState::IdealFluid<true>;
 

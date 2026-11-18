@@ -26,6 +26,7 @@
 #include "Utilities/ContainerHelpers.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 
 namespace gh::BoundaryConditions {
 namespace {
@@ -84,7 +85,9 @@ ConstraintPreservingBjorhus<Dim>::ConstraintPreservingBjorhus(
 template <size_t Dim>
 ConstraintPreservingBjorhus<Dim>::ConstraintPreservingBjorhus(
     const ConstraintPreservingBjorhus& rhs)
-    : BoundaryCondition<Dim>{dynamic_cast<const BoundaryCondition<Dim>&>(rhs)},
+    : SPECTRE_CHARM_PUPable_COPY(rhs)
+          BoundaryCondition<Dim>{dynamic_cast<const BoundaryCondition<Dim>&>(
+              rhs)},
       type_(rhs.type_),
       incoming_wave_profile_(rhs.incoming_wave_profile_ != nullptr
                                  ? rhs.incoming_wave_profile_->get_clone()
@@ -111,7 +114,7 @@ ConstraintPreservingBjorhus<Dim>::get_clone() const {
 
 template <size_t Dim>
 void ConstraintPreservingBjorhus<Dim>::pup(PUP::er& p) {
-  BoundaryCondition<Dim>::pup(p);
+  BoundaryConditions::BoundaryCondition<Dim>::pup(p);
   p | type_;
   p | incoming_wave_profile_;
 }

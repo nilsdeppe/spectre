@@ -11,6 +11,7 @@
 #include "Time/StepperErrorEstimate.hpp"
 #include "Time/TimeStepId.hpp"
 #include "Time/TimeSteppers/LtsTimeStepper.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 
 /// \cond
 class StepperErrorTolerances;
@@ -42,7 +43,9 @@ namespace TimeSteppers {
  * Class used to allow compiling LTS code with GTS time steppers.  All
  * methods error at runtime.
  */
-class LtsError : public LtsTimeStepper {
+class LtsError : public LtsTimeStepper SPECTRE_FINDUS_DERIVED(LtsError,
+                                                              TimeStepper)
+                     SPECTRE_FINDUS_DERIVED(LtsError, LtsTimeStepper) {
  public:
   LtsError() = default;
   LtsError(const LtsError&) = default;

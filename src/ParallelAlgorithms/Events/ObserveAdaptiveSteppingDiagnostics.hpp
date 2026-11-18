@@ -50,7 +50,9 @@ namespace Events {
  * The slab information is the same on all elements.  The step
  * information is summed over the elements.
  */
-class ObserveAdaptiveSteppingDiagnostics : public Event {
+class ObserveAdaptiveSteppingDiagnostics
+    : public Event
+      SPECTRE_FINDUS_DERIVED(ObserveAdaptiveSteppingDiagnostics, Event) {
  private:
   using ReductionData = Parallel::ReductionData<
       Parallel::ReductionDatum<double, funcl::AssertEqual<>>,

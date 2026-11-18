@@ -16,7 +16,8 @@ namespace elliptic::Triggers {
 /// \ingroup EventsAndTriggersGroup
 /// Trigger when the solver identified by the `Label` has converged.
 template <typename Label>
-class HasConverged : public Trigger {
+class HasConverged : public Trigger SPECTRE_FINDUS_DERIVED(HasConverged<Label>,
+                                                           Trigger) {
  public:
   /// \cond
   HasConverged() = default;

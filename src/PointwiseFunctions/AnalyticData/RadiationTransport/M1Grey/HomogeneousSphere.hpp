@@ -14,6 +14,7 @@
 #include "PointwiseFunctions/AnalyticSolutions/GeneralRelativity/Minkowski.hpp"
 #include "PointwiseFunctions/Hydro/TagsDeclarations.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -36,8 +37,11 @@ namespace RadiationTransport::M1Grey::AnalyticData {
  * with an arctangent function, instead of the step function, which has
  * sharper features.
  */
-class HomogeneousSphere : public virtual evolution::initial_data::InitialData,
-                          public MarkAsAnalyticData {
+class HomogeneousSphere
+    : public virtual evolution::initial_data::InitialData,
+      public MarkAsAnalyticData
+      SPECTRE_FINDUS_DERIVED(HomogeneousSphere,
+                             evolution::initial_data::InitialData) {
  public:
   static constexpr Options::String help = {
       "A homogeneous sphere emitting and absorbing neutrinos."};

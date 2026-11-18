@@ -80,7 +80,8 @@ namespace NewtonianMhd::BoundaryCorrections {
  *   signal/characteristic speeds
  */
 template <size_t Dim>
-class Hll final : public evolution::BoundaryCorrection {
+class Hll final : public evolution::BoundaryCorrection SPECTRE_FINDUS_DERIVED(
+                      Hll<Dim>, evolution::BoundaryCorrection) {
  public:
   struct LargestOutgoingCharSpeed : db::SimpleTag {
     using type = Scalar<DataVector>;

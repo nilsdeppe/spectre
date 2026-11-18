@@ -104,7 +104,10 @@ struct AuxiliaryVolumeTag : db::SimpleTag {
 };
 
 template <size_t Dim>
-struct BoundaryTerms final : public evolution::BoundaryCorrection {
+struct BoundaryTerms final
+    : public evolution::BoundaryCorrection
+      SPECTRE_FINDUS_DERIVED(BoundaryTerms<Dim>,
+                             evolution::BoundaryCorrection) {
   struct MaxAbsCharSpeed : db::SimpleTag {
     using type = Scalar<DataVector>;
   };
@@ -1778,7 +1781,10 @@ void test_deterministic_mortar_interpolation() {
 
 // Concrete mock filter that records boundary-filter invocations.
 class MockBoundaryFilter
-    : public Filters::Filter<1, tmpl::list<Var1, Var2<1>>> {
+    : public Filters::Filter<1, tmpl::list<Var1, Var2<1>>>
+      SPECTRE_FINDUS_DERIVED(
+          MockBoundaryFilter,
+          SINGLE_ARG(Filters::Filter<1, tmpl::list<Var1, Var2<1>>>)) {
  public:
   using Base = Filters::Filter<1, tmpl::list<Var1, Var2<1>>>;
   MockBoundaryFilter() = default;

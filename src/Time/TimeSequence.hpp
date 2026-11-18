@@ -60,7 +60,8 @@ namespace TimeSequences {
  * for all integers $n$.
  */
 template <typename T>
-class EvenlySpaced : public TimeSequence<T> {
+class EvenlySpaced : public TimeSequence<T> SPECTRE_FINDUS_DERIVED(
+                         EvenlySpaced<T>, TimeSequence<T>) {
  public:
   /// \cond
   EvenlySpaced() = default;
@@ -109,7 +110,8 @@ class EvenlySpaced : public TimeSequence<T> {
 
 /// An explicitly specified sequence of times.
 template <typename T>
-class Specified : public TimeSequence<T> {
+class Specified : public TimeSequence<T> SPECTRE_FINDUS_DERIVED(
+                      Specified<T>, TimeSequence<T>) {
  public:
   /// \cond
   Specified() = default;

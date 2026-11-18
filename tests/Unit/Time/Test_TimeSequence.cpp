@@ -97,7 +97,8 @@ void test_specified() {
     check(8, {{4, 8, {}}});
     check(9, {{4, 8, {}}});
 
-    const TimeSequences::Specified<std::uint64_t> zero_elements({});
+    const TimeSequences::Specified<std::uint64_t> zero_elements(
+        std::vector<std::uint64_t>{});
     CHECK(zero_elements.times_near(5) == Result{});
     const TimeSequences::Specified<std::uint64_t> one_element({3});
     CHECK(one_element.times_near(5) == Result{{{}, 3, {}}});

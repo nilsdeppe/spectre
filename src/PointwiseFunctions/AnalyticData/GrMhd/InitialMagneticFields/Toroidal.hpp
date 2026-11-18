@@ -12,6 +12,7 @@
 #include "PointwiseFunctions/AnalyticData/GrMhd/InitialMagneticFields/InitialMagneticField.hpp"
 #include "PointwiseFunctions/GeneralRelativity/TagsDeclarations.hpp"
 #include "PointwiseFunctions/Hydro/TagsDeclarations.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace grmhd::AnalyticData::InitialMagneticFields {
@@ -54,7 +55,8 @@ namespace grmhd::AnalyticData::InitialMagneticFields {
  * multiple magnetic fields can be superposed. Each magnetic field
  * configuration does a `+=` to make this possible.
  */
-class Toroidal : public InitialMagneticField {
+class Toroidal : public InitialMagneticField SPECTRE_FINDUS_DERIVED(
+                     Toroidal, InitialMagneticField) {
  public:
   struct PressureExponent {
     using type = size_t;

@@ -211,7 +211,10 @@ struct InitializeRandomSubdomainData {
 // data. Instead, we just pick some arbitrary combination of the coordinate
 // values.
 template <size_t Dim>
-struct RandomBackground : elliptic::analytic_data::Background {
+struct RandomBackground
+    : elliptic::analytic_data::Background
+      SPECTRE_FINDUS_DERIVED(RandomBackground<Dim>,
+                             elliptic::analytic_data::Background) {
   RandomBackground() = default;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"

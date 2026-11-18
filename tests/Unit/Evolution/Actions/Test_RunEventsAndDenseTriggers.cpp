@@ -139,7 +139,8 @@ const tuples::tagged_tuple_from_typelist<extra_data> initial_extra_data{
     Scalar<DataVector>{{{{123.0}}}}, Scalar<DataVector>{{{{456.0}}}},
     Scalar<double>{{{789.0}}}, "Initial"};
 
-class TestTrigger : public DenseTrigger {
+class TestTrigger : public DenseTrigger SPECTRE_FINDUS_DERIVED(TestTrigger,
+                                                               DenseTrigger) {
  public:
   TestTrigger() = default;
 #pragma GCC diagnostic push
@@ -211,7 +212,7 @@ PUP::able::PUP_ID TestTrigger::my_PUP_ID = 0;  // NOLINT
 #endif                                         // SPECTRE_USE_CHARM
 
 template <SystemVars Vars>
-struct TestEvent : public Event {
+struct TestEvent : public Event SPECTRE_FINDUS_DERIVED(TestEvent<Vars>, Event) {
   TestEvent() = default;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"

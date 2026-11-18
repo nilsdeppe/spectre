@@ -84,7 +84,8 @@ std::optional<tnsr::i<std::complex<double>, 2>> extract_self_force(
  * sum is truncated at some maximum m-mode number.
  */
 template <typename ArraySectionIdTag = void>
-class ObserveSelfForce : public Event {
+class ObserveSelfForce : public Event SPECTRE_FINDUS_DERIVED(
+                             ObserveSelfForce<ArraySectionIdTag>, Event) {
  public:
   using ReductionData = Parallel::ReductionData<
       // Observation value

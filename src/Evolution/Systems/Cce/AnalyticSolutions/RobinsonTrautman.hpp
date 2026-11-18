@@ -55,7 +55,11 @@ namespace Solutions {
  * evolutions, or need to write more sophisticated caching of the internal time
  * step data.
  */
-struct RobinsonTrautman : public SphericalMetricData {
+struct RobinsonTrautman : public virtual WorldtubeData SPECTRE_FINDUS_DERIVED(
+                              RobinsonTrautman, WorldtubeData),
+                          public virtual SphericalMetricData
+                          SPECTRE_FINDUS_DERIVED(RobinsonTrautman,
+                                                 SphericalMetricData) {
   struct InitialModes {
     using type = std::vector<std::complex<double>>;
     static constexpr Options::String help{

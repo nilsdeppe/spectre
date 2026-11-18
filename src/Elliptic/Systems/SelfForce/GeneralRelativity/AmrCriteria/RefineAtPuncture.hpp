@@ -29,7 +29,8 @@ namespace GrSelfForce::AmrCriteria {
  * This refinement scheme is expected to yield exponential convergence, despite
  * the presence of the C^2 punctures.
  */
-class RefineAtPuncture : public amr::Criterion {
+class RefineAtPuncture : public amr::Criterion SPECTRE_FINDUS_DERIVED(
+                             RefineAtPuncture, amr::Criterion) {
  public:
   using options = tmpl::list<>;
 

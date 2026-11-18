@@ -21,6 +21,7 @@
 #include "PointwiseFunctions/InitialDataUtilities/Background.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialGuess.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace ScalarSelfForce::AnalyticData {
@@ -188,8 +189,13 @@ namespace ScalarSelfForce::AnalyticData {
  * terms, all coefficients are written as functions of $1/r$ rather than
  * $r$.
  */
-class CircularOrbit : public elliptic::analytic_data::Background,
-                      public elliptic::analytic_data::InitialGuess {
+class CircularOrbit
+    : public elliptic::analytic_data::Background
+      SPECTRE_FINDUS_DERIVED(CircularOrbit,
+                             elliptic::analytic_data::Background),
+      public elliptic::analytic_data::InitialGuess
+      SPECTRE_FINDUS_DERIVED(CircularOrbit,
+                             elliptic::analytic_data::InitialGuess) {
  public:
   struct BlackHoleMass {
     static constexpr Options::String help =

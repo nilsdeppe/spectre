@@ -144,7 +144,9 @@ struct CorrectionBase : public SPECTRE_CHARM_PUPable(CorrectionBase) {
 };
 
 template <size_t Dim, typename VolumeDoubleType>
-struct Correction final : public CorrectionBase {
+struct Correction final : public CorrectionBase SPECTRE_FINDUS_DERIVED(
+                              SINGLE_ARG(Correction<Dim, VolumeDoubleType>),
+                              CorrectionBase) {
  private:
   struct AbsCharSpeed : db::SimpleTag {
     using type = Scalar<DataVector>;
@@ -309,7 +311,9 @@ PUP::able::PUP_ID Correction<Dim, VolumeDoubleType>::my_PUP_ID = 0;
 #endif  // SPECTRE_USE_CHARM
 
 template <size_t Dim, typename VolumeDoubleType>
-struct AuxCorrection final : public CorrectionBase {
+struct AuxCorrection final
+    : public CorrectionBase SPECTRE_FINDUS_DERIVED(
+          SINGLE_ARG(AuxCorrection<Dim, VolumeDoubleType>), CorrectionBase) {
  private:
   struct NormalDotAux : db::SimpleTag {
     using type = Scalar<DataVector>;

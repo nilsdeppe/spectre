@@ -26,6 +26,7 @@
 #include "ParallelAlgorithms/Amr/Criteria/Type.hpp"
 #include "ParallelAlgorithms/Events/Tags.hpp"
 #include "Utilities/Algorithm.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -113,7 +114,8 @@ void max_over_components(
  * index that originates from a derivative.
  */
 template <size_t Dim, typename TensorTags>
-class Constraints : public Criterion {
+class Constraints : public Criterion SPECTRE_FINDUS_DERIVED(
+                        SINGLE_ARG(Constraints<Dim, TensorTags>), Criterion) {
  public:
   struct ConstraintsToMonitor {
     using type = std::vector<std::string>;

@@ -24,6 +24,7 @@
 #include "ParallelAlgorithms/Amr/Criteria/Tags/Criteria.hpp"
 #include "Utilities/Gsl.hpp"
 #include "Utilities/MakeArray.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 #include "Utilities/Serialization/Serialize.hpp"
 #include "Utilities/TMPL.hpp"
@@ -46,8 +47,12 @@ struct Metavariables {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
-struct OtherBackground : elliptic::analytic_data::Background,
-                         elliptic::analytic_data::InitialGuess {
+struct OtherBackground
+    : elliptic::analytic_data::Background,
+      elliptic::analytic_data::InitialGuess SPECTRE_FINDUS_DERIVED(
+          OtherBackground, elliptic::analytic_data::Background)
+          SPECTRE_FINDUS_DERIVED(OtherBackground,
+                                 elliptic::analytic_data::InitialGuess) {
   OtherBackground() = default;
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(OtherBackground);  // NOLINT

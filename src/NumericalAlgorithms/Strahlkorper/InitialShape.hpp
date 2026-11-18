@@ -57,7 +57,8 @@ namespace InitialShapes {
  * \brief A spherical initial Strahlkorper shape.
  */
 template <typename Frame>
-class Sphere : public InitialShape<Frame> {
+class Sphere : public InitialShape<Frame> SPECTRE_FINDUS_DERIVED(
+                   Sphere<Frame>, InitialShape<Frame>) {
  public:
   struct Center {
     using type = std::array<double, 3>;

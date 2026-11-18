@@ -21,7 +21,8 @@ namespace ah::InitialShapes {
  * black hole.
  */
 template <typename Frame>
-class KerrSchild : public ylm::InitialShape<Frame> {
+class KerrSchild : public ylm::InitialShape<Frame> SPECTRE_FINDUS_DERIVED(
+                       KerrSchild<Frame>, ylm::InitialShape<Frame>) {
  public:
   struct Center {
     using type = std::array<double, 3>;

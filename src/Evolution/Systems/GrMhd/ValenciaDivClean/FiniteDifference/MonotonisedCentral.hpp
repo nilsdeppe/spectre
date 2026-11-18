@@ -59,7 +59,8 @@ namespace grmhd::ValenciaDivClean::fd {
  * \brief Monotonised central reconstruction. See
  * ::fd::reconstruction::monotonised_central() for details.
  */
-class MonotonisedCentralPrim : public Reconstructor {
+class MonotonisedCentralPrim : public Reconstructor SPECTRE_FINDUS_DERIVED(
+                                   MonotonisedCentralPrim, Reconstructor) {
  private:
   // pressure -> temperature
   using prims_to_reconstruct_tags =

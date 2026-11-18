@@ -42,7 +42,7 @@ enum class Direction { Before, After, Both };
 /// slabs or steps are approximate.
 ///
 /// \see Times
-class NearTimes : public Trigger {
+class NearTimes : public Trigger SPECTRE_FINDUS_DERIVED(NearTimes, Trigger) {
  public:
   /// \cond
   NearTimes() = default;

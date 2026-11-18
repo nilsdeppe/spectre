@@ -20,6 +20,7 @@
 #include "Options/Context.hpp"
 #include "Options/String.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 
 /// \cond
 template <size_t Dim>
@@ -35,7 +36,9 @@ namespace Filters {
  * See `Filters::Filter` for the general interface description.
  */
 template <size_t Dim, typename TagList>
-class None : public Filter<Dim, TagList> {
+class None : public Filter<Dim, TagList> SPECTRE_FINDUS_DERIVED(
+                 SINGLE_ARG(None<Dim, TagList>),
+                 SINGLE_ARG(Filter<Dim, TagList>)) {
  public:
   /// \brief Which blocks the filter should be applied to.
   struct BlocksToFilter {

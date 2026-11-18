@@ -16,6 +16,7 @@
 #include "NumericalAlgorithms/Interpolation/CubicSpanInterpolator.hpp"
 #include "NumericalAlgorithms/Interpolation/LinearSpanInterpolator.hpp"
 #include "NumericalAlgorithms/SpinWeightedSphericalHarmonics/SwshCollocation.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 #include "Utilities/Serialization/Serialize.hpp"
 
@@ -23,8 +24,11 @@ namespace Cce {
 
 // A dummy buffer updater that holds reference worldtube data to compare with
 class KleinGordonDummyBufferUpdater
-    : public WorldtubeBufferUpdater<klein_gordon_input_tags> {
+    : public WorldtubeBufferUpdater<klein_gordon_input_tags>
+      SPECTRE_FINDUS_DERIVED(KleinGordonDummyBufferUpdater,
+                             WorldtubeBufferUpdater<klein_gordon_input_tags>) {
  public:
+  KleinGordonDummyBufferUpdater() = default;
   KleinGordonDummyBufferUpdater(DataVector time_buffer,
                                 const std::optional<double> extraction_radius,
                                 const double coordinate_amplitude,

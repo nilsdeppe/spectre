@@ -22,7 +22,9 @@ namespace TimeSteppers {
  *
  * The CFL factor/stable step size is 2.1172491998184686.
  */
-class Rk4Kennedy : public ImexRungeKutta {
+class Rk4Kennedy : public ImexRungeKutta SPECTRE_FINDUS_DERIVED(Rk4Kennedy,
+                                                                TimeStepper)
+                       SPECTRE_FINDUS_DERIVED(Rk4Kennedy, ImexTimeStepper) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help = {

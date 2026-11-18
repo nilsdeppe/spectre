@@ -93,7 +93,12 @@ namespace Xcts::Solutions {
  * \f$\psi_\mathrm{init}=1\f$ so that a nonlinear iterative numerical solver
  * will converge to the same weak-field solution.
  */
-class ConstantDensityStar : public elliptic::analytic_data::AnalyticSolution {
+class ConstantDensityStar
+    : public elliptic::analytic_data::AnalyticSolution
+      SPECTRE_FINDUS_DERIVED(ConstantDensityStar,
+                             elliptic::analytic_data::InitialGuess)
+          SPECTRE_FINDUS_DERIVED(ConstantDensityStar,
+                                 elliptic::analytic_data::Background) {
  public:
   struct Density {
     using type = double;

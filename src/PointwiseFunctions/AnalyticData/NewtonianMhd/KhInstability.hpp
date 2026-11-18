@@ -15,6 +15,7 @@
 #include "PointwiseFunctions/Hydro/Tags.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
 #include "Utilities/MakeArray.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -96,8 +97,11 @@ namespace NewtonianMhd::AnalyticData {
  * the \f$z-\f$axis.
  */
 template <size_t Dim>
-class KhInstability : public evolution::initial_data::InitialData,
-                      public MarkAsAnalyticData {
+class KhInstability
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticData
+      SPECTRE_FINDUS_DERIVED(KhInstability<Dim>,
+                             evolution::initial_data::InitialData) {
  public:
   using equation_of_state_type = EquationsOfState::IdealFluid<false>;
 

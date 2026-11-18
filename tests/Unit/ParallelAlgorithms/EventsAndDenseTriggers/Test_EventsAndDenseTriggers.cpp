@@ -23,6 +23,7 @@
 #include "Utilities/MakeVector.hpp"
 #include "Utilities/PrettyType.hpp"
 #include "Utilities/ProtocolHelpers.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 #include "Utilities/Serialization/Serialize.hpp"
 #include "Utilities/TMPL.hpp"
@@ -54,7 +55,7 @@ struct EventCount : db::SimpleTag {
 };
 
 template <typename Label>
-class TestEvent : public Event {
+class TestEvent : public Event SPECTRE_FINDUS_DERIVED(TestEvent<Label>, Event) {
  public:
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(TestEvent);  // NOLINT
@@ -343,7 +344,8 @@ void do_test(const bool time_runs_forward, const bool add_event) {
   finish_checks(std::move(events_and_dense_triggers));
 }
 
-class MutatingTrigger : public DenseTrigger {
+class MutatingTrigger : public DenseTrigger SPECTRE_FINDUS_DERIVED(
+                            MutatingTrigger, DenseTrigger) {
  public:
   MutatingTrigger() = default;
   using PUP::able::register_constructor;

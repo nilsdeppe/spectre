@@ -61,7 +61,11 @@ namespace Events {
  * compute tags like `Tags::DerivCompute`
  */
 template <size_t Dim, typename Tensors, typename NonTensorComputeTags>
-class ErrorIfDataTooBig : public Event {
+class ErrorIfDataTooBig
+    : public Event
+      SPECTRE_FINDUS_DERIVED(
+          SINGLE_ARG(ErrorIfDataTooBig<Dim, Tensors, NonTensorComputeTags>),
+          Event) {
  public:
   /// \cond
   using PUP::able::register_constructor;

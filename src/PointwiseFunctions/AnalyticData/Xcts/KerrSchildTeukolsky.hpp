@@ -170,8 +170,13 @@ struct KerrSchildTeukolskyVariables
  * spatial derivative of the conformal spatial metric is computed using
  * numerical partial derivatives.
  */
-class KerrSchildTeukolsky : public elliptic::analytic_data::Background,
-                            public elliptic::analytic_data::InitialGuess {
+class KerrSchildTeukolsky
+    : public elliptic::analytic_data::Background
+      SPECTRE_FINDUS_DERIVED(KerrSchildTeukolsky,
+                             elliptic::analytic_data::Background),
+      public elliptic::analytic_data::InitialGuess
+      SPECTRE_FINDUS_DERIVED(KerrSchildTeukolsky,
+                             elliptic::analytic_data::InitialGuess) {
  public:
   static constexpr size_t Dim = 3;
 

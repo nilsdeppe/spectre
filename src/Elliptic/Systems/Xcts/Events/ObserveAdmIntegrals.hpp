@@ -77,7 +77,8 @@ void local_adm_integrals(
  * - Center of mass
  */
 template <typename ArraySectionIdTag = void>
-class ObserveAdmIntegrals : public Event {
+class ObserveAdmIntegrals : public Event SPECTRE_FINDUS_DERIVED(
+                                ObserveAdmIntegrals<ArraySectionIdTag>, Event) {
  private:
   using ReductionData = Parallel::ReductionData<
       // Number of points

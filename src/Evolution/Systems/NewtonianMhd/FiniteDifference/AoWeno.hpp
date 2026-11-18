@@ -21,6 +21,7 @@
 #include "Evolution/Systems/NewtonianMhd/Tags.hpp"
 #include "PointwiseFunctions/Hydro/EquationsOfState/EquationOfState.hpp"
 #include "PointwiseFunctions/Hydro/Tags.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 
 namespace NewtonianMhd::fd {
 /*!
@@ -28,7 +29,8 @@ namespace NewtonianMhd::fd {
  * ::fd::reconstruction::aoweno_53() for details.
  */
 template <size_t Dim>
-class AoWeno53Prim : public Reconstructor<Dim> {
+class AoWeno53Prim : public Reconstructor<Dim> SPECTRE_FINDUS_DERIVED(
+                         AoWeno53Prim<Dim>, Reconstructor<Dim>) {
  private:
   // Conservative vars tags
   using MassDensityCons = NewtonianMhd::Tags::MassDensityCons;

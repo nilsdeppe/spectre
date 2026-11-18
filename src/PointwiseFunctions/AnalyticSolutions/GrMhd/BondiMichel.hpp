@@ -164,9 +164,12 @@ namespace grmhd::Solutions {
  *
  * The magnetic field \f$b^2\f$ is the same as the \f$\gamma\ne5/3\f$.
  */
-class BondiMichel : public virtual evolution::initial_data::InitialData,
-                    public AnalyticSolution,
-                    public MarkAsAnalyticSolution {
+class BondiMichel
+    : public virtual evolution::initial_data::InitialData,
+      public AnalyticSolution,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(BondiMichel,
+                             evolution::initial_data::InitialData) {
  protected:
   template <typename DataType>
   struct IntermediateVars;

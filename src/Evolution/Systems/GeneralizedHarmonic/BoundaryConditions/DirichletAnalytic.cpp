@@ -16,12 +16,14 @@
 #include "PointwiseFunctions/GeneralRelativity/SpatialMetric.hpp"
 #include "Utilities/CallWithDynamicType.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 
 namespace gh::BoundaryConditions {
 template <size_t Dim>
 DirichletAnalytic<Dim>::DirichletAnalytic(const DirichletAnalytic& rhs)
-    : PUP::able(rhs),
-      BoundaryCondition<Dim>{dynamic_cast<const BoundaryCondition<Dim>&>(rhs)},
+    : SPECTRE_CHARM_PUPable_COPY(rhs)
+          BoundaryCondition<Dim>{dynamic_cast<const BoundaryCondition<Dim>&>(
+              rhs)},
       analytic_prescription_(rhs.analytic_prescription_->get_clone()) {}
 
 template <size_t Dim>
@@ -47,7 +49,7 @@ DirichletAnalytic<Dim>::get_clone() const {
 
 template <size_t Dim>
 void DirichletAnalytic<Dim>::pup(PUP::er& p) {
-  BoundaryCondition<Dim>::pup(p);
+  BoundaryConditions::BoundaryCondition<Dim>::pup(p);
   p | analytic_prescription_;
 }
 

@@ -36,8 +36,10 @@ namespace Burgers::Solutions {
  * from infinity and reaches one of the zeros at \f$t = \frac{w}{2
  * h}\f$.
  */
-class Bump : public evolution::initial_data::InitialData,
-             public MarkAsAnalyticSolution {
+class Bump
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(Bump, evolution::initial_data::InitialData) {
  public:
   struct HalfWidth {
     using type = double;

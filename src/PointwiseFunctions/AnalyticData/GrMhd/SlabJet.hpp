@@ -57,10 +57,12 @@ namespace grmhd::AnalyticData {
  * the initial data, no fluid will flow into the domain during the evolution.
  * This has to be modeled as a boundary condition and is not implemented yet.
  */
-class SlabJet : public evolution::initial_data::InitialData,
-                public MarkAsAnalyticData,
-                public AnalyticDataBase,
-                public hydro::TemperatureInitialization<SlabJet> {
+class SlabJet
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticData,
+      public AnalyticDataBase,
+      public hydro::TemperatureInitialization<SlabJet>
+      SPECTRE_FINDUS_DERIVED(SlabJet, evolution::initial_data::InitialData) {
  public:
   using equation_of_state_type = EquationsOfState::IdealFluid<true>;
 

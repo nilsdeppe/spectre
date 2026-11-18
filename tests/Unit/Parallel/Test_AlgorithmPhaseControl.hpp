@@ -43,6 +43,7 @@
 #include "Utilities/MakeString.hpp"
 #include "Utilities/ProtocolHelpers.hpp"
 #include "Utilities/Requires.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 #include "Utilities/TMPL.hpp"
 
@@ -73,7 +74,8 @@ struct ComponentAlpha;
 template <typename Metavariables>
 struct ComponentBeta;
 
-struct RegisterTrigger : public Trigger {
+struct RegisterTrigger : public Trigger SPECTRE_FINDUS_DERIVED(RegisterTrigger,
+                                                               Trigger) {
   RegisterTrigger() = default;
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(RegisterTrigger);  // NOLINT
@@ -86,7 +88,8 @@ struct RegisterTrigger : public Trigger {
   bool operator()(const size_t step) const { return step % 5 == 0; }
 };
 
-struct SolveTrigger : public Trigger {
+struct SolveTrigger : public Trigger SPECTRE_FINDUS_DERIVED(SolveTrigger,
+                                                            Trigger) {
   SolveTrigger() = default;
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(SolveTrigger);  // NOLINT

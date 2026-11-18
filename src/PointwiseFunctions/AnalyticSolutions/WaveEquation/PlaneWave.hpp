@@ -54,7 +54,9 @@ namespace ScalarWave::Solutions {
  */
 template <size_t Dim>
 class PlaneWave : public evolution::initial_data::InitialData,
-                  public MarkAsAnalyticSolution {
+                  public MarkAsAnalyticSolution
+                  SPECTRE_FINDUS_DERIVED(PlaneWave<Dim>,
+                                         evolution::initial_data::InitialData) {
  public:
   static constexpr size_t volume_dim = Dim;
   struct WaveVector {

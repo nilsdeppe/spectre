@@ -38,9 +38,12 @@ namespace grmhd::AnalyticData {
  * FUKA doesn't export these quantities. We'll have to improve this later, e.g.
  * by constructing an EOS consistent with the FUKA data.
  */
-class FukaInitialData : public evolution::initial_data::InitialData,
-                        public evolution::NumericInitialData,
-                        public AnalyticDataBase {
+class FukaInitialData
+    : public evolution::initial_data::InitialData,
+      public evolution::NumericInitialData,
+      public AnalyticDataBase
+      SPECTRE_FINDUS_DERIVED(FukaInitialData,
+                             evolution::initial_data::InitialData) {
  public:
   struct InfoFilename {
     using type = std::string;

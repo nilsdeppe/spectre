@@ -19,6 +19,7 @@
 #include "PointwiseFunctions/InitialDataUtilities/Background.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialGuess.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace Punctures::AnalyticData {
@@ -133,8 +134,13 @@ struct MultiplePuncturesVariables {
  *
  * \see ::Punctures
  */
-class MultiplePunctures : public elliptic::analytic_data::Background,
-                          public elliptic::analytic_data::InitialGuess {
+class MultiplePunctures
+    : public elliptic::analytic_data::Background
+      SPECTRE_FINDUS_DERIVED(MultiplePunctures,
+                             elliptic::analytic_data::Background),
+      public elliptic::analytic_data::InitialGuess
+      SPECTRE_FINDUS_DERIVED(MultiplePunctures,
+                             elliptic::analytic_data::InitialGuess) {
  public:
   struct Punctures {
     static constexpr Options::String help =

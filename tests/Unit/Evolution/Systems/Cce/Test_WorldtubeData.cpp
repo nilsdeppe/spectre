@@ -45,6 +45,7 @@
 #include "Utilities/ConstantExpressions.hpp"
 #include "Utilities/FileSystem.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 #include "Utilities/Serialization/Serialize.hpp"
 #include "Utilities/TMPL.hpp"
@@ -53,7 +54,9 @@ namespace Cce {
 
 template <typename T>
 class DummyBufferUpdater  // NOLINT
-    : public WorldtubeBufferUpdater<cce_metric_input_tags<T>> {
+    : public WorldtubeBufferUpdater<cce_metric_input_tags<T>>
+      SPECTRE_FINDUS_DERIVED(DummyBufferUpdater<T>,
+                             WorldtubeBufferUpdater<cce_metric_input_tags<T>>) {
  public:
   DummyBufferUpdater()
       : extraction_radius_{1.0},
@@ -244,7 +247,16 @@ class BondiBufferUpdater
           std::is_same_v<T, ComplexModalVector>,
           Tags::worldtube_boundary_tags_for_writing<
               Spectral::Swsh::Tags::SwshTransform>,
-          Tags::worldtube_boundary_tags_for_writing<Tags::BoundaryValue>>> {
+          Tags::worldtube_boundary_tags_for_writing<Tags::BoundaryValue>>>
+      SPECTRE_FINDUS_DERIVED(
+          BondiBufferUpdater<T>,
+          SINGLE_ARG(
+              WorldtubeBufferUpdater<
+                  tmpl::conditional_t<std::is_same_v<T, ComplexModalVector>,
+                                      Tags::worldtube_boundary_tags_for_writing<
+                                          Spectral::Swsh::Tags::SwshTransform>,
+                                      Tags::worldtube_boundary_tags_for_writing<
+                                          Tags::BoundaryValue>>>)) {
  public:
   using tags_for_writing = tmpl::conditional_t<
       std::is_same_v<T, ComplexModalVector>,
@@ -430,7 +442,11 @@ class BondiBufferUpdater
 // does not divide by zero.
 class SimplePolyBondiBufferUpdater
     : public WorldtubeBufferUpdater<Tags::worldtube_boundary_tags_for_writing<
-          Spectral::Swsh::Tags::SwshTransform>> {
+          Spectral::Swsh::Tags::SwshTransform>>
+      SPECTRE_FINDUS_DERIVED(
+          SimplePolyBondiBufferUpdater,
+          WorldtubeBufferUpdater<Tags::worldtube_boundary_tags_for_writing<
+              Spectral::Swsh::Tags::SwshTransform>>) {
  public:
   using tags_for_writing = Tags::worldtube_boundary_tags_for_writing<
       Spectral::Swsh::Tags::SwshTransform>;

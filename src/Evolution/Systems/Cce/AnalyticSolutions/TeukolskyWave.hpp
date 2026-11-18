@@ -38,7 +38,11 @@ namespace Solutions {
  * F(u) = A e^{- u^2 / k^2}.
  * \f]
  */
-struct TeukolskyWave : public SphericalMetricData {
+struct TeukolskyWave : public virtual WorldtubeData SPECTRE_FINDUS_DERIVED(
+                           TeukolskyWave, WorldtubeData),
+                       public virtual SphericalMetricData
+                       SPECTRE_FINDUS_DERIVED(TeukolskyWave,
+                                              SphericalMetricData) {
   struct ExtractionRadius {
     using type = double;
     static constexpr Options::String help{

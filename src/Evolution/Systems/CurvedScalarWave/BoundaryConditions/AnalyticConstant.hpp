@@ -30,7 +30,10 @@ namespace CurvedScalarWave::BoundaryConditions {
 /// A `BoundaryCondition` that imposes the scalar to be constant at the
 /// outer boundary.
 template <size_t Dim>
-class AnalyticConstant final : public BoundaryCondition<Dim> {
+class AnalyticConstant final
+    : public BoundaryCondition<Dim>
+      SPECTRE_FINDUS_DERIVED(AnalyticConstant<Dim>,
+                             domain::BoundaryConditions::BoundaryCondition) {
  public:
   struct Amplitude {
     using type = double;

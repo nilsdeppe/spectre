@@ -13,6 +13,7 @@
 #include "PointwiseFunctions/AnalyticSolutions/AnalyticSolution.hpp"
 #include "PointwiseFunctions/GeneralRelativity/Tags.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -39,9 +40,11 @@ namespace Solutions {
  * `WorldtubeData::get_clone()`, `WorldtubeData::variables_impl()` for tag
  * `Cce::Tags::News`, and `WorldtubeData::prepare_solution()`.
  */
-struct SphericalMetricData : public WorldtubeData {
-
+struct SphericalMetricData : public virtual WorldtubeData SPECTRE_FINDUS_BASE(
+                                 SphericalMetricData) {
+#if defined(SPECTRE_USE_CHARM)
   WRAPPED_PUPable_abstract(SphericalMetricData);  // NOLINT
+#endif                                            // SPECTRE_USE_CHARM
 
   SphericalMetricData() = default;
 

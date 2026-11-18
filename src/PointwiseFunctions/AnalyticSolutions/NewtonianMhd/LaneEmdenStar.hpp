@@ -14,6 +14,7 @@
 #include "PointwiseFunctions/Hydro/EquationsOfState/PolytropicFluid.hpp"
 #include "PointwiseFunctions/Hydro/Tags.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -42,8 +43,11 @@ namespace NewtonianMhd::Solutions {
  * and the mass is \f$M = 4 \pi^2 \alpha^3 \rho_c\f$,
  * where \f$\alpha = \sqrt{\kappa / (2 \pi)}\f$ and \f$G=1\f$.
  */
-class LaneEmdenStar : public evolution::initial_data::InitialData,
-                      public MarkAsAnalyticSolution {
+class LaneEmdenStar
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(LaneEmdenStar,
+                             evolution::initial_data::InitialData) {
  public:
   using equation_of_state_type = EquationsOfState::PolytropicFluid<false>;
 

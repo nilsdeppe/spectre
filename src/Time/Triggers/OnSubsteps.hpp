@@ -44,7 +44,7 @@ namespace Triggers {
  *       Always:
  * ```
  */
-class OnSubsteps : public Trigger {
+class OnSubsteps : public Trigger SPECTRE_FINDUS_DERIVED(OnSubsteps, Trigger) {
  public:
   /// \cond
   OnSubsteps() = default;

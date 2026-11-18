@@ -71,7 +71,10 @@ namespace grmhd::GhValenciaDivClean::fd {
  * element also needs to solve for the metric variables.
  */
 template <typename System>
-class MonotonisedCentralPrim : public Reconstructor<System> {
+class MonotonisedCentralPrim
+    : public Reconstructor<System>
+      SPECTRE_FINDUS_DERIVED(MonotonisedCentralPrim<System>,
+                             Reconstructor<System>) {
  public:
   static constexpr size_t dim = 3;
 

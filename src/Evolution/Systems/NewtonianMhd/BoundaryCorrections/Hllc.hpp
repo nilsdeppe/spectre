@@ -167,7 +167,8 @@ namespace NewtonianMhd::BoundaryCorrections {
  *   signal/characteristic speeds.
  */
 template <size_t Dim>
-class Hllc final : public evolution::BoundaryCorrection {
+class Hllc final : public evolution::BoundaryCorrection SPECTRE_FINDUS_DERIVED(
+                       Hllc<Dim>, evolution::BoundaryCorrection) {
  private:
   struct InterfaceUnitNormal : db::SimpleTag {
     using type = tnsr::i<DataVector, Dim, Frame::Inertial>;

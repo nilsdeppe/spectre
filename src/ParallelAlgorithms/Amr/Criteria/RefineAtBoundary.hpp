@@ -16,6 +16,7 @@
 #include "ParallelAlgorithms/Amr/Criteria/Criterion.hpp"
 #include "ParallelAlgorithms/Amr/Criteria/Type.hpp"
 #include "Utilities/MakeArray.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace amr::Criteria {
@@ -23,7 +24,9 @@ namespace amr::Criteria {
  * \brief Split boundary elements in the direction of the boundary
  */
 template <size_t Dim, size_t DimToRefine>
-class RefineAtBoundary : public amr::Criterion {
+class RefineAtBoundary : public amr::Criterion SPECTRE_FINDUS_DERIVED(
+                             SINGLE_ARG(RefineAtBoundary<Dim, DimToRefine>),
+                             amr::Criterion) {
   static_assert(DimToRefine < Dim);
 
  public:

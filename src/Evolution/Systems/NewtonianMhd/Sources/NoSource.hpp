@@ -8,6 +8,7 @@
 #include "DataStructures/Tensor/TypeAliases.hpp"
 #include "Evolution/Systems/NewtonianMhd/Sources/Source.hpp"
 #include "Options/String.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -31,7 +32,8 @@ namespace NewtonianMhd::Sources {
  * terms in the evolution equations.
  */
 template <size_t Dim>
-class NoSource : public Source<Dim> {
+class NoSource : public Source<Dim> SPECTRE_FINDUS_DERIVED(NoSource<Dim>,
+                                                           Source<Dim>) {
  public:
   using options = tmpl::list<>;
 

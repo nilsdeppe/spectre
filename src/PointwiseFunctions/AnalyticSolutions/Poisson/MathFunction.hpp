@@ -19,6 +19,7 @@
 #include "PointwiseFunctions/MathFunctions/MathFunction.hpp"
 #include "Utilities/ContainerHelpers.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace Poisson::Solutions {
@@ -53,7 +54,12 @@ struct MathFunctionVariables {
 }  // namespace detail
 
 template <size_t Dim>
-class MathFunction : public elliptic::analytic_data::AnalyticSolution {
+class MathFunction
+    : public elliptic::analytic_data::AnalyticSolution
+      SPECTRE_FINDUS_DERIVED(MathFunction<Dim>,
+                             elliptic::analytic_data::InitialGuess)
+          SPECTRE_FINDUS_DERIVED(MathFunction<Dim>,
+                                 elliptic::analytic_data::Background) {
  public:
   struct Function {
     using type = std::unique_ptr<::MathFunction<Dim, Frame::Inertial>>;

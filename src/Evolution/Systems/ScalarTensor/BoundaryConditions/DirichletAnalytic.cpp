@@ -21,11 +21,12 @@
 #include "PointwiseFunctions/GeneralRelativity/SpatialMetric.hpp"
 #include "PointwiseFunctions/GeneralRelativity/Tags.hpp"
 #include "Utilities/CallWithDynamicType.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 
 namespace ScalarTensor::BoundaryConditions {
 DirichletAnalytic::DirichletAnalytic(const DirichletAnalytic& rhs)
-    : PUP::able(rhs),
-      BoundaryCondition{dynamic_cast<const BoundaryCondition&>(rhs)},
+    : SPECTRE_CHARM_PUPable_COPY(
+          rhs) BoundaryCondition{dynamic_cast<const BoundaryCondition&>(rhs)},
       analytic_prescription_(rhs.analytic_prescription_->get_clone()),
       amplitude_(rhs.amplitude_) {}
 

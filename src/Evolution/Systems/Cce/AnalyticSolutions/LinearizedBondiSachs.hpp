@@ -68,7 +68,11 @@ void assign_du_components_from_l_factors(
  * where \f$C_{2a}\f$ and \f$C_{3a}\f$ may be specified freely and are taken via
  * input option `InitialModes`.
  */
-struct LinearizedBondiSachs : public SphericalMetricData {
+struct LinearizedBondiSachs
+    : public virtual WorldtubeData
+      SPECTRE_FINDUS_DERIVED(LinearizedBondiSachs, WorldtubeData),
+      public virtual SphericalMetricData
+      SPECTRE_FINDUS_DERIVED(LinearizedBondiSachs, SphericalMetricData) {
   struct InitialModes {
     using type = std::array<std::complex<double>, 2>;
     static constexpr Options::String help{

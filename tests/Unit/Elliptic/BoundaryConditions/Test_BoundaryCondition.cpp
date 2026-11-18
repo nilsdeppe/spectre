@@ -42,7 +42,10 @@ struct VolumeArgumentTag : db::SimpleTag {
   using type = bool;
 };
 
-class TestBoundaryCondition : public BoundaryCondition<1> {
+class TestBoundaryCondition
+    : public BoundaryCondition<1>
+      SPECTRE_FINDUS_DERIVED(TestBoundaryCondition,
+                             domain::BoundaryConditions::BoundaryCondition) {
  private:
   using Base = BoundaryCondition<1>;
 

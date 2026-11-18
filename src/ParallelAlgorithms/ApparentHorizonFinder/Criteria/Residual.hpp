@@ -17,6 +17,7 @@
 #include "ParallelAlgorithms/ApparentHorizonFinder/Tags.hpp"
 #include "Utilities/ErrorHandling/Assert.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace ah::Criteria {
@@ -41,7 +42,7 @@ namespace ah::Criteria {
  * Note that the residual is obtained from the provided FastFlow::IterInfo. The
  * residual is the gr::surfaces::expansion weighted by the FastFlow weights.
  */
-class Residual : public Criterion {
+class Residual : public Criterion SPECTRE_FINDUS_DERIVED(Residual, Criterion) {
  public:
   struct MinResidual {
     using type = double;

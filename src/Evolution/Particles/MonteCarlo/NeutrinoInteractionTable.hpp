@@ -26,8 +26,13 @@ namespace Particles::MonteCarlo {
 template <size_t EnergyBins, size_t NeutrinoSpecies>
 class NeutrinoInteractionTable
     : public SPECTRE_CHARM_PUPable(
-          SINGLE_ARG(NeutrinoInteractionTable<EnergyBins, NeutrinoSpecies>)) {
+          SINGLE_ARG(NeutrinoInteractionTable<EnergyBins, NeutrinoSpecies>))
+          SPECTRE_FINDUS_DERIVED(
+              SINGLE_ARG(NeutrinoInteractionTable<EnergyBins, NeutrinoSpecies>),
+              SINGLE_ARG(
+                  NeutrinoInteractionTable<EnergyBins, NeutrinoSpecies>)) {
  public:
+  NeutrinoInteractionTable() = default;
   /// Read table from disk and stores interaction rates.
   explicit NeutrinoInteractionTable(const std::string& filename);
 
@@ -56,6 +61,10 @@ class NeutrinoInteractionTable
   SPECTRE_FINDUS_VIRTUAL()
   void pup(PUP::er& p) SPECTRE_CHARM_OVERRIDE();
   WRAPPED_PUPable_decl_template(NeutrinoInteractionTable);
+  // Public since this class is its own serializable base class.
+  FINDUS_OVERRIDE_SERIALIZATION_ID(
+      SINGLE_ARG(NeutrinoInteractionTable<EnergyBins, NeutrinoSpecies>),
+      SINGLE_ARG(NeutrinoInteractionTable<EnergyBins, NeutrinoSpecies>))
 
   /// Interpolate interaction rates to given values of density,
   /// temperature and electron fraction.
@@ -89,7 +98,7 @@ class NeutrinoInteractionTable
   // log(density), then log(temperature), and finally Ye.
   std::vector<double> table_data{};
   // Central energy of each bin
-  std::array<double, EnergyBins> table_neutrino_energies;
+  std::array<double, EnergyBins> table_neutrino_energies{};
   // Table discretization
   std::vector<double> table_log_density{};
   std::vector<double> table_log_temperature{};

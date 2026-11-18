@@ -22,7 +22,10 @@ namespace ScalarTensor::AnalyticData::ScalarField {
  * \brief Vanishing profile for the scalar field.
  */
 template <size_t Dim>
-class Zero : public ScalarTensor::AnalyticData::ScalarField::AnalyticData<Dim> {
+class Zero : public ScalarTensor::AnalyticData::ScalarField::AnalyticData<Dim>
+             SPECTRE_FINDUS_DERIVED(
+                 Zero<Dim>,
+                 ScalarTensor::AnalyticData::ScalarField::AnalyticData<Dim>) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help{

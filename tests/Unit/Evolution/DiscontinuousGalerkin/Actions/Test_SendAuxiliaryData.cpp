@@ -75,6 +75,7 @@
 #include "Utilities/ErrorHandling/Error.hpp"
 #include "Utilities/Gsl.hpp"
 #include "Utilities/ProtocolHelpers.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 #include "Utilities/TMPL.hpp"
 
@@ -97,7 +98,10 @@ struct TwoTimesPsi : db::SimpleTag {
 
 // A dummy boundary correction.
 template <size_t Dim>
-struct AuxiliaryCorrection final : public ::evolution::BoundaryCorrection {
+struct AuxiliaryCorrection final
+    : public ::evolution::BoundaryCorrection
+      SPECTRE_FINDUS_DERIVED(AuxiliaryCorrection<Dim>,
+                             ::evolution::BoundaryCorrection) {
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(AuxiliaryCorrection);  // NOLINT
   AuxiliaryCorrection() = default;
@@ -185,7 +189,9 @@ class BoundaryCondition : public domain::BoundaryConditions::BoundaryCondition {
 };
 
 template <size_t Dim>
-class GhostPsi : public BoundaryCondition<Dim> {
+class GhostPsi : public BoundaryCondition<Dim> SPECTRE_FINDUS_DERIVED(
+                     GhostPsi<Dim>,
+                     domain::BoundaryConditions::BoundaryCondition) {
  public:
   GhostPsi() = default;
   GhostPsi(GhostPsi&&) = default;

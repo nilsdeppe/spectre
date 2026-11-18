@@ -24,6 +24,7 @@
 #include "PointwiseFunctions/AnalyticSolutions/Tags.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
 #include "Time/Tags/Time.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace {
@@ -32,8 +33,11 @@ struct FieldTag : db::SimpleTag {
   using type = Scalar<DataVector>;
 };
 
-struct TestAnalyticSolution : public MarkAsAnalyticSolution,
-                              public evolution::initial_data::InitialData {
+struct TestAnalyticSolution
+    : public MarkAsAnalyticSolution,
+      public evolution::initial_data::InitialData
+      SPECTRE_FINDUS_DERIVED(TestAnalyticSolution,
+                             evolution::initial_data::InitialData) {
   TestAnalyticSolution() = default;
   ~TestAnalyticSolution() override = default;
 
@@ -61,8 +65,10 @@ struct TestAnalyticSolution : public MarkAsAnalyticSolution,
 PUP::able::PUP_ID TestAnalyticSolution::my_PUP_ID = 0;
 #endif  // SPECTRE_USE_CHARM
 
-struct TestAnalyticData : public MarkAsAnalyticData,
-                          public evolution::initial_data::InitialData {
+struct TestAnalyticData
+    : public MarkAsAnalyticData,
+      public evolution::initial_data::InitialData SPECTRE_FINDUS_DERIVED(
+          TestAnalyticData, evolution::initial_data::InitialData) {
   TestAnalyticData() = default;
   ~TestAnalyticData() override = default;
 

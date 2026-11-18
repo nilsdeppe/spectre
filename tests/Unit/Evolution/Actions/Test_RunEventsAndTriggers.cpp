@@ -36,7 +36,7 @@
 #include "Utilities/TMPL.hpp"
 
 namespace {
-struct TestEvent : public Event {
+struct TestEvent : public Event SPECTRE_FINDUS_DERIVED(TestEvent, Event) {
  public:
   using PUP::able::register_constructor;
 #pragma GCC diagnostic push

@@ -35,7 +35,9 @@ namespace TimeSteppers {
  *
  * The CFL factor/stable step size is 1.25637.
  */
-class Rk3Pareschi : public ImexRungeKutta {
+class Rk3Pareschi : public ImexRungeKutta SPECTRE_FINDUS_DERIVED(Rk3Pareschi,
+                                                                 TimeStepper)
+                        SPECTRE_FINDUS_DERIVED(Rk3Pareschi, ImexTimeStepper) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help = {

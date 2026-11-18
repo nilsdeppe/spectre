@@ -54,8 +54,10 @@ namespace ForceFree::Solutions {
  * Electric charge density \f$q\f$ is zero everywhere.
  *
  */
-class FastWave : public evolution::initial_data::InitialData,
-                 public MarkAsAnalyticSolution {
+class FastWave
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(FastWave, evolution::initial_data::InitialData) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help{

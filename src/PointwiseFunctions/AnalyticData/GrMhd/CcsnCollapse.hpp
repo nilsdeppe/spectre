@@ -20,6 +20,7 @@
 #include "PointwiseFunctions/Hydro/Temperature.hpp"
 #include "PointwiseFunctions/Hydro/Units.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 #include "Utilities/TMPL.hpp"
 
@@ -134,10 +135,13 @@ class ProgenitorProfile {
  * be the z axis.
  *
  */
-class CcsnCollapse : public virtual evolution::initial_data::InitialData,
-                     public MarkAsAnalyticData,
-                     public AnalyticDataBase,
-                     public hydro::TemperatureInitialization<CcsnCollapse> {
+class CcsnCollapse
+    : public virtual evolution::initial_data::InitialData,
+      public MarkAsAnalyticData,
+      public AnalyticDataBase,
+      public hydro::TemperatureInitialization<CcsnCollapse>
+      SPECTRE_FINDUS_DERIVED(CcsnCollapse,
+                             evolution::initial_data::InitialData) {
   template <typename DataType>
   struct IntermediateVariables {
     IntermediateVariables(

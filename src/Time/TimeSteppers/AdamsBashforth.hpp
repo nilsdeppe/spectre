@@ -197,7 +197,10 @@ namespace TimeSteppers {
  * is the \f$j\f$th coefficient for an Adams-Bashforth step over the
  * union times from step \f$n\f$ to step \f$n+1\f$.
  */
-class AdamsBashforth : public LtsTimeStepper {
+class AdamsBashforth : public LtsTimeStepper SPECTRE_FINDUS_DERIVED(
+                           AdamsBashforth, TimeStepper)
+                           SPECTRE_FINDUS_DERIVED(AdamsBashforth,
+                                                  LtsTimeStepper) {
  public:
   static constexpr const size_t minimum_order = 1;
   static constexpr const size_t maximum_order = 8;

@@ -15,6 +15,7 @@
 #include "Options/String.hpp"
 #include "PointwiseFunctions/AnalyticData/AnalyticData.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace CurvedScalarWave::AnalyticData {
@@ -41,8 +42,11 @@ namespace CurvedScalarWave::AnalyticData {
  * behavior and late-time tails in different background spacetimes.
  */
 
-class PureSphericalHarmonic : public evolution::initial_data::InitialData,
-                              public MarkAsAnalyticData {
+class PureSphericalHarmonic
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticData
+      SPECTRE_FINDUS_DERIVED(PureSphericalHarmonic,
+                             evolution::initial_data::InitialData) {
  public:
   struct Radius {
     using type = double;

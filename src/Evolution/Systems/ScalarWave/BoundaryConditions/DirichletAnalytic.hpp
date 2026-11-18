@@ -40,7 +40,10 @@ namespace ScalarWave::BoundaryConditions {
  * analytic data.
  */
 template <size_t Dim>
-class DirichletAnalytic final : public BoundaryCondition<Dim> {
+class DirichletAnalytic final
+    : public BoundaryCondition<Dim>
+      SPECTRE_FINDUS_DERIVED(DirichletAnalytic<Dim>,
+                             domain::BoundaryConditions::BoundaryCondition) {
  public:
   /// \brief What analytic solution/data to prescribe.
   struct AnalyticPrescription {

@@ -13,6 +13,7 @@
 #include "PointwiseFunctions/AnalyticData/AnalyticData.hpp"
 #include "PointwiseFunctions/AnalyticSolutions/GeneralRelativity/SphericalKerrSchild.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -68,8 +69,11 @@ namespace ForceFree::AnalyticData {
  * \note We set $M=1$ and $B_0=1$ in the initial data to fix scales.
  *
  */
-class MagnetosphericWald : public evolution::initial_data::InitialData,
-                           public MarkAsAnalyticData {
+class MagnetosphericWald
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticData
+      SPECTRE_FINDUS_DERIVED(MagnetosphericWald,
+                             evolution::initial_data::InitialData) {
  public:
   struct Spin {
     using type = double;

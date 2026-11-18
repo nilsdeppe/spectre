@@ -38,8 +38,10 @@ namespace Burgers::Solutions {
 /// (This is inherited from the Heaviside implementation `step_function`.)
 /// Additionally, the time derivative \f$\partial_t u0\f$ is zero, rather than
 /// the correct delta function.
-class Step : public evolution::initial_data::InitialData,
-             public MarkAsAnalyticSolution {
+class Step
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(Step, evolution::initial_data::InitialData) {
  public:
   struct LeftValue {
     using type = double;

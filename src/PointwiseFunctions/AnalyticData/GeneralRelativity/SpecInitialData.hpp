@@ -36,9 +36,12 @@ namespace gr::AnalyticData {
  * - "Nid_N": lapse
  * - "Nid_Shift": (upper) shift
  */
-class SpecInitialData : public evolution::initial_data::InitialData,
-                        public MarkAsAnalyticData,
-                        public AnalyticDataBase<3> {
+class SpecInitialData
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticData,
+      public AnalyticDataBase<3>
+      SPECTRE_FINDUS_DERIVED(SpecInitialData,
+                             evolution::initial_data::InitialData) {
  public:
   template <typename DataType>
   using tags =

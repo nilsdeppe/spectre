@@ -26,7 +26,11 @@ namespace Elasticity::Solutions {
  * Useful as initial guess.
  */
 template <size_t Dim>
-class Zero : public elliptic::analytic_data::AnalyticSolution {
+class Zero
+    : public elliptic::analytic_data::AnalyticSolution
+      SPECTRE_FINDUS_DERIVED(Zero<Dim>, elliptic::analytic_data::InitialGuess)
+          SPECTRE_FINDUS_DERIVED(Zero<Dim>,
+                                 elliptic::analytic_data::Background) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help{

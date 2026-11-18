@@ -63,8 +63,11 @@ namespace ScalarWave::Solutions {
  * because of the scale invariance of the wave equation. The profile could be a
  * Gausssian centered at 0 with width 1, for instance.
  */
-class RegularSphericalWave : public evolution::initial_data::InitialData,
-                             public MarkAsAnalyticSolution {
+class RegularSphericalWave
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(RegularSphericalWave,
+                             evolution::initial_data::InitialData) {
  public:
   static constexpr size_t volume_dim = 3;
   struct Profile {

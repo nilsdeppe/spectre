@@ -19,6 +19,7 @@
 #include "Evolution/Systems/NewtonianMhd/Tags.hpp"
 #include "Options/String.hpp"
 #include "PointwiseFunctions/Hydro/Tags.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -52,7 +53,9 @@ namespace NewtonianMhd::fd {
  * `::fd::reconstruction::monotonised_central()` for details.
  */
 template <size_t Dim>
-class MonotonisedCentralPrim : public Reconstructor<Dim> {
+class MonotonisedCentralPrim : public Reconstructor<Dim> SPECTRE_FINDUS_DERIVED(
+                                   MonotonisedCentralPrim<Dim>,
+                                   Reconstructor<Dim>) {
  private:
   // Conservative vars tags
   using MassDensityCons = NewtonianMhd::Tags::MassDensityCons;

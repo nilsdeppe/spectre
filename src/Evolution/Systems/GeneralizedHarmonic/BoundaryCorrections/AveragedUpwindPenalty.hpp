@@ -99,7 +99,10 @@ namespace gh::BoundaryCorrections {
  * \f}
  */
 template <size_t Dim>
-class AveragedUpwindPenalty final : public evolution::BoundaryCorrection {
+class AveragedUpwindPenalty final
+    : public evolution::BoundaryCorrection
+      SPECTRE_FINDUS_DERIVED(AveragedUpwindPenalty<Dim>,
+                             evolution::BoundaryCorrection) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help = {

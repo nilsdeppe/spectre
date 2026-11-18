@@ -48,9 +48,12 @@ namespace grmhd::AnalyticData {
  * constant read from the input file.
  */
 template <size_t ThermodynamicDim>
-class SpecInitialData : public evolution::initial_data::InitialData,
-                        public evolution::NumericInitialData,
-                        public AnalyticDataBase {
+class SpecInitialData
+    : public evolution::initial_data::InitialData,
+      public evolution::NumericInitialData,
+      public AnalyticDataBase
+      SPECTRE_FINDUS_DERIVED(SpecInitialData<ThermodynamicDim>,
+                             evolution::initial_data::InitialData) {
  private:
   struct FromEos {};
 

@@ -19,13 +19,16 @@
 #include "Utilities/CallWithDynamicType.hpp"
 #include "Utilities/GenerateInstantiations.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"  // IWYU pragma: keep
 
 namespace SecondOrderScalarWave::BoundaryConditions {
 template <size_t Dim>
 DirichletCharacteristics<Dim>::DirichletCharacteristics(
     const DirichletCharacteristics& rhs)
-    : BoundaryCondition<Dim>{dynamic_cast<const BoundaryCondition<Dim>&>(rhs)},
+    : SPECTRE_CHARM_PUPable_COPY(rhs) BoundaryConditions::BoundaryCondition<
+          Dim>{dynamic_cast<const BoundaryConditions::BoundaryCondition<Dim>&>(
+          rhs)},
       analytic_prescription_(rhs.analytic_prescription_ != nullptr
                                  ? rhs.analytic_prescription_->get_clone()
                                  : nullptr),
@@ -61,7 +64,7 @@ DirichletCharacteristics<Dim>::get_clone() const {
 
 template <size_t Dim>
 void DirichletCharacteristics<Dim>::pup(PUP::er& p) {
-  BoundaryCondition<Dim>::pup(p);
+  BoundaryConditions::BoundaryCondition<Dim>::pup(p);
   p | analytic_prescription_;
   p | copy_psi_from_interior_;
 }

@@ -19,6 +19,7 @@
 #include "PointwiseFunctions/Hydro/Tags.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
 #include "Utilities/MakeArray.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -49,8 +50,11 @@ namespace NewtonianMhd::AnalyticData {
  * where the initial discontinuity is can be chosen arbitrarily.
  */
 template <size_t Dim>
-class SodExplosion : public evolution::initial_data::InitialData,
-                     public MarkAsAnalyticData {
+class SodExplosion
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticData
+      SPECTRE_FINDUS_DERIVED(SodExplosion<Dim>,
+                             evolution::initial_data::InitialData) {
  public:
   static_assert(Dim > 1, "Sod explosion is a 2d and 3d problem.");
   using equation_of_state_type = EquationsOfState::IdealFluid<false>;

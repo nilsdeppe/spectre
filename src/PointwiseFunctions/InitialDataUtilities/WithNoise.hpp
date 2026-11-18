@@ -144,7 +144,9 @@ size_t make_element_seed(
  *         ...
  * \endcode
  */
-class WithNoise : public evolution::initial_data::InitialData {
+class WithNoise
+    : public evolution::initial_data::InitialData
+      SPECTRE_FINDUS_DERIVED(WithNoise, evolution::initial_data::InitialData) {
  public:
   /// The analytic initial data to wrap.
   struct Solution {

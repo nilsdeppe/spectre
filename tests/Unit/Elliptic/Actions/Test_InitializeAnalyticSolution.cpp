@@ -40,7 +40,9 @@ struct ScalarFieldTag : db::SimpleTag {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
-struct NoAnalyticSolution : elliptic::analytic_data::Background {
+struct NoAnalyticSolution
+    : elliptic::analytic_data::Background SPECTRE_FINDUS_DERIVED(
+          NoAnalyticSolution, elliptic::analytic_data::Background) {
   NoAnalyticSolution() = default;
   WRAPPED_PUPable_decl_template(NoAnalyticSolution);  // NOLINT
 
@@ -51,7 +53,11 @@ struct NoAnalyticSolution : elliptic::analytic_data::Background {
 PUP::able::PUP_ID NoAnalyticSolution::my_PUP_ID = 0;  // NOLINT
 #endif                                                // SPECTRE_USE_CHARM
 
-struct AnalyticSolution : elliptic::analytic_data::AnalyticSolution {
+struct AnalyticSolution
+    : elliptic::analytic_data::AnalyticSolution SPECTRE_FINDUS_DERIVED(
+          AnalyticSolution, elliptic::analytic_data::InitialGuess)
+          SPECTRE_FINDUS_DERIVED(AnalyticSolution,
+                                 elliptic::analytic_data::Background) {
   AnalyticSolution() = default;
   WRAPPED_PUPable_decl_template(AnalyticSolution);
   std::unique_ptr<elliptic::analytic_data::AnalyticSolution> get_clone()

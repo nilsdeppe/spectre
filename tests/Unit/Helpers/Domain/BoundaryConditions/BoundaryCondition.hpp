@@ -35,7 +35,7 @@ class TestBoundaryCondition;
 /// To be used in conjunction with `SystemWithBoundaryConditions`
 template <size_t Dim>
 class BoundaryConditionBase
-    : public ::domain::BoundaryConditions::BoundaryCondition {
+    : public virtual ::domain::BoundaryConditions::BoundaryCondition {
  public:
   using creatable_classes = tmpl::list<
       TestBoundaryCondition<Dim>,
@@ -57,7 +57,10 @@ class BoundaryConditionBase
 
 /// \brief Concrete boundary condition
 template <size_t Dim>
-class TestBoundaryCondition final : public BoundaryConditionBase<Dim> {
+class TestBoundaryCondition final
+    : public BoundaryConditionBase<Dim>
+      SPECTRE_FINDUS_DERIVED(TestBoundaryCondition<Dim>,
+                             ::domain::BoundaryConditions::BoundaryCondition) {
  public:
   TestBoundaryCondition() = default;
   explicit TestBoundaryCondition(Direction<Dim> direction, size_t block_id = 0);

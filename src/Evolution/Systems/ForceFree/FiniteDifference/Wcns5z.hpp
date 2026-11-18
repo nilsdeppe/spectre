@@ -54,7 +54,8 @@ namespace ForceFree::fd {
  * \brief Fifth order weighted nonlinear compact scheme reconstruction using the
  * Z oscillation indicator. See ::fd::reconstruction::wcns5z() for details.
  */
-class Wcns5z : public Reconstructor {
+class Wcns5z : public Reconstructor SPECTRE_FINDUS_DERIVED(Wcns5z,
+                                                           Reconstructor) {
  private:
   using TildeE = ForceFree::Tags::TildeE;
   using TildeB = ForceFree::Tags::TildeB;

@@ -60,7 +60,9 @@ class MagneticFieldLoop
     : public evolution::initial_data::InitialData,
       public MarkAsAnalyticData,
       public AnalyticDataBase,
-      public hydro::TemperatureInitialization<MagneticFieldLoop> {
+      public hydro::TemperatureInitialization<MagneticFieldLoop>
+      SPECTRE_FINDUS_DERIVED(MagneticFieldLoop,
+                             evolution::initial_data::InitialData) {
  public:
   using equation_of_state_type = EquationsOfState::IdealFluid<true>;
 

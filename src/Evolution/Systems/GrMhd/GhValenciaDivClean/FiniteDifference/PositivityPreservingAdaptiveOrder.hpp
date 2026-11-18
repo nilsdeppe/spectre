@@ -27,6 +27,7 @@
 #include "Options/Context.hpp"
 #include "Options/String.hpp"
 #include "PointwiseFunctions/Hydro/Tags.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -70,7 +71,10 @@ namespace grmhd::GhValenciaDivClean::fd {
  * element also needs to solve for the metric variables.
  */
 template <typename System>
-class PositivityPreservingAdaptiveOrderPrim : public Reconstructor<System> {
+class PositivityPreservingAdaptiveOrderPrim
+    : public Reconstructor<System>
+      SPECTRE_FINDUS_DERIVED(PositivityPreservingAdaptiveOrderPrim<System>,
+                             Reconstructor<System>) {
  private:
   using positivity_preserving_tags =
       tmpl::list<hydro::Tags::RestMassDensity<DataVector>,

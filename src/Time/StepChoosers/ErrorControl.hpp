@@ -109,7 +109,11 @@ class ErrorControl;
 template <typename StepChooserUse, typename System, typename... VariablesTags>
 class ErrorControl<StepChooserUse, System, tmpl::list<VariablesTags...>>
     : public StepChooser<StepChooserUse>,
-      public RequestsStepperErrorTolerances {
+      public RequestsStepperErrorTolerances
+      SPECTRE_FINDUS_DERIVED(
+          SINGLE_ARG(ErrorControl<StepChooserUse, System,
+                                  tmpl::list<VariablesTags...>>),
+          StepChooser<StepChooserUse>) {
  public:
   /// \cond
   ErrorControl() = default;

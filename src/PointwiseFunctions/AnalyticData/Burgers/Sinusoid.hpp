@@ -88,8 +88,10 @@ namespace Burgers::AnalyticData {
        return np.asarray(results)
  * \endcode
  */
-class Sinusoid : public evolution::initial_data::InitialData,
-                 public MarkAsAnalyticData {
+class Sinusoid
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticData
+      SPECTRE_FINDUS_DERIVED(Sinusoid, evolution::initial_data::InitialData) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help{

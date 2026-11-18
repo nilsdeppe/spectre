@@ -14,6 +14,7 @@
 #include "Elliptic/BoundaryConditions/BoundaryConditionType.hpp"
 #include "Options/String.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace ScalarSelfForce::BoundaryConditions {
@@ -23,7 +24,10 @@ namespace ScalarSelfForce::BoundaryConditions {
  * regularity at the horizon in horizon-penetrating coordinates or at
  * angular boundaries.
  */
-class None : public elliptic::BoundaryConditions::BoundaryCondition<2> {
+class None
+    : public elliptic::BoundaryConditions::BoundaryCondition<2>
+      SPECTRE_FINDUS_DERIVED(None,
+                             domain::BoundaryConditions::BoundaryCondition) {
  private:
   using Base = elliptic::BoundaryConditions::BoundaryCondition<2>;
 

@@ -36,7 +36,8 @@ amr::Flag random_flag(
  * - If all weights are zero, `amr::Flag::DoNothing` is always chosen.
  */
 template <Type CriteriaType>
-class Random : public Criterion {
+class Random : public Criterion SPECTRE_FINDUS_DERIVED(Random<CriteriaType>,
+                                                       Criterion) {
  public:
   struct ProbabilityWeights {
     using type = std::unordered_map<amr::Flag, size_t>;

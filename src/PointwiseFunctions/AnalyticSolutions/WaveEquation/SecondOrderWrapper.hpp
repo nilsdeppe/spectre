@@ -59,8 +59,11 @@ namespace SecondOrderScalarWave::Solutions {
  * \tparam SolutionType a `ScalarWave` analytic solution to adapt
  */
 template <typename SolutionType>
-class SecondOrderWrapper : public evolution::initial_data::InitialData,
-                           public MarkAsAnalyticSolution {
+class SecondOrderWrapper
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(SecondOrderWrapper<SolutionType>,
+                             evolution::initial_data::InitialData) {
  private:
   // Lifetime-safe backing storage for `help`, built on first use so it is
   // constructed before `help` reads it.

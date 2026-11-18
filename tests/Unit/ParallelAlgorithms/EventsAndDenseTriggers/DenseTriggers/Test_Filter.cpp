@@ -27,12 +27,14 @@
 #include "Time/TimeStepId.hpp"
 #include "Time/Triggers/TimeCompares.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 #include "Utilities/Serialization/Serialize.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace {
-class TestTrigger : public Trigger {
+class TestTrigger : public Trigger SPECTRE_FINDUS_DERIVED(TestTrigger,
+                                                          Trigger) {
  public:
   TestTrigger() = default;
   using PUP::able::register_constructor;

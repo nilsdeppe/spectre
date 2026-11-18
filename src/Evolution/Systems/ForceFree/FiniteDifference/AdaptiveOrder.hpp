@@ -27,6 +27,7 @@
 #include "Options/Context.hpp"
 #include "Options/String.hpp"
 #include "PointwiseFunctions/GeneralRelativity/TagsDeclarations.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -59,7 +60,8 @@ namespace ForceFree::fd {
  * positive.
  *
  */
-class AdaptiveOrder : public Reconstructor {
+class AdaptiveOrder : public Reconstructor SPECTRE_FINDUS_DERIVED(
+                          AdaptiveOrder, Reconstructor) {
  private:
   using TildeE = ForceFree::Tags::TildeE;
   using TildeB = ForceFree::Tags::TildeB;

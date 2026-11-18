@@ -18,6 +18,7 @@
 #include "PointwiseFunctions/InitialDataUtilities/AnalyticSolution.hpp"
 #include "Utilities/ContainerHelpers.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace Poisson::Solutions {
@@ -72,7 +73,12 @@ struct MoustacheVariables {
  * This solution is taken from \cite Stamm2010.
  */
 template <size_t Dim>
-class Moustache : public elliptic::analytic_data::AnalyticSolution {
+class Moustache
+    : public elliptic::analytic_data::AnalyticSolution
+      SPECTRE_FINDUS_DERIVED(Moustache<Dim>,
+                             elliptic::analytic_data::InitialGuess)
+          SPECTRE_FINDUS_DERIVED(Moustache<Dim>,
+                                 elliptic::analytic_data::Background) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help{

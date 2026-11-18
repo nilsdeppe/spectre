@@ -45,7 +45,9 @@ class KomissarovShock
     : public evolution::initial_data::InitialData,
       public AnalyticSolution,
       public hydro::TemperatureInitialization<KomissarovShock>,
-      public MarkAsAnalyticSolution {
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(KomissarovShock,
+                             evolution::initial_data::InitialData) {
  public:
   using equation_of_state_type = EquationsOfState::IdealFluid<true>;
 

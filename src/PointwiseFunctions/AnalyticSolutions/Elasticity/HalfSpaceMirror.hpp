@@ -114,7 +114,12 @@ struct HalfSpaceMirrorVariables {
  * profile and \f$ \Theta = \mathrm{Tr}(S)\f$ the materials expansion.
  *
  */
-class HalfSpaceMirror : public elliptic::analytic_data::AnalyticSolution {
+class HalfSpaceMirror
+    : public elliptic::analytic_data::AnalyticSolution
+      SPECTRE_FINDUS_DERIVED(HalfSpaceMirror,
+                             elliptic::analytic_data::InitialGuess)
+          SPECTRE_FINDUS_DERIVED(HalfSpaceMirror,
+                                 elliptic::analytic_data::Background) {
  public:
   using constitutive_relation_type =
       Elasticity::ConstitutiveRelations::IsotropicHomogeneous<3>;

@@ -30,7 +30,8 @@ namespace ScalarTensor::sgb::CouplingFunctions {
  * scalarization. See \cite Doneva:2022ewd for a review on spontanous
  * scalarization.
  */
-class QuarticPolynomial : public CouplingFunction {
+class QuarticPolynomial : public CouplingFunction SPECTRE_FINDUS_DERIVED(
+                              QuarticPolynomial, CouplingFunction) {
  public:
   static constexpr Options::String help = {
       "Coupling function of polynomial type with degree up to four"};

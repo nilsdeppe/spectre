@@ -76,10 +76,13 @@ namespace grmhd::AnalyticData {
  *
  * A uniform magnetic field can be added.
  */
-class KhInstability : public evolution::initial_data::InitialData,
-                      public MarkAsAnalyticData,
-                      public AnalyticDataBase,
-                      public hydro::TemperatureInitialization<KhInstability> {
+class KhInstability
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticData,
+      public AnalyticDataBase,
+      public hydro::TemperatureInitialization<KhInstability>
+      SPECTRE_FINDUS_DERIVED(KhInstability,
+                             evolution::initial_data::InitialData) {
  public:
   using equation_of_state_type = EquationsOfState::IdealFluid<true>;
 

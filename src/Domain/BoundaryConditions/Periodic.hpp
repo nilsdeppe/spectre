@@ -40,12 +40,19 @@ class MarkAsPeriodic {
  *
  * to the list of creatable classes.
  *
+ * The system's boundary condition base class must inherit virtually from
+ * `domain::BoundaryConditions::BoundaryCondition`.
+ *
  * \note Not all domain creators will allow you to specify periodic boundary
  * conditions since they may not make sense.
  */
 template <typename SystemBoundaryConditionBaseClass>
-struct Periodic final : public SystemBoundaryConditionBaseClass,
-                        public MarkAsPeriodic {
+struct Periodic final
+    : public virtual SystemBoundaryConditionBaseClass,
+      public virtual domain::BoundaryConditions::BoundaryCondition
+      SPECTRE_FINDUS_DERIVED(Periodic<SystemBoundaryConditionBaseClass>,
+                             domain::BoundaryConditions::BoundaryCondition),
+      public MarkAsPeriodic {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help{

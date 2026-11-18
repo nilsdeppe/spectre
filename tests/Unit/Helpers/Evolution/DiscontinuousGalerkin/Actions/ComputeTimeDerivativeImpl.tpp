@@ -94,6 +94,7 @@
 #include "Utilities/Literals.hpp"
 #include "Utilities/Numeric.hpp"
 #include "Utilities/ProtocolHelpers.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 #include "Utilities/TMPL.hpp"
 
@@ -622,7 +623,10 @@ struct NonconservativeNormalDotFlux {
 };
 
 template <size_t Dim, bool HasPrims>
-struct BoundaryTerms final : public ::evolution::BoundaryCorrection {
+struct BoundaryTerms final
+    : public ::evolution::BoundaryCorrection
+      SPECTRE_FINDUS_DERIVED(SINGLE_ARG(BoundaryTerms<Dim, HasPrims>),
+                             ::evolution::BoundaryCorrection) {
   struct MaxAbsCharSpeed : db::SimpleTag {
     using type = Scalar<DataVector>;
   };
@@ -976,7 +980,10 @@ class BoundaryCondition : public domain::BoundaryConditions::BoundaryCondition {
 };
 
 template <size_t Dim>
-class DemandOutgoingCharSpeeds : public BoundaryCondition<Dim> {
+class DemandOutgoingCharSpeeds
+    : public BoundaryCondition<Dim>
+      SPECTRE_FINDUS_DERIVED(DemandOutgoingCharSpeeds<Dim>,
+                             domain::BoundaryConditions::BoundaryCondition) {
  public:
   DemandOutgoingCharSpeeds() = default;
   DemandOutgoingCharSpeeds(DemandOutgoingCharSpeeds&&) = default;

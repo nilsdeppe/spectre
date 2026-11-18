@@ -11,6 +11,7 @@
 #include "Parallel/GlobalCache.hpp"
 #include "ParallelAlgorithms/ApparentHorizonFinder/Criteria/Criterion.hpp"
 #include "ParallelAlgorithms/ApparentHorizonFinder/FastFlow.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace ah::Criteria {
@@ -20,7 +21,8 @@ namespace ah::Criteria {
  * Useful to force the horizon finder to adopt the maximum allowed resolution
  * and as a simple criterion for testing.
  */
-class IncreaseResolution : public Criterion {
+class IncreaseResolution : public Criterion SPECTRE_FINDUS_DERIVED(
+                               IncreaseResolution, Criterion) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help = {

@@ -59,7 +59,7 @@ class GlobalCache;
 }  // namespace Parallel
 
 namespace {
-class OtherEvent : public Event {
+class OtherEvent : public Event SPECTRE_FINDUS_DERIVED(OtherEvent, Event) {
  public:
   using PUP::able::register_constructor;
 #pragma GCC diagnostic push
@@ -99,9 +99,13 @@ PUP::able::PUP_ID OtherEvent::my_PUP_ID = 0;  // NOLINT
 #endif                                        // SPECTRE_USE_CHARM
 
 template <typename Tag>
-class ToleranceRequest : public StepChooser<StepChooserUse::Slab>,
-                         public StepChooser<StepChooserUse::LtsStep>,
-                         public RequestsStepperErrorTolerances {
+class ToleranceRequest
+    : public StepChooser<StepChooserUse::Slab>,
+      public StepChooser<StepChooserUse::LtsStep>,
+      public RequestsStepperErrorTolerances SPECTRE_FINDUS_DERIVED(
+          ToleranceRequest<Tag>, StepChooser<StepChooserUse::Slab>)
+          SPECTRE_FINDUS_DERIVED(ToleranceRequest<Tag>,
+                                 StepChooser<StepChooserUse::LtsStep>) {
  public:
   ToleranceRequest() = default;
   using PUP::able::register_constructor;

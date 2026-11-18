@@ -47,7 +47,8 @@ struct System {
   using primal_fields = tmpl::list<ScalarFieldTag>;
 };
 
-struct Background : elliptic::analytic_data::Background {
+struct Background : elliptic::analytic_data::Background SPECTRE_FINDUS_DERIVED(
+                        Background, elliptic::analytic_data::Background) {
   Background() = default;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"

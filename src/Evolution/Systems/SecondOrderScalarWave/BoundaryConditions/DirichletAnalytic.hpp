@@ -41,7 +41,10 @@ namespace SecondOrderScalarWave::BoundaryConditions {
  * analytic solution evaluated at the boundary.
  */
 template <size_t Dim>
-class DirichletAnalytic final : public BoundaryCondition<Dim> {
+class DirichletAnalytic final
+    : public BoundaryCondition<Dim>
+      SPECTRE_FINDUS_DERIVED(DirichletAnalytic<Dim>,
+                             domain::BoundaryConditions::BoundaryCondition) {
  public:
   /// \brief What analytic solution to prescribe.
   struct AnalyticPrescription {

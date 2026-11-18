@@ -53,7 +53,10 @@ struct Submeasurement
 };
 
 template <typename Label, typename ControlSystems, bool CallRunCallbacks>
-class TestEvent : public ::Event {
+class TestEvent : public ::Event SPECTRE_FINDUS_DERIVED(
+                      SINGLE_ARG(
+                          TestEvent<Label, ControlSystems, CallRunCallbacks>),
+                      ::Event) {
  public:
   /// \cond
   // LCOV_EXCL_START

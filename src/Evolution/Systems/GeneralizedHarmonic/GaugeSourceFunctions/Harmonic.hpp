@@ -9,6 +9,7 @@
 #include "DataStructures/Tensor/TypeAliases.hpp"
 #include "Evolution/Systems/GeneralizedHarmonic/GaugeSourceFunctions/Gauges.hpp"
 #include "Options/String.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -23,7 +24,8 @@ namespace gh::gauges {
 /*!
  * \brief Imposes the harmonic gauge condition, \f$H_a=0\f$.
  */
-class Harmonic final : public GaugeCondition {
+class Harmonic final : public GaugeCondition SPECTRE_FINDUS_DERIVED(
+                           Harmonic, GaugeCondition) {
  public:
   using options = tmpl::list<>;
 

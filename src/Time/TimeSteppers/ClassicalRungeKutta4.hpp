@@ -47,7 +47,8 @@ namespace TimeSteppers {
  *
  * The CFL factor/stable step size is 1.3926467817026411.
  */
-class ClassicalRungeKutta4 : public RungeKutta {
+class ClassicalRungeKutta4 : public RungeKutta SPECTRE_FINDUS_DERIVED(
+                                 ClassicalRungeKutta4, TimeStepper) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help = {

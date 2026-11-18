@@ -21,7 +21,8 @@ namespace TimeSteppers {
  *
  * The CFL stable step size is 1.7534234969024887.
  */
-class Rk5Tsitouras : public RungeKutta {
+class Rk5Tsitouras : public RungeKutta SPECTRE_FINDUS_DERIVED(Rk5Tsitouras,
+                                                              TimeStepper) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help = {

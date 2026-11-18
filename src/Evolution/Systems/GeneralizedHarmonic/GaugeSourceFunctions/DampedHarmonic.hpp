@@ -13,6 +13,7 @@
 #include "Evolution/Systems/GeneralizedHarmonic/Tags.hpp"
 #include "PointwiseFunctions/GeneralRelativity/TagsDeclarations.hpp"
 #include "Utilities/ContainerHelpers.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -206,7 +207,8 @@ void damped_harmonic(
  *
  * \see `damped_harmonic()`
  */
-class DampedHarmonic final : public GaugeCondition {
+class DampedHarmonic final : public GaugeCondition SPECTRE_FINDUS_DERIVED(
+                                 DampedHarmonic, GaugeCondition) {
  public:
   /// The width of the Gaussian for the spatial decay of the damped harmonic
   /// gauge.

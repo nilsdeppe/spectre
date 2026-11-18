@@ -36,6 +36,7 @@
 #include "PointwiseFunctions/InitialDataUtilities/InitialGuess.hpp"
 #include "Utilities/Literals.hpp"
 #include "Utilities/ProtocolHelpers.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 #include "Utilities/Serialization/Serialize.hpp"
 #include "Utilities/TMPL.hpp"
@@ -67,7 +68,10 @@ using test_tags = tmpl::list<ScalarFieldTag<1>, ScalarFieldTag<2>,
                              FluxTag<Dim, 1>, FluxTag<Dim, 2>>;
 
 template <size_t Dim>
-struct TestSolution : elliptic::analytic_data::InitialGuess {
+struct TestSolution
+    : elliptic::analytic_data::InitialGuess
+      SPECTRE_FINDUS_DERIVED(TestSolution<Dim>,
+                             elliptic::analytic_data::InitialGuess) {
   using options = tmpl::list<>;
   static constexpr Options::String help{"Initial data."};
   TestSolution() = default;

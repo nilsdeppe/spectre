@@ -30,7 +30,7 @@ namespace Triggers {
 /// \warning This trigger will only fire if it is actually checked at
 /// the times specified.  The StepToTimes StepChooser can be useful
 /// for this.
-class Times : public Trigger {
+class Times : public Trigger SPECTRE_FINDUS_DERIVED(Times, Trigger) {
  public:
   /// \cond
   Times() = default;

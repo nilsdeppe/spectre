@@ -151,9 +151,13 @@ namespace elliptic::analytic_data {
  *
  * \see ::NumericData
  */
-class NumericData : public elliptic::analytic_data::Background,
-                    public elliptic::analytic_data::InitialGuess,
-                    public ::NumericData {
+class NumericData
+    : public elliptic::analytic_data::Background
+      SPECTRE_FINDUS_DERIVED(NumericData, elliptic::analytic_data::Background),
+      public elliptic::analytic_data::InitialGuess
+      SPECTRE_FINDUS_DERIVED(NumericData,
+                             elliptic::analytic_data::InitialGuess),
+      public ::NumericData {
  public:
   using ::NumericData::NumericData;
 
@@ -176,8 +180,11 @@ namespace evolution::initial_data {
  *
  * \see ::NumericData
  */
-class NumericData : public evolution::initial_data::InitialData,
-                    public ::NumericData {
+class NumericData
+    : public evolution::initial_data::InitialData,
+      public ::NumericData
+      SPECTRE_FINDUS_DERIVED(NumericData,
+                             evolution::initial_data::InitialData) {
  public:
   using ::NumericData::NumericData;
 

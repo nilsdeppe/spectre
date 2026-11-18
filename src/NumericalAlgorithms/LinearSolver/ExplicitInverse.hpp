@@ -81,10 +81,13 @@ struct ExplicitInverse {
  *   subdomain problems only approximately, but possibly still sufficiently to
  *   provide effective preconditioning.
  */
-template <typename ValueType,
-          typename LinearSolverRegistrars =
-              tmpl::list<Registrars::ExplicitInverse<ValueType>>>
-class ExplicitInverse : public LinearSolver<LinearSolverRegistrars> {
+template <typename ValueType, typename LinearSolverRegistrars = tmpl::list<
+                                  Registrars::ExplicitInverse<ValueType>>>
+class ExplicitInverse
+    : public LinearSolver<LinearSolverRegistrars>
+      SPECTRE_FINDUS_DERIVED(
+          SINGLE_ARG(ExplicitInverse<ValueType, LinearSolverRegistrars>),
+          LinearSolver<LinearSolverRegistrars>) {
  private:
   using Base = LinearSolver<LinearSolverRegistrars>;
 

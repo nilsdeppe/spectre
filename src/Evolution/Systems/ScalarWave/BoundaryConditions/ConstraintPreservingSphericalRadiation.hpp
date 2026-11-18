@@ -174,7 +174,9 @@ convert_constraint_preserving_spherical_radiation_type_from_yaml(
  */
 template <size_t Dim>
 class ConstraintPreservingSphericalRadiation final
-    : public BoundaryCondition<Dim> {
+    : public BoundaryCondition<Dim>
+      SPECTRE_FINDUS_DERIVED(ConstraintPreservingSphericalRadiation<Dim>,
+                             domain::BoundaryConditions::BoundaryCondition) {
  public:
   struct TypeOptionTag {
     using type = detail::ConstraintPreservingSphericalRadiationType;

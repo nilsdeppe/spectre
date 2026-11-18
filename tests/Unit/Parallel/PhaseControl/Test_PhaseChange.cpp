@@ -65,7 +65,8 @@ namespace TestGlobalStateRecord {
 bool contributed = false;
 }  // namespace TestGlobalStateRecord
 
-struct TestPhaseChange : public PhaseChange {
+struct TestPhaseChange : public PhaseChange SPECTRE_FINDUS_DERIVED(
+                             TestPhaseChange, PhaseChange) {
   TestPhaseChange() = default;
   using PUP::able::register_constructor;
 

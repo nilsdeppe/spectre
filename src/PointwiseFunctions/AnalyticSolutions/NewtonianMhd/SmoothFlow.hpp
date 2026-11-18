@@ -15,6 +15,7 @@
 #include "PointwiseFunctions/Hydro/EquationsOfState/IdealFluid.hpp"
 #include "PointwiseFunctions/Hydro/Tags.hpp"
 #include "Utilities/MakeArray.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace NewtonianMhd::Solutions {
@@ -48,9 +49,12 @@ namespace NewtonianMhd::Solutions {
  * where the pressure is held constant.
  */
 template <size_t Dim>
-class SmoothFlow : public evolution::initial_data::InitialData,
-                   virtual public MarkAsAnalyticSolution,
-                   private hydro::Solutions::SmoothFlow<Dim, false> {
+class SmoothFlow
+    : public evolution::initial_data::InitialData,
+      virtual public MarkAsAnalyticSolution,
+      private hydro::Solutions::SmoothFlow<Dim, false>
+      SPECTRE_FINDUS_DERIVED(SmoothFlow<Dim>,
+                             evolution::initial_data::InitialData) {
   using smooth_flow = hydro::Solutions::SmoothFlow<Dim, false>;
 
  public:

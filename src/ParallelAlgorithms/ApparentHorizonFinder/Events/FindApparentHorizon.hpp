@@ -45,7 +45,8 @@ namespace ah::Events {
  *
  */
 template <typename HorizonMetavars>
-class FindApparentHorizon : public Event {
+class FindApparentHorizon : public Event SPECTRE_FINDUS_DERIVED(
+                                FindApparentHorizon<HorizonMetavars>, Event) {
  public:
   /// \cond
   using PUP::able::register_constructor;

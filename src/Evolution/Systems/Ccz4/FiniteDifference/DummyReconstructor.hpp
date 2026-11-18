@@ -5,6 +5,7 @@
 
 #include "Evolution/Systems/Ccz4/FiniteDifference/Reconstructor.hpp"
 #include "Options/String.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 
 namespace Ccz4::fd {
 /*!
@@ -13,7 +14,8 @@ namespace Ccz4::fd {
  * This class is needed to use the SetInterpolators action in
  * dg-subcell infrastructure.
  */
-class DummyReconstructor : public Reconstructor {
+class DummyReconstructor : public Reconstructor SPECTRE_FINDUS_DERIVED(
+                               DummyReconstructor, Reconstructor) {
  public:
   using options = tmpl::list<>;
 

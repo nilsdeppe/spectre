@@ -177,7 +177,10 @@ struct FormatGridStatsOutput
  */
 template <size_t Dim, typename... NonTensorComputeTags>
 class ObserveGridStats<Dim, tmpl::list<NonTensorComputeTags...>>
-    : public Event {
+    : public Event SPECTRE_FINDUS_DERIVED(
+          SINGLE_ARG(
+              ObserveGridStats<Dim, tmpl::list<NonTensorComputeTags...>>),
+          Event) {
   static_assert(
       (std::is_base_of_v<::Events::Tags::ObserverMesh<Dim>,
                          NonTensorComputeTags> or

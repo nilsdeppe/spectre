@@ -14,8 +14,11 @@ namespace Particles::MonteCarlo {
 
 template <size_t NeutrinoSpecies>
 class MonteCarloOptions
-    : public SPECTRE_CHARM_PUPable(MonteCarloOptions<NeutrinoSpecies>) {
+    : public SPECTRE_CHARM_PUPable(MonteCarloOptions<NeutrinoSpecies>)
+          SPECTRE_FINDUS_DERIVED(MonteCarloOptions<NeutrinoSpecies>,
+                                 MonteCarloOptions<NeutrinoSpecies>) {
  public:
+  MonteCarloOptions() = default;
   explicit MonteCarloOptions(
       const std::array<double, NeutrinoSpecies> initial_packet_energy)
       : initial_packet_energy_(initial_packet_energy) {}
@@ -36,13 +39,16 @@ class MonteCarloOptions
   SPECTRE_FINDUS_VIRTUAL()
   void pup(PUP::er& p) SPECTRE_CHARM_OVERRIDE();
   WRAPPED_PUPable_decl_template(MonteCarloOptions);
+  // Public since this class is its own serializable base class.
+  FINDUS_OVERRIDE_SERIALIZATION_ID(MonteCarloOptions<NeutrinoSpecies>,
+                                   MonteCarloOptions<NeutrinoSpecies>)
 
   const std::array<double, NeutrinoSpecies>& get_initial_packet_energy() const {
     return initial_packet_energy_;
   }
 
  private:
-  std::array<double, NeutrinoSpecies> initial_packet_energy_;
+  std::array<double, NeutrinoSpecies> initial_packet_energy_{};
 };
 
 }  // namespace Particles::MonteCarlo

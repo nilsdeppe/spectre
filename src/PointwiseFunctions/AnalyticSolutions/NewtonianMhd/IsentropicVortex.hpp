@@ -17,6 +17,7 @@
 #include "PointwiseFunctions/Hydro/Tags.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
 #include "Utilities/MakeArray.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -83,8 +84,11 @@ namespace NewtonianMhd::Solutions {
  * \f$\epsilon \cos{z}\f$.
  */
 template <size_t Dim>
-class IsentropicVortex : public evolution::initial_data::InitialData,
-                         public MarkAsAnalyticSolution {
+class IsentropicVortex
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(IsentropicVortex<Dim>,
+                             evolution::initial_data::InitialData) {
   static_assert(Dim == 2 or Dim == 3,
                 "IsentropicVortex solution works in 2 and 3 dimensions");
 

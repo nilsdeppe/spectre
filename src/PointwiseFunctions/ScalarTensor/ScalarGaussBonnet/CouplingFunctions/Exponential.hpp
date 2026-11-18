@@ -29,7 +29,8 @@ namespace ScalarTensor::sgb::CouplingFunctions {
  * For this type of coupling the theory is also referred to as
  * _Einstein-dilaton-Gauss-Bonnet_.
  */
-class Exponential : public CouplingFunction {
+class Exponential : public CouplingFunction SPECTRE_FINDUS_DERIVED(
+                        Exponential, CouplingFunction) {
  public:
   static constexpr Options::String help = {
       "Coupling function of exponential type"};

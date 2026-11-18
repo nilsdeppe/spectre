@@ -23,7 +23,8 @@ namespace InitialShapes {
  * \brief An initial Strahlkorper shape read from an H5 file.
  */
 template <typename Frame>
-class FromFile : public InitialShape<Frame> {
+class FromFile : public InitialShape<Frame> SPECTRE_FINDUS_DERIVED(
+                     FromFile<Frame>, InitialShape<Frame>) {
  public:
   struct H5Filename {
     using type = std::string;

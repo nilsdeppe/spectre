@@ -19,7 +19,9 @@
 #include "Utilities/Serialization/Serialize.hpp"
 
 namespace {
-class TestFoT : public domain::FunctionsOfTime::FunctionOfTime {
+class TestFoT
+    : public domain::FunctionsOfTime::FunctionOfTime
+      SPECTRE_FINDUS_DERIVED(TestFoT, domain::FunctionsOfTime::FunctionOfTime) {
  public:
   TestFoT() = default;
 

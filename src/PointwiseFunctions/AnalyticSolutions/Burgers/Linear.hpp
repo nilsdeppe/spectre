@@ -27,8 +27,10 @@ namespace Burgers::Solutions {
 /// A solution that is linear in space at all times.
 ///
 /// \f$u(x, t) = x / (t - t_0)\f$ where \f$t_0\f$ is the shock time.
-class Linear : public evolution::initial_data::InitialData,
-               public MarkAsAnalyticSolution {
+class Linear
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(Linear, evolution::initial_data::InitialData) {
  public:
   struct ShockTime {
     using type = double;

@@ -9,6 +9,7 @@
 
 #include "DataStructures/DataVector.hpp"
 #include "Domain/CoordinateMaps/TimeDependent/ShapeMapTransitionFunctions/ShapeMapTransitionFunction.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 
 namespace domain::CoordinateMaps::ShapeMapTransitionFunctions {
 
@@ -52,7 +53,9 @@ namespace domain::CoordinateMaps::ShapeMapTransitionFunctions {
  * `domain::CoordinateMaps::ShapeMapTransitionFunctions::Wedge` class where both
  * the inner and outer surface are spheres centered on the same center.
  */
-class SphereTransition final : public ShapeMapTransitionFunction {
+class SphereTransition final
+    : public ShapeMapTransitionFunction
+      SPECTRE_FINDUS_DERIVED(SphereTransition, ShapeMapTransitionFunction) {
  public:
   explicit SphereTransition() = default;
   SphereTransition(double r_min, double r_max, bool reverse = false,

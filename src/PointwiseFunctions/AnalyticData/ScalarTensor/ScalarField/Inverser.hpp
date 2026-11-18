@@ -33,7 +33,10 @@ namespace ScalarTensor::AnalyticData::ScalarField {
  */
 template <size_t Dim>
 class Inverser
-    : public ScalarTensor::AnalyticData::ScalarField::AnalyticData<Dim> {
+    : public ScalarTensor::AnalyticData::ScalarField::AnalyticData<Dim>
+      SPECTRE_FINDUS_DERIVED(
+          Inverser<Dim>,
+          ScalarTensor::AnalyticData::ScalarField::AnalyticData<Dim>) {
  public:
   struct Amplitude {
     using type = double;

@@ -19,6 +19,7 @@
 #include "PointwiseFunctions/InitialDataUtilities/AnalyticSolution.hpp"
 #include "Utilities/ContainerHelpers.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace Poisson::Solutions {
@@ -71,7 +72,12 @@ struct LorentzianVariables {
  * \note Corresponding 1D and 2D solutions are not implemented yet.
  */
 template <size_t Dim, typename DataType = DataVector>
-class Lorentzian : public elliptic::analytic_data::AnalyticSolution {
+class Lorentzian
+    : public elliptic::analytic_data::AnalyticSolution
+      SPECTRE_FINDUS_DERIVED(SINGLE_ARG(Lorentzian<Dim, DataType>),
+                             elliptic::analytic_data::InitialGuess)
+          SPECTRE_FINDUS_DERIVED(SINGLE_ARG(Lorentzian<Dim, DataType>),
+                                 elliptic::analytic_data::Background) {
   static_assert(
       Dim == 3,
       "This solution is currently implemented in 3 spatial dimensions only");

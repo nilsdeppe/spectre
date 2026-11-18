@@ -53,7 +53,9 @@ namespace CurvedScalarWave::BoundaryConditions {
  * evolution when using these boundary conditions.
  */
 template <size_t Dim>
-class Worldtube final : public BoundaryConditions::BoundaryCondition<Dim> {
+class Worldtube final : public BoundaryCondition<Dim> SPECTRE_FINDUS_DERIVED(
+                            Worldtube<Dim>,
+                            domain::BoundaryConditions::BoundaryCondition) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help{

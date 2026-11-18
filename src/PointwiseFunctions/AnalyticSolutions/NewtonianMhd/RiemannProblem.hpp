@@ -19,6 +19,7 @@
 #include "PointwiseFunctions/Hydro/Tags.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
 #include "Utilities/MakeArray.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -126,8 +127,11 @@ namespace NewtonianMhd::Solutions {
  * speed of the contact discontinuity (\f$u_*\f$).
  */
 template <size_t Dim>
-class RiemannProblem : public evolution::initial_data::InitialData,
-                       public MarkAsAnalyticSolution {
+class RiemannProblem
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(RiemannProblem<Dim>,
+                             evolution::initial_data::InitialData) {
   enum class Side { Left, Right };
   enum PropagationAxis { X = 0, Y = 1, Z = 2 };
 

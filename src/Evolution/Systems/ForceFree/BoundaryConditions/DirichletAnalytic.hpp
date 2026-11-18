@@ -15,6 +15,7 @@
 #include "Evolution/Systems/ForceFree/Tags.hpp"
 #include "Options/String.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -29,7 +30,10 @@ namespace ForceFree::BoundaryConditions {
  * \brief Sets Dirichlet boundary conditions using the analytic solution or
  * analytic data.
  */
-class DirichletAnalytic final : public BoundaryCondition {
+class DirichletAnalytic final
+    : public BoundaryCondition
+      SPECTRE_FINDUS_DERIVED(DirichletAnalytic,
+                             domain::BoundaryConditions::BoundaryCondition) {
  public:
   /// \brief What analytic solution/data to prescribe.
   struct AnalyticPrescription {

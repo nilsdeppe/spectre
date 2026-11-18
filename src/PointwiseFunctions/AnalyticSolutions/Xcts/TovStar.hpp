@@ -186,7 +186,10 @@ struct TovVariables : CommonVariables<DataType, TovVariablesCache<DataType>> {
  * \see RelativisticEuler::Solutions::TovStar
  * \see gr::Solutions::TovSolution
  */
-class TovStar : public elliptic::analytic_data::AnalyticSolution {
+class TovStar
+    : public elliptic::analytic_data::AnalyticSolution
+      SPECTRE_FINDUS_DERIVED(TovStar, elliptic::analytic_data::InitialGuess)
+          SPECTRE_FINDUS_DERIVED(TovStar, elliptic::analytic_data::Background) {
  private:
   using RelEulerTovStar = RelativisticEuler::Solutions::TovStar;
 

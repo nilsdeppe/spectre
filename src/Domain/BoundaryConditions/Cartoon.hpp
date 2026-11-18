@@ -51,8 +51,11 @@ class MarkAsCartoon {
  * boundary.
  */
 template <typename SystemBoundaryConditionBaseClass>
-struct Cartoon final : public SystemBoundaryConditionBaseClass,
-                       public MarkAsCartoon {
+struct Cartoon final
+    : public SystemBoundaryConditionBaseClass,
+      public MarkAsCartoon
+      SPECTRE_FINDUS_DERIVED(Cartoon<SystemBoundaryConditionBaseClass>,
+                             domain::BoundaryConditions::BoundaryCondition) {
  public:
   static constexpr bool factory_creatable = false;
   static std::string name() { return "Cartoon"; }

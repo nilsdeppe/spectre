@@ -54,7 +54,9 @@ namespace Elasticity::ConstitutiveRelations {
  * check does not depend on the units of \f$C\f$ and numerically singular
  * matrices are rejected deterministically.
  */
-class AnisotropicHomogeneous : public ConstitutiveRelation<3> {
+class AnisotropicHomogeneous
+    : public ConstitutiveRelation<3>
+      SPECTRE_FINDUS_DERIVED(AnisotropicHomogeneous, ConstitutiveRelation<3>) {
  public:
   static constexpr size_t volume_dim = 3;
 

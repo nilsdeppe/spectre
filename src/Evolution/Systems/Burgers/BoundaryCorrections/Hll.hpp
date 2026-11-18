@@ -63,7 +63,8 @@ namespace Burgers::BoundaryCorrections {
  * - Some references use \f$S\f$ instead of \f$\lambda\f$ for the
  * signal/characteristic speeds
  */
-class Hll final : public evolution::BoundaryCorrection {
+class Hll final : public evolution::BoundaryCorrection SPECTRE_FINDUS_DERIVED(
+                      Hll, evolution::BoundaryCorrection) {
  private:
   struct CharSpeed : db::SimpleTag {
     using type = Scalar<DataVector>;

@@ -44,7 +44,10 @@ namespace EquationsOfState {
  * The temperature is given in units of MeV.
  */
 template <bool IsRelativistic>
-class Tabulated3D : public EquationOfState<IsRelativistic, 3> {
+class Tabulated3D
+    : public EquationOfState<IsRelativistic, 3>
+      SPECTRE_FINDUS_DERIVED(Tabulated3D<IsRelativistic>,
+                             SINGLE_ARG(EquationOfState<IsRelativistic, 3>)) {
  public:
   static constexpr size_t thermodynamic_dim = 3;
   static constexpr bool is_relativistic = IsRelativistic;

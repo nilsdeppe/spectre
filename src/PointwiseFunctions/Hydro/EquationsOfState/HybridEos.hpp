@@ -64,7 +64,11 @@ namespace EquationsOfState {
  */
 template <typename ColdEquationOfState>
 class HybridEos
-    : public EquationOfState<ColdEquationOfState::is_relativistic, 2> {
+    : public EquationOfState<ColdEquationOfState::is_relativistic, 2>
+      SPECTRE_FINDUS_DERIVED(
+          HybridEos<ColdEquationOfState>,
+          SINGLE_ARG(
+              EquationOfState<ColdEquationOfState::is_relativistic, 2>)) {
  public:
   static constexpr size_t thermodynamic_dim = 2;
   static constexpr bool is_relativistic = ColdEquationOfState::is_relativistic;

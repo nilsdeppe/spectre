@@ -13,15 +13,17 @@
 #include "PointwiseFunctions/AnalyticSolutions/RadiationTransport/M1Grey/Factory.hpp"
 #include "PointwiseFunctions/GeneralRelativity/Tags.hpp"
 #include "PointwiseFunctions/Hydro/Tags.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 
 namespace RadiationTransport::M1Grey::BoundaryConditions {
 
 template <typename... NeutrinoSpecies>
 DirichletAnalytic<tmpl::list<NeutrinoSpecies...>>::DirichletAnalytic(
     const DirichletAnalytic& rhs)
-    : PUP::able(rhs),
-      BoundaryCondition<tmpl::list<NeutrinoSpecies...>>{dynamic_cast<
-          const BoundaryCondition<tmpl::list<NeutrinoSpecies...>>&>(rhs)},
+    : SPECTRE_CHARM_PUPable_COPY(rhs) BoundaryConditions::BoundaryCondition<
+          tmpl::list<NeutrinoSpecies...>>{dynamic_cast<
+          const BoundaryConditions::BoundaryCondition<
+              tmpl::list<NeutrinoSpecies...>>&>(rhs)},
       analytic_prescription_(rhs.analytic_prescription_->get_clone()) {}
 
 template <typename... NeutrinoSpecies>
@@ -42,7 +44,7 @@ DirichletAnalytic<tmpl::list<NeutrinoSpecies...>>::DirichletAnalytic(
 
 template <typename... NeutrinoSpecies>
 void DirichletAnalytic<tmpl::list<NeutrinoSpecies...>>::pup(PUP::er& p) {
-  BoundaryCondition<tmpl::list<NeutrinoSpecies...>>::pup(p);
+  BoundaryConditions::BoundaryCondition<tmpl::list<NeutrinoSpecies...>>::pup(p);
   p | analytic_prescription_;
 }
 

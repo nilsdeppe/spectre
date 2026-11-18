@@ -9,6 +9,7 @@
 #include "Evolution/Systems/NewtonianMhd/Sources/Source.hpp"
 #include "Evolution/Systems/NewtonianMhd/TagsDeclarations.hpp"
 #include "Options/String.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -62,7 +63,9 @@ namespace NewtonianMhd::Sources {
  * density to compute a self-consistent gravitational field (i.e., as if one
  * were solving a coupled Euler + Poisson system).
  */
-class LaneEmdenGravitationalField : public Source<3> {
+class LaneEmdenGravitationalField : public Source<3> SPECTRE_FINDUS_DERIVED(
+                                        LaneEmdenGravitationalField,
+                                        Source<3>) {
  public:
   /// The central mass density of the star.
   struct CentralMassDensity {

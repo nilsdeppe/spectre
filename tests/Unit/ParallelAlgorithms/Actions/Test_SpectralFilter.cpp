@@ -56,7 +56,8 @@ using FilterBase = Filters::Filter<1, tmpl::list<ScalarFieldTag>>;
 //
 // apply_in_volume multiplies each component of the Variables by 2 and records
 // whether the optional Jacobians were populated.
-class MockFilter : public FilterBase {
+class MockFilter : public FilterBase SPECTRE_FINDUS_DERIVED(MockFilter,
+                                                            FilterBase) {
  public:
   MockFilter() = default;
   MockFilter(bool apply_substep, bool apply_this_step, bool need_jacs,

@@ -41,7 +41,8 @@ struct DummyDecisionTag2 {
 }  // namespace Tags
 
 template <size_t Val>
-struct TestCreatable : public PhaseChange {
+struct TestCreatable : public PhaseChange SPECTRE_FINDUS_DERIVED(
+                           TestCreatable<Val>, PhaseChange) {
   TestCreatable() = default;
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(TestCreatable);  // NOLINT

@@ -68,7 +68,11 @@ template <size_t Dim, typename Metavariables,
 class DgElementArrayMember<Dim, Metavariables,
                            tmpl::list<PhaseDepActionListsPack...>,
                            SimpleTagsFromOptions>
-    : public DgElementArrayMemberBase<Dim> {
+    : public DgElementArrayMemberBase<Dim> SPECTRE_FINDUS_DERIVED(
+          SINGLE_ARG(DgElementArrayMember<
+                     Dim, Metavariables, tmpl::list<PhaseDepActionListsPack...>,
+                     SimpleTagsFromOptions>),
+          DgElementArrayMemberBase<Dim>) {
  public:
   using ParallelComponent =
       DgElementCollection<Dim, Metavariables,

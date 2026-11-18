@@ -48,7 +48,8 @@ struct ProductCompute : db::ComputeTag, Product {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
-class CriterionOne : public ah::Criterion {
+class CriterionOne
+    : public ah::Criterion SPECTRE_FINDUS_DERIVED(CriterionOne, ah::Criterion) {
  public:
   struct TargetValue {
     using type = double;
@@ -101,7 +102,8 @@ class CriterionOne : public ah::Criterion {
 PUP::able::PUP_ID CriterionOne::my_PUP_ID = 0;  // NOLINT
 #endif                                          // SPECTRE_USE_CHARM
 
-class CriterionTwo : public ah::Criterion {
+class CriterionTwo
+    : public ah::Criterion SPECTRE_FINDUS_DERIVED(CriterionTwo, ah::Criterion) {
  public:
   struct TargetValue {
     using type = double;

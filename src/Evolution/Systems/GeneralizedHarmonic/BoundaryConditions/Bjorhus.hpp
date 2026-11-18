@@ -120,7 +120,10 @@ namespace gh::BoundaryConditions {
  * \note These boundary conditions assume a spherical outer boundary.
  */
 template <size_t Dim>
-class ConstraintPreservingBjorhus final : public BoundaryCondition<Dim> {
+class ConstraintPreservingBjorhus final
+    : public BoundaryCondition<Dim>
+      SPECTRE_FINDUS_DERIVED(ConstraintPreservingBjorhus<Dim>,
+                             domain::BoundaryConditions::BoundaryCondition) {
  public:
   struct TypeOptionTag {
     using type = detail::ConstraintPreservingBjorhusType;

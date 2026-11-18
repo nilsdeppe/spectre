@@ -175,7 +175,10 @@ namespace gh::BoundaryCorrections {
  * \f}
  */
 template <size_t Dim>
-class UpwindPenalty final : public evolution::BoundaryCorrection {
+class UpwindPenalty final
+    : public evolution::BoundaryCorrection
+      SPECTRE_FINDUS_DERIVED(UpwindPenalty<Dim>,
+                             evolution::BoundaryCorrection) {
  private:
   struct NormalTimesVPlus : db::SimpleTag {
     using type = tnsr::iaa<DataVector, Dim, Frame::Inertial>;

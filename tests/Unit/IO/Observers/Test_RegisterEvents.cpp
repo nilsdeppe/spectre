@@ -33,11 +33,12 @@
 #include "Utilities/ErrorHandling/Error.hpp"
 #include "Utilities/Gsl.hpp"
 #include "Utilities/ProtocolHelpers.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 #include "Utilities/Serialization/Serialize.hpp"
 
 namespace {
-class SomeEvent : public Event {
+class SomeEvent : public Event SPECTRE_FINDUS_DERIVED(SomeEvent, Event) {
  public:
   struct SubfileName {
     using type = std::string;

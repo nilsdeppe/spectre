@@ -96,7 +96,11 @@ struct Composition;
 
 template <typename Frames, size_t Dim, size_t... Is>
 struct Composition<Frames, Dim, std::index_sequence<Is...>>
-    : public CoordinateMapBase<tmpl::front<Frames>, tmpl::back<Frames>, Dim> {
+    : public CoordinateMapBase<tmpl::front<Frames>, tmpl::back<Frames>, Dim>
+      SPECTRE_FINDUS_DERIVED(
+          SINGLE_ARG(Composition<Frames, Dim, std::index_sequence<Is...>>),
+          SINGLE_ARG(CoordinateMapBase<tmpl::front<Frames>, tmpl::back<Frames>,
+                                       Dim>)) {
   using frames = Frames;
   using SourceFrame = tmpl::front<Frames>;
   using TargetFrame = tmpl::back<Frames>;
@@ -107,7 +111,9 @@ struct Composition<Frames, Dim, std::index_sequence<Is...>>
   using Base::operator();
 
   Composition() = default;
-  Composition(const Composition& rhs) : PUP::able(rhs) { *this = rhs; }
+  Composition(const Composition& rhs) : SPECTRE_CHARM_PUPable_COPY(rhs) Base() {
+    *this = rhs;
+  }
   Composition& operator=(const Composition& rhs);
   Composition(Composition&& /*rhs*/) = default;
   Composition& operator=(Composition&& /*rhs*/) = default;

@@ -42,7 +42,11 @@ namespace EquationsOfState {
  * zero temperature and in beta equalibrium.
  */
 template <typename ColdEquilEos>
-class Barotropic3D : public EquationOfState<ColdEquilEos::is_relativistic, 3> {
+class Barotropic3D
+    : public EquationOfState<ColdEquilEos::is_relativistic, 3>
+      SPECTRE_FINDUS_DERIVED(
+          Barotropic3D<ColdEquilEos>,
+          SINGLE_ARG(EquationOfState<ColdEquilEos::is_relativistic, 3>)) {
  public:
   static constexpr size_t thermodynamic_dim = 3;
   static constexpr bool is_relativistic = ColdEquilEos::is_relativistic;

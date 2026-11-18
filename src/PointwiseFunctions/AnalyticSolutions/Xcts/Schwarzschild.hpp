@@ -450,8 +450,13 @@ struct SchwarzschildVariables
  * `Xcts::Solutions::SchwarzschildCoordinates` enum for the available coordinate
  * systems and for the solution variables in the respective coordinates.
  */
-class Schwarzschild : public elliptic::analytic_data::AnalyticSolution,
-                      public detail::SchwarzschildImpl {
+class Schwarzschild
+    : public elliptic::analytic_data::AnalyticSolution,
+      public detail::SchwarzschildImpl
+      SPECTRE_FINDUS_DERIVED(Schwarzschild,
+                             elliptic::analytic_data::InitialGuess)
+          SPECTRE_FINDUS_DERIVED(Schwarzschild,
+                                 elliptic::analytic_data::Background) {
  public:
   Schwarzschild() = default;
   Schwarzschild(const Schwarzschild&) = default;

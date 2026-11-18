@@ -13,6 +13,7 @@
 #include "Options/String.hpp"
 #include "PointwiseFunctions/AnalyticSolutions/Tags.hpp"
 #include "Utilities/MakeArray.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -68,7 +69,8 @@ namespace NewtonianMhd::Sources {
  *
  * Currently \f$v_z(z)=sin(z)\f$ is hard-coded.
  */
-class VortexPerturbation : public Source<3> {
+class VortexPerturbation : public Source<3> SPECTRE_FINDUS_DERIVED(
+                               VortexPerturbation, Source<3>) {
  public:
   /// The perturbation amplitude
   struct PerturbationAmplitude {

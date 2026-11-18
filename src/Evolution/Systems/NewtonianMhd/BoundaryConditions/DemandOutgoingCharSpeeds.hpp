@@ -16,6 +16,7 @@
 #include "Evolution/Systems/NewtonianMhd/Tags.hpp"
 #include "Options/String.hpp"
 #include "PointwiseFunctions/Hydro/Tags.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -37,7 +38,10 @@ namespace NewtonianMhd::BoundaryConditions {
  * condition.
  */
 template <size_t Dim>
-class DemandOutgoingCharSpeeds final : public BoundaryCondition<Dim> {
+class DemandOutgoingCharSpeeds final
+    : public BoundaryCondition<Dim>
+      SPECTRE_FINDUS_DERIVED(DemandOutgoingCharSpeeds<Dim>,
+                             domain::BoundaryConditions::BoundaryCondition) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help{

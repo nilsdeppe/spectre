@@ -51,7 +51,9 @@
 namespace {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
-class BadCriterion : public amr::Criterion {
+class BadCriterion
+    : public amr::Criterion SPECTRE_FINDUS_DERIVED(BadCriterion,
+                                                   amr::Criterion) {
  public:
   using options = tmpl::list<>;
 

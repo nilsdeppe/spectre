@@ -21,6 +21,7 @@
 #include "PointwiseFunctions/GeneralRelativity/Tags.hpp"
 #include "PointwiseFunctions/Hydro/Tags.hpp"
 #include "PointwiseFunctions/Hydro/Temperature.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -59,7 +60,10 @@ namespace grmhd::ValenciaDivClean::BoundaryConditions {
  *  - Divergence cleaning scalar field \f$\Phi\f$ is set to zero in ghost zone.
  *
  */
-class HydroFreeOutflow final : public BoundaryCondition {
+class HydroFreeOutflow final
+    : public BoundaryCondition
+      SPECTRE_FINDUS_DERIVED(HydroFreeOutflow,
+                             domain::BoundaryConditions::BoundaryCondition) {
  private:
   using RestMassDensity = hydro::Tags::RestMassDensity<DataVector>;
   using ElectronFraction = hydro::Tags::ElectronFraction<DataVector>;

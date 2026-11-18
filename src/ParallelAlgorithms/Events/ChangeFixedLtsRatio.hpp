@@ -97,8 +97,11 @@ struct StoreNewStep {
 }  // namespace ChangeFixedLtsRatio_detail
 
 template <size_t Dim, typename StepChoosersToUse = AllStepChoosers>
-class ChangeFixedLtsRatio : public Event,
-                            public RequestsStepperErrorTolerances {
+class ChangeFixedLtsRatio
+    : public Event,
+      public RequestsStepperErrorTolerances
+      SPECTRE_FINDUS_DERIVED(
+          SINGLE_ARG(ChangeFixedLtsRatio<Dim, StepChoosersToUse>), Event) {
   using StepId = std::pair<int64_t, uint64_t>;
 
   using ReductionData = Parallel::ReductionData<

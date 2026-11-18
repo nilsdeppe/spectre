@@ -95,7 +95,10 @@ namespace TimeSteppers {
  * </table>
  */
 template <bool Monotonic>
-class AdamsMoultonPc : public LtsTimeStepper {
+class AdamsMoultonPc : public LtsTimeStepper SPECTRE_FINDUS_DERIVED(
+                           AdamsMoultonPc<Monotonic>, TimeStepper)
+                           SPECTRE_FINDUS_DERIVED(AdamsMoultonPc<Monotonic>,
+                                                  LtsTimeStepper) {
  public:
   static std::string name() {
     return Monotonic ? "AdamsMoultonPcMonotonic" : "AdamsMoultonPc";

@@ -84,8 +84,11 @@ namespace grmhd::AnalyticData {
  * coordinates are not same.
  *
  */
-class MagnetizedFmDisk : public virtual evolution::initial_data::InitialData,
-                         public MarkAsAnalyticData {
+class MagnetizedFmDisk
+    : public virtual evolution::initial_data::InitialData,
+      public MarkAsAnalyticData
+      SPECTRE_FINDUS_DERIVED(MagnetizedFmDisk,
+                             evolution::initial_data::InitialData) {
  private:
   using FmDisk = RelativisticEuler::Solutions::FishboneMoncriefDisk;
 

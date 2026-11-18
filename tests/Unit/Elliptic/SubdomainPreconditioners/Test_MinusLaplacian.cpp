@@ -32,6 +32,7 @@
 #include "ParallelAlgorithms/LinearSolver/Schwarz/ElementCenteredSubdomainData.hpp"
 #include "ParallelAlgorithms/LinearSolver/Schwarz/OverlapHelpers.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 #include "Utilities/Serialization/Serialize.hpp"
 #include "Utilities/TMPL.hpp"
@@ -53,7 +54,10 @@ struct OptionsGroup {};
 
 template <size_t Dim>
 struct BoundaryCondition
-    : elliptic::BoundaryConditions::BoundaryCondition<Dim> {
+    : elliptic::BoundaryConditions::BoundaryCondition<Dim>
+      SPECTRE_FINDUS_DERIVED(BoundaryCondition<Dim>,
+                             domain::BoundaryConditions::BoundaryCondition) {
+  BoundaryCondition() = default;
   explicit BoundaryCondition(
       std::vector<elliptic::BoundaryConditionType> bc_types)
       : bc_types_(std::move(bc_types)) {}

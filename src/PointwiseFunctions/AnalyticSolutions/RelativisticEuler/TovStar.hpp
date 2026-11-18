@@ -322,9 +322,11 @@ struct TovVariables {
  * cells.
  */
 
-class TovStar : public virtual evolution::initial_data::InitialData,
-                public MarkAsAnalyticSolution,
-                public AnalyticSolution<3> {
+class TovStar
+    : public virtual evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution,
+      public AnalyticSolution<3>
+      SPECTRE_FINDUS_DERIVED(TovStar, evolution::initial_data::InitialData) {
  public:
   using equation_of_state_type = EquationsOfState::EquationOfState<true, 1>;
 

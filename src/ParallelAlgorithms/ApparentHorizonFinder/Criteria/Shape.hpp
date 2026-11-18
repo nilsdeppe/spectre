@@ -19,6 +19,7 @@
 #include "ParallelAlgorithms/ApparentHorizonFinder/Tags.hpp"
 #include "Utilities/ErrorHandling/Assert.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace ah::Criteria {
@@ -48,7 +49,7 @@ namespace ah::Criteria {
  * PowerMonitors::relative_truncation_error, and the number of pileup modes
  * is given by PowerMonitors::convergence_rate_and_number_of_pile_up_modes
  */
-class Shape : public Criterion {
+class Shape : public Criterion SPECTRE_FINDUS_DERIVED(Shape, Criterion) {
  public:
   struct MinTruncationError {
     using type = double;

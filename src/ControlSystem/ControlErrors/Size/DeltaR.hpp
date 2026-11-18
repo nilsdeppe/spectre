@@ -13,7 +13,7 @@
 #include "Utilities/TMPL.hpp"
 
 namespace control_system::size::States {
-class DeltaR : public State {
+class DeltaR : public State SPECTRE_FINDUS_DERIVED(DeltaR, State) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help{

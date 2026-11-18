@@ -12,12 +12,13 @@
 #include "DataStructures/Variables.hpp"
 #include "NumericalAlgorithms/Interpolation/IrregularInterpolant.hpp"
 #include "Utilities/CallWithDynamicType.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 
 namespace Ccz4::BoundaryConditions {
 
 Sommerfeld::Sommerfeld(const Sommerfeld& rhs)
-    : PUP::able(rhs),
-      BoundaryCondition{dynamic_cast<const BoundaryCondition&>(rhs)} {}
+    : SPECTRE_CHARM_PUPable_COPY(rhs) BoundaryCondition{
+          dynamic_cast<const BoundaryCondition&>(rhs)} {}
 
 Sommerfeld& Sommerfeld::operator=(const Sommerfeld& /*rhs*/) { return *this; }
 

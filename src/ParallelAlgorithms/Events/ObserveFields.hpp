@@ -100,7 +100,11 @@ template <size_t VolumeDim, typename... Tensors,
           typename... NonTensorComputeTags, typename ArraySectionIdTag>
 class ObserveFields<VolumeDim, tmpl::list<Tensors...>,
                     tmpl::list<NonTensorComputeTags...>, ArraySectionIdTag>
-    : public Event {
+    : public Event SPECTRE_FINDUS_DERIVED(
+          SINGLE_ARG(ObserveFields<VolumeDim, tmpl::list<Tensors...>,
+                                   tmpl::list<NonTensorComputeTags...>,
+                                   ArraySectionIdTag>),
+          Event) {
  public:
   /// The name of the subfile inside the HDF5 file
   struct SubfileName {

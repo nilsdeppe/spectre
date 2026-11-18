@@ -19,6 +19,7 @@
 #include "PointwiseFunctions/Hydro/Tags.hpp"
 #include "PointwiseFunctions/Hydro/TagsDeclarations.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/Tags/InitialData.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -35,8 +36,11 @@ namespace RadiationTransport::MonteCarlo::Solutions {
  * in Minkowski spacetime.
  *
  */
-class HomogeneousSphere : public evolution::initial_data::InitialData,
-                          public MarkAsAnalyticSolution {
+class HomogeneousSphere
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(HomogeneousSphere,
+                             evolution::initial_data::InitialData) {
  public:
   constexpr static bool IsRelativistic = true;
   using equation_of_state_type =

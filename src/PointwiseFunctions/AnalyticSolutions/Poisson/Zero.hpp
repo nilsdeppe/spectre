@@ -24,7 +24,11 @@ namespace Poisson::Solutions {
 /// The trivial solution \f$u=0\f$ of a Poisson equation. Useful as initial
 /// guess.
 template <size_t Dim, typename DataType = DataVector>
-class Zero : public elliptic::analytic_data::AnalyticSolution {
+class Zero : public elliptic::analytic_data::AnalyticSolution
+             SPECTRE_FINDUS_DERIVED(SINGLE_ARG(Zero<Dim, DataType>),
+                                    elliptic::analytic_data::InitialGuess)
+                 SPECTRE_FINDUS_DERIVED(SINGLE_ARG(Zero<Dim, DataType>),
+                                        elliptic::analytic_data::Background) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help{

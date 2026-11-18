@@ -70,7 +70,7 @@ class Shape : public SPECTRE_CHARM_PUPable(Shape) {
   WRAPPED_PUPable_abstract(Shape);  // NOLINT
 };
 
-class Triangle : public Shape {
+class Triangle : public Shape SPECTRE_FINDUS_DERIVED(Triangle, Shape) {
  public:
   Triangle() = default;
   size_t number_of_sides() const final { return 3; }
@@ -80,7 +80,7 @@ class Triangle : public Shape {
   void pup(PUP::er& p) override { Shape::pup(p); }
 };
 
-class Square : public Shape {
+class Square : public Shape SPECTRE_FINDUS_DERIVED(Square, Shape) {
  public:
   Square() = default;
   size_t number_of_sides() const final { return 4; }
@@ -99,7 +99,7 @@ class Animal : public SPECTRE_CHARM_PUPable(Animal) {
   WRAPPED_PUPable_abstract(Animal);  // NOLINT
 };
 
-class Arthropod : public Animal {
+class Arthropod : public Animal SPECTRE_FINDUS_DERIVED(Arthropod, Animal) {
  public:
   Arthropod() = default;
   explicit Arthropod(const size_t num_legs) : number_of_legs_(num_legs){};
@@ -211,7 +211,9 @@ struct TestMetavariables {
 // Test_GlobalCache.cpp and not in Parallel/Callback.hpp because in
 // normal usage we should use SimpleActionCallback or
 // PerformAlgorithmCallback because they can be mocked.
-class UseCkCallbackAsCallback : public Parallel::Callback {
+class UseCkCallbackAsCallback
+    : public Parallel::Callback
+      SPECTRE_FINDUS_DERIVED(UseCkCallbackAsCallback, Parallel::Callback) {
  public:
   WRAPPED_PUPable_decl_template(UseCkCallbackAsCallback);
   UseCkCallbackAsCallback() = default;

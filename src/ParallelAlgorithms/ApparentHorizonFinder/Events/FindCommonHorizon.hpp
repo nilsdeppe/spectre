@@ -56,7 +56,11 @@ class FindCommonHorizon;
 template <typename HorizonMetavars, typename... Tensors,
           typename... NonTensorComputeTags>
 class FindCommonHorizon<HorizonMetavars, tmpl::list<Tensors...>,
-                        tmpl::list<NonTensorComputeTags...>> : public Event {
+                        tmpl::list<NonTensorComputeTags...>>
+    : public Event SPECTRE_FINDUS_DERIVED(
+          SINGLE_ARG(FindCommonHorizon<HorizonMetavars, tmpl::list<Tensors...>,
+                                       tmpl::list<NonTensorComputeTags...>>),
+          Event) {
   using ObserveFieldsEvent =
       dg::Events::ObserveFields<3, tmpl::list<Tensors...>,
                                 tmpl::list<NonTensorComputeTags...>>;

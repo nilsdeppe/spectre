@@ -86,7 +86,8 @@ std::pair<double, double> extract_flux(
  * the column "IntegralOfDCosTheta" and should equal 2.
  */
 template <typename ArraySectionIdTag = void>
-class ObserveFlux : public Event {
+class ObserveFlux : public Event SPECTRE_FINDUS_DERIVED(
+                        ObserveFlux<ArraySectionIdTag>, Event) {
  public:
   using BackgroundTag =
       elliptic::Tags::Background<elliptic::analytic_data::Background>;

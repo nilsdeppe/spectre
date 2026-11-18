@@ -67,6 +67,7 @@
 #include "Utilities/Literals.hpp"
 #include "Utilities/MakeArray.hpp"
 #include "Utilities/ProtocolHelpers.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 
 namespace {
@@ -305,7 +306,12 @@ struct ModifiedPoissonSystemLinearized
 };
 
 template <size_t Dim>
-struct ModifiedPoissonSolution : Poisson::Solutions::ProductOfSinusoids<Dim> {
+struct ModifiedPoissonSolution
+    : Poisson::Solutions::ProductOfSinusoids<Dim>
+      SPECTRE_FINDUS_DERIVED(ModifiedPoissonSolution<Dim>,
+                             elliptic::analytic_data::InitialGuess)
+          SPECTRE_FINDUS_DERIVED(ModifiedPoissonSolution<Dim>,
+                                 elliptic::analytic_data::Background) {
   using Poisson::Solutions::ProductOfSinusoids<Dim>::ProductOfSinusoids;
   std::unique_ptr<elliptic::analytic_data::AnalyticSolution> get_clone()
       const override {
@@ -356,6 +362,10 @@ struct ModifiedPoissonSolution : Poisson::Solutions::ProductOfSinusoids<Dim> {
       tmpl::list<RequestedTags...> meta) const {
     return variables(x, meta);
   }
+
+ protected:
+  FINDUS_OVERRIDE_SERIALIZATION_ID(ModifiedPoissonSolution<Dim>,
+                                   elliptic::analytic_data::InitialGuess)
 };
 
 #if defined(SPECTRE_USE_CHARM)
@@ -365,7 +375,11 @@ PUP::able::PUP_ID ModifiedPoissonSolution<Dim>::my_PUP_ID = 0;  // NOLINT
 
 template <size_t Dim>
 struct ModifiedPoissonSolutionLinearized
-    : Poisson::Solutions::ProductOfSinusoids<Dim> {
+    : Poisson::Solutions::ProductOfSinusoids<Dim> SPECTRE_FINDUS_DERIVED(
+          ModifiedPoissonSolutionLinearized<Dim>,
+          elliptic::analytic_data::InitialGuess)
+          SPECTRE_FINDUS_DERIVED(ModifiedPoissonSolutionLinearized<Dim>,
+                                 elliptic::analytic_data::Background) {
   using Poisson::Solutions::ProductOfSinusoids<Dim>::ProductOfSinusoids;
   std::unique_ptr<elliptic::analytic_data::AnalyticSolution> get_clone()
       const override {
@@ -440,6 +454,10 @@ struct ModifiedPoissonSolutionLinearized
       tmpl::list<RequestedTags...> meta) const {
     return variables(x, meta);
   }
+
+ protected:
+  FINDUS_OVERRIDE_SERIALIZATION_ID(ModifiedPoissonSolutionLinearized<Dim>,
+                                   elliptic::analytic_data::InitialGuess)
 };
 
 #if defined(SPECTRE_USE_CHARM)

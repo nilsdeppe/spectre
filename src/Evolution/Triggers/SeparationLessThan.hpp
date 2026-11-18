@@ -73,7 +73,9 @@ namespace Triggers {
  * `domain::FunctionsOfTime::SettleToConstantQuaternion`.
  */
 template <bool UseGridCentersFunctionOfTime>
-class SeparationLessThan : public Trigger {
+class SeparationLessThan : public Trigger SPECTRE_FINDUS_DERIVED(
+                               SeparationLessThan<UseGridCentersFunctionOfTime>,
+                               Trigger) {
  public:
   /// \cond
   SeparationLessThan() = default;

@@ -19,6 +19,7 @@
 #include "Evolution/Systems/Burgers/FiniteDifference/Reconstructor.hpp"
 #include "Evolution/Systems/Burgers/Tags.hpp"
 #include "Options/String.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -50,7 +51,8 @@ namespace Burgers::fd {
  * \brief Monotonised central reconstruction. See
  * ::fd::reconstruction::monotonised_central() for details.
  */
-class MonotonisedCentral : public Reconstructor {
+class MonotonisedCentral : public Reconstructor SPECTRE_FINDUS_DERIVED(
+                               MonotonisedCentral, Reconstructor) {
  private:
   using face_vars_tags = tmpl::list<
       Burgers::Tags::U,

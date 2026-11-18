@@ -39,7 +39,8 @@ namespace TimeSteppers {
  *
  * The CFL factor/stable step size is 1.0.
  */
-class Heun2 : public ImexRungeKutta {
+class Heun2 : public ImexRungeKutta SPECTRE_FINDUS_DERIVED(Heun2, TimeStepper)
+                  SPECTRE_FINDUS_DERIVED(Heun2, ImexTimeStepper) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help = {

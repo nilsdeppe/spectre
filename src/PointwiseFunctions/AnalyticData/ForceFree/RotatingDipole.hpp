@@ -13,6 +13,7 @@
 #include "PointwiseFunctions/AnalyticData/AnalyticData.hpp"
 #include "PointwiseFunctions/AnalyticSolutions/GeneralRelativity/Minkowski.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -80,8 +81,11 @@ namespace ForceFree::AnalyticData {
  * pulsars \cite Spitkovsky2006.
  *
  */
-class RotatingDipole : public evolution::initial_data::InitialData,
-                       public MarkAsAnalyticData {
+class RotatingDipole
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticData
+      SPECTRE_FINDUS_DERIVED(RotatingDipole,
+                             evolution::initial_data::InitialData) {
  public:
   struct VectorPotentialAmplitude {
     using type = double;

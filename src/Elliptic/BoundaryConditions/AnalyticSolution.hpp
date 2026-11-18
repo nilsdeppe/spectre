@@ -68,7 +68,10 @@ template <typename System, size_t Dim, typename... FieldTags,
           typename... FluxTags>
 class AnalyticSolution<System, Dim, tmpl::list<FieldTags...>,
                        tmpl::list<FluxTags...>>
-    : public BoundaryCondition<Dim> {
+    : public BoundaryCondition<Dim> SPECTRE_FINDUS_DERIVED(
+          SINGLE_ARG(AnalyticSolution<System, Dim, tmpl::list<FieldTags...>,
+                                      tmpl::list<FluxTags...>>),
+          domain::BoundaryConditions::BoundaryCondition) {
  private:
   using Base = BoundaryCondition<Dim>;
 
@@ -86,7 +89,8 @@ class AnalyticSolution<System, Dim, tmpl::list<FieldTags...>,
       "Boundary conditions from the analytic solution";
 
   AnalyticSolution() = default;
-  AnalyticSolution(const AnalyticSolution& rhs) : PUP::able(rhs), Base(rhs) {
+  AnalyticSolution(const AnalyticSolution& rhs)
+      : SPECTRE_CHARM_PUPable_COPY(rhs) Base(rhs) {
     *this = rhs;
   }
   AnalyticSolution& operator=(const AnalyticSolution& rhs) {

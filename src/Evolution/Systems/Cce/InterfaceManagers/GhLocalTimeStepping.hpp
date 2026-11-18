@@ -39,7 +39,8 @@ namespace Cce::InterfaceManagers {
  * `GhLocalTimeStepping::request_gh_data()` and receives interpolated boundary
  * data via `GhLocalTimeStepping::retrieve_and_remove_first_ready_gh_data()`.
  */
-class GhLocalTimeStepping : public GhInterfaceManager {
+class GhLocalTimeStepping : public GhInterfaceManager SPECTRE_FINDUS_DERIVED(
+                                GhLocalTimeStepping, GhInterfaceManager) {
  public:
   struct BoundaryInterpolator {
     using type = std::unique_ptr<intrp::SpanInterpolator>;
@@ -54,8 +55,7 @@ class GhLocalTimeStepping : public GhInterfaceManager {
 
   GhLocalTimeStepping() = default;
   GhLocalTimeStepping(const GhLocalTimeStepping& rhs)
-      : PUP::able(rhs),
-        gh_data_{rhs.gh_data_},
+      : SPECTRE_CHARM_PUPable_COPY(rhs) gh_data_{rhs.gh_data_},
         requests_{rhs.requests_},
         latest_removed_{rhs.latest_removed_} {
     if (rhs.interpolator_ != nullptr) {

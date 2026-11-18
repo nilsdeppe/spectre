@@ -22,6 +22,7 @@
 #include "Options/Context.hpp"
 #include "Options/String.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 
 /// \cond
 template <size_t Dim>
@@ -78,7 +79,9 @@ namespace Filters {
  * spherical-harmonic modes.
  */
 template <typename TagList>
-class SphericalShell : public Filter<3, TagList> {
+class SphericalShell : public Filter<3, TagList> SPECTRE_FINDUS_DERIVED(
+                           SphericalShell<TagList>,
+                           SINGLE_ARG(Filter<3, TagList>)) {
  public:
   /// \brief The number of top $\ell$ modes to set to zero.
   struct NumModesToKill {

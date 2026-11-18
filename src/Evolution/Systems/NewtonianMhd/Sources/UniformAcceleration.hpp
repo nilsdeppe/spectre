@@ -11,6 +11,7 @@
 #include "Evolution/Systems/NewtonianMhd/TagsDeclarations.hpp"
 #include "Options/String.hpp"
 #include "Utilities/MakeArray.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -52,7 +53,8 @@ namespace NewtonianMhd::Sources {
  * and \f$e\f$ is the energy density.
  */
 template <size_t Dim>
-class UniformAcceleration : public Source<Dim> {
+class UniformAcceleration : public Source<Dim> SPECTRE_FINDUS_DERIVED(
+                                UniformAcceleration<Dim>, Source<Dim>) {
  public:
   /// The applied acceleration
   struct Acceleration {

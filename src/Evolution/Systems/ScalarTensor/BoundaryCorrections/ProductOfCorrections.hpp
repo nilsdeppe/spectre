@@ -63,7 +63,18 @@ class ProductOfCorrections<DerivedGhCorrection, DerivedScalarCorrection,
                            tmpl::list<ScalarDgPackageDataVolumeTags...>,
                            tmpl::list<GhDgBoundaryTermsVolumeTags...>,
                            tmpl::list<ScalarDgBoundaryTermsVolumeTags...>>
-    final : public evolution::BoundaryCorrection {
+    final : public evolution::BoundaryCorrection SPECTRE_FINDUS_DERIVED(
+                SINGLE_ARG(ProductOfCorrections<
+                           DerivedGhCorrection, DerivedScalarCorrection,
+                           tmpl::list<GhDgPackagedFieldTags...>,
+                           tmpl::list<ScalarDgPackagedFieldTags...>,
+                           tmpl::list<GhDgPackageDataTemporaryTags...>,
+                           tmpl::list<ScalarDgPackageDataTemporaryTags...>,
+                           tmpl::list<GhDgPackageDataVolumeTags...>,
+                           tmpl::list<ScalarDgPackageDataVolumeTags...>,
+                           tmpl::list<GhDgBoundaryTermsVolumeTags...>,
+                           tmpl::list<ScalarDgBoundaryTermsVolumeTags...>>),
+                evolution::BoundaryCorrection) {
  public:
   static constexpr size_t dim = 3;
   using dg_package_field_tags =

@@ -83,8 +83,10 @@ namespace ForceFree::Solutions {
  * coordinates (see the documentation of gr::Solutions::KerrSchild).
  *
  */
-class ExactWald : public evolution::initial_data::InitialData,
-                  public MarkAsAnalyticSolution {
+class ExactWald
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(ExactWald, evolution::initial_data::InitialData) {
  public:
   struct MagneticFieldAmplitude {
     using type = double;

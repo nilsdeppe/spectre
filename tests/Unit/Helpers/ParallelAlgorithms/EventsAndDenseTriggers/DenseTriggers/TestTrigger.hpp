@@ -27,7 +27,8 @@ class GlobalCache;
 /// \endcond
 
 namespace TestHelpers::DenseTriggers {
-class TestTrigger : public DenseTrigger {
+class TestTrigger : public DenseTrigger SPECTRE_FINDUS_DERIVED(TestTrigger,
+                                                               DenseTrigger) {
  public:
   /// \cond
   TestTrigger() = default;
@@ -94,7 +95,8 @@ class TestTrigger : public DenseTrigger {
 };
 
 template <typename Label>
-class BoxTrigger : public DenseTrigger {
+class BoxTrigger : public DenseTrigger SPECTRE_FINDUS_DERIVED(BoxTrigger<Label>,
+                                                              DenseTrigger) {
  public:
   /// \cond
   BoxTrigger() = default;

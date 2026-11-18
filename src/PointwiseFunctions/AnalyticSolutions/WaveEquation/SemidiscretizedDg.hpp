@@ -36,8 +36,11 @@ namespace ScalarWave::Solutions {
  * periodic domain of length \f$2 \pi\f$ (or an integer multiple) with
  * equally sized linear elements.
  */
-class SemidiscretizedDg : public evolution::initial_data::InitialData,
-                          public MarkAsAnalyticSolution {
+class SemidiscretizedDg
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(SemidiscretizedDg,
+                             evolution::initial_data::InitialData) {
  public:
   using tags = tmpl::list<Tags::Pi, Tags::Phi<1>, Tags::Psi>;
 

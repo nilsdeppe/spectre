@@ -10,6 +10,7 @@
 #include "PointwiseFunctions/AnalyticData/AnalyticData.hpp"
 #include "PointwiseFunctions/AnalyticSolutions/GeneralRelativity/Minkowski.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -43,8 +44,11 @@ namespace ForceFree::AnalyticData {
  * As time progresses, $B^2-E^2$ approaches to zero.
  *
  */
-class FfeBreakdown : public evolution::initial_data::InitialData,
-                     public MarkAsAnalyticData {
+class FfeBreakdown
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticData
+      SPECTRE_FINDUS_DERIVED(FfeBreakdown,
+                             evolution::initial_data::InitialData) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help{"A FFE breakdown problem"};

@@ -21,6 +21,7 @@
 #include "NumericalAlgorithms/FiniteDifference/FallbackReconstructorType.hpp"
 #include "Options/String.hpp"
 #include "PointwiseFunctions/Hydro/Tags.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -57,7 +58,8 @@ namespace grmhd::ValenciaDivClean::fd {
  * Z oscillation indicator. See ::fd::reconstruction::wcns5z() for details.
  *
  */
-class Wcns5zPrim : public Reconstructor {
+class Wcns5zPrim : public Reconstructor SPECTRE_FINDUS_DERIVED(Wcns5zPrim,
+                                                               Reconstructor) {
  private:
   using prims_to_reconstruct_tags =
       tmpl::list<hydro::Tags::RestMassDensity<DataVector>,

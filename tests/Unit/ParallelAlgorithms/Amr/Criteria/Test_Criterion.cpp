@@ -48,7 +48,9 @@ struct ConstraintCompute : db::ComputeTag, Constraint {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
-class CriterionOne : public amr::Criterion {
+class CriterionOne
+    : public amr::Criterion SPECTRE_FINDUS_DERIVED(CriterionOne,
+                                                   amr::Criterion) {
  public:
   struct CriticalValue {
     using type = double;
@@ -94,7 +96,9 @@ class CriterionOne : public amr::Criterion {
 PUP::able::PUP_ID CriterionOne::my_PUP_ID = 0;  // NOLINT
 #endif                                          // SPECTRE_USE_CHARM
 
-class CriterionTwo : public amr::Criterion {
+class CriterionTwo
+    : public amr::Criterion SPECTRE_FINDUS_DERIVED(CriterionTwo,
+                                                   amr::Criterion) {
  public:
   struct TargetValue {
     using type = double;

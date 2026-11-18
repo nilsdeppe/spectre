@@ -94,7 +94,9 @@ namespace ConstitutiveRelations {
  * reduces to two dimensions.
  */
 template <size_t Dim>
-class IsotropicHomogeneous : public ConstitutiveRelation<Dim> {
+class IsotropicHomogeneous : public ConstitutiveRelation<Dim>
+                             SPECTRE_FINDUS_DERIVED(IsotropicHomogeneous<Dim>,
+                                                    ConstitutiveRelation<Dim>) {
  public:
   static constexpr size_t volume_dim = Dim;
 

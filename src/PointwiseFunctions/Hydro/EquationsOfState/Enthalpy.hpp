@@ -99,7 +99,9 @@ namespace EquationsOfState {
  *
  */
 template <typename LowDensityEoS>
-class Enthalpy : public EquationOfState<true, 1> {
+class Enthalpy : public EquationOfState<true, 1> SPECTRE_FINDUS_DERIVED(
+                     Enthalpy<LowDensityEoS>,
+                     SINGLE_ARG(EquationOfState<true, 1>)) {
  private:
   struct Coefficients {
     std::vector<double> polynomial_coefficients;

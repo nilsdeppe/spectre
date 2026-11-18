@@ -18,6 +18,7 @@
 #include "Options/Context.hpp"
 #include "Options/String.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -64,7 +65,9 @@ namespace Filters {
  * this is not relative to the largest coefficient.
  */
 template <size_t Dim, typename TagList>
-class Hypercube : public Filter<Dim, TagList> {
+class Hypercube : public Filter<Dim, TagList> SPECTRE_FINDUS_DERIVED(
+                      SINGLE_ARG(Hypercube<Dim, TagList>),
+                      SINGLE_ARG(Filter<Dim, TagList>)) {
  public:
   /*!
    * \brief Half of the exponent in the exponential.

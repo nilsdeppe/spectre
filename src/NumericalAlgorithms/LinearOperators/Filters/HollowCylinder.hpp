@@ -88,7 +88,9 @@ namespace Filters {
  * handed one.
  */
 template <typename TagList>
-class HollowCylinder : public Filter<3, TagList> {
+class HollowCylinder : public Filter<3, TagList> SPECTRE_FINDUS_DERIVED(
+                           HollowCylinder<TagList>,
+                           SINGLE_ARG(Filter<3, TagList>)) {
  public:
   /// \brief The number of top angular (Fourier) \f$m\f$-modes to set to zero.
   struct NumModesToKill {

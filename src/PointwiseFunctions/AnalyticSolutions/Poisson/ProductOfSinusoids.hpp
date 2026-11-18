@@ -21,6 +21,7 @@
 #include "PointwiseFunctions/InitialDataUtilities/AnalyticSolution.hpp"
 #include "Utilities/ContainerHelpers.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace Poisson::Solutions {
@@ -67,7 +68,12 @@ struct ProductOfSinusoidsVariables {
  * use this solution for the complex Poisson equation.
  */
 template <size_t Dim, typename DataType = DataVector>
-class ProductOfSinusoids : public elliptic::analytic_data::AnalyticSolution {
+class ProductOfSinusoids
+    : public elliptic::analytic_data::AnalyticSolution
+      SPECTRE_FINDUS_DERIVED(SINGLE_ARG(ProductOfSinusoids<Dim, DataType>),
+                             elliptic::analytic_data::InitialGuess)
+          SPECTRE_FINDUS_DERIVED(SINGLE_ARG(ProductOfSinusoids<Dim, DataType>),
+                                 elliptic::analytic_data::Background) {
  public:
   struct WaveNumbers {
     using type = std::array<double, Dim>;

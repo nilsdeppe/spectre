@@ -12,6 +12,7 @@
 #include "Options/String.hpp"
 #include "PointwiseFunctions/AnalyticSolutions/AnalyticSolution.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -33,8 +34,10 @@ namespace Solutions {
  * \f}
  *
  */
-class Sinusoid : public evolution::initial_data::InitialData,
-                 public MarkAsAnalyticSolution {
+class Sinusoid
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(Sinusoid, evolution::initial_data::InitialData) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help{

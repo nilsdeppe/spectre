@@ -46,7 +46,10 @@ class er;
 }  // namespace PUP
 
 namespace {
-class ErrorChooser : public StepChooser<StepChooserUse::LtsStep> {
+class ErrorChooser
+    : public StepChooser<StepChooserUse::LtsStep>
+      SPECTRE_FINDUS_DERIVED(ErrorChooser,
+                             StepChooser<StepChooserUse::LtsStep>) {
  public:
   ErrorChooser() = default;
   using PUP::able::register_constructor;
@@ -76,8 +79,11 @@ PUP::able::PUP_ID ErrorChooser::my_PUP_ID = 0;  // NOLINT
 struct Var1 {};
 struct Var2 {};
 
-class ToleranceChooser : public StepChooser<StepChooserUse::LtsStep>,
-                         public RequestsStepperErrorTolerances {
+class ToleranceChooser
+    : public StepChooser<StepChooserUse::LtsStep>,
+      public RequestsStepperErrorTolerances
+      SPECTRE_FINDUS_DERIVED(ToleranceChooser,
+                             StepChooser<StepChooserUse::LtsStep>) {
  public:
   ToleranceChooser() = default;
   using PUP::able::register_constructor;

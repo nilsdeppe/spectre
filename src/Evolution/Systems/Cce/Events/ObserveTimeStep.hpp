@@ -39,7 +39,8 @@ namespace Cce::Events {
  *
  * The subfile will be written into the `/Cce` subgroup.
  */
-class ObserveTimeStep : public Event {
+class ObserveTimeStep : public Event SPECTRE_FINDUS_DERIVED(ObserveTimeStep,
+                                                            Event) {
  public:
   /// The name of the subfile inside the HDF5 file
   struct SubfileName {

@@ -170,8 +170,11 @@ struct Gmres {
 template <typename VarsType, typename Preconditioner = NoPreconditioner,
           typename LinearSolverRegistrars =
               tmpl::list<Registrars::Gmres<VarsType>>>
-class Gmres final : public PreconditionedLinearSolver<Preconditioner,
-                                                      LinearSolverRegistrars> {
+class Gmres final
+    : public PreconditionedLinearSolver<Preconditioner, LinearSolverRegistrars>
+      SPECTRE_FINDUS_DERIVED(
+          SINGLE_ARG(Gmres<VarsType, Preconditioner, LinearSolverRegistrars>),
+          LinearSolver<LinearSolverRegistrars>) {
  private:
   using Base =
       PreconditionedLinearSolver<Preconditioner, LinearSolverRegistrars>;

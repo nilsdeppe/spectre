@@ -16,6 +16,7 @@
 #include "Utilities/Functional.hpp"
 #include "Utilities/Gsl.hpp"
 #include "Utilities/ProtocolHelpers.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 
 namespace {
 
@@ -30,7 +31,9 @@ struct Request {
 }  // namespace TestTags
 
 template <PhaseControl::ArbitrationStrategy Strategy, size_t Index>
-struct TestPhaseChange : public PhaseChange {
+struct TestPhaseChange : public PhaseChange SPECTRE_FINDUS_DERIVED(
+                             SINGLE_ARG(TestPhaseChange<Strategy, Index>),
+                             PhaseChange) {
   TestPhaseChange() = default;
   using PUP::able::register_constructor;
   WRAPPED_PUPable_decl_template(TestPhaseChange);  // NOLINT

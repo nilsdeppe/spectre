@@ -19,7 +19,7 @@ struct SetTerminateOnElement;
 namespace Events {
 /// \ingroup EventsAndTriggersGroup
 /// Sets the termination flag for the code to exit.
-class Completion : public Event {
+class Completion : public Event SPECTRE_FINDUS_DERIVED(Completion, Event) {
  public:
   /// \cond
   using PUP::able::register_constructor;

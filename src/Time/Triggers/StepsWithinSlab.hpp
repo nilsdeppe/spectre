@@ -26,7 +26,8 @@ namespace Triggers {
 /// \ingroup EventsAndTriggersGroup
 /// \ingroup TimeGroup
 /// Trigger at specified steps within each slab.
-class StepsWithinSlab : public Trigger {
+class StepsWithinSlab : public Trigger SPECTRE_FINDUS_DERIVED(StepsWithinSlab,
+                                                              Trigger) {
  public:
   /// \cond
   StepsWithinSlab() = default;

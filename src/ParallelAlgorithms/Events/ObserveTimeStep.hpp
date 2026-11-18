@@ -104,7 +104,10 @@ template <typename System,
 class ObserveTimeStep;
 
 template <typename System, typename... VariablesTags>
-class ObserveTimeStep<System, tmpl::list<VariablesTags...>> : public Event {
+class ObserveTimeStep<System, tmpl::list<VariablesTags...>>
+    : public Event SPECTRE_FINDUS_DERIVED(
+          SINGLE_ARG(ObserveTimeStep<System, tmpl::list<VariablesTags...>>),
+          Event) {
  private:
   using ReductionData = Events::detail::ObserveTimeStepReductionData;
 

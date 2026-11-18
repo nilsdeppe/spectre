@@ -30,8 +30,11 @@ namespace StepChoosers {
 /// Sets a goal specified per-block.
 /// \note This StepChooser is for debugging.
 template <size_t Dim>
-class ByBlock : public StepChooser<StepChooserUse::Slab>,
-                public StepChooser<StepChooserUse::LtsStep> {
+class ByBlock
+    : public StepChooser<StepChooserUse::Slab>
+      SPECTRE_FINDUS_DERIVED(ByBlock<Dim>, StepChooser<StepChooserUse::Slab>),
+      public StepChooser<StepChooserUse::LtsStep> SPECTRE_FINDUS_DERIVED(
+          ByBlock<Dim>, StepChooser<StepChooserUse::LtsStep>) {
  public:
   /// \cond
   ByBlock() = default;

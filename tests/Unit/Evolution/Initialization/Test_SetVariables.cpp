@@ -51,6 +51,7 @@
 #include "Utilities/ConstantExpressions.hpp"
 #include "Utilities/Gsl.hpp"
 #include "Utilities/ProtocolHelpers.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 #include "Utilities/TMPL.hpp"
 
@@ -79,8 +80,11 @@ template <size_t Dim>
 using boundary_variables_tag = Tags::BoundaryVariables<
     Dim, tmpl::list<evolution::dg::Tags::BoundaryValue<Var>>>;
 
-struct SystemAnalyticSolution : public MarkAsAnalyticSolution,
-                                public evolution::initial_data::InitialData {
+struct SystemAnalyticSolution
+    : public MarkAsAnalyticSolution,
+      public evolution::initial_data::InitialData
+      SPECTRE_FINDUS_DERIVED(SystemAnalyticSolution,
+                             evolution::initial_data::InitialData) {
   SystemAnalyticSolution() = default;
   ~SystemAnalyticSolution() override = default;
 
@@ -157,8 +161,10 @@ struct SystemAnalyticSolution : public MarkAsAnalyticSolution,
 PUP::able::PUP_ID SystemAnalyticSolution::my_PUP_ID = 0;
 #endif  // SPECTRE_USE_CHARM
 
-struct SystemAnalyticData : public MarkAsAnalyticData,
-                            public evolution::initial_data::InitialData {
+struct SystemAnalyticData
+    : public MarkAsAnalyticData,
+      public evolution::initial_data::InitialData SPECTRE_FINDUS_DERIVED(
+          SystemAnalyticData, evolution::initial_data::InitialData) {
   SystemAnalyticData() = default;
   ~SystemAnalyticData() override = default;
 

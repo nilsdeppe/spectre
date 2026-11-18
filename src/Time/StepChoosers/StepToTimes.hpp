@@ -26,7 +26,9 @@ namespace StepChoosers {
 ///
 /// The suggestion provided depends on the current time, so it should
 /// be applied immediately, rather than delayed several slabs.
-class StepToTimes : public StepChooser<StepChooserUse::Slab> {
+class StepToTimes
+    : public StepChooser<StepChooserUse::Slab>
+      SPECTRE_FINDUS_DERIVED(StepToTimes, StepChooser<StepChooserUse::Slab>) {
  public:
   /// \cond
   StepToTimes() = default;

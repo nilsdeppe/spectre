@@ -266,7 +266,9 @@ class WorldtubeBufferUpdater
  */
 template <typename T>
 class MetricWorldtubeH5BufferUpdater
-    : public WorldtubeBufferUpdater<cce_metric_input_tags<T>> {
+    : public WorldtubeBufferUpdater<cce_metric_input_tags<T>>
+      SPECTRE_FINDUS_DERIVED(MetricWorldtubeH5BufferUpdater<T>,
+                             WorldtubeBufferUpdater<cce_metric_input_tags<T>>) {
   static_assert(std::is_same_v<T, ComplexModalVector> or
                     std::is_same_v<T, DataVector>,
                 "Can only use ComplexModalVector or DataVector in a "
@@ -490,7 +492,16 @@ class BondiWorldtubeH5BufferUpdater
           std::is_same_v<T, ComplexModalVector>,
           Tags::worldtube_boundary_tags_for_writing<
               Spectral::Swsh::Tags::SwshTransform>,
-          Tags::worldtube_boundary_tags_for_writing<Tags::BoundaryValue>>> {
+          Tags::worldtube_boundary_tags_for_writing<Tags::BoundaryValue>>>
+      SPECTRE_FINDUS_DERIVED(
+          BondiWorldtubeH5BufferUpdater<T>,
+          SINGLE_ARG(
+              WorldtubeBufferUpdater<
+                  tmpl::conditional_t<std::is_same_v<T, ComplexModalVector>,
+                                      Tags::worldtube_boundary_tags_for_writing<
+                                          Spectral::Swsh::Tags::SwshTransform>,
+                                      Tags::worldtube_boundary_tags_for_writing<
+                                          Tags::BoundaryValue>>>)) {
   static_assert(std::is_same_v<T, ComplexModalVector> or
                     std::is_same_v<T, ComplexDataVector>,
                 "Can only use ComplexModalVector or ComplexDataVector in a "
@@ -592,7 +603,9 @@ class BondiWorldtubeH5BufferUpdater
 /// H5 file produced by the SpEC format. We assume the scalar field is
 /// real-valued.
 class KleinGordonWorldtubeH5BufferUpdater
-    : public WorldtubeBufferUpdater<klein_gordon_input_tags> {
+    : public WorldtubeBufferUpdater<klein_gordon_input_tags>
+      SPECTRE_FINDUS_DERIVED(KleinGordonWorldtubeH5BufferUpdater,
+                             WorldtubeBufferUpdater<klein_gordon_input_tags>) {
  public:
   // charm needs the empty constructor
   KleinGordonWorldtubeH5BufferUpdater() = default;

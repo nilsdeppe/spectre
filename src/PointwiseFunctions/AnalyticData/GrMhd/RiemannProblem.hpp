@@ -117,10 +117,13 @@ namespace grmhd::AnalyticData {
  *  - ShiftX: 0.0
  *  - Final time: 0.55
  */
-class RiemannProblem : public evolution::initial_data::InitialData,
-                       public AnalyticDataBase,
-                       public hydro::TemperatureInitialization<RiemannProblem>,
-                       public MarkAsAnalyticData {
+class RiemannProblem
+    : public evolution::initial_data::InitialData,
+      public AnalyticDataBase,
+      public hydro::TemperatureInitialization<RiemannProblem>,
+      public MarkAsAnalyticData
+      SPECTRE_FINDUS_DERIVED(RiemannProblem,
+                             evolution::initial_data::InitialData) {
  public:
   using equation_of_state_type = EquationsOfState::IdealFluid<true>;
 

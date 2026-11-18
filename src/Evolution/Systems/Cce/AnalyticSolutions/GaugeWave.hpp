@@ -44,7 +44,10 @@ namespace Solutions {
  * omit that extra map. The behavior of translation-independence is
  * tested by the `Cce::Solutions::BouncingBlackHole` solution.
  */
-struct GaugeWave : public SphericalMetricData {
+struct GaugeWave : public virtual WorldtubeData SPECTRE_FINDUS_DERIVED(
+                       GaugeWave, WorldtubeData),
+                   public virtual SphericalMetricData
+                   SPECTRE_FINDUS_DERIVED(GaugeWave, SphericalMetricData) {
   struct ExtractionRadius {
     using type = double;
     static constexpr Options::String help{

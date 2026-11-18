@@ -62,7 +62,9 @@ namespace ForceFree::BoundaryCorrections {
  * \f$G - F_\text{int}\f$
  *
  */
-class Rusanov final : public evolution::BoundaryCorrection {
+class Rusanov final
+    : public evolution::BoundaryCorrection
+      SPECTRE_FINDUS_DERIVED(Rusanov, evolution::BoundaryCorrection) {
  private:
   struct AbsCharSpeed : db::SimpleTag {
     using type = Scalar<DataVector>;

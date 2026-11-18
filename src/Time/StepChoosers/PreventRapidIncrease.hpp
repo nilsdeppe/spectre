@@ -44,7 +44,15 @@ class PreventRapidIncrease;
 template <typename System, typename... VariablesTags>
 class PreventRapidIncrease<System, tmpl::list<VariablesTags...>>
     : public StepChooser<StepChooserUse::Slab>,
-      public StepChooser<StepChooserUse::LtsStep> {
+      public StepChooser<StepChooserUse::LtsStep>
+      SPECTRE_FINDUS_DERIVED(
+          SINGLE_ARG(
+              PreventRapidIncrease<System, tmpl::list<VariablesTags...>>),
+          StepChooser<StepChooserUse::Slab>)
+          SPECTRE_FINDUS_DERIVED(
+              SINGLE_ARG(
+                  PreventRapidIncrease<System, tmpl::list<VariablesTags...>>),
+              StepChooser<StepChooserUse::LtsStep>) {
  public:
   /// \cond
   PreventRapidIncrease() = default;

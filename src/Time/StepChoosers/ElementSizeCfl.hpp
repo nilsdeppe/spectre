@@ -39,8 +39,13 @@ namespace StepChoosers {
 /// This is useful as a coarse estimate for slabs, or to place a ceiling on
 /// another dynamically-adjusted step chooser.
 template <size_t Dim, typename System>
-class ElementSizeCfl : public StepChooser<StepChooserUse::Slab>,
-                       public StepChooser<StepChooserUse::LtsStep> {
+class ElementSizeCfl
+    : public StepChooser<StepChooserUse::Slab>
+      SPECTRE_FINDUS_DERIVED(SINGLE_ARG(ElementSizeCfl<Dim, System>),
+                             StepChooser<StepChooserUse::Slab>),
+      public StepChooser<StepChooserUse::LtsStep> SPECTRE_FINDUS_DERIVED(
+          SINGLE_ARG(ElementSizeCfl<Dim, System>),
+          StepChooser<StepChooserUse::LtsStep>) {
  public:
   /// \cond
   ElementSizeCfl() = default;

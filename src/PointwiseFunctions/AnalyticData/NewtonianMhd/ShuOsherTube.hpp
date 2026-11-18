@@ -18,6 +18,7 @@
 #include "PointwiseFunctions/Hydro/Tags.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
 #include "Utilities/MakeArray.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -58,8 +59,11 @@ namespace NewtonianMhd::AnalyticData {
  *
  * With these values the usual final time is 1.8.
  */
-class ShuOsherTube : public evolution::initial_data::InitialData,
-                     public MarkAsAnalyticData {
+class ShuOsherTube
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticData
+      SPECTRE_FINDUS_DERIVED(ShuOsherTube,
+                             evolution::initial_data::InitialData) {
  public:
   using equation_of_state_type = EquationsOfState::IdealFluid<false>;
 

@@ -164,7 +164,12 @@ template <typename... ObservableTensorTags, typename... NonTensorComputeTags,
           typename ArraySectionIdTag, typename OptionName>
 class ObserveNorms<tmpl::list<ObservableTensorTags...>,
                    tmpl::list<NonTensorComputeTags...>, ArraySectionIdTag,
-                   OptionName> : public Event {
+                   OptionName>
+    : public Event SPECTRE_FINDUS_DERIVED(
+          SINGLE_ARG(ObserveNorms<tmpl::list<ObservableTensorTags...>,
+                                  tmpl::list<NonTensorComputeTags...>,
+                                  ArraySectionIdTag, OptionName>),
+          Event) {
  private:
   struct ObserveTensor {
     static constexpr Options::String help = {

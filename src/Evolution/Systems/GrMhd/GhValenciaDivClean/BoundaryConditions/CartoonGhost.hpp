@@ -21,6 +21,7 @@
 #include "Options/String.hpp"
 #include "PointwiseFunctions/GeneralRelativity/Tags.hpp"
 #include "PointwiseFunctions/Hydro/Tags.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -52,8 +53,11 @@ namespace grmhd::GhValenciaDivClean::BoundaryConditions {
  * the hydro variables.
  */
 template <typename System>
-class CartoonGhost final : public BoundaryCondition,
-                           public domain::BoundaryConditions::MarkAsCartoon {
+class CartoonGhost final
+    : public BoundaryCondition,
+      public domain::BoundaryConditions::MarkAsCartoon
+      SPECTRE_FINDUS_DERIVED(CartoonGhost<System>,
+                             domain::BoundaryConditions::BoundaryCondition) {
  private:
   using SpacetimeMetric = gr::Tags::SpacetimeMetric<DataVector, 3>;
   using Pi = gh::Tags::Pi<DataVector, 3>;

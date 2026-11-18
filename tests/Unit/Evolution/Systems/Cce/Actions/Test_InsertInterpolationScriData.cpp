@@ -42,6 +42,7 @@
 #include "Utilities/MakeVector.hpp"
 #include "Utilities/NoSuchType.hpp"
 #include "Utilities/ProtocolHelpers.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/Serialization/RegisterDerivedClassesWithCharm.hpp"
 #include "Utilities/Serialization/Serialize.hpp"
 
@@ -64,8 +65,20 @@ struct MockWriteReductionDataRow {
 };
 
 struct RotatingSchwarzschildWithNoninertialNews
-    : public Cce::Solutions::RotatingSchwarzschild {
-  using Cce::Solutions::RotatingSchwarzschild::RotatingSchwarzschild;
+    : public Cce::Solutions::RotatingSchwarzschild
+      SPECTRE_FINDUS_DERIVED(RotatingSchwarzschildWithNoninertialNews,
+                             Cce::Solutions::SphericalMetricData)
+          SPECTRE_FINDUS_DERIVED(RotatingSchwarzschildWithNoninertialNews,
+                                 Cce::Solutions::WorldtubeData) {
+  // Inherited constructors do not initialize virtual base classes, so
+  // explicitly forward the extraction radius to WorldtubeData.
+  RotatingSchwarzschildWithNoninertialNews(const double extraction_radius,
+                                           const double mass,
+                                           const double frequency)
+      : Cce::Solutions::WorldtubeData{extraction_radius},
+        Cce::Solutions::RotatingSchwarzschild{extraction_radius, mass,
+                                              frequency} {}
+  RotatingSchwarzschildWithNoninertialNews() = default;
   // ignore warning for unused | operator
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
@@ -73,12 +86,18 @@ struct RotatingSchwarzschildWithNoninertialNews
 #pragma GCC diagnostic pop
   bool use_noninertial_news() const override { return true; }
 
+  double extraction_radius() const { return extraction_radius_; }
+
   std::unique_ptr<Cce::Solutions::WorldtubeData> get_clone() const override {
     return std::make_unique<RotatingSchwarzschildWithNoninertialNews>(*this);
   }
   void pup(PUP::er& p) override {
     Cce::Solutions::RotatingSchwarzschild::pup(p);
   }
+
+ protected:
+  FINDUS_OVERRIDE_SERIALIZATION_ID(RotatingSchwarzschildWithNoninertialNews,
+                                   Cce::Solutions::WorldtubeData)
 };
 
 #if defined(SPECTRE_USE_CHARM)
@@ -276,6 +295,7 @@ SPECTRE_TEST_CASE(
 
   const RotatingSchwarzschildWithNoninertialNews analytic_solution{
       extraction_radius, 1.0, 0.05};
+  CHECK(analytic_solution.extraction_radius() == extraction_radius);
   const AnalyticBoundaryDataManager analytic_manager{
       l_max, extraction_radius, analytic_solution.get_clone(), 0.05};
   ActionTesting::MockRuntimeSystem<test_metavariables> runner{

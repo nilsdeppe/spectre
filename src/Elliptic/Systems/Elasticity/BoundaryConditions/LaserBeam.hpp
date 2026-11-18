@@ -80,7 +80,10 @@ namespace Elasticity::BoundaryConditions {
  * an analytic solution that involves this boundary condition (TEM00 only),
  * which uses the same beam width convention.
  */
-class LaserBeam : public elliptic::BoundaryConditions::BoundaryCondition<3> {
+class LaserBeam
+    : public elliptic::BoundaryConditions::BoundaryCondition<3>
+      SPECTRE_FINDUS_DERIVED(LaserBeam,
+                             domain::BoundaryConditions::BoundaryCondition) {
  private:
   using Base = elliptic::BoundaryConditions::BoundaryCondition<3>;
 

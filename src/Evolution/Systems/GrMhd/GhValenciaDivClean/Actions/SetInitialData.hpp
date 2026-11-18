@@ -40,6 +40,7 @@
 #include "PointwiseFunctions/InitialDataUtilities/Tags/InitialData.hpp"
 #include "Utilities/ErrorHandling/Error.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -60,8 +61,11 @@ namespace grmhd::GhValenciaDivClean {
  * mostly combines the `gh::NumericInitialData` and
  * `grmhd::ValenciaDivClean::NumericInitialData` classes.
  */
-class NumericInitialData : public evolution::initial_data::InitialData,
-                           public evolution::NumericInitialData {
+class NumericInitialData
+    : public evolution::initial_data::InitialData,
+      public evolution::NumericInitialData
+      SPECTRE_FINDUS_DERIVED(NumericInitialData,
+                             evolution::initial_data::InitialData) {
  private:
   using GhNumericId = gh::NumericInitialData;
   using HydroNumericId = grmhd::ValenciaDivClean::NumericInitialData;

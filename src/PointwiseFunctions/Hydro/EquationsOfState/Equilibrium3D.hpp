@@ -43,7 +43,11 @@ namespace EquationsOfState {
  *
  */
 template <typename EquilEos>
-class Equilibrium3D : public EquationOfState<EquilEos::is_relativistic, 3> {
+class Equilibrium3D
+    : public EquationOfState<EquilEos::is_relativistic, 3>
+      SPECTRE_FINDUS_DERIVED(
+          Equilibrium3D<EquilEos>,
+          SINGLE_ARG(EquationOfState<EquilEos::is_relativistic, 3>)) {
  public:
   static constexpr size_t thermodynamic_dim = 3;
   static constexpr bool is_relativistic = EquilEos::is_relativistic;

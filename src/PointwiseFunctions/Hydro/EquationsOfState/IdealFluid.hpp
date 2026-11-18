@@ -45,7 +45,10 @@ namespace EquationsOfState {
  * \f]
  */
 template <bool IsRelativistic>
-class IdealFluid : public EquationOfState<IsRelativistic, 2> {
+class IdealFluid
+    : public EquationOfState<IsRelativistic, 2>
+      SPECTRE_FINDUS_DERIVED(IdealFluid<IsRelativistic>,
+                             SINGLE_ARG(EquationOfState<IsRelativistic, 2>)) {
  public:
   static constexpr size_t thermodynamic_dim = 2;
   static constexpr bool is_relativistic = IsRelativistic;

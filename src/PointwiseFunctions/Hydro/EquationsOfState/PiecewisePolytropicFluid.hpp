@@ -42,7 +42,10 @@ namespace EquationsOfState {
  * Section 2.4.7 of \cite RezzollaBook.
  */
 template <bool IsRelativistic>
-class PiecewisePolytropicFluid : public EquationOfState<IsRelativistic, 1> {
+class PiecewisePolytropicFluid
+    : public EquationOfState<IsRelativistic, 1>
+      SPECTRE_FINDUS_DERIVED(PiecewisePolytropicFluid<IsRelativistic>,
+                             SINGLE_ARG(EquationOfState<IsRelativistic, 1>)) {
  public:
   static constexpr size_t thermodynamic_dim = 1;
   static constexpr bool is_relativistic = IsRelativistic;

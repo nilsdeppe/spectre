@@ -87,10 +87,12 @@ namespace grmhd::Solutions {
  *
  * \f[b^2 = B_0^2 + B_1^2 - B_0^2 v_f^2\f]
  */
-class AlfvenWave : public evolution::initial_data::InitialData,
-                   public AnalyticSolution,
-                   public hydro::TemperatureInitialization<AlfvenWave>,
-                   public MarkAsAnalyticSolution {
+class AlfvenWave
+    : public evolution::initial_data::InitialData,
+      public AnalyticSolution,
+      public hydro::TemperatureInitialization<AlfvenWave>,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(AlfvenWave, evolution::initial_data::InitialData) {
  public:
   using equation_of_state_type = EquationsOfState::IdealFluid<true>;
 

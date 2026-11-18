@@ -21,6 +21,7 @@
 #include "PointwiseFunctions/GeneralRelativity/Tags.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
 #include "Utilities/MakeWithValue.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace CurvedScalarWave::AnalyticData {
@@ -34,8 +35,11 @@ namespace CurvedScalarWave::AnalyticData {
  * space.
  */
 
-class ZerothOrderPuncture : public evolution::initial_data::InitialData,
-                            public MarkAsAnalyticData {
+class ZerothOrderPuncture
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticData
+      SPECTRE_FINDUS_DERIVED(ZerothOrderPuncture,
+                             evolution::initial_data::InitialData) {
  public:
   struct ParticlePosition {
     using type = std::array<double, 3>;

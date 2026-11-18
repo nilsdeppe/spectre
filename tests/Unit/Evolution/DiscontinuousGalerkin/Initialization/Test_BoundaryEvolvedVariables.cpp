@@ -63,7 +63,10 @@ struct MockSystem {
 };
 
 template <size_t Dim>
-class MockOptingBc : public domain::BoundaryConditions::BoundaryCondition {
+class MockOptingBc
+    : public domain::BoundaryConditions::BoundaryCondition
+      SPECTRE_FINDUS_DERIVED(MockOptingBc<Dim>,
+                             domain::BoundaryConditions::BoundaryCondition) {
  public:
   MockOptingBc() = default;
   MockOptingBc(MockOptingBc&&) = default;
@@ -96,7 +99,10 @@ PUP::able::PUP_ID MockOptingBc<Dim>::my_PUP_ID = 0;
 #endif  // SPECTRE_USE_CHARM
 
 template <size_t Dim>
-class MockNonOptingBc : public domain::BoundaryConditions::BoundaryCondition {
+class MockNonOptingBc
+    : public domain::BoundaryConditions::BoundaryCondition
+      SPECTRE_FINDUS_DERIVED(MockNonOptingBc<Dim>,
+                             domain::BoundaryConditions::BoundaryCondition) {
  public:
   MockNonOptingBc() = default;
   MockNonOptingBc(MockNonOptingBc&&) = default;

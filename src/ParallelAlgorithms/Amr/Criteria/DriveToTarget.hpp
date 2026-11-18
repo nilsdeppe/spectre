@@ -11,6 +11,7 @@
 #include "Domain/Tags.hpp"
 #include "ParallelAlgorithms/Amr/Criteria/Criterion.hpp"
 #include "ParallelAlgorithms/Amr/Criteria/Type.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -35,7 +36,9 @@ namespace amr::Criteria {
  * \note This criterion is primarily for testing the mechanics of refinement.
  */
 template <size_t Dim, Type CriteriaType>
-class DriveToTarget : public Criterion {
+class DriveToTarget : public Criterion SPECTRE_FINDUS_DERIVED(
+                          SINGLE_ARG(DriveToTarget<Dim, CriteriaType>),
+                          Criterion) {
  public:
   /// The target (number of grid points or refinement level) in each dimension
   struct Target {

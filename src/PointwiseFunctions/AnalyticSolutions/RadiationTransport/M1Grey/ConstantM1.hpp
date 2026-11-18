@@ -16,6 +16,7 @@
 #include "PointwiseFunctions/AnalyticSolutions/GeneralRelativity/Minkowski.hpp"
 #include "PointwiseFunctions/Hydro/TagsDeclarations.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -35,8 +36,10 @@ namespace RadiationTransport::M1Grey::Solutions {
  *
  */
 
-class ConstantM1 : public virtual evolution::initial_data::InitialData,
-                   public MarkAsAnalyticSolution {
+class ConstantM1
+    : public virtual evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(ConstantM1, evolution::initial_data::InitialData) {
  public:
   /// The mean flow velocity.
   struct MeanVelocity {

@@ -11,6 +11,7 @@
 #include "Options/String.hpp"
 #include "PointwiseFunctions/AnalyticSolutions/AnalyticSolution.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -57,8 +58,11 @@ namespace Solutions {
  * condition. The initial profile is simply advected (translated) to +x
  * direction, going over cycles in the domain every 2.0 time unit.
  */
-class Krivodonova : public evolution::initial_data::InitialData,
-                    public MarkAsAnalyticSolution {
+class Krivodonova
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(Krivodonova,
+                             evolution::initial_data::InitialData) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help{

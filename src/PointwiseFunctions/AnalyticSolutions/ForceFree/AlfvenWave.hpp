@@ -84,8 +84,10 @@ namespace ForceFree::Solutions {
  * time $t$ is $f(x,t) = f(x-\mu t, 0)$ for any physical quantities.
  *
  */
-class AlfvenWave : public evolution::initial_data::InitialData,
-                   public MarkAsAnalyticSolution {
+class AlfvenWave
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(AlfvenWave, evolution::initial_data::InitialData) {
  public:
   /// The wave speed
   struct WaveSpeed {

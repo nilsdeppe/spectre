@@ -59,10 +59,12 @@ namespace grmhd::AnalyticData {
  * \cite CerdaDuran2007 \cite CerdaDuran2008 \cite Cipolletta2019. The magnetic
  * field is chosen to be in the z-direction instead of the x-direction.
  */
-class BlastWave : public evolution::initial_data::InitialData,
-                  public MarkAsAnalyticData,
-                  public AnalyticDataBase,
-                  public hydro::TemperatureInitialization<BlastWave> {
+class BlastWave
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticData,
+      public AnalyticDataBase,
+      public hydro::TemperatureInitialization<BlastWave>
+      SPECTRE_FINDUS_DERIVED(BlastWave, evolution::initial_data::InitialData) {
  public:
   using equation_of_state_type = EquationsOfState::IdealFluid<true>;
 

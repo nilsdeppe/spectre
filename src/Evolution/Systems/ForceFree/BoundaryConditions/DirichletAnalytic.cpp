@@ -20,12 +20,13 @@
 #include "PointwiseFunctions/InitialDataUtilities/InitialData.hpp"
 #include "Utilities/CallWithDynamicType.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 
 namespace ForceFree::BoundaryConditions {
 
 DirichletAnalytic::DirichletAnalytic(const DirichletAnalytic& rhs)
-    : PUP::able(rhs),
-      BoundaryCondition{dynamic_cast<const BoundaryCondition&>(rhs)},
+    : SPECTRE_CHARM_PUPable_COPY(
+          rhs) BoundaryCondition{dynamic_cast<const BoundaryCondition&>(rhs)},
       analytic_prescription_(rhs.analytic_prescription_->get_clone()) {}
 
 DirichletAnalytic& DirichletAnalytic::operator=(const DirichletAnalytic& rhs) {

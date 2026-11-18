@@ -18,6 +18,7 @@
 #include "Evolution/Systems/ScalarAdvection/FiniteDifference/Reconstructor.hpp"
 #include "Evolution/Systems/ScalarAdvection/Tags.hpp"
 #include "Options/String.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -54,7 +55,8 @@ namespace ScalarAdvection::fd {
  * ::fd::reconstruction::aoweno_53() for details.
  */
 template <size_t Dim>
-class AoWeno53 : public Reconstructor<Dim> {
+class AoWeno53 : public Reconstructor<Dim> SPECTRE_FINDUS_DERIVED(
+                     AoWeno53<Dim>, Reconstructor<Dim>) {
  private:
   using face_vars_tags =
       tmpl::list<ScalarAdvection::Tags::U,

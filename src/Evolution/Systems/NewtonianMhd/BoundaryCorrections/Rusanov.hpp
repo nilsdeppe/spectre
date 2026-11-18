@@ -62,7 +62,9 @@ namespace NewtonianMhd::BoundaryCorrections {
  * \f$G - F_\text{int}\f$
  */
 template <size_t Dim>
-class Rusanov final : public evolution::BoundaryCorrection {
+class Rusanov final
+    : public evolution::BoundaryCorrection
+      SPECTRE_FINDUS_DERIVED(Rusanov<Dim>, evolution::BoundaryCorrection) {
  private:
   struct AbsCharSpeed : db::SimpleTag {
     using type = Scalar<DataVector>;

@@ -28,6 +28,7 @@
 #include "PointwiseFunctions/InitialDataUtilities/Tags/InitialData.hpp"
 #include "Utilities/ErrorHandling/Error.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/SetNumberOfGridPoints.hpp"
 #include "Utilities/TMPL.hpp"
 
@@ -45,7 +46,10 @@ namespace grmhd::ValenciaDivClean {
  * factor). To evolve the initial data, an atmosphere treatment is likely
  * required to fix the value of the fluid variables in these regions.
  */
-class NumericInitialData : public evolution::initial_data::InitialData {
+class NumericInitialData
+    : public evolution::initial_data::InitialData
+      SPECTRE_FINDUS_DERIVED(NumericInitialData,
+                             evolution::initial_data::InitialData) {
  public:
   /// Name of a variable in the volume data file. Can be optional, in which case
   /// a constant value can be supplied instead of a dataset name.

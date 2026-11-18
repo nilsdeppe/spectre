@@ -27,7 +27,8 @@ namespace FunctionsOfTime {
  * `Parallel::GlobalCache` for objects held by mutable global cache tags.
  */
 template <size_t MaxDeriv>
-class PiecewisePolynomial : public FunctionOfTime {
+class PiecewisePolynomial : public FunctionOfTime SPECTRE_FINDUS_DERIVED(
+                                PiecewisePolynomial<MaxDeriv>, FunctionOfTime) {
  public:
   PiecewisePolynomial();
   PiecewisePolynomial(PiecewisePolynomial&&);

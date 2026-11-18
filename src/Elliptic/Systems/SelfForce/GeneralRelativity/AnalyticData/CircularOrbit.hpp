@@ -22,6 +22,7 @@
 #include "PointwiseFunctions/InitialDataUtilities/Background.hpp"
 #include "PointwiseFunctions/InitialDataUtilities/InitialGuess.hpp"
 #include "Utilities/Gsl.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 namespace GrSelfForce::AnalyticData {
@@ -45,8 +46,13 @@ namespace GrSelfForce::AnalyticData {
  * the corresponding effective source provided by the external
  * GravitationalEffectiveSource code (see Test_CircularOrbit.cpp).
  */
-class CircularOrbit : public elliptic::analytic_data::Background,
-                      public elliptic::analytic_data::InitialGuess {
+class CircularOrbit
+    : public elliptic::analytic_data::Background
+      SPECTRE_FINDUS_DERIVED(CircularOrbit,
+                             elliptic::analytic_data::Background),
+      public elliptic::analytic_data::InitialGuess
+      SPECTRE_FINDUS_DERIVED(CircularOrbit,
+                             elliptic::analytic_data::InitialGuess) {
  public:
   struct BlackHoleMass {
     static constexpr Options::String help =

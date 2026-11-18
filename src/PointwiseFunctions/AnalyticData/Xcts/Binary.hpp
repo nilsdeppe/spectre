@@ -306,8 +306,14 @@ struct BinaryVariables
  * \cite Ossokine2015yla).
  */
 template <typename IsolatedObjectBase, typename IsolatedObjectClasses>
-class Binary : public elliptic::analytic_data::Background,
-               public elliptic::analytic_data::InitialGuess {
+class Binary
+    : public elliptic::analytic_data::Background
+      SPECTRE_FINDUS_DERIVED(
+          SINGLE_ARG(Binary<IsolatedObjectBase, IsolatedObjectClasses>),
+          elliptic::analytic_data::Background),
+      public elliptic::analytic_data::InitialGuess SPECTRE_FINDUS_DERIVED(
+          SINGLE_ARG(Binary<IsolatedObjectBase, IsolatedObjectClasses>),
+          elliptic::analytic_data::InitialGuess) {
  public:
   template <typename DataType>
   using tags = typename detail::BinaryVariablesCache<DataType>::tags_list;

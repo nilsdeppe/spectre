@@ -77,7 +77,10 @@ SphericalRadiationType convert_spherical_radiation_type_from_yaml(
  * tested.
  */
 template <size_t Dim>
-class SphericalRadiation final : public BoundaryCondition<Dim> {
+class SphericalRadiation final
+    : public BoundaryCondition<Dim>
+      SPECTRE_FINDUS_DERIVED(SphericalRadiation<Dim>,
+                             domain::BoundaryConditions::BoundaryCondition) {
  public:
   struct TypeOptionTag {
     using type = detail::SphericalRadiationType;

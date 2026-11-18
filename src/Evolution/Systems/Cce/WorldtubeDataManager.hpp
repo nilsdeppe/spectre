@@ -147,7 +147,11 @@ class WorldtubeDataManager
  */
 class MetricWorldtubeDataManager
     : public WorldtubeDataManager<
-          Tags::characteristic_worldtube_boundary_tags<Tags::BoundaryValue>> {
+          Tags::characteristic_worldtube_boundary_tags<Tags::BoundaryValue>>
+      SPECTRE_FINDUS_DERIVED(
+          MetricWorldtubeDataManager,
+          WorldtubeDataManager<Tags::characteristic_worldtube_boundary_tags<
+              Tags::BoundaryValue>>) {
   using input_tags = cce_metric_input_tags<ComplexModalVector>;
 
  public:
@@ -240,7 +244,11 @@ class MetricWorldtubeDataManager
  */
 class BondiWorldtubeDataManager
     : public WorldtubeDataManager<
-          Tags::characteristic_worldtube_boundary_tags<Tags::BoundaryValue>> {
+          Tags::characteristic_worldtube_boundary_tags<Tags::BoundaryValue>>
+      SPECTRE_FINDUS_DERIVED(
+          BondiWorldtubeDataManager,
+          WorldtubeDataManager<Tags::characteristic_worldtube_boundary_tags<
+              Tags::BoundaryValue>>) {
  public:
   // charm needs an empty constructor.
   BondiWorldtubeDataManager() = default;
@@ -349,7 +357,10 @@ class BondiWorldtubeDataManager
 };
 
 class KleinGordonWorldtubeDataManager
-    : public WorldtubeDataManager<Tags::klein_gordon_worldtube_boundary_tags> {
+    : public WorldtubeDataManager<Tags::klein_gordon_worldtube_boundary_tags>
+      SPECTRE_FINDUS_DERIVED(
+          KleinGordonWorldtubeDataManager,
+          WorldtubeDataManager<Tags::klein_gordon_worldtube_boundary_tags>) {
  public:
   // charm needs an empty constructor.
   KleinGordonWorldtubeDataManager() = default;

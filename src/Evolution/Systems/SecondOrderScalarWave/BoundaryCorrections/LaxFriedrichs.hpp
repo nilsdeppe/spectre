@@ -89,7 +89,10 @@ namespace SecondOrderScalarWave::BoundaryCorrections {
  * no boundary correction.
  */
 template <size_t Dim>
-class LaxFriedrichs final : public evolution::BoundaryCorrection {
+class LaxFriedrichs final
+    : public evolution::BoundaryCorrection
+      SPECTRE_FINDUS_DERIVED(LaxFriedrichs<Dim>,
+                             evolution::BoundaryCorrection) {
  public:
   struct Tau {
     using type = double;

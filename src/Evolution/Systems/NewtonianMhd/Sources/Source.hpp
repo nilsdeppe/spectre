@@ -30,7 +30,7 @@ namespace NewtonianMhd::Sources {
  * \brief Source terms base class.
  */
 template <size_t Dim>
-class Source : public SPECTRE_CHARM_PUPable(Source) {
+class Source : public SPECTRE_CHARM_PUPable(Source<Dim>) {
  protected:
   Source() = default;
 

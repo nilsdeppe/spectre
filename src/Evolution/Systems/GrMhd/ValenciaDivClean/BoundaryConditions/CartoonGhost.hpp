@@ -48,8 +48,11 @@ namespace grmhd::ValenciaDivClean::BoundaryConditions {
  * This only has `fd_ghost()` implemented because this boundary uses ZernikeB1
  * bases in DG elements which do not require a boundary condition.
  */
-class CartoonGhost final : public BoundaryCondition,
-                           public domain::BoundaryConditions::MarkAsCartoon {
+class CartoonGhost final
+    : public BoundaryCondition,
+      public domain::BoundaryConditions::MarkAsCartoon
+      SPECTRE_FINDUS_DERIVED(CartoonGhost,
+                             domain::BoundaryConditions::BoundaryCondition) {
  private:
   using RestMassDensity = hydro::Tags::RestMassDensity<DataVector>;
   using ElectronFraction = hydro::Tags::ElectronFraction<DataVector>;

@@ -21,8 +21,11 @@ class er;
 namespace StepChoosers {
 
 /// Sets a constant goal.
-class Constant : public StepChooser<StepChooserUse::Slab>,
-                 public StepChooser<StepChooserUse::LtsStep> {
+class Constant
+    : public StepChooser<StepChooserUse::Slab>
+      SPECTRE_FINDUS_DERIVED(Constant, StepChooser<StepChooserUse::Slab>),
+      public StepChooser<StepChooserUse::LtsStep> SPECTRE_FINDUS_DERIVED(
+          Constant, StepChooser<StepChooserUse::LtsStep>) {
  public:
   /// \cond
   Constant() = default;

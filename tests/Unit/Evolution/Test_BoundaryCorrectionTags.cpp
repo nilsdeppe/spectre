@@ -11,9 +11,13 @@
 #include "Framework/TestCreation.hpp"
 #include "Helpers/DataStructures/DataBox/TestHelpers.hpp"
 #include "Options/String.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 
 namespace {
-struct BoundaryCorrection : public evolution::BoundaryCorrection {
+struct BoundaryCorrection
+    : public evolution::BoundaryCorrection
+      SPECTRE_FINDUS_DERIVED(BoundaryCorrection,
+                             evolution::BoundaryCorrection) {
   BoundaryCorrection() = default;
   BoundaryCorrection(const BoundaryCorrection&) = default;
   BoundaryCorrection& operator=(const BoundaryCorrection&) = default;

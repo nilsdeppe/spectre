@@ -47,7 +47,10 @@ struct System {
   using primal_fields = tmpl::list<ScalarFieldTag>;
 };
 
-struct InitialGuess : elliptic::analytic_data::InitialGuess {
+struct InitialGuess
+    : elliptic::analytic_data::InitialGuess
+      SPECTRE_FINDUS_DERIVED(InitialGuess,
+                             elliptic::analytic_data::InitialGuess) {
   InitialGuess() = default;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"

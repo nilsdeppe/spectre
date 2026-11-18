@@ -42,8 +42,11 @@ namespace Ccz4::Solutions {
  * pure gauge: the spatial metric and extrinsic curvature are unchanged.
  */
 template <typename SolutionType>
-class Ccz4WrappedGr : public virtual evolution::initial_data::InitialData,
-                      public SolutionType {
+class Ccz4WrappedGr
+    : public virtual evolution::initial_data::InitialData,
+      public SolutionType
+      SPECTRE_FINDUS_DERIVED(Ccz4WrappedGr<SolutionType>,
+                             evolution::initial_data::InitialData) {
  public:
   using SolutionType::SolutionType;
 

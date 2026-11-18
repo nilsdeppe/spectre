@@ -55,11 +55,14 @@ namespace RelativisticEuler::Solutions {
  * where the pressure is held constant.
  */
 template <size_t Dim>
-class SmoothFlow : public evolution::initial_data::InitialData,
-                   virtual public MarkAsAnalyticSolution,
-                   public AnalyticSolution<Dim>,
-                   public hydro::TemperatureInitialization<SmoothFlow<Dim>>,
-                   private hydro::Solutions::SmoothFlow<Dim, true> {
+class SmoothFlow
+    : public evolution::initial_data::InitialData,
+      virtual public MarkAsAnalyticSolution,
+      public AnalyticSolution<Dim>,
+      public hydro::TemperatureInitialization<SmoothFlow<Dim>>,
+      private hydro::Solutions::SmoothFlow<Dim, true>
+      SPECTRE_FINDUS_DERIVED(SmoothFlow<Dim>,
+                             evolution::initial_data::InitialData) {
   using smooth_flow = hydro::Solutions::SmoothFlow<Dim, true>;
 
  public:

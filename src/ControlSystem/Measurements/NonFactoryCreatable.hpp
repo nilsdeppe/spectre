@@ -14,6 +14,11 @@
  * It does this by defining and setting a static constexpr bool
  * `factory_creatable = false`.
  *
+ * \note When using findus the wrapper is not registered separately for
+ * serialization, so it is serialized and deserialized as the
+ * `FactoryCreatableClass`. This is equivalent because the wrapper adds neither
+ * data members nor virtual functions.
+ *
  * \tparam FactoryCreatableClass Any class that is already factory creatable.
  */
 template <typename FactoryCreatableClass>

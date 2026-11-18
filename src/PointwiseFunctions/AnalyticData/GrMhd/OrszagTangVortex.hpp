@@ -64,7 +64,9 @@ class OrszagTangVortex
     : public evolution::initial_data::InitialData,
       public AnalyticDataBase,
       public hydro::TemperatureInitialization<OrszagTangVortex>,
-      public MarkAsAnalyticData {
+      public MarkAsAnalyticData
+      SPECTRE_FINDUS_DERIVED(OrszagTangVortex,
+                             evolution::initial_data::InitialData) {
  public:
   using equation_of_state_type = EquationsOfState::IdealFluid<true>;
 

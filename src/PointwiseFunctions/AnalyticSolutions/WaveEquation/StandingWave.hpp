@@ -54,8 +54,11 @@ namespace ScalarWave::Solutions {
  * \tparam Dim the spatial dimension of the solution
  */
 template <size_t Dim>
-class StandingWave : public evolution::initial_data::InitialData,
-                     public MarkAsAnalyticSolution {
+class StandingWave
+    : public evolution::initial_data::InitialData,
+      public MarkAsAnalyticSolution
+      SPECTRE_FINDUS_DERIVED(StandingWave<Dim>,
+                             evolution::initial_data::InitialData) {
  public:
   static constexpr size_t volume_dim = Dim;
 

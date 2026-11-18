@@ -31,7 +31,11 @@ class er;
 namespace Xcts::Solutions {
 
 /// Flat spacetime in general relativity. Useful as initial guess.
-class Flatness : public elliptic::analytic_data::AnalyticSolution {
+class Flatness
+    : public elliptic::analytic_data::AnalyticSolution
+      SPECTRE_FINDUS_DERIVED(Flatness, elliptic::analytic_data::InitialGuess)
+          SPECTRE_FINDUS_DERIVED(Flatness,
+                                 elliptic::analytic_data::Background) {
  public:
   using options = tmpl::list<>;
   static constexpr Options::String help{

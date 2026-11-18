@@ -19,6 +19,7 @@
 #include "Evolution/Systems/ScalarAdvection/FiniteDifference/Reconstructor.hpp"
 #include "Evolution/Systems/ScalarAdvection/Tags.hpp"
 #include "Options/String.hpp"
+#include "Utilities/Serialization/CharmPupable.hpp"
 #include "Utilities/TMPL.hpp"
 
 /// \cond
@@ -51,7 +52,8 @@ namespace ScalarAdvection::fd {
  * ::fd::reconstruction::monotonised_central() for details.
  */
 template <size_t Dim>
-class MonotonisedCentral : public Reconstructor<Dim> {
+class MonotonisedCentral : public Reconstructor<Dim> SPECTRE_FINDUS_DERIVED(
+                               MonotonisedCentral<Dim>, Reconstructor<Dim>) {
  private:
   using volume_vars_tags = tmpl::list<ScalarAdvection::Tags::U>;
 

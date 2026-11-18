@@ -77,7 +77,9 @@ namespace Filters {
  *   together with the axial filter;
  */
 template <typename TagList>
-class FilledCylinder : public Filter<3, TagList> {
+class FilledCylinder : public Filter<3, TagList> SPECTRE_FINDUS_DERIVED(
+                           FilledCylinder<TagList>,
+                           SINGLE_ARG(Filter<3, TagList>)) {
  public:
   /// \brief The number of top angular (Fourier) \f$m\f$-modes to set to zero.
   struct NumModesToKill {

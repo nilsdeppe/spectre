@@ -53,8 +53,11 @@ namespace evolution::dg::StepChoosers {
 /// include it explicitly in the `factory_creation` struct and add the
 /// `::Tags::FixedLtsRatio` tag to the element DataBox.
 template <size_t Dim>
-class FixedLtsRatio : public StepChooser<StepChooserUse::Slab>,
-                      public RequestsStepperErrorTolerances {
+class FixedLtsRatio
+    : public StepChooser<StepChooserUse::Slab>,
+      public RequestsStepperErrorTolerances
+      SPECTRE_FINDUS_DERIVED(FixedLtsRatio<Dim>,
+                             StepChooser<StepChooserUse::Slab>) {
  public:
   /// \cond
   FixedLtsRatio() = default;

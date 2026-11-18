@@ -136,7 +136,11 @@ using SystemType = TestHelpers::evolution::dg::Actions::SystemType;
 
 template <size_t Dim, bool HasPrims, SystemType SysType,
           bool HasInverseSpatialMetric>
-struct BoundaryTerms final : public evolution::BoundaryCorrection {
+struct BoundaryTerms final
+    : public evolution::BoundaryCorrection
+      SPECTRE_FINDUS_DERIVED(SINGLE_ARG(BoundaryTerms<Dim, HasPrims, SysType,
+                                                      HasInverseSpatialMetric>),
+                             evolution::BoundaryCorrection) {
   struct MaxAbsCharSpeed : db::SimpleTag {
     using type = Scalar<DataVector>;
   };
@@ -1213,7 +1217,8 @@ template <typename System>
 class GhostAndTimeDerivative;
 
 template <typename System>
-class BoundaryCondition : public domain::BoundaryConditions::BoundaryCondition {
+class BoundaryCondition
+    : public virtual domain::BoundaryConditions::BoundaryCondition {
  public:
   BoundaryCondition() = default;
   BoundaryCondition(BoundaryCondition&&) = default;
@@ -1228,7 +1233,10 @@ class BoundaryCondition : public domain::BoundaryConditions::BoundaryCondition {
 };
 
 template <typename System>
-class DemandOutgoingCharSpeeds : public BoundaryCondition<System> {
+class DemandOutgoingCharSpeeds
+    : public BoundaryCondition<System>
+      SPECTRE_FINDUS_DERIVED(DemandOutgoingCharSpeeds<System>,
+                             domain::BoundaryConditions::BoundaryCondition) {
  public:
   DemandOutgoingCharSpeeds() = default;
   explicit DemandOutgoingCharSpeeds(const bool mesh_is_moving)
@@ -1391,7 +1399,9 @@ PUP::able::PUP_ID DemandOutgoingCharSpeeds<System>::my_PUP_ID = 0;
 #endif  // SPECTRE_USE_CHARM
 
 template <typename System>
-class Ghost : public BoundaryCondition<System> {
+class Ghost
+    : public BoundaryCondition<System> SPECTRE_FINDUS_DERIVED(
+          Ghost<System>, domain::BoundaryConditions::BoundaryCondition) {
  public:
   Ghost() = default;
   explicit Ghost(const bool mesh_is_moving) : mesh_is_moving_(mesh_is_moving) {}
@@ -1861,7 +1871,9 @@ PUP::able::PUP_ID Ghost<System>::my_PUP_ID = 0;
 #endif  // SPECTRE_USE_CHARM
 
 template <typename System>
-class TimeDerivative : public BoundaryCondition<System> {
+class TimeDerivative : public BoundaryCondition<System> SPECTRE_FINDUS_DERIVED(
+                           TimeDerivative<System>,
+                           domain::BoundaryConditions::BoundaryCondition) {
  public:
   TimeDerivative() = default;
   TimeDerivative(const bool mesh_is_moving, const double expected_dt_var1)
@@ -2169,7 +2181,10 @@ PUP::able::PUP_ID TimeDerivative<System>::my_PUP_ID = 0;
 #endif  // SPECTRE_USE_CHARM
 
 template <typename System>
-class GhostAndTimeDerivative : public BoundaryCondition<System> {
+class GhostAndTimeDerivative
+    : public BoundaryCondition<System> SPECTRE_FINDUS_DERIVED(
+          GhostAndTimeDerivative<System>,
+          domain::BoundaryConditions::BoundaryCondition) {
  public:
   GhostAndTimeDerivative() = default;
   explicit GhostAndTimeDerivative(const bool mesh_is_moving)
@@ -2586,7 +2601,9 @@ PUP::able::PUP_ID GhostAndTimeDerivative<System>::my_PUP_ID = 0;
 using BoundaryVar1 = evolution::dg::Tags::BoundaryValue<Tags::Var1>;
 
 template <typename System, template <typename> class Base>
-class WithBoundaryFields : public Base<System> {
+class WithBoundaryFields : public Base<System> SPECTRE_FINDUS_DERIVED(
+                               SINGLE_ARG(WithBoundaryFields<System, Base>),
+                               domain::BoundaryConditions::BoundaryCondition) {
  public:
   WithBoundaryFields() = default;
   template <typename... Args>
@@ -2760,6 +2777,11 @@ class WithBoundaryFields : public Base<System> {
   }
 
   bool mesh_is_moving_{false};
+
+ protected:
+  FINDUS_OVERRIDE_SERIALIZATION_ID(
+      SINGLE_ARG(WithBoundaryFields<System, Base>),
+      domain::BoundaryConditions::BoundaryCondition)
 };
 
 #if defined(SPECTRE_USE_CHARM)

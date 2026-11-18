@@ -37,7 +37,9 @@ namespace Solutions {
  */
 template <typename SolutionType>
 class WrappedGr : public virtual evolution::initial_data::InitialData,
-                  public SolutionType {
+                  public SolutionType
+                  SPECTRE_FINDUS_DERIVED(WrappedGr<SolutionType>,
+                                         evolution::initial_data::InitialData) {
  public:
   using SolutionType::SolutionType;
 
@@ -132,6 +134,10 @@ class WrappedGr : public virtual evolution::initial_data::InitialData,
 
   // NOLINTNEXTLINE(google-runtime-references)
   void pup(PUP::er& p) override;
+
+ protected:
+  FINDUS_OVERRIDE_SERIALIZATION_ID(WrappedGr<SolutionType>,
+                                   evolution::initial_data::InitialData)
 
  private:
   // Preprocessor logic to avoid declaring variables() functions for
