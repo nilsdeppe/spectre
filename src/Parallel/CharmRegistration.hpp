@@ -3,6 +3,7 @@
 
 #pragma once
 
+#if defined(SPECTRE_USE_CHARM)
 #include <boost/container/small_vector.hpp>
 #include <cstddef>
 #include <memory>
@@ -865,3 +866,4 @@ bool register_reducer_function() {
 template <Parallel::charmxx::ReducerFunctions F>
 bool Parallel::charmxx::RegisterReducerFunction<F>::registrar =  // NOLINT
     Parallel::charmxx::register_reducer_function<F>();
+#endif  // SPECTRE_USE_CHARM
