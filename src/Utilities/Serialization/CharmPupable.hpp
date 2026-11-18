@@ -48,3 +48,7 @@
 /// Wraps the Charm++ macro, see the Charm++ documentation
 #define WRAPPED_PUPable_abstract(className) \
   PUPable_abstract(SINGLE_ARG(className))  // NOLINT
+
+/// \brief Used for the base class of a serializable class hierarchy to inherit
+/// from.
+#define SPECTRE_CHARM_PUPable(className) virtual PUP::able
