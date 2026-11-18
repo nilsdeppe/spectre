@@ -56,9 +56,13 @@ std::string registration_name() {
 /// Register specified classes.  This function can either take classes
 /// to register as template arguments or take a `tmpl::list` of
 /// classes as a function argument.
+///
+/// Does nothing when using findus, where derived classes register themselves
+/// through `SPECTRE_FINDUS_DERIVED`.
 template <typename... Registrants>
 void register_classes_with_charm(
     const tmpl::list<Registrants...> /*meta*/ = {}) {
+#if defined(SPECTRE_USE_CHARM)
   const auto helper = [](auto class_v) {
     using class_to_register = typename decltype(class_v)::type;
     // We use PUPable_reg2 because this takes as a second argument the name of
@@ -69,6 +73,7 @@ void register_classes_with_charm(
   };
   (void)helper;
   EXPAND_PACK_LEFT_TO_RIGHT(helper(tmpl::type_<Registrants>{}));
+#endif  // SPECTRE_USE_CHARM
 }
 
 /// Register derived classes of the `Base` class
